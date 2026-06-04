@@ -311,13 +311,15 @@ function Auth({onLogin}) {
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
   const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false);
   const submit = async () => {
-    setErr("");
-    if (!email || !pass) { setErr("Fill in all fields."); return; }
-    if (mode === "signup" && !name) { setErr("Enter your name."); return; }
-    setLoading(true);
-    try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password: pass });
+  setErr("");
+  if (!email || !pass) { setErr("Fill in all fields."); return; }
+  if (mode === "signup" && !name) { setErr("Enter your name."); return; }
+  setLoading(true);
+  try {
+    if (mode === "signup") {
+      console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+      const { data, error } = await supabase.auth.signUp({ email, password: pass });
+      console.log("Signup result:", data, error);
         if (error) { setErr(error.message); setLoading(false); return; }
         await supabase.from("profiles").insert({ id: data.user.id, name });
         onLogin({ id: data.user.id, email, name, applied: {}, profile: {} });
