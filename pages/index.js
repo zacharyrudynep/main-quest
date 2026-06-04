@@ -278,6 +278,17 @@ const EMAIL_PROVIDERS = {
 };
 const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton:"ProtonMail"};
 
+// ── GEMINI AI HELPER — free, no credit card. Get key at aistudio.google.com ──
+async function callAI(prompt,maxTokens=2000){
+  const key=process.env.NEXT_PUBLIC_GEMINI_KEY;
+  if(!key)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com and add it in Vercel \u2192 Settings \u2192 Environment Variables.");
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}})});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`Gemini API error ${res.status}. Check your API key.`);}
+  const data=await res.json();
+  if(!data.candidates?.length)throw new Error("Gemini returned no response. Please try again.");
+  return data.candidates[0].content?.parts?.[0]?.text||"";
+}
+
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const I={
   Sword:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><line x1="2" y1="14" x2="10" y2="6"/><line x1="10" y1="2" x2="14" y2="6"/><line x1="9" y1="3" x2="13" y2="7"/></svg>,
@@ -311,15 +322,13 @@ function Auth({onLogin}) {
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
   const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false);
   const submit = async () => {
-  setErr("");
-  if (!email || !pass) { setErr("Fill in all fields."); return; }
-  if (mode === "signup" && !name) { setErr("Enter your name."); return; }
-  setLoading(true);
-  try {
-    if (mode === "signup") {
-      console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-      const { data, error } = await supabase.auth.signUp({ email, password: pass });
-      console.log("Signup result:", data, error);
+    setErr("");
+    if (!email || !pass) { setErr("Fill in all fields."); return; }
+    if (mode === "signup" && !name) { setErr("Enter your name."); return; }
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({ email, password: pass });
         if (error) { setErr(error.message); setLoading(false); return; }
         await supabase.from("profiles").insert({ id: data.user.id, name });
         onLogin({ id: data.user.id, email, name, applied: {}, profile: {} });
@@ -346,7 +355,7 @@ function Auth({onLogin}) {
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
-    <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden",alignItems:"stretch"}}>
     <style>{`.ai{color:#f4edd8}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
     <div style={{position:"fixed",inset:0,pointerEvents:"none"}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.18,background:"radial-gradient(circle,#c9a84c,transparent)",top:-180,left:-120,animation:"ob1 18s ease-in-out infinite"}}/>
@@ -354,27 +363,56 @@ function Auth({onLogin}) {
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",backgroundSize:"56px 56px"}}/>
     </div>
     {/* Left branding */}
-    {!mobile && <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:56,position:"sticky",top:0,height:"100vh",maxWidth:500,zIndex:1}}>
-      <div style={{fontSize:48,marginBottom:14,filter:"drop-shadow(0 0 16px rgba(201,168,76,.5))"}}>⚔️</div>
-      <div style={{fontFamily:"'Cinzel',serif",fontSize:10,color:"rgba(201,168,76,.6)",letterSpacing:5,marginBottom:6}}>— YOUR CAREER —</div>
-      <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:10,lineHeight:1.1}}>Main Quest</div>
-      <p style={{color:"rgba(244,237,216,.6)",fontSize:15,fontStyle:"italic",marginBottom:36}}>"Every legend begins with a single application."</p>
-      {[["🏢","300+ studios across North America"],["🔔","Real-time new posting alerts"],["📋","Track every application you send"],["🎯","Filter by role, region & more"]].map(([ic,tx])=>
-        <div key={tx} style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-          <span style={{width:34,height:34,background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.18)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{ic}</span>
-          <span style={{color:"rgba(244,237,216,.65)",fontSize:14}}>{tx}</span>
+    {!mobile && <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"48px 52px",position:"sticky",top:0,height:"100vh",maxWidth:580,zIndex:1,overflowY:"auto"}}>
+      {/* Logo */}
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:28}}>
+        <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))"}}>⚔️</div>
+        <div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(201,168,76,.55)",letterSpacing:5,lineHeight:1,marginBottom:4}}>— YOUR CAREER —</div>
+          <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:32,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div>
         </div>
-      )}
-      <div style={{display:"flex",alignItems:"center",gap:16,marginTop:24}}>
-        {[["300+","Studios"],["800+","Openings"],["2","Countries"]].map(([n,l],i)=><div key={l} style={{display:"flex",alignItems:"center",gap:16}}>
-          {i>0&&<div style={{width:1,height:36,background:"rgba(201,168,76,.15)"}}/>}
-          <div><div style={{fontFamily:"'Cinzel',serif",fontSize:24,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div><div style={{fontSize:10,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:1}}>{l}</div></div>
-        </div>)}
+      </div>
+      {/* Hero tagline */}
+      <h1 style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:700,color:"#f4edd8",lineHeight:1.3,marginBottom:10,letterSpacing:.5}}>Your launchpad into the game industry.</h1>
+      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>Main Quest aggregates job listings from 300+ game studios across North America — with AI-powered tools to help you write better applications, track your progress, and land interviews faster.</p>
+      {/* Divider */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24,opacity:.5}}>
+        <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(201,168,76,.6))"}}/>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"#c9a84c",letterSpacing:2}}>✦ ✦ ✦</span>
+        <div style={{flex:1,height:1,background:"linear-gradient(270deg,transparent,rgba(201,168,76,.6))"}}/>
+      </div>
+      {/* Features */}
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
+        {[
+          ["⚔️","Job Board","300+ studios, filtered by country, state, role, and experience level."],
+          ["🤖","AI Apply","Generate a tailored cover letter, ATS score, and interview prep in seconds."],
+          ["📜","Resume Upload","Upload your resume and we auto-fill your profile for AI-powered applications."],
+          ["📋","Application Tracker","Track every job you apply to with dates, status, and one-click access."],
+          ["✉️","AI Email Apply","Draft a personalized email application and send it through Gmail or Outlook."],
+          ["🔔","New Job Alerts","New postings are flagged in real time so you never miss an opening."],
+        ].map(([ic,title,desc])=>
+          <div key={title} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
+            <span style={{fontSize:18,flexShrink:0,marginTop:1}}>{ic}</span>
+            <div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3}}>{title}</div>
+              <div style={{fontSize:12,color:"rgba(244,237,216,.5)",lineHeight:1.5}}>{desc}</div>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Stats */}
+      <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
+        {[["300+","Studios"],["800+","Openings"],["40+","Live via API"],["2","Countries"]].map(([n,l],i)=>(
+          <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
+            <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
+          </div>
+        ))}
       </div>
     </div>}
     {/* Right form */}
-    <div style={{flex:mobile?"1":"0 0 460px",display:"flex",alignItems:"center",justifyContent:"center",padding:mobile?"20px 16px":"32px 36px",position:"relative",zIndex:1,overflowY:"auto",minHeight:"100vh"}}>
-      <div style={{width:"100%",maxWidth:400,background:"rgba(20,14,28,.85)",backdropFilter:"blur(30px)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,overflow:"hidden"}}>
+    <div style={{flex:mobile?"1":"0 0 500px",display:"flex",alignItems:"center",justifyContent:"center",padding:mobile?"20px 16px":"40px 48px",position:"relative",zIndex:1,overflowY:"auto",minHeight:"100vh"}}>
+      <div style={{width:"100%",maxWidth:420,background:"rgba(20,14,28,.88)",backdropFilter:"blur(30px)",border:"1px solid rgba(201,168,76,.22)",borderRadius:22,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.5)"}}>
         <div style={{display:"flex",position:"relative",background:"rgba(0,0,0,.25)"}}>
           {["login","signup"].map((m,i)=><button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,background:"none",border:"none",cursor:"pointer",color:mode===m?"#f4edd8":"rgba(244,237,216,.35)",fontSize:11,fontWeight:600,padding:"14px",fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase"}}>{i===0?"Sign In":"Create Account"}</button>)}
           <div style={{position:"absolute",bottom:0,left:0,width:"50%",height:2,background:G,borderRadius:2,transition:"transform .25s",transform:`translateX(${mode==="login"?"0%":"100%"})`}}/>
@@ -443,9 +481,7 @@ function AIApplyModal({job,user,onClose,onApplied}) {
   const gen=async()=>{
     setPhase("generating");setErr("");
     try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:`Senior game industry recruiter using XYZ formula. Be brutally honest.\n\nJOB: ${job.company} — ${job.title} (${job.experience||"unspecified"},${job.type}${job.isRemote?", Remote":""})\n${isVol?"VOLUNTEER/UNPAID role":`Salary: ${job.salary}`}\nSummary: ${job.summary||""}\n\nAPPLICANT:\n${profileStr||"No profile — write generic materials to customize."}\n\nReturn ONLY valid JSON:\n{"matchScore":72,"matchVerdict":"one honest sentence","missingKeywords":["kw1","kw2","kw3"],"coverLetter":"3 paragraphs using XYZ formula under 260 words. Para1: specific hook about ${job.company}. Para2: 2 XYZ achievements matching requirements. Para3: address biggest gap + ask for interview. Human tone.","resumeBullets":["XYZ bullet 1","XYZ bullet 2","XYZ bullet 3"],"strengthsMatch":["strength matched to requirement 1","strength 2","strength 3"],"commonQuestions":[{"q":"Tell me about yourself","a":"90-second pitch"},{"q":"Why ${job.company}?","a":"specific to their work"},{"q":"Relevant project?","a":"STAR format"},{"q":"Biggest weakness?","a":"real + steps to fix"}],"emailSubject":"Application: ${job.title} | [Name]","tips":["company-specific tip","add missing keyword naturally","follow up in 5 days with value"]}`}]})});
-      const d=await r.json();
-      const txt=(d.content||[]).map(b=>b.text||"").join("");
+      const txt=await callAI(`Senior game industry recruiter using XYZ formula. Be brutally honest.\n\nJOB: ${job.company} — ${job.title} (${job.experience||"unspecified"}, ${job.type}${job.isRemote?", Remote":""})\n${isVol?"VOLUNTEER/UNPAID role":`Salary: ${job.salary}`}\nSummary: ${job.summary||""}\n\nAPPLICANT:\n${profileStr||"No profile provided — write strong generic materials the applicant can customize."}\n\nReturn ONLY valid JSON (no markdown fences):\n{"matchScore":72,"matchVerdict":"one honest sentence on fit","missingKeywords":["keyword1","keyword2","keyword3"],"coverLetter":"3 paragraphs under 260 words using the XYZ formula (Accomplished X measured by Y by doing Z). Para 1: specific hook about ${job.company}. Para 2: two achievements matching their requirements. Para 3: address the biggest gap honestly and ask for an interview. Human tone.","resumeBullets":["XYZ-formula bullet 1","XYZ bullet 2","XYZ bullet 3"],"strengthsMatch":["your strength matched to their requirement 1","strength 2","strength 3"],"commonQuestions":[{"q":"Tell me about yourself","a":"90-second pitch tailored to this role"},{"q":"Why ${job.company}?","a":"specific answer referencing their work"},{"q":"Walk me through a relevant project","a":"STAR-format answer"},{"q":"Biggest weakness?","a":"real weakness plus concrete fix"}],"emailSubject":"Application: ${job.title} | [Your Name]","tips":["tip specific to ${job.company}","add the top missing keyword naturally","follow up in 5 days with specific value"]}`);
       const clean=txt.replace(/```json|```/g,"").trim();
       const s=clean.indexOf("{"),e=clean.lastIndexOf("}");
       setResult(JSON.parse(clean.slice(s,e+1)));
@@ -576,10 +612,9 @@ function AIEmailModal({job,user,onClose,onApplied}) {
   useEffect(()=>{
     (async()=>{
       try{
-        const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Write a job application email. Return ONLY valid JSON:\nJOB: ${job.title} at ${job.company}\nSummary: ${job.summary||""}\nAPPLICANT: ${profileStr||"No profile — write a template to customize."}\n{"subject":"concise subject line","greeting":"Dear ${job.company} Hiring Team,","body":"3 paragraphs under 250 words. (1) specific hook about ${job.company}. (2) 2-3 skills/results matched to their needs. (3) clear ask for interview. Human, not AI-sounding.","closing":"Best regards,","senderName":"${profile.name||"[Your Name]"}"}`}]})});
-        const d=await r.json();
-        const txt=(d.content||[]).map(b=>b.text||"").join("").replace(/```json|```/g,"").trim();
-        const parsed=JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1));
+        const etxt=await callAI(`Write a job application email. Return ONLY valid JSON (no markdown fences):\nJOB: ${job.title} at ${job.company}\nSummary: ${job.summary||""}\nAPPLICANT: ${profileStr||"No profile — write a template to customize."}\n{"subject":"concise professional subject line","greeting":"Dear ${job.company} Hiring Team,","body":"3 paragraphs under 250 words: (1) specific hook naming a ${job.company} game or product, (2) 2-3 skills or results matched to their needs, (3) clear ask for an interview. Human tone, not AI-sounding.","closing":"Best regards,","senderName":"${profile.name||"[Your Name]"}"}`,1000);
+        const eclean=etxt.replace(/```json|```/g,"").trim();
+        const parsed=JSON.parse(eclean.slice(eclean.indexOf("{"),eclean.lastIndexOf("}")+1));
         setDraft(parsed);setEditBody(parsed.body);setPhase("result");
       }catch{setPhase("error");}
     })();
@@ -670,9 +705,9 @@ function ResumeSection({profile,updateField}) {
       let messages,headers={"Content-Type":"application/json"};
       if(ext===".pdf"){
         setMsg("Processing PDF…");
-        const b64=await toB64(file);
-        messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}},{type:"text",text:`Extract resume info. Return ONLY valid JSON:\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\nNo markdown.`}]}];
-        headers["anthropic-beta"]="pdfs-2024-09-25";
+        const pdfB64=await toB64(file);
+        const pdfExtractPrompt=`Extract all resume information. Return ONLY valid JSON (no markdown, no explanation):\n{"name":"full name","role":"current or target job title","location":"city, state","bio":"2-sentence professional summary","skills":"comma-separated list of all skills","yearsExp":"best match: 0-1, 1-2, 2-4, 4-7, 7-10, or 10+","education":"degree, school, year","workHistory":"chronological summary of each role with dates","achievements":"measurable accomplishments with numbers","resumeText":"complete verbatim resume text"}`;
+        messages=[{role:"user",content:pdfExtractPrompt}];
       } else {
         setMsg(ext===".txt"?"Reading text…":"Extracting DOCX text…");
         let text="";
@@ -688,14 +723,23 @@ function ResumeSection({profile,updateField}) {
           text=result.value||"";
           if(text.length<20){throw new Error("Could not extract text. Try saving as PDF.");}
         }
-        messages=[{role:"user",content:`Extract resume info. Return ONLY valid JSON:\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\nNo markdown.\n\nRESUME:\n${text.slice(0,10000)}`}];
+        const extractPrompt=`Extract resume info. Return ONLY valid JSON (no markdown):\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\n\nRESUME:\n${text.slice(0,10000)}`;
+        messages=[{role:"user",content:extractPrompt}];
       }
       setPs("parsing");setMsg("Extracting resume info with AI…");
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
-      const d=await r.json();
-      if(d.error)throw new Error(d.error.message);
-      const txt=(d.content||[]).map(b=>b.text||"").join("").replace(/```json|```/g,"").trim();
-      const parsed=JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1));
+      // PDF uses Gemini inline_data; DOCX/TXT use callAI text
+      let parsedText;
+      if(ext===".pdf"){
+        const gemKey=process.env.NEXT_PUBLIC_GEMINI_KEY;
+        if(!gemKey)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com");
+        const pdfRes=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${gemKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"application/pdf",data:pdfB64}},{text:pdfExtractPrompt}]}],generationConfig:{maxOutputTokens:1500,temperature:0.1}})});
+        if(!pdfRes.ok){const pe=await pdfRes.json().catch(()=>({}));throw new Error(pe?.error?.message||`PDF API error ${pdfRes.status}`);}
+        const pdfData=await pdfRes.json();
+        parsedText=(pdfData.candidates?.[0]?.content?.parts?.[0]?.text||"").replace(/```json|```/g,"").trim();
+      } else {
+        parsedText=(await callAI(messages[0].content,1500)).replace(/```json|```/g,"").trim();
+      }
+      const parsed=JSON.parse(parsedText.slice(parsedText.indexOf("{"),parsedText.lastIndexOf("}")+1));
       Object.entries(parsed).forEach(([k,v])=>{if(v&&typeof v==="string"&&v.trim())updateField(k,v.trim());});
       setPs("done");setMsg("Resume parsed! Review and edit the fields below.");
     }catch(err){setPs("error");setMsg(err.message||"Could not parse. Try a different file or paste text manually.");}
