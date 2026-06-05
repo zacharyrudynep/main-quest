@@ -262,6 +262,55 @@ const GREENHOUSE_TOKENS = {
   "Yellow Brick Games":"yellowbrickgames",
 };
 
+// ── SCRAPE TARGETS ────────────────────────────────────────────────────────────
+// Companies that don't use Greenhouse — scraped via /api/jobs/scrape (Browserless)
+// URL should be the page that actually lists individual job postings
+const SCRAPE_TARGETS = {
+  "Design Works Gaming":      "https://www.designworksgaming.com/careers/",
+  "E-Line Media":             "https://www.elinemedia.com/careers",
+  "Rainbow Studios":          "https://www.rainbowstudios.com/careers/",
+  "Crystal Dynamics":         "https://www.crystaldynamics.com/careers/",
+  "Naughty Dog":              "https://www.naughtydog.com/careers",
+  "Rockstar Games":           "https://www.rockstargames.com/careers",
+  "Roblox":                   "https://careers.roblox.com/",
+  "Niantic":                  "https://nianticlabs.com/careers",
+  "Netflix Games":            "https://jobs.netflix.com/search?team=Games",
+  "Amazon Game Studio":       "https://www.amazon.jobs/en/teams/amazon-games",
+  "EA":                       "https://www.ea.com/careers",
+  "Discord":                  "https://discord.com/careers",
+  "Kabam":                    "https://kabam.com/careers/",
+  "InXile Entertainment":     "https://www.inxile-entertainment.com/careers",
+  "Obsidian Entertainment":   "https://www.obsidian.net/careers",
+  "Blizzard Entertainment":   "https://careers.blizzard.com/global/en",
+  "Activision":               "https://careers.activision.com/",
+  "2K Games":                 "https://2k.com/en-US/careers/",
+  "Capcom USA":               "https://jobs.jobvite.com/capcomusa",
+  "Heart Machine":            "https://www.heartmachine.com/careers",
+  "thatgamecompany":          "https://thatgamecompany.com/careers/",
+  "Second Dinner":            "https://www.seconddinner.com/careers/",
+  "Scopely":                  "https://careers.scopely.com/us/en",
+  "Iron Galaxy Studios":      "https://irongalaxystudios.com/careers/",
+  "Hi-Rez Studios":           "https://www.hirezstudios.com/careers/",
+  "Schell Games":             "https://www.schellgames.com/careers/",
+  "Jackbox Games":            "https://www.jackboxgames.com/jobs",
+  "Harmonix":                 "https://harmonixmusic.com/jobs",
+  "Cyan":                     "https://cyan.com/jobs/",
+  "thatgamecompany":          "https://thatgamecompany.com/careers/",
+  "Iron Oak Games":           "https://www.ironoakgames.com/jobs",
+  "Drool":                    "https://drool.zone/jobs",
+  "Snowed In Studios":        "https://www.snowedin.net/careers",
+  "Behaviour Interactive":    "https://bhvr.com/careers/",
+  "Red Barrels":              "https://www.redbarrels.com/jobs/",
+  "Eidos Montreal":           "https://eidosmontreal.com/careers/",
+  "Ubisoft Toronto":          "https://toronto.ubisoft.com/jobs/",
+  "Ubisoft Montreal":         "https://montreal.ubisoft.com/en/our-studio/careers/",
+  "Ludia":                    "https://ludia.com/en/careers",
+  "Hibernum":                 "https://www.hibernum.com/careers/",
+  "BioWare":                  "https://bioware.com/careers/",
+  "Hasbro Gaming":            "https://careers.hasbro.com/",
+};
+
+
 function normalizeGreenhouseJob(raw, company, stateKey) {
   const stripHtml = h => (h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
   const body = stripHtml(raw.content||"");
@@ -1036,6 +1085,45 @@ export default function App() {
         }catch{}
       }));
       if(!signal.aborted)await new Promise(r=>setTimeout(r,200));
+    }
+    // ── Scrape non-Greenhouse companies via Browserless ─────────────────────
+    const scrapeEntries=Object.entries(SCRAPE_TARGETS);
+    for(let i=0;i<scrapeEntries.length;i+=BATCH){
+      if(signal.aborted)break;
+      const sBatch=scrapeEntries.slice(i,i+BATCH);
+      await Promise.all(sBatch.map(async([companyName,scrapeUrl])=>{
+        let company=null,stateKey="";
+        for(const[,states] of Object.entries(COMPANIES_DATA)){
+          for(const[state,companies] of Object.entries(states)){
+            const found=companies.find(c=>c.name===companyName);
+            if(found){company=found;stateKey=state;break;}
+          }
+          if(company)break;
+        }
+        if(!company)return;
+        try{
+          const res=await fetch(`/api/jobs/scrape?url=${encodeURIComponent(scrapeUrl)}&company=${encodeURIComponent(companyName)}`,{signal});
+          if(!res.ok)return;
+          const data=await res.json();
+          const jobs=(data.jobs||[]).map((j,idx)=>({
+            ...j,
+            id:`scraped-${companyName}-${idx}`,
+            company:companyName,
+            state:stateKey,
+            email:company.email,
+            posted:new Date(),
+            postedStr:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
+            daysAgo:0,
+            isNew:false,
+            isLive:true,
+            isScraped:true,
+          }));
+          if(!signal.aborted&&jobs.length>0){
+            setLiveJobs(prev=>({...prev,[companyName]:jobs}));
+          }
+        }catch{}
+      }));
+      if(!signal.aborted)await new Promise(r=>setTimeout(r,500));
     }
     if(!signal.aborted)setLiveStatus("done");
   };
