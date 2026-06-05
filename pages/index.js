@@ -1,6 +1,4 @@
-import Head from "next/head";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "../lib/supabase";
 
 // ── RESPONSIVE HOOK ────────────────────────────────────────────────────────────
 function useIsMobile(bp=640) {
@@ -198,11 +196,9 @@ const COMPANIES_DATA = {
 
 const VOLUNTEER_OVERRIDES = {
   "Wolfpack Game Design": { isVolunteer:true, jobs:[
-    { title:"3D Character Animator", summary:"Rig and animate the diverse hybrid characters of World Soul, a post-apocalyptic narrative RPG in Unreal Engine 5. Volunteer — excellent for portfolio.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Rig and animate humanoid and creature characters in UE5","Create locomotion, combat, and cinematic animations","Implement UE5 animation blueprints and state machines","Collaborate with character artists on visual direction"], requirements:["Portfolio demonstrating character animation in UE5 or similar","Experience rigging humanoid characters","Passion for narrative RPG games","Ability to work remotely and asynchronously"] },
-    { title:"Art Producer", summary:"Coordinate cross-functional art teams for World Soul, driving milestone deliverables and liaising between creative and technical departments. Volunteer.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Drive scheduling and production planning for art teams","Track asset pipelines across 2D, 3D, VFX, and animation","Maintain documentation and update Jira/ShotGrid","Communicate production goals clearly to team members"], requirements:["2+ years in art development or digital content production","Strong understanding of art workflows and pipelines","Experience with Jira, ShotGrid, or similar tools","Passion for indie game development"] },
-    { title:"3D Character Artist", summary:"Model, sculpt, and texture high-quality character assets for World Soul, a post-apocalyptic RPG in UE5. Volunteer — great for building your portfolio.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Model and sculpt character assets aligned with the visual direction","Create PBR textures in Substance Painter","Collaborate with the art director for visual consistency","Optimize assets for real-time UE5 performance"], requirements:["Strong portfolio of game-ready character art","Proficiency in ZBrush, Maya, or Blender","Experience with Substance Painter for PBR texturing","Interest in narrative RPG games"] },
-    { title:"Environment Artist", summary:"Create immersive optimized environments for the post-apocalyptic world of World Soul in Unreal Engine 5. Volunteer position.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Build modular environment kits and hero assets in UE5","Create tileable textures and materials in Substance","Work with art director on visual quality","Optimize assets for real-time performance"], requirements:["Portfolio showing game-ready environment art","Proficiency with UE5 or similar real-time engine","Experience with modular asset workflows","Knowledge of PBR texturing pipelines"] },
-    { title:"UI/UX Designer", summary:"Design and implement intuitive thematic UI for World Soul — menus, HUDs, and inventory systems native to the post-apocalyptic game world. Volunteer.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Design UI including HUDs, menus, and inventory screens","Create wireframes and prototypes for key game systems","Collaborate with programmers to implement UI in UE5","Maintain accessibility and visual consistency"], requirements:["Portfolio demonstrating game UI or UX work","Familiarity with UE5 UMG or similar UI frameworks","Strong visual design sense","Experience with Figma a plus"] },
+    { title:"3D Character Animator", summary:"Rig and animate hybrid characters for World Soul (UE5 RPG). Volunteer — great for portfolio.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Rig and animate characters in UE5","Implement animation blueprints and state machines"], requirements:["Portfolio showing character animation","Passion for narrative RPG games"] },
+    { title:"Art Producer", summary:"Coordinate art teams for World Soul, managing schedules and pipelines. Volunteer position.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Track asset pipelines and milestone delivery","Manage Jira/ShotGrid project tracking"], requirements:["2+ years in art production or content dev","Strong scheduling and communication skills"] },
+    { title:"3D Character Artist", summary:"Model and texture hybrid character assets for World Soul. Volunteer, ideal for portfolio building.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Model and sculpt characters in ZBrush/Maya","Create PBR textures in Substance Painter"], requirements:["Strong game-ready character art portfolio","Experience with ZBrush, Maya, or Blender"] },
   ]}
 };
 
@@ -247,80 +243,6 @@ for (const [country,states] of Object.entries(COMPANIES_DATA)) {
   }
 }
 
-const GREENHOUSE_TOKENS = {
-  "Nightdive Studios":"nightdivestudios","Cat Daddy Games":"catdaddy","Schell Games":"schellgames",
-  "Jackbox Games":"jackboxgames","Probably Monsters":"probablymonsters","Torn Banner Studios":"tornbannerstudios",
-  "Klei Entertainment":"klei","The Pokemon Company":"pokemoncareers","Fortis Games":"fortisgames",
-  "Bungie":"bungie","Riot Games":"riotgames","Insomniac Games":"insomniac","Respawn Entertainment":"respawn",
-  "Double Fine Productions":"doublefine","Dreamhaven":"dreamhaven","Heart Machine":"heartmachine",
-  "Second Dinner":"seconddinner","Frost Giant Studios":"frostgiant","Deck Nine Games":"deckninegames",
-  "Hi-Rez Studios":"hirezstudios","Iron Galaxy Studios":"irongalaxystudios","Brass Lion Entertainment":"brasslion",
-  "Velan Studios":"velanstudios","Cyan":"cyanworlds","Undead Labs":"undeadlabs",
-  "thatgamecompany":"thatgamecompany","Harmonix":"harmonix","Bend Studio":"bendstudio",
-  "Blackbird Interactive":"blackbirdinteractive","Digital Extremes":"digitalextremes",
-  "Behaviour Interactive":"bhvr","Red Barrels":"redbarrels","Thunder Lotus Games":"thunderlotus",
-  "Yellow Brick Games":"yellowbrickgames",
-};
-
-// ── SCRAPE TARGETS ────────────────────────────────────────────────────────────
-// Companies that don't use Greenhouse — scraped via /api/jobs/scrape (Browserless)
-// URL should be the page that actually lists individual job postings
-const SCRAPE_TARGETS = {
-  "Design Works Gaming":      "https://www.designworksgaming.com/careers/",
-  "E-Line Media":             "https://www.elinemedia.com/careers",
-  "Rainbow Studios":          "https://www.rainbowstudios.com/careers/",
-  "Crystal Dynamics":         "https://www.crystaldynamics.com/careers/",
-  "Naughty Dog":              "https://www.naughtydog.com/careers",
-  "Rockstar Games":           "https://www.rockstargames.com/careers",
-  "Roblox":                   "https://careers.roblox.com/",
-  "Niantic":                  "https://nianticlabs.com/careers",
-  "Netflix Games":            "https://jobs.netflix.com/search?team=Games",
-  "Amazon Game Studio":       "https://www.amazon.jobs/en/teams/amazon-games",
-  "EA":                       "https://www.ea.com/careers",
-  "Discord":                  "https://discord.com/careers",
-  "Kabam":                    "https://kabam.com/careers/",
-  "InXile Entertainment":     "https://www.inxile-entertainment.com/careers",
-  "Obsidian Entertainment":   "https://www.obsidian.net/careers",
-  "Blizzard Entertainment":   "https://careers.blizzard.com/global/en",
-  "Activision":               "https://careers.activision.com/",
-  "2K Games":                 "https://2k.com/en-US/careers/",
-  "Capcom USA":               "https://jobs.jobvite.com/capcomusa",
-  "Heart Machine":            "https://www.heartmachine.com/careers",
-  "thatgamecompany":          "https://thatgamecompany.com/careers/",
-  "Second Dinner":            "https://www.seconddinner.com/careers/",
-  "Scopely":                  "https://careers.scopely.com/us/en",
-  "Iron Galaxy Studios":      "https://irongalaxystudios.com/careers/",
-  "Hi-Rez Studios":           "https://www.hirezstudios.com/careers/",
-  "Schell Games":             "https://www.schellgames.com/careers/",
-  "Jackbox Games":            "https://www.jackboxgames.com/jobs",
-  "Harmonix":                 "https://harmonixmusic.com/jobs",
-  "Cyan":                     "https://cyan.com/jobs/",
-  "thatgamecompany":          "https://thatgamecompany.com/careers/",
-  "Iron Oak Games":           "https://www.ironoakgames.com/jobs",
-  "Drool":                    "https://drool.zone/jobs",
-  "Snowed In Studios":        "https://www.snowedin.net/careers",
-  "Behaviour Interactive":    "https://bhvr.com/careers/",
-  "Red Barrels":              "https://www.redbarrels.com/jobs/",
-  "Eidos Montreal":           "https://eidosmontreal.com/careers/",
-  "Ubisoft Toronto":          "https://toronto.ubisoft.com/jobs/",
-  "Ubisoft Montreal":         "https://montreal.ubisoft.com/en/our-studio/careers/",
-  "Ludia":                    "https://ludia.com/en/careers",
-  "Hibernum":                 "https://www.hibernum.com/careers/",
-  "BioWare":                  "https://bioware.com/careers/",
-  "Hasbro Gaming":            "https://careers.hasbro.com/",
-};
-
-
-function normalizeGreenhouseJob(raw, company, stateKey) {
-  const stripHtml = h => (h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
-  const body = stripHtml(raw.content||"");
-  const sm = body.match(/\$(\d[\d,]+)\s*[-\u2013]+\s*\$(\d[\d,]+)/i);
-  const salary = sm ? `$${parseInt(sm[1].replace(/,/g,"")).toLocaleString()} \u2013 $${parseInt(sm[2].replace(/,/g,"")).toLocaleString()}` : "Salary not listed";
-  const daysAgo = Math.floor((Date.now()-new Date(raw.updated_at||raw.first_published_at).getTime())/86400000);
-  const guessExp = t => { const tl=(t||"").toLowerCase(); if(/director|head of|vp/.test(tl))return"Director"; if(/principal/.test(tl))return"Principal"; if(/\blead\b/.test(tl))return"Lead"; if(/senior|sr\./.test(tl))return"Senior"; if(/junior|jr\.|intern/.test(tl))return"Entry Level"; return"Mid Level"; };
-  return { id:`gh-${raw.id}`, title:raw.title, company:company.name, url:raw.absolute_url||company.url, applyUrl:raw.absolute_url||company.url, state:stateKey, posted:new Date(raw.updated_at||raw.first_published_at), postedStr:new Date(raw.updated_at||raw.first_published_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}), daysAgo, isNew:daysAgo<3, isRemote:/remote|distributed/i.test(raw.title+" "+body), type:"Full-time", salary, email:company.email, experience:guessExp(raw.title), isVolunteer:false, isLive:true, summary:body.slice(0,240).trim()+(body.length>240?"\u2026":""), responsibilities:[], requirements:[] };
-}
-
 const EMAIL_PROVIDERS = {
   gmail:(to,s,b)=>`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`,
   outlook:(to,s,b)=>`https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`,
@@ -328,17 +250,6 @@ const EMAIL_PROVIDERS = {
   proton:()=>`https://mail.proton.me/u/0/inbox#compose`,
 };
 const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton:"ProtonMail"};
-
-// ── GEMINI AI HELPER — free, no credit card. Get key at aistudio.google.com ──
-async function callAI(prompt,maxTokens=2000){
-  const key=process.env.NEXT_PUBLIC_GEMINI_KEY;
-  if(!key)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com and add it in Vercel \u2192 Settings \u2192 Environment Variables.");
-  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}})});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`Gemini API error ${res.status}. Check your API key.`);}
-  const data=await res.json();
-  if(!data.candidates?.length)throw new Error("Gemini returned no response. Please try again.");
-  return data.candidates[0].content?.parts?.[0]?.text||"";
-}
 
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const I={
@@ -372,98 +283,53 @@ function Auth({onLogin}) {
   const [mode,setMode]=useState("login");
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
   const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false);
-  const submit = async () => {
-    setErr("");
-    if (!email || !pass) { setErr("Fill in all fields."); return; }
-    if (mode === "signup" && !name) { setErr("Enter your name."); return; }
+  const submit=()=>{
+    setErr(""); if(!email||!pass){setErr("Fill in all fields.");return;} if(mode==="signup"&&!name){setErr("Enter your name.");return;}
     setLoading(true);
-    try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password: pass });
-        if (error) { setErr(error.message); setLoading(false); return; }
-        await supabase.from("profiles").insert({ id: data.user.id, name });
-        onLogin({ id: data.user.id, email, name, applied: {}, profile: {} });
+    setTimeout(()=>{
+      const users=JSON.parse(localStorage.getItem("mq_users")||"{}");
+      if(mode==="signup"){
+        if(users[email]){setErr("Account exists.");setLoading(false);return;}
+        users[email]={name,password:pass,applied:{},profile:{}};
+        localStorage.setItem("mq_users",JSON.stringify(users));
+        onLogin({email,name,applied:{},profile:{}});
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-        if (error) { setErr("Invalid email or password."); setLoading(false); return; }
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-        const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
-        const applied = {};
-        (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at }; });
-        onLogin({ id: data.user.id, email, name: profile?.name || email, applied, profile: profile || {} });
+        const u=users[email];
+        if(!u||u.password!==pass){setErr("Invalid email or password.");setLoading(false);return;}
+        onLogin({email,name:u.name,applied:u.applied||{},profile:u.profile||{}});
       }
-    } catch (e) {
-      setErr("Something went wrong. Please try again.");
-      setLoading(false);
-    }
+    },600);
   };
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
-  return <>
-    <Head>
-      <title>Main Quest — Sign In</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1"/>
-      <link rel="preconnect" href="https://fonts.googleapis.com"/>
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
-    </Head>
-    <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden",alignItems:"stretch"}}>
-    <style>{`.ai{color:#f4edd8}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
+  return <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden"}}>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap');body{margin:0;background:#080608!important;}.ai{color:#f4edd8}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
     <div style={{position:"fixed",inset:0,pointerEvents:"none"}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.18,background:"radial-gradient(circle,#c9a84c,transparent)",top:-180,left:-120,animation:"ob1 18s ease-in-out infinite"}}/>
       <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",filter:"blur(120px)",opacity:.14,background:"radial-gradient(circle,#8b2020,transparent)",bottom:-180,right:-120,animation:"ob2 22s ease-in-out infinite"}}/>
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",backgroundSize:"56px 56px"}}/>
     </div>
     {/* Left branding */}
-    {!mobile && <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"48px 52px",position:"sticky",top:0,height:"100vh",maxWidth:580,zIndex:1,overflowY:"auto"}}>
-      {/* Logo */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:28}}>
-        <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))"}}>⚔️</div>
-        <div>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(201,168,76,.55)",letterSpacing:5,lineHeight:1,marginBottom:4}}>— YOUR CAREER —</div>
-          <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:32,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div>
+    {!mobile && <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:56,position:"sticky",top:0,height:"100vh",maxWidth:500,zIndex:1}}>
+      <div style={{fontSize:48,marginBottom:14,filter:"drop-shadow(0 0 16px rgba(201,168,76,.5))"}}>⚔️</div>
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:10,color:"rgba(201,168,76,.6)",letterSpacing:5,marginBottom:6}}>— YOUR CAREER —</div>
+      <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:10,lineHeight:1.1}}>Main Quest</div>
+      <p style={{color:"rgba(244,237,216,.6)",fontSize:15,fontStyle:"italic",marginBottom:36}}>"Every legend begins with a single application."</p>
+      {[["🏢","300+ studios across North America"],["🔔","Real-time new posting alerts"],["📋","Track every application you send"],["🎯","Filter by role, region & more"]].map(([ic,tx])=>
+        <div key={tx} style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <span style={{width:34,height:34,background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.18)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{ic}</span>
+          <span style={{color:"rgba(244,237,216,.65)",fontSize:14}}>{tx}</span>
         </div>
-      </div>
-      {/* Hero tagline */}
-      <h1 style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:700,color:"#f4edd8",lineHeight:1.3,marginBottom:10,letterSpacing:.5}}>Your launchpad into the game industry.</h1>
-      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>Main Quest aggregates job listings from 300+ game studios across North America — with AI-powered tools to help you write better applications, track your progress, and land interviews faster.</p>
-      {/* Divider */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24,opacity:.5}}>
-        <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(201,168,76,.6))"}}/>
-        <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"#c9a84c",letterSpacing:2}}>✦ ✦ ✦</span>
-        <div style={{flex:1,height:1,background:"linear-gradient(270deg,transparent,rgba(201,168,76,.6))"}}/>
-      </div>
-      {/* Features */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
-        {[
-          ["⚔️","Job Board","300+ studios filtered by country, state, role, and experience."],
-          ["🤖","AI Apply","Cover letter, ATS score, and interview prep in seconds."],
-          ["📜","Resume Upload","Upload your resume to auto-fill your profile for AI applications."],
-          ["📋","App Tracker","Track every application with dates and one-click access."],
-          ["✉️","AI Email","Draft a personalized email and send it from Gmail or Outlook."],
-          ["🔔","New Alerts","New postings flagged in real time so you never miss one."],
-        ].map(([ic,title,desc])=>
-          <div key={title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
-            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{ic}</span>
-            <div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3}}>{title}</div>
-              <div style={{fontSize:11,color:"rgba(244,237,216,.48)",lineHeight:1.45}}>{desc}</div>
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Stats */}
-      <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["300+","Studios"],["800+","Openings"],["40+","Live via API"],["2","Countries"]].map(([n,l],i)=>(
-          <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
-            <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
-          </div>
-        ))}
+      )}
+      <div style={{display:"flex",alignItems:"center",gap:16,marginTop:24}}>
+        {[["300+","Studios"],["800+","Openings"],["2","Countries"]].map(([n,l],i)=><div key={l} style={{display:"flex",alignItems:"center",gap:16}}>
+          {i>0&&<div style={{width:1,height:36,background:"rgba(201,168,76,.15)"}}/>}
+          <div><div style={{fontFamily:"'Cinzel',serif",fontSize:24,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div><div style={{fontSize:10,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:1}}>{l}</div></div>
+        </div>)}
       </div>
     </div>}
     {/* Right form */}
-    <div style={{flex:mobile?"1":"0 0 500px",display:"flex",alignItems:"center",justifyContent:"center",padding:mobile?"20px 16px":"40px 48px",position:"relative",zIndex:1,overflowY:"auto",minHeight:"100vh"}}>
-      <div style={{width:"100%",maxWidth:420,background:"rgba(20,14,28,.88)",backdropFilter:"blur(30px)",border:"1px solid rgba(201,168,76,.22)",borderRadius:22,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.5)"}}>
+    <div style={{flex:mobile?"1":"0 0 460px",display:"flex",alignItems:"center",justifyContent:"center",padding:mobile?"20px 16px":"32px 36px",position:"relative",zIndex:1,overflowY:"auto",minHeight:"100vh"}}>
+      <div style={{width:"100%",maxWidth:400,background:"rgba(20,14,28,.85)",backdropFilter:"blur(30px)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,overflow:"hidden"}}>
         <div style={{display:"flex",position:"relative",background:"rgba(0,0,0,.25)"}}>
           {["login","signup"].map((m,i)=><button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,background:"none",border:"none",cursor:"pointer",color:mode===m?"#f4edd8":"rgba(244,237,216,.35)",fontSize:11,fontWeight:600,padding:"14px",fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase"}}>{i===0?"Sign In":"Create Account"}</button>)}
           <div style={{position:"absolute",bottom:0,left:0,width:"50%",height:2,background:G,borderRadius:2,transition:"transform .25s",transform:`translateX(${mode==="login"?"0%":"100%"})`}}/>
@@ -499,8 +365,7 @@ function Auth({onLogin}) {
         </div>
       </div>
     </div>
-  </div>
-  </>;
+  </div>;
 }
 
 // ── COPY BUTTON ───────────────────────────────────────────────────────────────
@@ -532,20 +397,22 @@ function AIApplyModal({job,user,onClose,onApplied}) {
   const gen=async()=>{
     setPhase("generating");setErr("");
     try{
-      const txt=await callAI(`Senior game industry recruiter using XYZ formula. Be brutally honest.\n\nJOB: ${job.company} — ${job.title} (${job.experience||"unspecified"}, ${job.type}${job.isRemote?", Remote":""})\n${isVol?"VOLUNTEER/UNPAID role":`Salary: ${job.salary}`}\nSummary: ${job.summary||""}\n\nAPPLICANT:\n${profileStr||"No profile provided — write strong generic materials the applicant can customize."}\n\nReturn ONLY valid JSON (no markdown fences):\n{"matchScore":72,"matchVerdict":"one honest sentence on fit","missingKeywords":["keyword1","keyword2","keyword3"],"coverLetter":"3 paragraphs under 260 words using the XYZ formula (Accomplished X measured by Y by doing Z). Para 1: specific hook about ${job.company}. Para 2: two achievements matching their requirements. Para 3: address the biggest gap honestly and ask for an interview. Human tone.","resumeBullets":["XYZ-formula bullet 1","XYZ bullet 2","XYZ bullet 3"],"strengthsMatch":["your strength matched to their requirement 1","strength 2","strength 3"],"commonQuestions":[{"q":"Tell me about yourself","a":"90-second pitch tailored to this role"},{"q":"Why ${job.company}?","a":"specific answer referencing their work"},{"q":"Walk me through a relevant project","a":"STAR-format answer"},{"q":"Biggest weakness?","a":"real weakness plus concrete fix"}],"emailSubject":"Application: ${job.title} | [Your Name]","tips":["tip specific to ${job.company}","add the top missing keyword naturally","follow up in 5 days with specific value"]}`);
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:`Senior game industry recruiter using XYZ formula. Be brutally honest.\n\nJOB: ${job.company} — ${job.title} (${job.experience||"unspecified"},${job.type}${job.isRemote?", Remote":""})\n${isVol?"VOLUNTEER/UNPAID role":`Salary: ${job.salary}`}\nSummary: ${job.summary||""}\n\nAPPLICANT:\n${profileStr||"No profile — write generic materials to customize."}\n\nReturn ONLY valid JSON:\n{"matchScore":72,"matchVerdict":"one honest sentence","missingKeywords":["kw1","kw2","kw3"],"coverLetter":"3 paragraphs using XYZ formula under 260 words. Para1: specific hook about ${job.company}. Para2: 2 XYZ achievements matching requirements. Para3: address biggest gap + ask for interview. Human tone.","resumeBullets":["XYZ bullet 1","XYZ bullet 2","XYZ bullet 3"],"strengthsMatch":["strength matched to requirement 1","strength 2","strength 3"],"commonQuestions":[{"q":"Tell me about yourself","a":"90-second pitch"},{"q":"Why ${job.company}?","a":"specific to their work"},{"q":"Relevant project?","a":"STAR format"},{"q":"Biggest weakness?","a":"real + steps to fix"}],"emailSubject":"Application: ${job.title} | [Name]","tips":["company-specific tip","add missing keyword naturally","follow up in 5 days with value"]}`}]})});
+      const d=await r.json();
+      const txt=(d.content||[]).map(b=>b.text||"").join("");
       const clean=txt.replace(/```json|```/g,"").trim();
       const s=clean.indexOf("{"),e=clean.lastIndexOf("}");
       setResult(JSON.parse(clean.slice(s,e+1)));
       setPhase("result");
-    }catch(er){setErr(er?.message||"Could not generate. Check that NEXT_PUBLIC_GEMINI_KEY is set in Vercel environment variables.");setPhase("check");}
+    }catch{setErr("Could not generate. Check your connection.");setPhase("check");}
   };
 
   const scoreColor=s=>s>=70?"#7ecfb3":s>=45?"#c9a84c":"#e07060";
   const scoreBg=s=>s>=70?"rgba(126,207,179,.1)":s>=45?"rgba(201,168,76,.1)":"rgba(192,50,26,.1)";
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",transition:"all .2s"};
-  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(16px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"};
-  const card={background:"rgba(14,10,20,.98)",border:"1px solid rgba(201,168,76,.25)",borderRadius:mobile?14:20,width:"100%",maxWidth:640,maxHeight:"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0,boxShadow:"0 32px 80px rgba(0,0,0,.6)"};
+  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.8)",backdropFilter:"blur(12px)",zIndex:300,display:"flex",alignItems:mobile?"flex-end":"center",justifyContent:"center",padding:mobile?0:16,overflowY:"auto"};
+  const card={background:"rgba(14,10,20,.98)",border:mobile?"none":"1px solid rgba(201,168,76,.25)",borderRadius:mobile?0:20,width:"100%",maxWidth:mobile?"100%":640,maxHeight:mobile?"100vh":"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0};
   const hdr={display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px 14px",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0};
   const body={flex:1,overflowY:"auto",padding:"18px 20px",minHeight:0};
   const sec={background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,padding:"12px 14px",marginBottom:10};
@@ -663,9 +530,10 @@ function AIEmailModal({job,user,onClose,onApplied}) {
   useEffect(()=>{
     (async()=>{
       try{
-        const etxt=await callAI(`Write a job application email. Return ONLY valid JSON (no markdown fences):\nJOB: ${job.title} at ${job.company}\nSummary: ${job.summary||""}\nAPPLICANT: ${profileStr||"No profile — write a template to customize."}\n{"subject":"concise professional subject line","greeting":"Dear ${job.company} Hiring Team,","body":"3 paragraphs under 250 words: (1) specific hook naming a ${job.company} game or product, (2) 2-3 skills or results matched to their needs, (3) clear ask for an interview. Human tone, not AI-sounding.","closing":"Best regards,","senderName":"${profile.name||"[Your Name]"}"}`,1000);
-        const eclean=etxt.replace(/```json|```/g,"").trim();
-        const parsed=JSON.parse(eclean.slice(eclean.indexOf("{"),eclean.lastIndexOf("}")+1));
+        const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Write a job application email. Return ONLY valid JSON:\nJOB: ${job.title} at ${job.company}\nSummary: ${job.summary||""}\nAPPLICANT: ${profileStr||"No profile — write a template to customize."}\n{"subject":"concise subject line","greeting":"Dear ${job.company} Hiring Team,","body":"3 paragraphs under 250 words. (1) specific hook about ${job.company}. (2) 2-3 skills/results matched to their needs. (3) clear ask for interview. Human, not AI-sounding.","closing":"Best regards,","senderName":"${profile.name||"[Your Name]"}"}`}]})});
+        const d=await r.json();
+        const txt=(d.content||[]).map(b=>b.text||"").join("").replace(/```json|```/g,"").trim();
+        const parsed=JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1));
         setDraft(parsed);setEditBody(parsed.body);setPhase("result");
       }catch{setPhase("error");}
     })();
@@ -678,8 +546,8 @@ function AIEmailModal({job,user,onClose,onApplied}) {
     setPhase("sent");
   };
 
-  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(16px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"};
-  const card={background:"rgba(14,10,20,.98)",border:"1px solid rgba(201,168,76,.25)",borderRadius:mobile?14:20,width:"100%",maxWidth:620,maxHeight:"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0,boxShadow:"0 32px 80px rgba(0,0,0,.6)"};
+  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.8)",backdropFilter:"blur(12px)",zIndex:300,display:"flex",alignItems:mobile?"flex-end":"center",justifyContent:"center",padding:mobile?0:16,overflowY:"auto"};
+  const card={background:"rgba(14,10,20,.98)",border:mobile?"none":"1px solid rgba(201,168,76,.25)",borderRadius:mobile?0:20,width:"100%",maxWidth:mobile?"100%":620,maxHeight:mobile?"100vh":"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0};
   const txt12={fontSize:12,color:"rgba(244,237,216,.65)",lineHeight:1.6};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
 
@@ -754,12 +622,11 @@ function ResumeSection({profile,updateField}) {
     setPs("reading");setMsg("Reading file…");
     try{
       let messages,headers={"Content-Type":"application/json"};
-      let pdfB64="",pdfExtractPrompt=""; // declared here so they're accessible after the if/else
       if(ext===".pdf"){
         setMsg("Processing PDF…");
-        pdfB64=await toB64(file);
-        pdfExtractPrompt=`Extract all resume information. Return ONLY valid JSON (no markdown, no explanation):\n{"name":"full name","role":"current or target job title","location":"city, state","bio":"2-sentence professional summary","skills":"comma-separated list of all skills","yearsExp":"best match: 0-1, 1-2, 2-4, 4-7, 7-10, or 10+","education":"degree, school, year","workHistory":"chronological summary of each role with dates","achievements":"measurable accomplishments with numbers","resumeText":"complete verbatim resume text"}`;
-        messages=[{role:"user",content:pdfExtractPrompt}];
+        const b64=await toB64(file);
+        messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}},{type:"text",text:`Extract resume info. Return ONLY valid JSON:\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\nNo markdown.`}]}];
+        headers["anthropic-beta"]="pdfs-2024-09-25";
       } else {
         setMsg(ext===".txt"?"Reading text…":"Extracting DOCX text…");
         let text="";
@@ -775,23 +642,14 @@ function ResumeSection({profile,updateField}) {
           text=result.value||"";
           if(text.length<20){throw new Error("Could not extract text. Try saving as PDF.");}
         }
-        const extractPrompt=`Extract resume info. Return ONLY valid JSON (no markdown):\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\n\nRESUME:\n${text.slice(0,10000)}`;
-        messages=[{role:"user",content:extractPrompt}];
+        messages=[{role:"user",content:`Extract resume info. Return ONLY valid JSON:\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\nNo markdown.\n\nRESUME:\n${text.slice(0,10000)}`}];
       }
       setPs("parsing");setMsg("Extracting resume info with AI…");
-      // PDF uses Gemini inline_data; DOCX/TXT use callAI text
-      let parsedText;
-      if(ext===".pdf"){
-        const gemKey=process.env.NEXT_PUBLIC_GEMINI_KEY;
-        if(!gemKey)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com");
-        const pdfRes=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${gemKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"application/pdf",data:pdfB64}},{text:pdfExtractPrompt}]}],generationConfig:{maxOutputTokens:1500,temperature:0.1}})});
-        if(!pdfRes.ok){const pe=await pdfRes.json().catch(()=>({}));throw new Error(pe?.error?.message||`PDF API error ${pdfRes.status}`);}
-        const pdfData=await pdfRes.json();
-        parsedText=(pdfData.candidates?.[0]?.content?.parts?.[0]?.text||"").replace(/```json|```/g,"").trim();
-      } else {
-        parsedText=(await callAI(messages[0].content,1500)).replace(/```json|```/g,"").trim();
-      }
-      const parsed=JSON.parse(parsedText.slice(parsedText.indexOf("{"),parsedText.lastIndexOf("}")+1));
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
+      const d=await r.json();
+      if(d.error)throw new Error(d.error.message);
+      const txt=(d.content||[]).map(b=>b.text||"").join("").replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1));
       Object.entries(parsed).forEach(([k,v])=>{if(v&&typeof v==="string"&&v.trim())updateField(k,v.trim());});
       setPs("done");setMsg("Resume parsed! Review and edit the fields below.");
     }catch(err){setPs("error");setMsg(err.message||"Could not parse. Try a different file or paste text manually.");}
@@ -835,13 +693,10 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const [saved,setSaved]=useState(false);
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
   const toggleOt=(v)=>setP(prev=>({...prev,openTo:prev.openTo.includes(v)?prev.openTo.filter(x=>x!==v):[...prev.openTo,v]}));
-  const save = async () => {
-    if (user?.id) {
-      await supabase.from("profiles").upsert({ id: user.id, name: p.name, role: p.role, location: p.location, skills: p.skills, years_exp: p.yearsExp, education: p.education, work_history: p.workHistory, achievements: p.achievements, resume_text: p.resumeText, email_provider: p.emailProvider, email_address: p.emailAddress, open_to: p.openTo }, { onConflict: "id" });
-    }
-    onUpdate({ ...user, name: p.name, profile: p });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const save=()=>{
+    const users=JSON.parse(localStorage.getItem("mq_users")||"{}");
+    if(users[user.email]){users[user.email].name=p.name;users[user.email].profile=p;localStorage.setItem("mq_users",JSON.stringify(users));}
+    onUpdate({...user,name:p.name,profile:p});setSaved(true);setTimeout(()=>setSaved(false),2000);
   };
   const initials=p.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
@@ -850,8 +705,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const fld={display:"flex",flexDirection:"column",gap:4,marginBottom:12};
   const tabs=[["profile","Profile",<I.Person s={14} c="currentColor"/>],["resume","Resume",<I.Scroll s={14} c="currentColor"/>],["links","Links",<I.Link s={14} c="currentColor"/>],["prefs","Prefs",<I.Cog s={14} c="currentColor"/>],["account","Account",<I.Lock s={14} c="currentColor"/>]];
 
-  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end",alignItems:"stretch",flexDirection:"row"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div style={{width:"100%",maxWidth:mobile?380:460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:mobile?"flex-end":"flex-end",alignItems:mobile?"flex-end":"stretch",flexDirection:"column"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{width:"100%",maxWidth:mobile?"100%":460,height:mobile?"92vh":"100vh",background:"rgba(10,7,14,.97)",borderLeft:mobile?"none":"1px solid rgba(201,168,76,.18)",borderTop:mobile?"1px solid rgba(201,168,76,.2)":"none",borderRadius:mobile?"20px 20px 0 0":"0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
         <div style={{width:42,height:42,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",flexShrink:0}}>{initials}</div>
@@ -898,7 +753,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
             <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500}}>{v}</span></div>)}
           <div style={{marginTop:20,padding:14,background:"rgba(192,50,26,.05)",border:"1px solid rgba(192,50,26,.2)",borderRadius:10}}>
             <div style={{fontSize:11,color:"#e07060",fontFamily:"'Cinzel',serif",fontWeight:600,marginBottom:10,letterSpacing:.5}}>⚠ Danger Zone</div>
-            <button onClick={async ()=>{if(window.confirm("Clear all tracked applications?")){if(user?.id){await supabase.from("applications").delete().eq("user_id",user.id);}onUpdate({...user,applied:{}});}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",fontSize:12,padding:"7px 16px",borderRadius:8,fontFamily:"inherit"}}>Clear All Applications</button>
+            <button onClick={()=>{if(window.confirm("Clear all tracked applications?")){const us=JSON.parse(localStorage.getItem("mq_users")||"{}");if(us[user.email]){us[user.email].applied={};localStorage.setItem("mq_users",JSON.stringify(us));}onUpdate({...user,applied:{}});}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",fontSize:12,padding:"7px 16px",borderRadius:8,fontFamily:"inherit"}}>Clear All Applications</button>
           </div>
           <button onClick={onLogout} style={{width:"100%",marginTop:10,background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Sign Out of Main Quest</button>
         </div>}
@@ -929,37 +784,6 @@ function NoOpenCard({company,companyName,user,onApplied}) {
   </>;
 }
 
-// ── ATS SCORER ───────────────────────────────────────────────────────────────
-function computeATS(job,profile){
-  if(!profile)return null;
-  const text=[profile.skills||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.role||"",profile.resumeText||""].join(" ").toLowerCase();
-  if(!text.trim()||text.length<30)return null;
-  const jobText=[job.title||"",job.summary||"",...(job.responsibilities||[]),...(job.requirements||[])].join(" ").toLowerCase();
-  const STOP=new Set(["and","the","for","with","this","that","are","you","will","have","from","our","your","able","more","some","they","into","its","can","use","all","any","work","team","years","role","to","in","of","a","an","or","on","at","by","as","be","is","it","do","we"]);
-  const kws=[...new Set((jobText.match(/[a-z][a-z+#.]{2,}/g)||[]).filter(w=>!STOP.has(w)))];
-  if(!kws.length)return null;
-  const profileSet=new Set((text.match(/[a-z][a-z+#.]{2,}/g)||[]).filter(w=>!STOP.has(w)));
-  const matched=kws.filter(k=>profileSet.has(k));
-  const pct=Math.round((matched.length/Math.min(kws.length,60))*100);
-  const seed=job.id.split("").reduce((a,c)=>a+c.charCodeAt(0),0);
-  const score=Math.min(96,Math.max(8,pct+((seed%17)-8)));
-  const potential=Math.min(97,score+8+(seed%9));
-  const missing=kws.filter(k=>!profileSet.has(k)&&k.length>4).slice(0,5);
-  return{score,potential,missing};
-}
-function ATSPill({ats,onClick}){
-  if(!ats)return null;
-  const{score,potential}=ats;
-  const col=score>=70?"#7ecfb3":score>=45?"#c9a84c":"#e07060";
-  const bg=score>=70?"rgba(126,207,179,.1)":score>=45?"rgba(201,168,76,.1)":"rgba(192,50,26,.1)";
-  const br=score>=70?"rgba(126,207,179,.3)":score>=45?"rgba(201,168,76,.3)":"rgba(192,50,26,.3)";
-  return <button onClick={onClick} title={`ATS Match: ${score}/100 — click AI Apply to improve`} style={{display:"inline-flex",alignItems:"center",gap:3,background:bg,border:`1px solid ${br}`,color:col,borderRadius:20,padding:"2px 9px",cursor:"pointer",flexShrink:0,marginLeft:"auto",fontFamily:"'Cinzel',serif"}}>
-    <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>{score}</span>
-    <span style={{fontSize:9,opacity:.7}}>ATS</span>
-    {potential>score&&<span style={{fontSize:9,opacity:.55,borderLeft:`1px solid ${col}`,paddingLeft:4,marginLeft:2}}>↑{potential}</span>}
-  </button>;
-}
-
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
 function JobCard({job,user,onApplied}) {
   const mobile = useIsMobile();
@@ -976,15 +800,12 @@ function JobCard({job,user,onApplied}) {
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     {/* Title row */}
-    {(()=>{const ats=computeATS(job,user?.profile);return(
     <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
       {job.isNew&&<I.Alert s={18}/>}
       <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
       {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
       {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
-      <ATSPill ats={ats} onClick={()=>setAiApply(true)}/>
     </div>
-    );})()}
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
       {chip(job.type)}
@@ -1052,85 +873,6 @@ export default function App() {
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
   const [jobSort,setJobSort]=useState("default");
-  const [liveJobs,setLiveJobs]=useState({});
-  const [liveStatus,setLiveStatus]=useState("idle");
-  const abortRef=useRef(null);
-
-  const fetchLiveJobs=async()=>{
-    if(abortRef.current)abortRef.current.abort();
-    abortRef.current=new AbortController();
-    const {signal}=abortRef.current;
-    setLiveStatus("fetching"); setLiveJobs({});
-    const entries=Object.entries(GREENHOUSE_TOKENS);
-    const BATCH=5;
-    for(let i=0;i<entries.length;i+=BATCH){
-      if(signal.aborted)break;
-      const batch=entries.slice(i,i+BATCH);
-      await Promise.all(batch.map(async([companyName,token])=>{
-        let company=null,stateKey="";
-        for(const[,states] of Object.entries(COMPANIES_DATA)){
-          for(const[state,companies] of Object.entries(states)){
-            const found=companies.find(c=>c.name===companyName);
-            if(found){company=found;stateKey=state;break;}
-          }
-          if(company)break;
-        }
-        if(!company)return;
-        try{
-          const res=await fetch(`/api/jobs/greenhouse?token=${token}`,{signal});
-          if(!res.ok)return;
-          const data=await res.json();
-          const jobs=(data.jobs||[]).map(j=>normalizeGreenhouseJob(j,company,stateKey));
-          if(!signal.aborted)setLiveJobs(prev=>({...prev,[companyName]:jobs.length>0?jobs:null}));
-        }catch{}
-      }));
-      if(!signal.aborted)await new Promise(r=>setTimeout(r,200));
-    }
-    // ── Scrape non-Greenhouse companies via Browserless ─────────────────────
-    const scrapeEntries=Object.entries(SCRAPE_TARGETS);
-    for(let i=0;i<scrapeEntries.length;i+=BATCH){
-      if(signal.aborted)break;
-      const sBatch=scrapeEntries.slice(i,i+BATCH);
-      await Promise.all(sBatch.map(async([companyName,scrapeUrl])=>{
-        let company=null,stateKey="";
-        for(const[,states] of Object.entries(COMPANIES_DATA)){
-          for(const[state,companies] of Object.entries(states)){
-            const found=companies.find(c=>c.name===companyName);
-            if(found){company=found;stateKey=state;break;}
-          }
-          if(company)break;
-        }
-        if(!company)return;
-        try{
-          const res=await fetch(`/api/jobs/scrape?url=${encodeURIComponent(scrapeUrl)}&company=${encodeURIComponent(companyName)}`,{signal});
-          if(!res.ok)return;
-          const data=await res.json();
-          const jobs=(data.jobs||[]).map((j,idx)=>({
-            ...j,
-            id:`scraped-${companyName}-${idx}`,
-            company:companyName,
-            state:stateKey,
-            email:company.email,
-            posted:new Date(),
-            postedStr:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
-            daysAgo:0,
-            isNew:false,
-            isLive:true,
-            isScraped:true,
-          }));
-          if(!signal.aborted&&jobs.length>0){
-            setLiveJobs(prev=>({...prev,[companyName]:jobs}));
-          }
-        }catch{}
-      }));
-      if(!signal.aborted)await new Promise(r=>setTimeout(r,500));
-    }
-    if(!signal.aborted)setLiveStatus("done");
-  };
-
-  useEffect(()=>{ const t=setTimeout(fetchLiveJobs,2000); return()=>{clearTimeout(t);abortRef.current?.abort();}; },[]);
-
-  const getDisplayJobs=(name,gen)=>{ const live=liveJobs[name]; if(live===undefined||live===null||live.length===0)return gen; return live; };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,dateFrom:""});
   const [filterOpen,setFilterOpen]=useState(false);
@@ -1139,20 +881,22 @@ export default function App() {
   useEffect(()=>{refreshTimer.current=setInterval(()=>setLastRefresh(new Date()),300000);return()=>clearInterval(refreshTimer.current);},[]);
 
   const login=u=>setUser(u);
-  const logout = async () => { await supabase.auth.signOut(); setUser(null); setShowAcct(false); };
+  const logout=()=>{setUser(null);setShowAcct(false);};
   const updateUser=u=>setUser(u);
 
-  const markApplied = async (jobId) => {
-    setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { date: new Date().toISOString() } } }));
-    const job = Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(j => j.id === jobId);
-    if (!user?.id || !job) return;
-    await supabase.from("applications").upsert({ user_id: user.id, job_id: jobId, job_title: job.title, company: job.company, job_url: job.url, salary: job.salary, applied_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
-  };
-  const removeApplied = async (jobId) => {
-    setUser(prev => { const na = { ...prev.applied }; delete na[jobId]; return { ...prev, applied: na }; });
-    if (!user?.id) return;
-    await supabase.from("applications").delete().eq("user_id", user.id).eq("job_id", jobId);
-  };
+  const markApplied=jobId=>setUser(prev=>{
+    const upd={...prev,applied:{...prev.applied,[jobId]:{date:new Date().toISOString()}}};
+    const us=JSON.parse(localStorage.getItem("mq_users")||"{}");
+    if(us[prev.email]){us[prev.email].applied=upd.applied;localStorage.setItem("mq_users",JSON.stringify(us));}
+    return upd;
+  });
+  const removeApplied=jobId=>setUser(prev=>{
+    const na={...prev.applied};delete na[jobId];
+    const upd={...prev,applied:na};
+    const us=JSON.parse(localStorage.getItem("mq_users")||"{}");
+    if(us[prev.email]){us[prev.email].applied=na;localStorage.setItem("mq_users",JSON.stringify(us));}
+    return upd;
+  });
 
   const toggle=k=>setExpanded(e=>({...e,[k]:!e[k]}));
 
@@ -1196,18 +940,9 @@ export default function App() {
   const gBg="linear-gradient(135deg,rgba(201,168,76,.2),rgba(232,97,58,.15))";
   const sortChip=(val,lbl)=><button onClick={()=>setJobSort(val)} style={{background:jobSort===val?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort===val?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort===val?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s"}}>{lbl}</button>;
 
-  return <>
-    <Head>
-      <title>Main Quest — Game Industry Job Board</title>
-      <meta name="description" content="Find your next game industry job. 300+ studios, AI-powered applications."/>
-      <meta name="viewport" content="width=device-width, initial-scale=1"/>
-      <link rel="preconnect" href="https://fonts.googleapis.com"/>
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
-    </Head>
-    <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden"}}>
+  return <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden"}}>
     {/* Styles */}
-    <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:#080608!important;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080608!important;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
     <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.16,background:"radial-gradient(circle,#c9a84c,transparent)",top:-200,left:-100,animation:"ob1 20s ease-in-out infinite"}}/>
@@ -1216,28 +951,26 @@ export default function App() {
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",backgroundSize:"56px 56px"}}/>
     </div>
     {/* Header */}
-    <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",padding:mobile?"8px 14px":"0 24px",height:mobile?"auto":66,gap:10,flexWrap:mobile?"wrap":"nowrap"}}>
-      {/* LEFT: Logo + nav tabs */}
-      <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+    <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:mobile?"column":"row",alignItems:mobile?"stretch":"center",justifyContent:"space-between",padding:mobile?"10px 14px":"0 24px",height:mobile?"auto":66,gap:mobile?8:14}}>
+      {/* Top row on mobile: logo + avatar */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
           <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))"}}>⚔️</span>
-          <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
+          <div><div style={{fontFamily:"'Cinzel',serif",fontSize:mobile?6:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?14:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
+          {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.35)",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+          <button onClick={()=>setLastRefresh(new Date())} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontSize:13,padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button></>}
         </div>
-        <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
-          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
-            <button key={id} onClick={()=>setTab(id)} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s"}}>{cnt}</button>)}
-        </nav>
-        {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
-        <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
-        {liveStatus==="fetching"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>fetching…</span>}
-        {liveStatus==="done"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>● {Object.values(liveJobs).filter(v=>Array.isArray(v)&&v.length>0).length} live</span>}</>
-        }
+        {/* Avatar always visible */}
+        <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:7,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 10px 4px 4px",flexShrink:0}}>
+          <div style={{width:24,height:24,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif"}}>{user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"}</div>
+          {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user.name}</span>}
+        </button>
       </div>
-      {/* RIGHT: Profile avatar */}
-      <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 12px 4px 4px",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
-        <div style={{width:28,height:28,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif"}}>{user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"}</div>
-        {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user.name}</span>}
-      </button>
+      {/* Nav tabs - on mobile below logo row */}
+      <nav style={{display:"flex",gap:mobile?0:4,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:mobile?3:4,alignSelf:mobile?"stretch":"auto"}}>
+        {[["jobs",<><I.Map s={12} c="currentColor"/>{mobile?"Jobs":<>Job Board</>}{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 6px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/>{mobile?"Applied":<>Job Applications</>}{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 6px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
+          <button key={id} onClick={()=>setTab(id)} style={{flex:mobile?1:"none",background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:mobile?11:11,fontWeight:600,padding:mobile?"8px 8px":"6px 16px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.5,transition:"all .2s"}}>{cnt}</button>)}
+      </nav>
     </header>
     {showAcct&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
 
@@ -1323,17 +1056,14 @@ export default function App() {
                         </button>
                         {expanded[sKey]&&<div style={{padding:"4px 8px 8px",display:"flex",flexDirection:"column",gap:4}}>
                           {Object.entries(companies)
-                            .filter(([name,company])=>{
-                              if(!hasAnyFilter)return true;
-                              const displayJobs=getDisplayJobs(name,company.jobs);
-                              if(filters.search){const q=filters.search.toLowerCase();if(name.toLowerCase().includes(q))return true;}
-                              return displayJobs.some(j=>matches(j));
+                            .filter(([name])=>{
+                              if(!filters.search)return true;
+                              const q=filters.search.toLowerCase();
+                              return name.toLowerCase().includes(q)||companies[name].jobs.some(j=>matches(j));
                             })
                             .map(([name,company])=>{
                               const coKey=`co-${country}-${state}-${name}`;
-                              const displayJobs=getDisplayJobs(name,company.jobs);
-                              const isLive=Array.isArray(liveJobs[name])&&liveJobs[name].length>0;
-                              const fJobs=sortJobs(displayJobs.filter(matches));
+                              const fJobs=sortJobs(company.jobs.filter(matches));
                               const hasNew=fJobs.some(j=>j.isNew);
                               const noJobs=fJobs.length===0;
                               return <div key={name} style={{background:"rgba(201,168,76,.02)",border:"1px solid rgba(201,168,76,.06)",borderRadius:8,overflow:"hidden",opacity:noJobs?.7:1,transition:"opacity .2s"}} onMouseEnter={e=>{if(noJobs)e.currentTarget.style.opacity="1";}} onMouseLeave={e=>{if(noJobs)e.currentTarget.style.opacity=".7";}}>
@@ -1342,7 +1072,7 @@ export default function App() {
                                   <span style={{width:6,height:6,borderRadius:"50%",background:noJobs?"rgba(244,237,216,.2)":"#c9a84c",flexShrink:0}}/>
                                   <span style={{flex:1,fontWeight:500}}>{name}</span>
                                   {hasNew&&<span style={{width:14,height:14,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={12}/></span>}
-                                  {isLive&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:8,padding:"1px 6px",fontWeight:700,marginRight:3}}>● Live</span>}<span style={{fontSize:9,color:"rgba(244,237,216,.35)",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.1)",padding:"1px 7px",borderRadius:20,fontStyle:noJobs?"italic":"normal"}}>{noJobs?"No openings":`${fJobs.length} opening${fJobs.length!==1?"s":""}`}</span>
+                                  <span style={{fontSize:9,color:"rgba(244,237,216,.35)",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.1)",padding:"1px 7px",borderRadius:20,fontStyle:noJobs?"italic":"normal"}}>{noJobs?"No openings":`${fJobs.length} opening${fJobs.length!==1?"s":""}`}</span>
                                 </button>
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
@@ -1409,6 +1139,5 @@ export default function App() {
         </div>}
       </div>}
     </main>
-  </div>
-  </>;
+  </div>;
 }

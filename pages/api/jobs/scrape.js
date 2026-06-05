@@ -1,145 +1,130 @@
 // pages/api/jobs/scrape.js
-// Scrapes a career page via Browserless (full JS rendering) and extracts job listings.
-// Get a free token at browserless.io — add BROWSERLESS_TOKEN to Vercel env vars.
+// Scrapes career pages for job listings.
+// Uses Browserless (full JS rendering) if BROWSERLESS_TOKEN is set.
+// Falls back to direct fetch for simple static pages if no token.
+// Get a free Browserless token at browserless.io
 
 export default async function handler(req, res) {
   const { url, company } = req.query;
-
   if (!url || !company) {
-    return res.status(400).json({ error: 'url and company are required', jobs: [] });
-  }
-
-  const token = process.env.BROWSERLESS_TOKEN;
-  if (!token) {
-    return res.status(500).json({ error: 'Missing BROWSERLESS_TOKEN env var', jobs: [] });
+    return res.status(400).json({ error: 'url and company required', jobs: [] });
   }
 
   try {
-    // Ask Browserless to fully render the page (runs real Chrome)
-    const response = await fetch(
-      `https://chrome.browserless.io/content?token=${token}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          waitFor: 3000,                                    // wait 3s for JS to render jobs
-          rejectResourceTypes: ['image', 'font', 'media'],  // skip heavy assets, faster
-          gotoOptions: { waitUntil: 'networkidle2' },       // wait for XHR calls to finish
-        }),
-        signal: AbortSignal.timeout(20000), // 20s timeout
-      }
-    );
+    let html = '';
+    const token = process.env.BROWSERLESS_TOKEN;
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      return res.status(response.status).json({
-        error: `Browserless error ${response.status}: ${errText.slice(0, 200)}`,
-        jobs: [],
-      });
+    if (token) {
+      // Full JS rendering via Browserless
+      const blRes = await fetch(
+        `https://chrome.browserless.io/content?token=${token}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url,
+            waitFor: 3000,
+            rejectResourceTypes: ['image', 'font', 'media'],
+            gotoOptions: { waitUntil: 'networkidle2', timeout: 15000 },
+          }),
+          signal: AbortSignal.timeout(20000),
+        }
+      );
+      if (blRes.ok) {
+        html = await blRes.text();
+      }
     }
 
-    const html = await response.text();
-    const jobs = extractJobs(html, company, url);
+    // Fallback: direct fetch (works for static pages, not JS-rendered ones)
+    if (!html) {
+      const directRes = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MainQuestBot/1.0)' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (directRes.ok) html = await directRes.text();
+    }
 
-    // Cache 2 hours — career pages don't update that fast
+    if (!html) {
+      return res.status(200).json({ jobs: [], source: 'failed', note: 'Could not fetch page' });
+    }
+
+    const jobs = extractJobs(html, company, url);
     res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=3600');
-    res.status(200).json({ jobs, count: jobs.length, source: 'browserless' });
+    res.status(200).json({ jobs, count: jobs.length, source: token ? 'browserless' : 'direct' });
 
   } catch (err) {
-    console.error(`Scrape error for ${company}:`, err.message);
-    res.status(500).json({ error: err.message, jobs: [] });
+    console.error(`Scrape error [${company}]:`, err.message);
+    res.status(200).json({ jobs: [], error: err.message });
   }
 }
-
-// ── JOB EXTRACTION ────────────────────────────────────────────────────────────
-// Heuristic link extractor — finds links that look like individual job postings.
-// Works on the majority of career pages; may need tuning for unusual layouts.
 
 function extractJobs(html, company, baseUrl) {
   const jobs = [];
   const seen = new Set();
 
-  // Remove scripts, styles, nav, footer — they add noise
+  // Clean noise
   const clean = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
-    .replace(/<header[\s\S]*?<\/header>/gi, '');
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '');
+
+  let origin = '';
+  try { origin = new URL(baseUrl).origin; } catch {}
 
   // Extract all anchor tags
   const linkRe = /<a[^>]+href="([^"#][^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
   let match;
-
   while ((match = linkRe.exec(clean)) !== null) {
-    const rawHref = match[1]?.trim();
-    const rawInner = match[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const rawHref = (match[1] || '').trim();
+    const rawText = (match[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-    if (!rawHref || !rawInner) continue;
-    if (rawInner.length < 4 || rawInner.length > 120) continue;
+    if (!rawHref || !rawText || rawText.length < 4 || rawText.length > 150) continue;
 
-    const key = rawInner.toLowerCase();
+    const key = rawText.toLowerCase();
     if (seen.has(key)) continue;
 
     // Must look like a job title
-    const isJobTitle = /engineer|design(er)?|artist|programmer|producer|manager|director|analyst|developer|coordinator|lead|senior|junior|intern|qa|tester|writer|animator|ui|ux|technical|creative|marketing|community|scientist|researcher|strategist|specialist|architect|generalist|support|recruiter|finance|hr |legal|operations|server|client|gameplay|narrative|audio|sound|environment|character|concept|visual|principal|associate|staff|content|brand|data|machine learning|product|project/i.test(rawInner);
+    if (!/engineer|design(er)?|artist|programmer|producer|manager|director|analyst|developer|coordinator|lead|senior|junior|intern|qa|tester|writer|animator|ui|ux|technical|creative|marketing|community|scientist|researcher|strategist|specialist|architect|generalist|support|recruiter|server|client|gameplay|narrative|audio|sound|environment|character|concept|visual|principal|associate|content|product|project|data|operations/i.test(rawText)) continue;
 
-    if (!isJobTitle) continue;
-
-    // Skip obvious nav/utility links
-    const isNav = /^(home|about|contact|privacy|terms|login|sign in|sign up|apply here|view all|see all|learn more|read more|back|next|previous|menu|search|filter|sort|load more|show more|careers|jobs|openings|positions|opportunities|work with us|join us|our team)$/i.test(rawInner.trim());
-    if (isNav) continue;
+    // Skip nav/utility links
+    if (/^(home|about|contact|privacy|terms|login|sign in|sign up|apply here|view all|see all|learn more|read more|back|next|previous|menu|search|jobs|careers|openings|positions|opportunities|work with us|join us|our team|cookie|accept)$/i.test(rawText.trim())) continue;
 
     // Build absolute URL
     let fullUrl = rawHref;
-    if (rawHref.startsWith('//')) {
-      fullUrl = 'https:' + rawHref;
-    } else if (rawHref.startsWith('/')) {
-      try {
-        const base = new URL(baseUrl);
-        fullUrl = `${base.origin}${rawHref}`;
-      } catch { continue; }
-    } else if (!rawHref.startsWith('http')) {
-      continue; // skip relative paths like "jobs/123" without leading slash
-    }
+    if (rawHref.startsWith('//')) fullUrl = 'https:' + rawHref;
+    else if (rawHref.startsWith('/')) fullUrl = origin + rawHref;
+    else if (!rawHref.startsWith('http')) continue;
 
     seen.add(key);
     jobs.push({
-      title: rawInner,
+      title: rawText,
       url: fullUrl,
       applyUrl: fullUrl,
       isLive: true,
       isScraped: true,
       salary: 'See posting',
-      type: guessType(rawInner),
-      isRemote: /remote/i.test(rawInner),
-      experience: guessExp(rawInner),
-      summary: `Live posting from ${company}. Click "View Careers" to see full description and apply.`,
+      type: /intern(ship)?|co-op|part.time|contract|freelance/i.test(rawText) ? 'Contract' : 'Full-time',
+      isRemote: /remote/i.test(rawText),
+      experience: guessExp(rawText),
+      summary: `Live posting scraped from ${company}. Click "View Careers" for the full description.`,
       responsibilities: [],
       requirements: [],
     });
 
-    if (jobs.length >= 30) break; // cap at 30 per company
+    if (jobs.length >= 30) break;
   }
 
   return jobs;
 }
 
-function guessExp(title) {
-  const t = title.toLowerCase();
+function guessExp(t) {
+  t = t.toLowerCase();
   if (/\b(director|head of|vp|vice president)\b/.test(t)) return 'Director';
   if (/\bprincipal\b/.test(t)) return 'Principal';
   if (/\blead\b/.test(t)) return 'Lead';
   if (/\b(senior|sr\.)\b/.test(t)) return 'Senior';
   if (/\b(junior|jr\.|intern(ship)?|entry)\b/.test(t)) return 'Entry Level';
   if (/\bstaff\b/.test(t)) return 'Senior';
-  if (/\bassociate\b/.test(t)) return 'Mid Level';
   return 'Mid Level';
-}
-
-function guessType(title) {
-  if (/\b(intern(ship)?|co-op|coop)\b/i.test(title)) return 'Internship';
-  if (/\b(contract|freelance|temporary|part.time)\b/i.test(title)) return 'Contract';
-  return 'Full-time';
 }
