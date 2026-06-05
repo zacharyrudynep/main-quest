@@ -384,20 +384,20 @@ function Auth({onLogin}) {
         <div style={{flex:1,height:1,background:"linear-gradient(270deg,transparent,rgba(201,168,76,.6))"}}/>
       </div>
       {/* Features */}
-      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
-          ["⚔️","Job Board","300+ studios, filtered by country, state, role, and experience level."],
-          ["🤖","AI Apply","Generate a tailored cover letter, ATS score, and interview prep in seconds."],
-          ["📜","Resume Upload","Upload your resume and we auto-fill your profile for AI-powered applications."],
-          ["📋","Application Tracker","Track every job you apply to with dates, status, and one-click access."],
-          ["✉️","AI Email Apply","Draft a personalized email application and send it through Gmail or Outlook."],
-          ["🔔","New Job Alerts","New postings are flagged in real time so you never miss an opening."],
+          ["⚔️","Job Board","300+ studios filtered by country, state, role, and experience."],
+          ["🤖","AI Apply","Cover letter, ATS score, and interview prep in seconds."],
+          ["📜","Resume Upload","Upload your resume to auto-fill your profile for AI applications."],
+          ["📋","App Tracker","Track every application with dates and one-click access."],
+          ["✉️","AI Email","Draft a personalized email and send it from Gmail or Outlook."],
+          ["🔔","New Alerts","New postings flagged in real time so you never miss one."],
         ].map(([ic,title,desc])=>
-          <div key={title} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
-            <span style={{fontSize:18,flexShrink:0,marginTop:1}}>{ic}</span>
+          <div key={title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
+            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{ic}</span>
             <div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3}}>{title}</div>
-              <div style={{fontSize:12,color:"rgba(244,237,216,.5)",lineHeight:1.5}}>{desc}</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3}}>{title}</div>
+              <div style={{fontSize:11,color:"rgba(244,237,216,.48)",lineHeight:1.45}}>{desc}</div>
             </div>
           </div>
         )}
@@ -705,10 +705,11 @@ function ResumeSection({profile,updateField}) {
     setPs("reading");setMsg("Reading file…");
     try{
       let messages,headers={"Content-Type":"application/json"};
+      let pdfB64="",pdfExtractPrompt=""; // declared here so they're accessible after the if/else
       if(ext===".pdf"){
         setMsg("Processing PDF…");
-        const pdfB64=await toB64(file);
-        const pdfExtractPrompt=`Extract all resume information. Return ONLY valid JSON (no markdown, no explanation):\n{"name":"full name","role":"current or target job title","location":"city, state","bio":"2-sentence professional summary","skills":"comma-separated list of all skills","yearsExp":"best match: 0-1, 1-2, 2-4, 4-7, 7-10, or 10+","education":"degree, school, year","workHistory":"chronological summary of each role with dates","achievements":"measurable accomplishments with numbers","resumeText":"complete verbatim resume text"}`;
+        pdfB64=await toB64(file);
+        pdfExtractPrompt=`Extract all resume information. Return ONLY valid JSON (no markdown, no explanation):\n{"name":"full name","role":"current or target job title","location":"city, state","bio":"2-sentence professional summary","skills":"comma-separated list of all skills","yearsExp":"best match: 0-1, 1-2, 2-4, 4-7, 7-10, or 10+","education":"degree, school, year","workHistory":"chronological summary of each role with dates","achievements":"measurable accomplishments with numbers","resumeText":"complete verbatim resume text"}`;
         messages=[{role:"user",content:pdfExtractPrompt}];
       } else {
         setMsg(ext===".txt"?"Reading text…":"Extracting DOCX text…");
@@ -1127,26 +1128,28 @@ export default function App() {
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",backgroundSize:"56px 56px"}}/>
     </div>
     {/* Header */}
-    <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:mobile?"column":"row",alignItems:mobile?"stretch":"center",justifyContent:"space-between",padding:mobile?"10px 14px":"0 24px",height:mobile?"auto":66,gap:mobile?8:14}}>
-      {/* Top row on mobile: logo + avatar */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+    <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",padding:mobile?"8px 14px":"0 24px",height:mobile?"auto":66,gap:10,flexWrap:mobile?"wrap":"nowrap"}}>
+      {/* LEFT: Logo + nav tabs */}
+      <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))"}}>⚔️</span>
-          <div><div style={{fontFamily:"'Cinzel',serif",fontSize:mobile?6:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?14:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
-          {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.35)",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
-          <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh live jobs" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontSize:13,padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>{liveStatus==="fetching"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>fetching live…</span>}{liveStatus==="done"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>● {Object.values(liveJobs).filter(v=>Array.isArray(v)&&v.length>0).length} live</span>}</>}
+          <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
         </div>
-        {/* Avatar always visible */}
-        <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:7,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 10px 4px 4px",flexShrink:0}}>
-          <div style={{width:24,height:24,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif"}}>{user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"}</div>
-          {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user.name}</span>}
-        </button>
+        <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
+          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
+            <button key={id} onClick={()=>setTab(id)} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s"}}>{cnt}</button>)}
+        </nav>
+        {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+        <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
+        {liveStatus==="fetching"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>fetching…</span>}
+        {liveStatus==="done"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>● {Object.values(liveJobs).filter(v=>Array.isArray(v)&&v.length>0).length} live</span>}</>
+        }
       </div>
-      {/* Nav tabs - on mobile below logo row */}
-      <nav style={{display:"flex",gap:mobile?0:4,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:mobile?3:4,alignSelf:mobile?"stretch":"auto"}}>
-        {[["jobs",<><I.Map s={12} c="currentColor"/>{mobile?"Jobs":<>Job Board</>}{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 6px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/>{mobile?"Applied":<>Job Applications</>}{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 6px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
-          <button key={id} onClick={()=>setTab(id)} style={{flex:mobile?1:"none",background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:mobile?11:11,fontWeight:600,padding:mobile?"8px 8px":"6px 16px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.5,transition:"all .2s"}}>{cnt}</button>)}
-      </nav>
+      {/* RIGHT: Profile avatar */}
+      <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 12px 4px 4px",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
+        <div style={{width:28,height:28,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif"}}>{user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"}</div>
+        {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user.name}</span>}
+      </button>
     </header>
     {showAcct&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
 
@@ -1232,10 +1235,11 @@ export default function App() {
                         </button>
                         {expanded[sKey]&&<div style={{padding:"4px 8px 8px",display:"flex",flexDirection:"column",gap:4}}>
                           {Object.entries(companies)
-                            .filter(([name])=>{
-                              if(!filters.search)return true;
-                              const q=filters.search.toLowerCase();
-                              return name.toLowerCase().includes(q)||companies[name].jobs.some(j=>matches(j));
+                            .filter(([name,company])=>{
+                              if(!hasAnyFilter)return true;
+                              const displayJobs=getDisplayJobs(name,company.jobs);
+                              if(filters.search){const q=filters.search.toLowerCase();if(name.toLowerCase().includes(q))return true;}
+                              return displayJobs.some(j=>matches(j));
                             })
                             .map(([name,company])=>{
                               const coKey=`co-${country}-${state}-${name}`;
