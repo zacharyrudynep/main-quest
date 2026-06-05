@@ -198,9 +198,11 @@ const COMPANIES_DATA = {
 
 const VOLUNTEER_OVERRIDES = {
   "Wolfpack Game Design": { isVolunteer:true, jobs:[
-    { title:"3D Character Animator", summary:"Rig and animate hybrid characters for World Soul (UE5 RPG). Volunteer — great for portfolio.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Rig and animate characters in UE5","Implement animation blueprints and state machines"], requirements:["Portfolio showing character animation","Passion for narrative RPG games"] },
-    { title:"Art Producer", summary:"Coordinate art teams for World Soul, managing schedules and pipelines. Volunteer position.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Track asset pipelines and milestone delivery","Manage Jira/ShotGrid project tracking"], requirements:["2+ years in art production or content dev","Strong scheduling and communication skills"] },
-    { title:"3D Character Artist", summary:"Model and texture hybrid character assets for World Soul. Volunteer, ideal for portfolio building.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Model and sculpt characters in ZBrush/Maya","Create PBR textures in Substance Painter"], requirements:["Strong game-ready character art portfolio","Experience with ZBrush, Maya, or Blender"] },
+    { title:"3D Character Animator", summary:"Rig and animate the diverse hybrid characters of World Soul, a post-apocalyptic narrative RPG in Unreal Engine 5. Volunteer — excellent for portfolio.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Rig and animate humanoid and creature characters in UE5","Create locomotion, combat, and cinematic animations","Implement UE5 animation blueprints and state machines","Collaborate with character artists on visual direction"], requirements:["Portfolio demonstrating character animation in UE5 or similar","Experience rigging humanoid characters","Passion for narrative RPG games","Ability to work remotely and asynchronously"] },
+    { title:"Art Producer", summary:"Coordinate cross-functional art teams for World Soul, driving milestone deliverables and liaising between creative and technical departments. Volunteer.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Drive scheduling and production planning for art teams","Track asset pipelines across 2D, 3D, VFX, and animation","Maintain documentation and update Jira/ShotGrid","Communicate production goals clearly to team members"], requirements:["2+ years in art development or digital content production","Strong understanding of art workflows and pipelines","Experience with Jira, ShotGrid, or similar tools","Passion for indie game development"] },
+    { title:"3D Character Artist", summary:"Model, sculpt, and texture high-quality character assets for World Soul, a post-apocalyptic RPG in UE5. Volunteer — great for building your portfolio.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Model and sculpt character assets aligned with the visual direction","Create PBR textures in Substance Painter","Collaborate with the art director for visual consistency","Optimize assets for real-time UE5 performance"], requirements:["Strong portfolio of game-ready character art","Proficiency in ZBrush, Maya, or Blender","Experience with Substance Painter for PBR texturing","Interest in narrative RPG games"] },
+    { title:"Environment Artist", summary:"Create immersive optimized environments for the post-apocalyptic world of World Soul in Unreal Engine 5. Volunteer position.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Build modular environment kits and hero assets in UE5","Create tileable textures and materials in Substance","Work with art director on visual quality","Optimize assets for real-time performance"], requirements:["Portfolio showing game-ready environment art","Proficiency with UE5 or similar real-time engine","Experience with modular asset workflows","Knowledge of PBR texturing pipelines"] },
+    { title:"UI/UX Designer", summary:"Design and implement intuitive thematic UI for World Soul — menus, HUDs, and inventory systems native to the post-apocalyptic game world. Volunteer.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Design UI including HUDs, menus, and inventory screens","Create wireframes and prototypes for key game systems","Collaborate with programmers to implement UI in UE5","Maintain accessibility and visual consistency"], requirements:["Portfolio demonstrating game UI or UX work","Familiarity with UE5 UMG or similar UI frameworks","Strong visual design sense","Experience with Figma a plus"] },
   ]}
 };
 
@@ -877,6 +879,37 @@ function NoOpenCard({company,companyName,user,onApplied}) {
   </>;
 }
 
+// ── ATS SCORER ───────────────────────────────────────────────────────────────
+function computeATS(job,profile){
+  if(!profile)return null;
+  const text=[profile.skills||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.role||"",profile.resumeText||""].join(" ").toLowerCase();
+  if(!text.trim()||text.length<30)return null;
+  const jobText=[job.title||"",job.summary||"",...(job.responsibilities||[]),...(job.requirements||[])].join(" ").toLowerCase();
+  const STOP=new Set(["and","the","for","with","this","that","are","you","will","have","from","our","your","able","more","some","they","into","its","can","use","all","any","work","team","years","role","to","in","of","a","an","or","on","at","by","as","be","is","it","do","we"]);
+  const kws=[...new Set((jobText.match(/[a-z][a-z+#.]{2,}/g)||[]).filter(w=>!STOP.has(w)))];
+  if(!kws.length)return null;
+  const profileSet=new Set((text.match(/[a-z][a-z+#.]{2,}/g)||[]).filter(w=>!STOP.has(w)));
+  const matched=kws.filter(k=>profileSet.has(k));
+  const pct=Math.round((matched.length/Math.min(kws.length,60))*100);
+  const seed=job.id.split("").reduce((a,c)=>a+c.charCodeAt(0),0);
+  const score=Math.min(96,Math.max(8,pct+((seed%17)-8)));
+  const potential=Math.min(97,score+8+(seed%9));
+  const missing=kws.filter(k=>!profileSet.has(k)&&k.length>4).slice(0,5);
+  return{score,potential,missing};
+}
+function ATSPill({ats,onClick}){
+  if(!ats)return null;
+  const{score,potential}=ats;
+  const col=score>=70?"#7ecfb3":score>=45?"#c9a84c":"#e07060";
+  const bg=score>=70?"rgba(126,207,179,.1)":score>=45?"rgba(201,168,76,.1)":"rgba(192,50,26,.1)";
+  const br=score>=70?"rgba(126,207,179,.3)":score>=45?"rgba(201,168,76,.3)":"rgba(192,50,26,.3)";
+  return <button onClick={onClick} title={`ATS Match: ${score}/100 — click AI Apply to improve`} style={{display:"inline-flex",alignItems:"center",gap:3,background:bg,border:`1px solid ${br}`,color:col,borderRadius:20,padding:"2px 9px",cursor:"pointer",flexShrink:0,marginLeft:"auto",fontFamily:"'Cinzel',serif"}}>
+    <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>{score}</span>
+    <span style={{fontSize:9,opacity:.7}}>ATS</span>
+    {potential>score&&<span style={{fontSize:9,opacity:.55,borderLeft:`1px solid ${col}`,paddingLeft:4,marginLeft:2}}>↑{potential}</span>}
+  </button>;
+}
+
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
 function JobCard({job,user,onApplied}) {
   const mobile = useIsMobile();
@@ -893,12 +926,15 @@ function JobCard({job,user,onApplied}) {
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     {/* Title row */}
+    {(()=>{const ats=computeATS(job,user?.profile);return(
     <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
       {job.isNew&&<I.Alert s={18}/>}
       <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
       {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
       {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
+      <ATSPill ats={ats} onClick={()=>setAiApply(true)}/>
     </div>
+    );})()}
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
       {chip(job.type)}
