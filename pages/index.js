@@ -284,7 +284,7 @@ const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton
 async function callAI(prompt,maxTokens=2000){
   const key=process.env.NEXT_PUBLIC_GEMINI_KEY;
   if(!key)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com and add it in Vercel \u2192 Settings \u2192 Environment Variables.");
-  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}})});
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}})});
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`Gemini API error ${res.status}. Check your API key.`);}
   const data=await res.json();
   if(!data.candidates?.length)throw new Error("Gemini returned no response. Please try again.");
@@ -488,15 +488,15 @@ function AIApplyModal({job,user,onClose,onApplied}) {
       const s=clean.indexOf("{"),e=clean.lastIndexOf("}");
       setResult(JSON.parse(clean.slice(s,e+1)));
       setPhase("result");
-    }catch{setErr("Could not generate. Check your connection.");setPhase("check");}
+    }catch(er){setErr(er?.message||"Could not generate. Check that NEXT_PUBLIC_GEMINI_KEY is set in Vercel environment variables.");setPhase("check");}
   };
 
   const scoreColor=s=>s>=70?"#7ecfb3":s>=45?"#c9a84c":"#e07060";
   const scoreBg=s=>s>=70?"rgba(126,207,179,.1)":s>=45?"rgba(201,168,76,.1)":"rgba(192,50,26,.1)";
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",transition:"all .2s"};
-  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.8)",backdropFilter:"blur(12px)",zIndex:300,display:"flex",alignItems:mobile?"flex-end":"center",justifyContent:"center",padding:mobile?0:16,overflowY:"auto"};
-  const card={background:"rgba(14,10,20,.98)",border:mobile?"none":"1px solid rgba(201,168,76,.25)",borderRadius:mobile?0:20,width:"100%",maxWidth:mobile?"100%":640,maxHeight:mobile?"100vh":"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0};
+  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(16px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"};
+  const card={background:"rgba(14,10,20,.98)",border:"1px solid rgba(201,168,76,.25)",borderRadius:mobile?14:20,width:"100%",maxWidth:640,maxHeight:"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0,boxShadow:"0 32px 80px rgba(0,0,0,.6)"};
   const hdr={display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px 14px",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0};
   const body={flex:1,overflowY:"auto",padding:"18px 20px",minHeight:0};
   const sec={background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,padding:"12px 14px",marginBottom:10};
@@ -629,8 +629,8 @@ function AIEmailModal({job,user,onClose,onApplied}) {
     setPhase("sent");
   };
 
-  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.8)",backdropFilter:"blur(12px)",zIndex:300,display:"flex",alignItems:mobile?"flex-end":"center",justifyContent:"center",padding:mobile?0:16,overflowY:"auto"};
-  const card={background:"rgba(14,10,20,.98)",border:mobile?"none":"1px solid rgba(201,168,76,.25)",borderRadius:mobile?0:20,width:"100%",maxWidth:mobile?"100%":620,maxHeight:mobile?"100vh":"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0};
+  const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(16px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"};
+  const card={background:"rgba(14,10,20,.98)",border:"1px solid rgba(201,168,76,.25)",borderRadius:mobile?14:20,width:"100%",maxWidth:620,maxHeight:"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0,boxShadow:"0 32px 80px rgba(0,0,0,.6)"};
   const txt12={fontSize:12,color:"rgba(244,237,216,.65)",lineHeight:1.6};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
 
@@ -735,7 +735,7 @@ function ResumeSection({profile,updateField}) {
       if(ext===".pdf"){
         const gemKey=process.env.NEXT_PUBLIC_GEMINI_KEY;
         if(!gemKey)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com");
-        const pdfRes=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${gemKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"application/pdf",data:pdfB64}},{text:pdfExtractPrompt}]}],generationConfig:{maxOutputTokens:1500,temperature:0.1}})});
+        const pdfRes=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${gemKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"application/pdf",data:pdfB64}},{text:pdfExtractPrompt}]}],generationConfig:{maxOutputTokens:1500,temperature:0.1}})});
         if(!pdfRes.ok){const pe=await pdfRes.json().catch(()=>({}));throw new Error(pe?.error?.message||`PDF API error ${pdfRes.status}`);}
         const pdfData=await pdfRes.json();
         parsedText=(pdfData.candidates?.[0]?.content?.parts?.[0]?.text||"").replace(/```json|```/g,"").trim();
@@ -801,8 +801,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const fld={display:"flex",flexDirection:"column",gap:4,marginBottom:12};
   const tabs=[["profile","Profile",<I.Person s={14} c="currentColor"/>],["resume","Resume",<I.Scroll s={14} c="currentColor"/>],["links","Links",<I.Link s={14} c="currentColor"/>],["prefs","Prefs",<I.Cog s={14} c="currentColor"/>],["account","Account",<I.Lock s={14} c="currentColor"/>]];
 
-  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:mobile?"flex-end":"flex-end",alignItems:mobile?"flex-end":"stretch",flexDirection:"column"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div style={{width:"100%",maxWidth:mobile?"100%":460,height:mobile?"92vh":"100vh",background:"rgba(10,7,14,.97)",borderLeft:mobile?"none":"1px solid rgba(201,168,76,.18)",borderTop:mobile?"1px solid rgba(201,168,76,.2)":"none",borderRadius:mobile?"20px 20px 0 0":"0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end",alignItems:"stretch",flexDirection:"row"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{width:"100%",maxWidth:mobile?380:460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
         <div style={{width:42,height:42,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",flexShrink:0}}>{initials}</div>
