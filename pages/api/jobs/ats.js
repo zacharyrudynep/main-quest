@@ -1,6 +1,6 @@
 // pages/api/jobs/ats.js
-// Universal ATS proxy — fetches jobs from any of 6 public hiring platforms.
-// All are public JSON endpoints: no API key, no auth, no browser needed.
+// Universal ATS proxy — fetches jobs from public hiring-platform APIs.
+// Most are public JSON endpoints: no API key, no auth, no browser needed.
 //
 // Call it like: /api/jobs/ats?platform=greenhouse&slug=riotgames
 // Returns: { jobs: [...], count: N, platform, slug }
@@ -19,6 +19,12 @@ export default async function handler(req, res) {
     workable:        `https://apply.workable.com/api/v3/accounts/${slug}/jobs`,
     smartrecruiters: `https://api.smartrecruiters.com/v1/companies/${slug}/postings?limit=100`,
     recruitee:       `https://${slug}.recruitee.com/api/offers/`,
+    // JazzHR public JSON feed (slug is the applytojob subdomain)
+    applytojob:      `https://${slug}.applytojob.com/api/v1/jobs`,
+    // BambooHR public job feed
+    bamboohr:        `https://${slug}.bamboohr.com/careers/list`,
+    // Paylocity public recruiting API (slug is the company id in the URL)
+    paylocity:       `https://recruiting.paylocity.com/recruiting/v2/api/jobs/${slug}`,
   };
 
   const url = endpoints[platform];
@@ -68,6 +74,12 @@ function extractJobs(data, platform) {
       return data.content || [];
     case 'recruitee':
       return data.offers || [];
+    case 'applytojob':
+      return data.jobs || (Array.isArray(data) ? data : []);
+    case 'bamboohr':
+      return data.result || data.jobs || [];
+    case 'paylocity':
+      return data.jobs || data.Jobs || (Array.isArray(data) ? data : []);
     default:
       return [];
   }
