@@ -284,66 +284,66 @@ const COMPANIES_DATA = {
       { name: "Serenity Forge", url: "https://www.serenityforge.com/careers", email: "jobs@serenityforge.com", contact: null },
     ],
     "Connecticut": [
-      { name: "Fire Fly Studios", url: "https://fireflyworlds.com/", email: null, contact: null },
+      { name: "Fire Fly Studios", url: "https://fireflyworlds.com/", email: null, contact: "https://firefly-studios.helpshift.com/hc/en/3-firefly-studios/contact-us/" },
     ],
     "Delaware": [
-      { name: "Kevuru Games", url: "https://kevurugames.com/", email: null, contact: null },
-      { name: "Made on Earth Games", url: "https://www.madeonearth.games/", email: null, contact: null },
+      { name: "Kevuru Games", url: "https://kevurugames.com/", email: "career@kevurugames.com", contact: "https://kevurugames.com/contact-us/" },
+      { name: "Made on Earth Games", url: "https://www.madeonearth.games/", email: "jobs@madeonearth.games", contact: null },
     ],
     "Florida": [
-      { name: "A Square Games", url: "https://asgs.studio/careers/", email: null, contact: null },
+      { name: "A Square Games", url: "https://asgs.studio/careers/", email: null, contact: "https://asgs.studio/contact/" },
       { name: "Chromatic Games", url: "https://chromatic.games/careers/", email: null, contact: null },
       { name: "EA", url: "https://jobs.ea.com/en_US/careers/Home/?4538=8356&4538_format=3021&listFilterMode=1", email: null, contact: null },
-      { name: "Game Artists", url: "https://www.gameartists.com/#jobs", email: null, contact: null },
+      { name: "Game Artists", url: "https://www.gameartists.com/#jobs", email: "info@gameartists.com", contact: null },
       { name: "Game Sim", url: "https://apply.workable.com/gamesim-2/", email: null, contact: null },
-      { name: "Good Dog Studios", url: "https://www.gooddogstudios.com/careers", email: null, contact: null },
-      { name: "Greatsword Game Studio", url: "https://www.greatswordgames.com/careers", email: null, contact: null },
-      { name: "Grove Street Games", url: "https://grovestreetgames.com/careers/", email: null, contact: null },
+      { name: "Good Dog Studios", url: "https://www.gooddogstudios.com/careers", email: "contact@gooddogstudios.com", contact: null },
+      { name: "Greatsword Game Studio", url: "https://www.greatswordgames.com/careers", email: "greatswordstudios@gmail.com", contact: null , volunteer:true },
+      { name: "Grove Street Games", url: "https://grovestreetgames.com/careers/", email: "jobs@grovestreetgames.com ", contact: null },
       { name: "Helm Systems", url: "https://www.helmsystems.com/copy-of-about-1", email: null, contact: null },
       { name: "Magic Find Studios", url: "https://www.magicfindstudios.com", email: null, contact: null },
       { name: "Motorsport Games", url: "https://motorsportgames.bamboohr.com/careers", email: null, contact: null },
-      { name: "Shiver Entertainment", url: "https://www.shiver.net", email: null, contact: null },
-      { name: "Sword and Wand", url: "https://swordandwand.com/careers", email: null, contact: null },
+      { name: "Shiver Entertainment", url: "https://www.shiver.net", email: "cvs@shiver.net", contact: null , emailApply:true },
+      { name: "Sword and Wand", url: "https://swordandwand.com/careers", email: "careers@swordandwand.com", contact: "https://swordandwand.com/contact" },
       { name: "Studio Wildcard", url: "https://www.studiowildcard.com/", email: null, contact: null },
-      { name: "Theory Studios", url: "https://www.theorystudios.com", email: null, contact: null },
+      { name: "Theory Studios", url: "https://www.theorystudios.com/jobs/none", email: null, contact: null },
     ],
     "Georgia": [
-      { name: "AGS", url: "https://jobs.jobvite.com/agscareer", email: null, contact: null },
-      { name: "Evil Mojo Games", url: "https://www.evilmojogames.com/", email: null, contact: null },
-      { name: "Gimme Games", url: "https://www.gimmiegames.com/careers", email: null, contact: null },
+      { name: "AGS", url: "https://jobs.jobvite.com/agscareer", email: null, contact: "https://www.playags.com/operations-and-contact/get-in-touch" },
+      { name: "Evil Mojo Games", url: "https://www.evilmojogames.com/", email: "evilmojogames@hirezstudios.com", contact: null , emailApply:true },
+      { name: "Gimme Games", url: "https://www.gimmiegames.com/careers", email: "info@gimmiegames.com", contact: null },
       { name: "Hi-Rez Studios", url: "https://hirezstudios.applytojob.com/apply/", email: null, contact: null },
-      { name: "Prophecy Games", url: "https://www.prophecygames.com/careers", email: null, contact: null },
-      { name: "Templar Media", url: "https://templarmedia.com/careers", email: null, contact: null },
-      { name: "Titan Forge", url: "https://www.titanforgegames.com/", email: null, contact: null },
+      { name: "Prophecy Games", url: "https://www.prophecygames.com/careers", email: null, contact: "https://www.prophecygames.com/contact" },
+      { name: "Templar Media", url: "https://templarmedia.com/careers", email: "contact@templarmedia.com", contact: "https://templarmedia.com/contact" },
+      { name: "Titan Forge", url: "https://www.titanforgegames.com/", email: "titanforgegames@hirezstudios.com", contact: null },
       { name: "Tripwire Interactive", url: "https://tripwireinteractive.com/#/careers", email: null, contact: null },
     ],
     "Idaho": [
-      { name: "Curious Media", url: "https://www.curiousmedia.com/careers/", email: null, contact: null },
-      { name: "Mighty Coconut", url: "https://www.mightycoconut.com/jobs", email: null, contact: null },
+      { name: "Curious Media", url: "https://www.curiousmedia.com/careers/", email: "jobs@curiousmedia.com", contact: "info@curiousmedia.com" , emailApply:true },
+      { name: "Mighty Coconut", url: "https://www.mightycoconut.com/jobs", email: "jobs@mightycoconut.com", contact: null },
     ],
     "Illinois": [
       { name: "Everi", url: "https://www.everi.com/careers-culture/", email: null, contact: null },
-      { name: "High Voltage", url: "https://kwshighvoltage.wpengine.com/careers/", email: null, contact: null },
+      { name: "High Voltage", url: "https://kwshighvoltage.wpengine.com/careers/#current_open_mn_otr", email: null, contact: "https://www.high-voltage.com/contact-us/" },
       { name: "Incredible Technologies", url: "https://www.paycomonline.net/v4/ats/web.php/portal/E5AB5DF55CA4B4A7A03AAF06F70FF8EF/career-page", email: null, contact: null },
-      { name: "Iron Galaxy Studios", url: "https://www.irongalaxystudios.com/careers", email: null, contact: null },
+      { name: "Iron Galaxy Studios", url: "https://www.irongalaxystudios.com/careers", email: "communications@irongalaxystudios.com", contact: "https://www.irongalaxystudios.com/contact" },
       { name: "Jackbox Games", url: "https://apply.workable.com/jackbox-games/?lng=en", email: null, contact: null },
-      { name: "King", url: "https://careers.king.com/us/en", email: null, contact: null },
+      { name: "King", url: "https://careers.king.com/us/en/search-results", email: null, contact: null },
       { name: "Netherrealm Studios", url: "https://www.netherrealm.com/careers/", email: null, contact: null },
-      { name: "Perfect Garbage Studios", url: "https://www.perfectgarbage.com/careers", email: null, contact: null },
-      { name: "Shapeshifter Games", url: "https://shapeshiftergames.com/#jobs", email: null, contact: null },
+      { name: "Perfect Garbage Studios", url: "https://shapeshiftergames.applytojob.com/", email: null, contact: "https://www.perfectgarbage.com/contact" },
+      { name: "Shapeshifter Games", url: "https://shapeshiftergames.com/#jobs", email: "info@shapeshiftergames.com", contact: null },
     ],
     "Iowa": [
-      { name: "Jam City", url: "https://www.jamcity.com/life-at-jam-city/", email: null, contact: null },
+      { name: "Jam City", url: "https://www.jamcity.com/job-openings/", email: null, contact: null },
       { name: "SciPlay", url: "https://www.sciplay.com/careers", email: null, contact: null },
     ],
     "Kansas": [
-      { name: "Bad Rhino Games", url: "https://www.badrhinogames.com/careers/", email: null, contact: null },
+      { name: "Bad Rhino Games", url: "https://www.badrhinogames.com/careers/", email: null, contact: "https://www.badrhinogames.com/contact-us/" },
       { name: "Scopely", url: "https://careers.scopely.com/us/en", email: null, contact: null },
     ],
     "Louisiana": [
-      { name: "High Voltage", url: "https://www.high-voltage.com/careers/", email: null, contact: null },
-      { name: "InXile", url: "https://www.inxile-entertainment.com/careers", email: null, contact: null },
-      { name: "Pixel Dash Studios", url: "https://www.pixeldashstudios.com/jobs.html", email: null, contact: null },
+      { name: "High Voltage", url: "https://kwshighvoltage.wpengine.com/careers/#current_open_mn_otr", email: null, contact: "https://www.high-voltage.com/contact-us/" },
+      { name: "InXile", url: "https://www.inxile-entertainment.com/careers", email: "jobs@inxile.net", contact: null },
+      { name: "Pixel Dash Studios", url: "https://www.pixeldashstudios.com/jobs.html", email: "contact@pixeldashstudios.com", contact: null , emailApply:true },
       { name: "Undead Labs", url: "https://www.undeadlabs.com/careers", email: null, contact: null },
     ],
     "Maine": [
@@ -351,9 +351,9 @@ const COMPANIES_DATA = {
     ],
     "Maryland": [
       { name: "Bethesda Game Studios", url: "https://bethesdagamestudios.com/", email: null, contact: null },
-      { name: "Big Huge Games", url: "http://www.bighugegames.com/", email: null, contact: null },
-      { name: "Bit Reactor", url: "https://www.bitreactor.com/", email: null, contact: null },
-      { name: "Break Away Games", url: "https://www.breakawaygames.com/what-we-do/", email: null, contact: null },
+      { name: "Big Huge Games", url: "https://bighugegames.com/careers/", email: null, contact: "https://bighugegames.com/contact-us/" },
+      { name: "Bit Reactor", url: "https://www.bitreactor.com/careers/", email: null, contact: "https://www.bitreactor.com/contact-us/" },
+      { name: "Break Away Games", url: "https://www.breakawaygames.com/careers/", email: null, contact: "https://www.breakawaygames.com/contact-us/" , emailApply:true },
       { name: "Bully Entertainment", url: "https://bullyentertainment.com/", email: null, contact: null },
       { name: "Exis Interactive", url: "https://www.exisinteractive.com/", email: null, contact: null },
       { name: "Firaxis", url: "https://www.firaxis.com/", email: null, contact: null },
@@ -886,6 +886,20 @@ const VOLUNTEER_OVERRIDES = {
   ]}
 };
 
+// ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
+// Companies where the ONLY way to apply is by email. Each posting routes to a
+// specific email address. These render as real cards with an "Apply by Email" button.
+const EMAIL_APPLY_JOBS = {
+  "Break Away Games": { jobs:[
+    { title:"Programmer", applyEmail:"resumes0919a@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your programmer resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Artist", applyEmail:"resumes0919b@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your artist resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Audio/Video", applyEmail:"resumes0919e@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your audio/video resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Marketing / Business Development", applyEmail:"resumes0919f@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your marketing/biz-dev resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Game Tester", applyEmail:"resumes0919g@breakawayltd.com", experience:"Entry Level", type:"Full-time", isRemote:false, summary:"Send your game tester resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
+  ]},
+};
+
+
 const JOB_CATS = ["Game Designer","Level Designer","Narrative Designer","Software Engineer","Graphics Engineer","AI Programmer","Gameplay Programmer","Backend Engineer","DevOps Engineer","Mobile Developer","3D Artist","2D Artist","Concept Artist","Technical Artist","Character Artist","Environment Artist","Animator","VFX Artist","UI/UX Designer","Sound Designer","Composer","Audio Engineer","Producer","Project Manager","Scrum Master","QA Tester","QA Lead","Build Engineer","Community Manager","Marketing Specialist","PR Manager","Data Analyst","Data Scientist","Product Manager","IT Support","System Administrator","HR Manager","Recruiter","Finance Analyst"];
 
 const JOB_SUMMARIES = {"Game Designer":"Design engaging gameplay systems and player experiences.","Gameplay Programmer":"Build character controllers, physics, and combat mechanics in C++ or C#.","Software Engineer":"Build robust engine systems, tools, and runtime features.","Graphics Engineer":"Develop real-time rendering systems, shaders, and visual effects.","Level Designer":"Craft memorable spaces that guide players through gameplay.","Narrative Designer":"Shape stories through dialogue, quests, and worldbuilding.","3D Artist":"Create high-quality game-ready 3D assets.","2D Artist":"Create 2D art assets including UI, icons, and textures.","Concept Artist":"Define visual language through characters, environments, and props.","Technical Artist":"Bridge art and engineering via pipelines, shaders, and tools.","Character Artist":"Create detailed, game-ready character models and textures.","Environment Artist":"Build immersive, performance-optimized game environments.","Animator":"Bring characters to life through expressive game-ready animation.","VFX Artist":"Create stunning real-time visual effects for gameplay and cinematics.","UI/UX Designer":"Design intuitive interfaces that give players seamless access to systems.","Sound Designer":"Design and implement sounds that make the game world feel alive.","Composer":"Create adaptive musical scores that enhance gameplay and emotion.","Audio Engineer":"Implement and optimize audio systems using Wwise or FMOD.","Producer":"Keep teams aligned and production running smoothly from concept to launch.","Project Manager":"Own schedules, milestones, and cross-team communication.","Scrum Master":"Facilitate agile ceremonies and remove blockers across teams.","QA Tester":"Champion quality by finding and documenting bugs before players do.","QA Lead":"Lead QA strategy, test plans, and quality standards.","Build Engineer":"Design and maintain CI/CD pipelines and build systems.","Community Manager":"Bridge the studio and player community across all platforms.","Marketing Specialist":"Drive awareness and player acquisition through targeted campaigns.","PR Manager":"Manage press relationships and shape the studio's public narrative.","Data Analyst":"Turn player data into actionable insights.","Data Scientist":"Apply ML to telemetry, matchmaking, and monetization.","Product Manager":"Own the product roadmap and drive features from concept to launch.","AI Programmer":"Build sophisticated AI systems for NPCs, enemies, and simulation.","Backend Engineer":"Design and scale server infrastructure for online games.","DevOps Engineer":"Build and maintain reliable cloud infrastructure and deployments.","Mobile Developer":"Build performant game clients for iOS and Android.","IT Support":"Keep studio technology running and support team productivity.","System Administrator":"Manage studio networks, servers, and security.","HR Manager":"Lead people operations, culture, and talent programs.","Recruiter":"Find and bring exceptional talent into the studio.","Finance Analyst":"Support financial planning, forecasting, and reporting."};
@@ -902,9 +916,13 @@ function getExp(title, r) {
 function seededRand(seed) { let s=seed; return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; }; }
 
 function genJobs(company, stateKey) {
-  // Only return real volunteer-override jobs (e.g. WolfPack). No fake/generated jobs.
+  const mkDate=(i)=>{const d=new Date(Date.now()-(i*7+2)*86400000);return{posted:d,postedStr:d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),daysAgo:i*7+2};};
+  // 1. Volunteer-override jobs (e.g. WolfPack) — real curated volunteer roles
   const ov = VOLUNTEER_OVERRIDES[company.name];
-  if (ov) return ov.jobs.map((j,i)=>({ id:`${company.name}-ov-${i}`, title:j.title, company:company.name, url:company.url, applyUrl:company.url, state:stateKey, posted:new Date(Date.now()-(i*7+2)*86400000), postedStr:new Date(Date.now()-(i*7+2)*86400000).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}), daysAgo:i*7+2, isNew:i===0, isRemote:j.isRemote, type:j.type, salary:j.salary, email:company.email, experience:j.experience, isVolunteer:true, summary:j.summary, responsibilities:j.responsibilities||[], requirements:j.requirements||[] }));
+  if (ov) return ov.jobs.map((j,i)=>{const dt=mkDate(i);return{ id:`${company.name}-ov-${i}`, title:j.title, company:company.name, url:company.url, applyUrl:company.url, state:stateKey, ...dt, isNew:i===0, isRemote:j.isRemote, type:j.type, salary:j.salary, email:company.email, experience:j.experience, isVolunteer:true, summary:j.summary, responsibilities:j.responsibilities||[], requirements:j.requirements||[] };});
+  // 2. Email-apply jobs (e.g. BreakAway) — each posting routes to a specific email
+  const ea = EMAIL_APPLY_JOBS[company.name];
+  if (ea) return ea.jobs.map((j,i)=>{const dt=mkDate(i);return{ id:`${company.name}-ea-${i}`, title:j.title, company:company.name, url:company.url, applyUrl:company.url, state:stateKey, ...dt, isNew:false, isRemote:j.isRemote, type:j.type, salary:j.salary||"", email:j.applyEmail, applyEmail:j.applyEmail, experience:j.experience, isVolunteer:!!company.volunteer, isEmailApply:true, summary:j.summary, responsibilities:j.responsibilities||[], requirements:j.requirements||[] };});
   return []; // no fake jobs — companies show via ATS live data or contact buttons only
 }
 
@@ -938,29 +956,58 @@ for (const [country,states] of Object.entries(COMPANIES_DATA)) {
 //   SLUG.recruitee.com              → recruitee
 // Then verify it at /verify in your app before adding it here.
 const ATS_STUDIOS = {
-  "Design Works Gaming": { platform:"paylocity", slug:"design-works-gaming" },
-  "Crazy Maple Studio": { platform:"workable", slug:"crazy-maple-studio" },
-  "Nexus Studios": { platform:"workable", slug:"nexus-studios" },
-  "Playgig": { platform:"ashby", slug:"playgig" },
-  "Secret 6": { platform:"workable", slug:"secret-6" },
-  "Sperasoft": { platform:"workable", slug:"sperasoft" },
-  "Zynga": { platform:"greenhouse", slug:"zynga" },
-  "Battle Creek Games": { platform:"ashby", slug:"battle-creek-games" },
-  "Game Sim": { platform:"workable", slug:"game-sim" },
-  "Motorsport Games": { platform:"bamboohr", slug:"motorsport-games" },
-  "Hi-Rez Studios": { platform:"applytojob", slug:"hi-rez-studios" },
-  "Jackbox Games": { platform:"workable", slug:"jackbox-games" },
-  "Nightdive Studios": { platform:"greenhouse", slug:"nightdive-studios" },
-  "KingsIsle Entertainment": { platform:"workable", slug:"kingsisle-entertainment" },
-  "Lost Boys Interactive": { platform:"applytojob", slug:"lost-boys-interactive" },
-  "Mad Mushroom": { platform:"workable", slug:"mad-mushroom" },
-  "Cat Daddy Games": { platform:"greenhouse", slug:"cat-daddy-games" },
-  "Double Down Interactive": { platform:"lever", slug:"double-down-interactive" },
-  "The Pokemon Company": { platform:"greenhouse", slug:"the-pokemon-company" },
-  "Gasket Games": { platform:"bamboohr", slug:"gasket-games" },
-  "HB Studios": { platform:"greenhouse", slug:"hb-studios" },
-  "Big Viking Games": { platform:"workable", slug:"big-viking-games" },
-  "People Can Fly": { platform:"smartrecruiters", slug:"people-can-fly" },
+  // ─── Ashby studios (includes salary data) ───
+  "Battle Creek Games":       { platform:"ashby", slug:"battle-creek-games" },
+  "Playgig":                  { platform:"ashby", slug:"playgig" },
+  "Second Dinner":            { platform:"ashby", slug:"seconddinner" },
+  // ─── ApplytoJob ───
+  "Hi-Rez Studios":           { platform:"applytojob", slug:"hirezstudios" },
+  "Lost Boys Interactive":    { platform:"applytojob", slug:"lostboysinteractive" },
+  "Templar Media":            { platform:"applytojob", slug:"templar" },
+  // ─── BambooHR ───
+  "Gasket Games":             { platform:"bamboohr", slug:"gasketgames" },
+  "Motorsport Games":         { platform:"bamboohr", slug:"motorsportgames" },
+  // ─── Greenhouse studios ───
+  "Bungie":                   { platform:"greenhouse", slug:"bungie" },
+  "Cat Daddy Games":          { platform:"greenhouse", slug:"catdaddy" },
+  "Digital Extremes":         { platform:"greenhouse", slug:"digitalextremes" },
+  "Discord":                  { platform:"greenhouse", slug:"discord" },
+  "Epic Games":               { platform:"greenhouse", slug:"epicgames" },
+  "HB Studios":               { platform:"greenhouse", slug:"hbstudios" },
+  "Insomniac Games":          { platform:"greenhouse", slug:"insomniac" },
+  "Nightdive Studios":        { platform:"greenhouse", slug:"nightdivestudios" },
+  "Riot Games":               { platform:"greenhouse", slug:"riotgames" },
+  "Roblox":                   { platform:"greenhouse", slug:"roblox" },
+  "Scopely":                  { platform:"greenhouse", slug:"scopely" },
+  "Singularity 6":            { platform:"greenhouse", slug:"singularity6" },
+  "The Pokemon Company":      { platform:"greenhouse", slug:"pokemoncareers" },
+  "Tripwire Interactive":     { platform:"greenhouse", slug:"tripwireinteractive" },
+  "Undead Labs":              { platform:"greenhouse", slug:"undeadlabsllc" },
+  "Zynga":                    { platform:"greenhouse", slug:"zynga" },
+  // ─── Jobvite ───
+  "AGS":                      { platform:"jobvite", slug:"agscareer" },
+  "Probably Monsters":        { platform:"jobvite", slug:"probablymonsters" },
+  // ─── Lever studios ───
+  "Behaviour Interactive":    { platform:"lever", slug:"bhvr" },
+  "Double Down Interactive":  { platform:"lever", slug:"doubledown" },
+  "Skydance":                 { platform:"lever", slug:"skydance" },
+  // ─── Paylocity ───
+  "Design Works Gaming":      { platform:"paylocity", slug:"design-works-gaming" },
+  // ─── Smart Recruiters ───
+  "People Can Fly":           { platform:"smartrecruiters", slug:"peoplecanfly" },
+  // ─── Workable ───
+  "Big Viking Games":         { platform:"workable", slug:"big-viking-games-3" },
+  "Crazy Maple Studio":       { platform:"workable", slug:"crazymaplestudio" },
+  "Game Sim":                 { platform:"workable", slug:"gamesim-2" },
+  "Hardsuit Labs":            { platform:"workable", slug:"hardsuit-labs-1" },
+  "Jackbox Games":            { platform:"workable", slug:"jackbox-games" },
+  "KingsIsle Entertainment":  { platform:"workable", slug:"kingsisle-entertainment-inc" },
+  "Mad Mushroom":             { platform:"workable", slug:"otk-media" },
+  "Nexus Studios":            { platform:"workable", slug:"nexusstudios" },
+  "Secret 6":                 { platform:"workable", slug:"secret-6" },
+  "Sperasoft":                { platform:"workable", slug:"sperasoft" },
+  "Velan Studios":            { platform:"workable", slug:"velanstudios" },
+  // NOTE: The slugs above are best guesses. VERIFY each at /verify before trusting.
 };
 
 // Normalize a job from ANY ATS platform into our internal shape
@@ -998,6 +1045,9 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   } else if(platform==="paylocity"){
     title=raw.title||raw.jobTitle||raw.name||""; url=raw.url||raw.applyUrl||company.url; body=stripHtml(raw.description||raw.jobDescription||"");
     loc=[raw.city,raw.state].filter(Boolean).join(", ")||raw.location||""; updated=new Date(raw.postedDate||raw.datePosted||Date.now()).getTime();
+  } else if(platform==="jobvite"){
+    title=raw.title||raw.jobTitle||""; url=raw.detailUrl||raw.applyUrl||raw.url||company.url; body=stripHtml(raw.description||raw.jobDescription||"");
+    loc=raw.location||[raw.city,raw.state].filter(Boolean).join(", ")||""; updated=new Date(raw.date||raw.postedDate||Date.now()).getTime();
   }
 
   const daysAgo=Math.floor((Date.now()-updated)/86400000);
@@ -1622,7 +1672,7 @@ function NoOpenCard({company,companyName,user,onApplied}) {
   return <>
     <div style={{background:"rgba(201,168,76,.03)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:12}}>
       <I.Scroll s={18} c="rgba(201,168,76,.45)"/>
-      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px"}}>No current listings — they may still be hiring.</p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>Visit their careers page or send a general application email.</p></div>
+      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>Visit their careers page or send a general application email.</p></div>
       <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
         {company.url&&<a href={company.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Careers",<I.Arrow s={10} c="#f0d080"/>,(()=>{}))}</a>}
         {company.contact&&<a href={company.contact} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Contact Page",<I.Link s={10} c="#8fd0e8"/>,(()=>{}),{background:"rgba(96,160,232,.1)",border:"1px solid rgba(96,160,232,.3)",color:"#8fd0e8"})}</a>}
@@ -1675,7 +1725,15 @@ function JobCard({job,user,onApplied}) {
   const isApplied=user?.applied?.[job.id];
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
-  const onApply=()=>{window.open(job.url,"_blank");setTimeout(()=>setPrompt(true),2500);};
+  const onApply=()=>{
+    if(job.isEmailApply&&job.applyEmail){
+      const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
+      window.open(`mailto:${job.applyEmail}?subject=${encodeURIComponent(subj)}`,"_blank");
+    } else {
+      window.open(job.url,"_blank");
+    }
+    setTimeout(()=>setPrompt(true),2500);
+  };
   const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job.id);};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
@@ -1718,7 +1776,7 @@ function JobCard({job,user,onApplied}) {
     {/* Action buttons */}
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       <button onClick={()=>setAiApply(true)} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}><I.Sparkle s={12} c="#0a0608"/>AI Apply</button>
-      <button onClick={onApply} style={{background:"rgba(201,168,76,.2)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:700,fontFamily:"'Cinzel',serif",display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}><I.Arrow s={11} c="#f0d080"/>Careers</button>
+      <button onClick={onApply} style={{background:"rgba(201,168,76,.2)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:700,fontFamily:"'Cinzel',serif",display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}><I.Arrow s={11} c="#f0d080"/>{job.isEmailApply?"Apply by Email":"Careers"}</button>
       <button onClick={()=>setAiEmail(true)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:600,fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}><I.Send s={11} c="#e8a070"/>Email</button>
     </div>
     {aiApply&&<AIApplyModal job={job} user={user} onClose={()=>setAiApply(false)} onApplied={(id)=>{onApplied(id);setAiApply(false);}}/>}
@@ -1804,7 +1862,7 @@ export default function App() {
     return gen||[]; // volunteer overrides (if any), else empty — never fake jobs
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
-  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,dateFrom:""});
+  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,dateFrom:""});
   const [filterOpen,setFilterOpen]=useState(false);
   const refreshTimer=useRef(null);
 
@@ -1837,6 +1895,7 @@ export default function App() {
     if(f.types.length>0&&!f.types.includes(job.type))return false;
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
+    if(f.emailApplyOnly&&!job.isEmailApply)return false;
     if(f.search){const q=f.search.toLowerCase();if(!job.title.toLowerCase().includes(q)&&!job.company.toLowerCase().includes(q))return false;}
     return true;
   };
@@ -1851,9 +1910,9 @@ export default function App() {
   const allCountries=Object.keys(ALL_JOBS_DATA);
   const allStates=[...new Set(Object.values(ALL_JOBS_DATA).flatMap(s=>Object.keys(s)))].sort();
   const allTitles=JOB_CATS.slice().sort();
-  const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||!!filters.search;
-  const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0);
-  const CLEAR={countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,dateFrom:""};
+  const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||!!filters.search;
+  const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0);
+  const CLEAR={countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,dateFrom:""};
 
   // All jobs flat list for stats
   const allJobs=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.entries(c).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs))));
@@ -1953,6 +2012,14 @@ export default function App() {
                 <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.newOnly?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.newOnly?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.newOnly&&<I.Check s={9} c="#0a0608"/>}</div>
                 <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>New Postings Only (≤48h)</span>
               </label>
+              <label onClick={()=>setFilters(f=>({...f,activeOnly:!f.activeOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginTop:8}}>
+                <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.activeOnly?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.activeOnly?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.activeOnly&&<I.Check s={9} c="#0a0608"/>}</div>
+                <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Active Listings Only</span>
+              </label>
+              <label onClick={()=>setFilters(f=>({...f,emailApplyOnly:!f.emailApplyOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginTop:8}}>
+                <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.emailApplyOnly?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.emailApplyOnly?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.emailApplyOnly&&<I.Check s={9} c="#0a0608"/>}</div>
+                <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Email Apply Only</span>
+              </label>
             </FSection>
           </div>}
         </div>
@@ -1998,7 +2065,14 @@ export default function App() {
                             .filter(([name,company])=>{
                               if(!hasAnyFilter)return true;
                               const displayJobs=getDisplayJobs(name,company.jobs);
+                              // Active Listings Only: company must have at least one real job
+                              if(filters.activeOnly&&displayJobs.length===0)return false;
+                              // Email Apply Only: company must have an email-apply job (or be flagged emailApply)
+                              if(filters.emailApplyOnly&&!company.emailApply&&!displayJobs.some(j=>j.isEmailApply))return false;
                               if(filters.search){const q=filters.search.toLowerCase();if(name.toLowerCase().includes(q))return true;}
+                              // If only company-level filters are active (no job-level filters), show the company
+                              const jobLevelFilters=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.emailApplyOnly;
+                              if(!jobLevelFilters)return true;
                               return displayJobs.some(j=>matches(j));
                             })
                             .map(([name,company])=>{

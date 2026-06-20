@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Head from "next/head";
 
-const PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "applytojob", "bamboohr", "paylocity"];
+const PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "applytojob", "bamboohr", "paylocity", "jobvite"];
 
 export default function Verify() {
   const [slug, setSlug] = useState("");
