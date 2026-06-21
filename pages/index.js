@@ -1012,7 +1012,10 @@ const ATS_STUDIOS = {
 
 // Normalize a job from ANY ATS platform into our internal shape
 function normalizeATSJob(raw, platform, company, stateKey) {
-  const stripHtml = h => (h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+  const decodeEntities = h => (h||"")
+    .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'")
+    .replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"\u2019").replace(/&lsquo;/g,"\u2018").replace(/&ldquo;/g,"\u201c").replace(/&rdquo;/g,"\u201d").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
+  const stripHtml = h => decodeEntities(h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
   const guessExp = t => { const tl=(t||"").toLowerCase(); if(/director|head of|vp/.test(tl))return"Director"; if(/principal/.test(tl))return"Principal"; if(/\blead\b/.test(tl))return"Lead"; if(/senior|sr\./.test(tl))return"Senior"; if(/junior|jr\.|intern|entry/.test(tl))return"Entry Level"; return"Mid Level"; };
   let title="", url="", body="", loc="", updated=Date.now(), salary="Salary not listed", rawHtml="";
 
@@ -1074,6 +1077,8 @@ function normalizeATSJob(raw, platform, company, stateKey) {
 function parseJobSections(html,plainText){
   const out={summary:"",responsibilities:[],requirements:[]};
   if(!html&&!plainText)return out;
+  // Decode HTML entities first (some ATS double-encode their HTML)
+  if(html)html=html.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"\u2019").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
   // Pull <li> items grouped by the nearest preceding heading
   const liItems=[];
   if(html){
@@ -1121,6 +1126,11 @@ const EMAIL_PROVIDERS = {
   yahoo:(to,s,b)=>`https://compose.mail.yahoo.com/?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`,
   proton:()=>`https://mail.proton.me/u/0/inbox#compose`,
 };
+// ── LEGAL VERSION ─────────────────────────────────────────────────────────────
+// Bump this date whenever Terms or Privacy Policy change. Users who agreed to an
+// older version will be prompted to re-accept via a popup near the footer.
+const TOS_VERSION = "2026-06-20";
+
 const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton:"ProtonMail"};
 
 // ── GEMINI AI HELPER — free, no credit card. Get key at aistudio.google.com ──
@@ -1178,8 +1188,8 @@ function Auth({onLogin}) {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email, password: pass });
         if (error) { setErr(error.message); setLoading(false); return; }
-        await supabase.from("profiles").insert({ id: data.user.id, name });
-        onLogin({ id: data.user.id, email, name, applied: {}, profile: {} });
+        await supabase.from("profiles").insert({ id: data.user.id, name, data: { tosVersion: TOS_VERSION } });
+        onLogin({ id: data.user.id, email, name, applied: {}, profile: { tosVersion: TOS_VERSION } });
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Invalid email or password."); setLoading(false); return; }
@@ -1188,7 +1198,8 @@ function Auth({onLogin}) {
         const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
         const applied = {};
         (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at }; });
-        onLogin({ id: data.user.id, email, name: profile?.name || email, applied, profile: profile || {} });
+        const profData = (profile && profile.data) ? profile.data : (profile || {});
+        onLogin({ id: data.user.id, email, name: profile?.name || profData.name || email, applied, profile: profData });
       }
     } catch (e) {
       setErr("Something went wrong. Please try again.");
@@ -1205,7 +1216,7 @@ function Auth({onLogin}) {
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden",alignItems:"stretch"}}>
-    <style>{`.ai{color:#f4edd8}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
+    <style>{`.ai{color:#f4edd8}select{background-color:rgba(20,14,10,.96)!important;color:#f4edd8;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23c9a84c%22%20d%3D%22M2%204l4%204%204-4z%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px!important;cursor:pointer}select option{background-color:#140e0a;color:#f4edd8}select:focus{outline:none;border-color:rgba(201,168,76,.5)}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
     <div style={{position:"fixed",inset:0,pointerEvents:"none"}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.18,background:"radial-gradient(circle,#c9a84c,transparent)",top:-180,left:-120,animation:"ob1 18s ease-in-out infinite"}}/>
       <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",filter:"blur(120px)",opacity:.14,background:"radial-gradient(circle,#8b2020,transparent)",bottom:-180,right:-120,animation:"ob2 22s ease-in-out infinite"}}/>
@@ -1552,7 +1563,7 @@ function parseResumeText(text){
 
   // Email
   const email=flat.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  if(email)out.email=email[0];
+  if(email)out.emailAddress=email[0];
 
   // Name — usually the first non-empty line, 2-4 words, no digits/@
   for(const l of lines.slice(0,5)){
@@ -1593,6 +1604,22 @@ function parseResumeText(text){
   // Bio — first sentence of a summary/objective section, else first long line
   const sumIdx=lines.findIndex(l=>/^(summary|profile|objective|about)\b/i.test(l));
   if(sumIdx>-1&&lines[sumIdx+1]){out.bio=lines[sumIdx+1].slice(0,300);}
+
+  // Work history — capture lines under an Experience/Employment heading
+  const expIdx=lines.findIndex(l=>/^(work )?(experience|employment|professional experience|work history)\b/i.test(l));
+  if(expIdx>-1){
+    const stopRe=/^(education|skills|projects|certifications|awards|references|interests)\b/i;
+    const collected=[];
+    for(let i=expIdx+1;i<lines.length&&collected.length<8;i++){
+      if(stopRe.test(lines[i]))break;
+      if(lines[i].length>4)collected.push(lines[i]);
+    }
+    if(collected.length)out.workHistory=collected.join(" • ").slice(0,600);
+  }
+
+  // Achievements — lines with measurable wins (numbers, %, "increased/reduced/led")
+  const achLines=lines.filter(l=>/\b(increased|reduced|improved|led|shipped|launched|grew|achieved|delivered|saved|generated|\d+%|\$\d)/i.test(l)&&l.length>15&&l.length<200);
+  if(achLines.length)out.achievements=achLines.slice(0,5).join(" • ").slice(0,500);
 
   return out;
 }
@@ -1751,7 +1778,9 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const toggleOt=(v)=>setP(prev=>({...prev,openTo:prev.openTo.includes(v)?prev.openTo.filter(x=>x!==v):[...prev.openTo,v]}));
   const save = async () => {
     if (user?.id) {
-      await supabase.from("profiles").upsert({ id: user.id, name: p.name, role: p.role, location: p.location, skills: p.skills, years_exp: p.yearsExp, education: p.education, work_history: p.workHistory, achievements: p.achievements, resume_text: p.resumeText, email_provider: p.emailProvider, email_address: p.emailAddress, open_to: p.openTo }, { onConflict: "id" });
+      // Store the entire profile as JSON so every field persists (incl. resume, template, links)
+      const { error } = await supabase.from("profiles").upsert({ id: user.id, name: p.name, data: p }, { onConflict: "id" });
+      if (error) { console.error("Profile save error:", error.message); }
     }
     onUpdate({ ...user, name: p.name, profile: p });
     setSaved(true);
@@ -2058,7 +2087,8 @@ export default function App() {
             const { data:apps }=await supabase.from("applications").select("*").eq("user_id",uid);
             (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at }; });
           }catch{}
-          if(active)setUser({ id:uid, email:em, name:profile?.name||em, applied, profile:profile||{} });
+          const profData=(profile&&profile.data)?profile.data:(profile||{});
+          if(active)setUser({ id:uid, email:em, name:profile?.name||profData.name||em, applied, profile:profData });
         }
       }catch{}
       if(active)setAuthChecked(true);
@@ -2133,7 +2163,7 @@ export default function App() {
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
-    <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
     {/* Styles */}
     <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:#080608!important;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
@@ -2169,7 +2199,7 @@ export default function App() {
     </header>
     {showAcct&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
 
-    <main style={{position:"relative",zIndex:1,maxWidth:1100,margin:"0 auto",padding:mobile?"14px 12px":"24px 18px"}}>
+    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
@@ -2372,7 +2402,7 @@ export default function App() {
       </div>}
     </main>
     {/* Legal footer */}
-    <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:20,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)"}}>
+    <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
         Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.
       </div>
@@ -2382,6 +2412,11 @@ export default function App() {
         <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest</span>
       </div>
     </footer>
+    {/* Terms update notice — shows if the user agreed to an older version */}
+    {user&&user.profile&&user.profile.tosVersion&&user.profile.tosVersion!==TOS_VERSION&&<div style={{position:"sticky",bottom:0,zIndex:50,background:"rgba(20,14,10,.98)",borderTop:"2px solid rgba(201,168,76,.4)",padding:"14px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"center",gap:14,boxShadow:"0 -8px 30px rgba(0,0,0,.5)"}}>
+      <span style={{fontSize:13,color:"#f4edd8",lineHeight:1.5,textAlign:"center"}}>📜 Our <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a> have been updated. Please review and agree to continue.</span>
+      <button onClick={async()=>{const np={...user.profile,tosVersion:TOS_VERSION};setUser(u=>({...u,profile:np}));if(user?.id){try{await supabase.from("profiles").upsert({id:user.id,name:user.name,data:np},{onConflict:"id"});}catch(e){console.error(e);}}}} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:8,padding:"8px 22px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,flexShrink:0}}>I Agree</button>
+    </div>}
   </div>
   </>;
 }
