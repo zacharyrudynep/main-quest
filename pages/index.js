@@ -1216,7 +1216,7 @@ function Auth({onLogin}) {
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden",alignItems:"stretch"}}>
-    <style>{`.ai{color:#f4edd8}select{color-scheme:dark!important;background-color:rgba(20,14,10,.96)!important;color:#f4edd8!important;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23c9a84c%22%20d%3D%22M2%204l4%204%204-4z%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px!important;cursor:pointer}select option{background-color:#140e0a!important;color:#f4edd8!important}select option:hover,select option:checked,select option:focus{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important}select:focus{outline:none;border-color:rgba(201,168,76,.5)!important}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
+    <style>{`.ai{color:#f4edd8}select{color-scheme:dark!important;background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23c9a84c%22%20d%3D%22M2%204l4%204%204-4z%22%2F%3E%3C%2Fsvg%3E")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;padding-right:28px!important;cursor:pointer}select option{background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important}select optgroup{background-color:#140e0a!important;color:#f4edd8!important}select option:hover,select option:checked,select option:focus,select option:active{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important;box-shadow:0 0 10px 100px #2a1d12 inset!important}select:focus{outline:none;border-color:rgba(201,168,76,.5)!important}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
     <div style={{position:"fixed",inset:0,pointerEvents:"none"}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.18,background:"radial-gradient(circle,#c9a84c,transparent)",top:-180,left:-120,animation:"ob1 18s ease-in-out infinite"}}/>
       <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",filter:"blur(120px)",opacity:.14,background:"radial-gradient(circle,#8b2020,transparent)",bottom:-180,right:-120,animation:"ob2 22s ease-in-out infinite"}}/>
@@ -1360,7 +1360,7 @@ function AIApplyModal({job,user,onClose,onApplied}) {
   const scoreColor=s=>s>=70?"#7ecfb3":s>=45?"#c9a84c":"#e07060";
   const scoreBg=s=>s>=70?"rgba(126,207,179,.1)":s>=45?"rgba(201,168,76,.1)":"rgba(192,50,26,.1)";
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
-  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",transition:"all .2s"};
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",transition:"all .2s"};
   const modal={position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(16px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"};
   const card={background:"rgba(14,10,20,.98)",border:"1px solid rgba(201,168,76,.25)",borderRadius:mobile?14:20,width:"100%",maxWidth:640,maxHeight:"calc(100vh - 32px)",display:"flex",flexDirection:"column",margin:"auto",flexShrink:0,boxShadow:"0 32px 80px rgba(0,0,0,.6)"};
   const hdr={display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px 14px",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0};
@@ -1680,7 +1680,7 @@ const upload=async(e)=>{
     if(fileRef.current)fileRef.current.value="";
   };
 
-  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:4,display:"block"};
   const fld={display:"flex",flexDirection:"column",gap:4,marginBottom:12};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
@@ -1733,7 +1733,7 @@ function EmailTemplateTab({profile,upd}){
   const placeholderCount=(text.match(/\[x\]/gi)||[]).length;
   const OPTIONS=[["company","Company Name"],["position","Position Title"]];
 
-  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"block"};
 
   const setMapping=(i,val)=>{
@@ -1802,7 +1802,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   };
   const initials=p.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
-  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:4,display:"block"};
   const fld={display:"flex",flexDirection:"column",gap:4,marginBottom:12};
   const tabs=[["profile","Profile",<I.Person s={14} c="currentColor"/>],["resume","Resume",<I.Scroll s={14} c="currentColor"/>],["links","Links",<I.Link s={14} c="currentColor"/>],["template","Email Template",<I.Send s={14} c="currentColor"/>],["account","Account",<I.Lock s={14} c="currentColor"/>]];
@@ -1965,6 +1965,7 @@ function JobCard({job,user,onApplied}) {
   const isApplied=user?.applied?.[job.id];
   const match=computeMatchScore(job,user?.profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#888";
+  const [showScoreInfo,setShowScoreInfo]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
   const onApply=()=>{
@@ -2035,7 +2036,10 @@ function JobCard({job,user,onApplied}) {
     </div>
     </div>
     {/* Match score square */}
-    {match&&<div title={`Match score: ${match.score}/10 — based on how your skills & resume align with this job's requirements`} style={{flexShrink:0,width:mobile?54:62,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:`${scoreColor}1a`,border:`1px solid ${scoreColor}55`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
+    {match&&<div style={{flexShrink:0,width:mobile?54:62,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:`${scoreColor}1a`,border:`1px solid ${scoreColor}55`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
+      {/* Info icon */}
+      <span onMouseEnter={()=>setShowScoreInfo(true)} onMouseLeave={()=>setShowScoreInfo(false)} onClick={e=>{e.stopPropagation();setShowScoreInfo(v=>!v);}} style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${scoreColor}99`,color:scoreColor,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
+      {showScoreInfo&&<div style={{position:"absolute",top:"100%",right:0,marginTop:6,width:210,background:"rgba(20,14,10,.98)",border:`1px solid ${scoreColor}55`,borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess that compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
       <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
       <div style={{fontSize:8,color:scoreColor,opacity:.7,fontFamily:"'Cinzel',serif",letterSpacing:.3}}>/ 10</div>
       <div style={{fontSize:7,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Match</div>
@@ -2122,7 +2126,7 @@ export default function App() {
     return gen||[]; // volunteer overrides (if any), else empty — never fake jobs
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
-  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,dateFrom:""});
+  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""});
   const [filterOpen,setFilterOpen]=useState(false);
   const refreshTimer=useRef(null);
 
@@ -2185,11 +2189,17 @@ export default function App() {
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
     if(f.emailApplyOnly&&!job.isEmailApply)return false;
+    if(f.minMatch>0){const ms=computeMatchScore(job,user?.profile)?.score??-1;if(ms<f.minMatch)return false;}
     if(f.search){const q=f.search.toLowerCase();if(!job.title.toLowerCase().includes(q)&&!job.company.toLowerCase().includes(q))return false;}
     return true;
   };
 
   const sortJobs=jobs=>jobs.slice().sort((a,b)=>{
+    if(jobSort==="match"){
+      const sa=computeMatchScore(a,user?.profile)?.score??-1;
+      const sb=computeMatchScore(b,user?.profile)?.score??-1;
+      return sb-sa;
+    }
     if(jobSort==="newest")return new Date(b.posted)-new Date(a.posted);
     if(jobSort==="oldest")return new Date(a.posted)-new Date(b.posted);
     if(jobSort==="title")return a.title.localeCompare(b.title);
@@ -2199,9 +2209,9 @@ export default function App() {
   const allCountries=Object.keys(ALL_JOBS_DATA);
   const allStates=[...new Set(Object.values(ALL_JOBS_DATA).flatMap(s=>Object.keys(s)))].sort();
   const allTitles=JOB_CATS.slice().sort();
-  const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||!!filters.search;
-  const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0);
-  const CLEAR={countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,dateFrom:""};
+  const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.minMatch>0||!!filters.search;
+  const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.minMatch>0?1:0);
+  const CLEAR={countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""};
 
   // All jobs flat list for stats
   const allJobs=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.entries(c).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs))));
@@ -2313,12 +2323,22 @@ export default function App() {
                 <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Email Apply Only</span>
               </label>
             </FSection>
+            <FSection title="Minimum Match Score" count={filters.minMatch>0?1:0}>
+              <p style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginBottom:8,lineHeight:1.4,fontStyle:"italic"}}>Show only jobs at or above this match score. Requires skills/resume in your profile.</p>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <input type="range" min={0} max={9} step={0.5} value={filters.minMatch} onChange={e=>setFilters(f=>({...f,minMatch:parseFloat(e.target.value)}))} style={{flex:1,accentColor:"#c9a84c",cursor:"pointer"}}/>
+                <span style={{fontSize:13,fontWeight:800,color:filters.minMatch>0?"#c9a84c":"rgba(244,237,216,.4)",fontFamily:"'Cinzel',serif",minWidth:46,textAlign:"right"}}>{filters.minMatch>0?`${filters.minMatch.toFixed(1)}+`:"Any"}</span>
+              </div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {[["Any",0],["5+",5],["7+",7],["8+",8]].map(([lbl,val])=><button key={lbl} onClick={()=>setFilters(f=>({...f,minMatch:val}))} style={{background:filters.minMatch===val?"rgba(201,168,76,.2)":"rgba(201,168,76,.05)",border:`1px solid ${filters.minMatch===val?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:filters.minMatch===val?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:6,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",fontWeight:700}}>{lbl}</button>)}
+              </div>
+            </FSection>
           </div>}
         </div>
         {/* Sort bar */}
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",padding:mobile?"7px 10px":"8px 12px",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:12}}>
           <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8,marginRight:2}}>Sort:</span>
-          {sortChip("default","Default")}{sortChip("newest","Newest")}{sortChip("oldest","Oldest")}{!mobile&&sortChip("title","Title A–Z")}
+          {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest")}{sortChip("oldest","Oldest")}{!mobile&&sortChip("title","Title A–Z")}
         </div>
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -2361,7 +2381,7 @@ export default function App() {
                         if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
                         if(filters.types.length===1&&filters.types[0]==="Volunteer"&&(co.volunteer||dj.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
                         if(filters.search){const q=filters.search.toLowerCase();if(nm.toLowerCase().includes(q))return true;}
-                        const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly;
+                        const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
                         if(!jlf)return true;
                         return dj.some(j=>matches(j));
                       }).length;
@@ -2388,7 +2408,7 @@ export default function App() {
                               if(volunteerFilterOnly&&(company.volunteer||displayJobs.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
                               if(filters.search){const q=filters.search.toLowerCase();if(name.toLowerCase().includes(q))return true;}
                               // If only company-level filters are active (no job-level filters), show the company
-                              const jobLevelFilters=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly;
+                              const jobLevelFilters=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
                               if(!jobLevelFilters)return true;
                               return displayJobs.some(j=>matches(j));
                             })
