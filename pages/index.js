@@ -1888,16 +1888,42 @@ function NoOpenCard({company,companyName,user,onApplied}) {
 }
 
 // ── ATS SCORER ───────────────────────────────────────────────────────────────
+// Module-level caches so scores aren't recomputed on every render/filter/sort.
+const _MATCH_STOP=new Set(["and","the","for","with","this","that","are","you","will","have","from","our","your","able","more","some","they","into","its","can","use","all","any","work","team","years","year","role","who","what","when","their","has","was","were","been","being","but","not","other","such","than","then","them","these","those","also","may","must","should","would","could","about","across","within","using","including","etc","strong","plus","preferred","required","experience","skills","ability","knowledge","understanding","to","in","of","a","an","or","on","at","by","as","be","is","it","do","we","he","she","per","via","out","up","off","over","under","new","one","two","get","got","make","made","help","like","well","good","great","join","build","building","create","creating","develop","developing"]);
+const _matchTokenize=t=>(t.match(/[a-z][a-z0-9+#.]{2,}/g)||[]).filter(w=>!_MATCH_STOP.has(w));
+let _profileCache={key:null,profileSet:null,skillSet:null,corpus:null,yexp:""};
+const _scoreCache=new Map(); // jobId+profileKey -> result
+
+// A short signature of the profile so we know when to invalidate caches.
+function _profileKey(p){
+  if(!p)return "";
+  return `${(p.skills||"").length}|${(p.resumeText||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}`;
+}
+
 function computeMatchScore(job,profile){
   if(!profile)return null;
-  // Build the candidate's text corpus from their profile + resume
-  const skillsText=(profile.skills||"").toLowerCase();
-  const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.resumeText||""].join(" ").toLowerCase();
-  if(!corpus.trim()||corpus.replace(/\s/g,"").length<25)return null; // not enough profile data to score
+  const pKey=_profileKey(profile);
 
-  const STOP=new Set(["and","the","for","with","this","that","are","you","will","have","from","our","your","able","more","some","they","into","its","can","use","all","any","work","team","years","year","role","who","what","when","their","has","was","were","been","being","but","not","other","such","than","then","them","these","those","also","may","must","should","would","could","about","across","within","using","including","etc","strong","plus","preferred","required","experience","skills","ability","knowledge","understanding","to","in","of","a","an","or","on","at","by","as","be","is","it","do","we","he","she","per","via","out","up","off","over","under","new","one","two","get","got","make","made","help","like","well","good","great","join","build","building","create","creating","develop","developing"]);
+  // (Re)build the profile token sets only when the profile actually changes.
+  if(_profileCache.key!==pKey){
+    const skillsText=(profile.skills||"").toLowerCase();
+    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.resumeText||""].join(" ").toLowerCase();
+    if(!corpus.trim()||corpus.replace(/\s/g,"").length<25){
+      _profileCache={key:pKey,profileSet:null,skillSet:null,corpus:"",yexp:""};
+    } else {
+      _profileCache={key:pKey,profileSet:new Set(_matchTokenize(corpus)),skillSet:new Set(_matchTokenize(skillsText)),corpus,yexp:(profile.yearsExp||"").toLowerCase()};
+    }
+    _scoreCache.clear(); // profile changed → old scores are stale
+  }
+  if(!_profileCache.profileSet)return null; // not enough profile data
 
-  const tokenize=t=>(t.match(/[a-z][a-z0-9+#.]{2,}/g)||[]).filter(w=>!STOP.has(w));
+  // Return cached score for this job if we already computed it.
+  const cacheKey=(job.id||job.title)+"|"+pKey;
+  if(_scoreCache.has(cacheKey))return _scoreCache.get(cacheKey);
+
+  const tokenize=_matchTokenize;
+  const profileSet=_profileCache.profileSet;
+  const skillSet=_profileCache.skillSet;
 
   // Job keyword set (from title, requirements, responsibilities, summary)
   const titleKws=new Set(tokenize((job.title||"").toLowerCase()));
@@ -1907,9 +1933,6 @@ function computeMatchScore(job,profile){
   // Combined unique job keywords
   const allJobKws=new Set([...titleKws,...reqKws,...bodyKws]);
   if(allJobKws.size<3)return null; // not enough job data to score reliably
-
-  const profileSet=new Set(tokenize(corpus));
-  const skillSet=new Set(tokenize(skillsText));
 
   // ── Weighted scoring ──
   // 1. Requirements/responsibilities overlap (most important) — 50%
@@ -1925,7 +1948,7 @@ function computeMatchScore(job,profile){
   const skillScore=Math.min(1,skillHits/8);
   // 4. Experience level alignment — 10%
   let expScore=0.5;
-  const yexp=(profile.yearsExp||"").toLowerCase();
+  const yexp=_profileCache.yexp;
   const jexp=(job.experience||"").toLowerCase();
   if(yexp&&jexp){
     const yNum=yexp.includes("10")?10:yexp.includes("7")?8:yexp.includes("4")?5:yexp.includes("2")?3:yexp.includes("1")?1.5:0.5;
@@ -1942,7 +1965,9 @@ function computeMatchScore(job,profile){
   // Missing requirement keywords the user might want to add (longer, meaningful words)
   const missing=reqArr.filter(k=>!profileSet.has(k)&&k.length>4).slice(0,5);
 
-  return{score:score10,reqMatched:reqMatched.length,reqTotal:reqArr.length,missing};
+  const result={score:score10,reqMatched:reqMatched.length,reqTotal:reqArr.length,missing};
+  _scoreCache.set(cacheKey,result);
+  return result;
 }
 function ATSPill({ats,onClick}){
   if(!ats)return null;
