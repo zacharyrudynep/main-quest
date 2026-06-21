@@ -1674,6 +1674,7 @@ const upload=async(e)=>{
       Object.entries(parsed).forEach(([k,v])=>{if(v&&typeof v==="string"&&v.trim())updateField(k,v.trim());});
       // Always store the full text so the user has it
       updateField("resumeText",text.replace(/\s+/g," ").trim().slice(0,8000));
+      updateField("resumeFileName",file.name);
       setPs("done");setMsg("Resume text extracted! Review and edit the fields below.");
     }catch(err){setPs("error");setMsg(err.message||"Could not parse. Try a different file or paste text manually.");}
     if(fileRef.current)fileRef.current.value="";
@@ -1689,13 +1690,26 @@ const upload=async(e)=>{
 
   return <div>
     <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Upload your resume (PDF, DOCX, or TXT) to auto-fill your profile fields. Everything is processed in your browser — review and edit below.</p>
+    {/* Active resume card (shown when a resume is saved) OR the upload zone */}
+    {(profile.resumeText&&ps!=="reading"&&ps!=="parsing"&&ps!=="error")?(
+      <div style={{border:"1px solid rgba(126,207,179,.3)",borderRadius:12,padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(126,207,179,.05)",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
+          <div style={{flexShrink:0}}><I.Scroll s={24} c="#7ecfb3"/></div>
+          <div style={{minWidth:0}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#7ecfb3",marginBottom:2}}>Active Resume</div>
+            <div style={{fontSize:12,color:"rgba(244,237,216,.7)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{profile.resumeFileName||"Resume on file"}</div>
+          </div>
+        </div>
+        <button title="Remove resume" onClick={()=>{if(window.confirm("Remove the uploaded resume? Your other profile fields will stay.")){updateField("resumeText","");updateField("resumeFileName","");setPs("idle");setMsg("");}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",borderRadius:8,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:15,fontWeight:700,lineHeight:1}}>✕</button>
+      </div>
+    ):(
     <div onClick={()=>ps!=="parsing"&&ps!=="reading"&&fileRef.current?.click()} onDragOver={e=>{e.preventDefault();}} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f){const dt=new DataTransfer();dt.items.add(f);fileRef.current.files=dt.files;upload({target:fileRef.current});}}} style={{border:`1.5px dashed ${zoneColor}`,borderRadius:12,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:8,cursor:ps==="parsing"||ps==="reading"?"default":"pointer",transition:"all .2s",background:zoneBg,marginBottom:16,textAlign:"center"}}>
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{display:"none"}} onChange={upload}/>
       {ps==="idle"&&<><I.Scroll s={26} c="#c9a84c"/><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f4edd8"}}>Upload Resume</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>PDF, DOCX, or TXT · Max 10MB</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer",marginTop:4}}>Choose File or Drag & Drop</div></>}
       {(ps==="reading"||ps==="parsing")&&<><I.Sparkle s={26} c="#c9a84c"/><div style={{fontSize:12,color:"rgba(244,237,216,.7)",fontFamily:"'Cinzel',serif"}}>{msg}</div></>}
-      {ps==="done"&&<><I.Check s={26} c="#7ecfb3"/><div style={{fontSize:12,fontFamily:"'Cinzel',serif",color:"#7ecfb3"}}>{msg}</div><button onClick={e=>{e.stopPropagation();setPs("idle");setMsg("");}} style={{background:"rgba(244,237,216,.06)",border:"1px solid rgba(244,237,216,.1)",color:"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,fontSize:11,padding:"5px 14px",fontFamily:"inherit"}}>Upload a different file</button></>}
       {ps==="error"&&<><I.X s={26} c="#e07060"/><div style={{fontSize:12,color:"#e07060",fontFamily:"'Cinzel',serif"}}>{msg}</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>Try Again</div></>}
     </div>
+    )}
     <div style={fld}><label style={lbl}>Key Skills</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={profile.skills||""} onChange={e=>updateField("skills",e.target.value)} placeholder="e.g. Unreal Engine 5, C++, Blueprint scripting, multiplayer..."/></div>
     <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
       <div style={fld}><label style={lbl}>Years of Experience</label><select style={inp} value={profile.yearsExp||""} onChange={e=>updateField("yearsExp",e.target.value)}><option value="">Select</option>{["0-1","1-2","2-4","4-7","7-10","10+"].map(v=><option key={v} value={v}>{v} years</option>)}</select></div>
@@ -1874,22 +1888,61 @@ function NoOpenCard({company,companyName,user,onApplied}) {
 }
 
 // ── ATS SCORER ───────────────────────────────────────────────────────────────
-function computeATS(job,profile){
+function computeMatchScore(job,profile){
   if(!profile)return null;
-  const text=[profile.skills||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.role||"",profile.resumeText||""].join(" ").toLowerCase();
-  if(!text.trim()||text.length<30)return null;
-  const jobText=[job.title||"",job.summary||"",...(job.responsibilities||[]),...(job.requirements||[])].join(" ").toLowerCase();
-  const STOP=new Set(["and","the","for","with","this","that","are","you","will","have","from","our","your","able","more","some","they","into","its","can","use","all","any","work","team","years","role","to","in","of","a","an","or","on","at","by","as","be","is","it","do","we"]);
-  const kws=[...new Set((jobText.match(/[a-z][a-z+#.]{2,}/g)||[]).filter(w=>!STOP.has(w)))];
-  if(!kws.length)return null;
-  const profileSet=new Set((text.match(/[a-z][a-z+#.]{2,}/g)||[]).filter(w=>!STOP.has(w)));
-  const matched=kws.filter(k=>profileSet.has(k));
-  const pct=Math.round((matched.length/Math.min(kws.length,60))*100);
-  const seed=job.id.split("").reduce((a,c)=>a+c.charCodeAt(0),0);
-  const score=Math.min(96,Math.max(8,pct+((seed%17)-8)));
-  const potential=Math.min(97,score+8+(seed%9));
-  const missing=kws.filter(k=>!profileSet.has(k)&&k.length>4).slice(0,5);
-  return{score,potential,missing};
+  // Build the candidate's text corpus from their profile + resume
+  const skillsText=(profile.skills||"").toLowerCase();
+  const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.resumeText||""].join(" ").toLowerCase();
+  if(!corpus.trim()||corpus.replace(/\s/g,"").length<25)return null; // not enough profile data to score
+
+  const STOP=new Set(["and","the","for","with","this","that","are","you","will","have","from","our","your","able","more","some","they","into","its","can","use","all","any","work","team","years","year","role","who","what","when","their","has","was","were","been","being","but","not","other","such","than","then","them","these","those","also","may","must","should","would","could","about","across","within","using","including","etc","strong","plus","preferred","required","experience","skills","ability","knowledge","understanding","to","in","of","a","an","or","on","at","by","as","be","is","it","do","we","he","she","per","via","out","up","off","over","under","new","one","two","get","got","make","made","help","like","well","good","great","join","build","building","create","creating","develop","developing"]);
+
+  const tokenize=t=>(t.match(/[a-z][a-z0-9+#.]{2,}/g)||[]).filter(w=>!STOP.has(w));
+
+  // Job keyword set (from title, requirements, responsibilities, summary)
+  const titleKws=new Set(tokenize((job.title||"").toLowerCase()));
+  const reqText=[...(job.requirements||[]),...(job.responsibilities||[])].join(" ").toLowerCase();
+  const reqKws=new Set(tokenize(reqText));
+  const bodyKws=new Set(tokenize([job.summary||"",job.fullDescription||""].join(" ").toLowerCase()));
+  // Combined unique job keywords
+  const allJobKws=new Set([...titleKws,...reqKws,...bodyKws]);
+  if(allJobKws.size<3)return null; // not enough job data to score reliably
+
+  const profileSet=new Set(tokenize(corpus));
+  const skillSet=new Set(tokenize(skillsText));
+
+  // ── Weighted scoring ──
+  // 1. Requirements/responsibilities overlap (most important) — 50%
+  const reqArr=[...reqKws];
+  const reqMatched=reqArr.filter(k=>profileSet.has(k));
+  const reqScore=reqArr.length?reqMatched.length/reqArr.length:0;
+  // 2. Title keyword overlap (role alignment) — 25%
+  const titleArr=[...titleKws];
+  const titleMatched=titleArr.filter(k=>profileSet.has(k));
+  const titleScore=titleArr.length?titleMatched.length/titleArr.length:0;
+  // 3. Skills section directly hitting the job — 15%
+  const skillHits=[...allJobKws].filter(k=>skillSet.has(k)).length;
+  const skillScore=Math.min(1,skillHits/8);
+  // 4. Experience level alignment — 10%
+  let expScore=0.5;
+  const yexp=(profile.yearsExp||"").toLowerCase();
+  const jexp=(job.experience||"").toLowerCase();
+  if(yexp&&jexp){
+    const yNum=yexp.includes("10")?10:yexp.includes("7")?8:yexp.includes("4")?5:yexp.includes("2")?3:yexp.includes("1")?1.5:0.5;
+    if(jexp.includes("entry")||jexp.includes("junior"))expScore=yNum<=3?1:yNum<=5?0.7:0.4;
+    else if(jexp.includes("senior"))expScore=yNum>=5?1:yNum>=3?0.6:0.3;
+    else if(jexp.includes("lead")||jexp.includes("principal")||jexp.includes("director"))expScore=yNum>=7?1:yNum>=4?0.6:0.25;
+    else expScore=yNum>=2?0.85:0.55; // mid
+  }
+
+  const weighted=reqScore*0.50+titleScore*0.25+skillScore*0.15+expScore*0.10;
+  // Convert to a 0-10 scale with a gentle curve so scores aren't all clustered low
+  let score10=Math.round(Math.min(10,Math.max(0.5,weighted*13))*10)/10;
+
+  // Missing requirement keywords the user might want to add (longer, meaningful words)
+  const missing=reqArr.filter(k=>!profileSet.has(k)&&k.length>4).slice(0,5);
+
+  return{score:score10,reqMatched:reqMatched.length,reqTotal:reqArr.length,missing};
 }
 function ATSPill({ats,onClick}){
   if(!ats)return null;
@@ -1910,6 +1963,8 @@ function JobCard({job,user,onApplied}) {
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
   const isApplied=user?.applied?.[job.id];
+  const match=computeMatchScore(job,user?.profile);
+  const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#888";
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
   const onApply=()=>{
@@ -1940,6 +1995,8 @@ function JobCard({job,user,onApplied}) {
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
+    <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
+    <div style={{flex:1,minWidth:0}}>
     {/* Title row */}
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
       {job.isNew&&<I.Alert s={18}/>}
@@ -1975,6 +2032,14 @@ function JobCard({job,user,onApplied}) {
     {/* Action buttons */}
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
+    </div>
+    </div>
+    {/* Match score square */}
+    {match&&<div title={`Match score: ${match.score}/10 — based on how your skills & resume align with this job's requirements`} style={{flexShrink:0,width:mobile?54:62,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:`${scoreColor}1a`,border:`1px solid ${scoreColor}55`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
+      <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
+      <div style={{fontSize:8,color:scoreColor,opacity:.7,fontFamily:"'Cinzel',serif",letterSpacing:.3}}>/ 10</div>
+      <div style={{fontSize:7,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Match</div>
+    </div>}
     </div>
   </div>;
 }
