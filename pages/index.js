@@ -1014,39 +1014,39 @@ const ATS_STUDIOS = {
 function normalizeATSJob(raw, platform, company, stateKey) {
   const stripHtml = h => (h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
   const guessExp = t => { const tl=(t||"").toLowerCase(); if(/director|head of|vp/.test(tl))return"Director"; if(/principal/.test(tl))return"Principal"; if(/\blead\b/.test(tl))return"Lead"; if(/senior|sr\./.test(tl))return"Senior"; if(/junior|jr\.|intern|entry/.test(tl))return"Entry Level"; return"Mid Level"; };
-  let title="", url="", body="", loc="", updated=Date.now(), salary="Salary not listed";
+  let title="", url="", body="", loc="", updated=Date.now(), salary="Salary not listed", rawHtml="";
 
   if(platform==="greenhouse"){
-    title=raw.title||""; url=raw.absolute_url||company.url; body=stripHtml(raw.content||"");
+    title=raw.title||""; url=raw.absolute_url||company.url; rawHtml=raw.content||""; body=stripHtml(rawHtml);
     loc=raw.location?.name||""; updated=new Date(raw.updated_at||raw.first_published_at||Date.now()).getTime();
   } else if(platform==="lever"){
-    title=raw.text||""; url=raw.hostedUrl||raw.applyUrl||company.url; body=stripHtml(raw.descriptionPlain||raw.description||"");
+    title=raw.text||""; url=raw.hostedUrl||raw.applyUrl||company.url; rawHtml=raw.description||raw.descriptionPlain||""; body=stripHtml(raw.descriptionPlain||raw.description||"");
     loc=raw.categories?.location||""; updated=raw.createdAt||Date.now();
   } else if(platform==="ashby"){
-    title=raw.title||""; url=raw.jobUrl||raw.applyUrl||company.url; body=stripHtml(raw.descriptionHtml||raw.description||"");
+    title=raw.title||""; url=raw.jobUrl||raw.applyUrl||company.url; rawHtml=raw.descriptionHtml||raw.description||""; body=stripHtml(rawHtml);
     loc=raw.locationName||raw.location||""; updated=new Date(raw.publishedAt||Date.now()).getTime();
     if(raw.compensation?.compensationTierSummary) salary=raw.compensation.compensationTierSummary;
   } else if(platform==="workable"){
-    title=raw.title||""; url=raw.url||raw.application_url||company.url; body=stripHtml(raw.description||"");
+    title=raw.title||""; url=raw.url||raw.application_url||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.location?.location_str||raw.city||""; updated=new Date(raw.published_on||Date.now()).getTime();
   } else if(platform==="smartrecruiters"){
-    title=raw.name||""; url=(raw.ref&&`https://jobs.smartrecruiters.com/${raw.ref}`)||raw.applyUrl||company.url; body=stripHtml(raw.jobAd?.sections?.jobDescription?.text||"");
+    title=raw.name||""; url=(raw.ref&&`https://jobs.smartrecruiters.com/${raw.ref}`)||raw.applyUrl||company.url; rawHtml=raw.jobAd?.sections?.jobDescription?.text||""; body=stripHtml(rawHtml);
     loc=[raw.location?.city,raw.location?.region].filter(Boolean).join(", "); updated=new Date(raw.releasedDate||Date.now()).getTime();
   } else if(platform==="recruitee"){
-    title=raw.title||""; url=raw.careers_url||raw.url||company.url; body=stripHtml(raw.description||"");
+    title=raw.title||""; url=raw.careers_url||raw.url||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.location||raw.city||""; updated=new Date(raw.published_at||Date.now()).getTime();
   } else if(platform==="applytojob"){
-    title=raw.title||raw.name||""; url=raw.board_url||raw.apply_url||company.url; body=stripHtml(raw.description||"");
+    title=raw.title||raw.name||""; url=raw.board_url||raw.apply_url||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=[raw.city,raw.state].filter(Boolean).join(", ")||raw.location||""; updated=new Date(raw.original_open_date||raw.created_at||Date.now()).getTime();
     if(raw.minimum_salary&&raw.maximum_salary) salary=`$${raw.minimum_salary} \u2013 $${raw.maximum_salary}`;
   } else if(platform==="bamboohr"){
-    title=raw.jobOpeningName||raw.title||""; url=(raw.id&&`https://${company.slug||""}.bamboohr.com/careers/${raw.id}`)||company.url; body=stripHtml(raw.description||"");
+    title=raw.jobOpeningName||raw.title||""; url=(raw.id&&`https://${company.slug||""}.bamboohr.com/careers/${raw.id}`)||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.location?(typeof raw.location==="string"?raw.location:[raw.location.city,raw.location.state].filter(Boolean).join(", ")):""; updated=new Date(raw.datePosted||Date.now()).getTime();
   } else if(platform==="paylocity"){
-    title=raw.title||raw.jobTitle||raw.name||""; url=raw.url||raw.applyUrl||company.url; body=stripHtml(raw.description||raw.jobDescription||"");
+    title=raw.title||raw.jobTitle||raw.name||""; url=raw.url||raw.applyUrl||company.url; rawHtml=raw.description||raw.jobDescription||""; body=stripHtml(rawHtml);
     loc=[raw.city,raw.state].filter(Boolean).join(", ")||raw.location||""; updated=new Date(raw.postedDate||raw.datePosted||Date.now()).getTime();
   } else if(platform==="jobvite"){
-    title=raw.title||raw.jobTitle||""; url=raw.detailUrl||raw.applyUrl||raw.url||company.url; body=stripHtml(raw.description||raw.jobDescription||"");
+    title=raw.title||raw.jobTitle||""; url=raw.detailUrl||raw.applyUrl||raw.url||company.url; rawHtml=raw.description||raw.jobDescription||""; body=stripHtml(rawHtml);
     loc=raw.location||[raw.city,raw.state].filter(Boolean).join(", ")||""; updated=new Date(raw.date||raw.postedDate||Date.now()).getTime();
   }
 
@@ -1057,15 +1057,62 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     const sm=body.match(/\$(\d[\d,]+)\s*[-\u2013]+\s*\$(\d[\d,]+)/);
     if(sm) salary=`$${parseInt(sm[1].replace(/,/g,"")).toLocaleString()} \u2013 $${parseInt(sm[2].replace(/,/g,"")).toLocaleString()}`;
   }
+  const parsed=parseJobSections(rawHtml,body);
   return {
     id:`ats-${platform}-${raw.id||raw.shortcode||raw.uuid||title.replace(/\s+/g,"")}`,
     title, company:company.name, url, applyUrl:url, state:stateKey,
     posted:new Date(updated), postedStr:new Date(updated).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
     daysAgo, isNew:daysAgo<3, isRemote, type:"Full-time", salary, email:company.email,
     experience:guessExp(title), isVolunteer:false, isLive:true,
-    summary:body.slice(0,240).trim()+(body.length>240?"\u2026":""),
-    responsibilities:[], requirements:[], location:loc,
+    summary:(parsed.summary||body.slice(0,240)).trim()+((parsed.summary||body).length>240?"\u2026":""),
+    fullDescription:body.slice(0,2000),
+    responsibilities:parsed.responsibilities, requirements:parsed.requirements, location:loc,
   };
+}
+
+// Parse a job's HTML/text into a summary + responsibilities + requirements lists.
+function parseJobSections(html,plainText){
+  const out={summary:"",responsibilities:[],requirements:[]};
+  if(!html&&!plainText)return out;
+  // Pull <li> items grouped by the nearest preceding heading
+  const liItems=[];
+  if(html){
+    // Split on headings to find section context
+    const sections=html.split(/<(?:h[1-6]|strong|b)[^>]*>/i);
+    for(const sec of sections){
+      const headMatch=sec.slice(0,80).replace(/<[^>]+>/g," ").toLowerCase();
+      const lis=[...sec.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)].map(m=>m[1].replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim()).filter(t=>t.length>3&&t.length<300);
+      if(lis.length){
+        const isReq=/require|qualif|you have|you'll need|skills|experience|must have|looking for/i.test(headMatch);
+        const isResp=/responsib|what you|you will|role|duties|day.to.day|about the/i.test(headMatch);
+        for(const li of lis){
+          if(isReq)out.requirements.push(li);
+          else if(isResp)out.responsibilities.push(li);
+          else liItems.push(li);
+        }
+      }
+    }
+  }
+  // If nothing was categorized but we have loose <li>, use keyword heuristics
+  if(out.responsibilities.length===0&&out.requirements.length===0&&liItems.length===0&&html){
+    const allLis=[...html.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)].map(m=>m[1].replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim()).filter(t=>t.length>3&&t.length<300);
+    allLis.forEach(li=>{
+      if(/\b(year|experience|degree|proficien|knowledge of|familiar|expert|strong|ability to|bachelor|skill)\b/i.test(li))out.requirements.push(li);
+      else out.responsibilities.push(li);
+    });
+  } else {
+    // distribute uncategorized list items into responsibilities by default
+    liItems.forEach(li=>out.responsibilities.push(li));
+  }
+  // Cap list lengths
+  out.responsibilities=out.responsibilities.slice(0,8);
+  out.requirements=out.requirements.slice(0,8);
+  // Summary = first meaningful paragraph of plain text
+  if(plainText){
+    const firstPara=plainText.split(/(?<=[.!?])\s+/).slice(0,3).join(" ");
+    out.summary=firstPara.slice(0,240);
+  }
+  return out;
 }
 
 const EMAIL_PROVIDERS = {
@@ -1118,6 +1165,7 @@ function Auth({onLogin}) {
   const mobile = useIsMobile();
   const [mode,setMode]=useState("login");
   const [agreed,setAgreed]=useState(false);
+  const [staySignedIn,setStaySignedIn]=useState(true);
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
   const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false);
   const submit = async () => {
@@ -1135,6 +1183,7 @@ function Auth({onLogin}) {
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Invalid email or password."); setLoading(false); return; }
+        try{ if(staySignedIn){localStorage.setItem("mq_stay","1");}else{localStorage.removeItem("mq_stay");sessionStorage.setItem("mq_session","1");} }catch{}
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
         const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
         const applied = {};
@@ -1238,6 +1287,10 @@ function Auth({onLogin}) {
           {mode==="signup"&&<label style={{display:"flex",alignItems:"flex-start",gap:8,fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.5,cursor:"pointer"}}>
             <input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)} style={{marginTop:2,accentColor:"#c9a84c",cursor:"pointer",flexShrink:0}}/>
             <span>I agree to the <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a>.</span>
+          </label>}
+          {mode==="login"&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"rgba(244,237,216,.6)",cursor:"pointer",userSelect:"none"}}>
+            <input type="checkbox" checked={staySignedIn} onChange={e=>setStaySignedIn(e.target.checked)} style={{accentColor:"#c9a84c",cursor:"pointer"}}/>
+            <span>Stay signed in on this device</span>
           </label>}
           <button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Enter the Guild":"Forge Account"} →</>}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,color:"rgba(244,237,216,.2)"}}>
@@ -1490,6 +1543,60 @@ function AIEmailModal({job,user,onClose,onApplied}) {
 }
 
 
+// ── RESUME TEXT PARSER (no AI — pure heuristics) ──────────────────────────────
+function parseResumeText(text){
+  const clean=text.replace(/\r/g,"").replace(/\t/g," ");
+  const lines=clean.split("\n").map(l=>l.trim()).filter(Boolean);
+  const flat=clean.replace(/\s+/g," ").trim();
+  const out={};
+
+  // Email
+  const email=flat.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if(email)out.email=email[0];
+
+  // Name — usually the first non-empty line, 2-4 words, no digits/@
+  for(const l of lines.slice(0,5)){
+    if(/@|\d{3}/.test(l))continue;
+    const words=l.split(/\s+/);
+    if(words.length>=2&&words.length<=4&&/^[A-Za-z][A-Za-z.'-]*$/.test(words[0])&&l.length<46){out.name=l;break;}
+  }
+
+  // Location — look for "City, ST" pattern
+  const loc=flat.match(/\b([A-Z][a-zA-Z.\- ]+),\s*([A-Z]{2})\b/);
+  if(loc)out.location=`${loc[1].trim()}, ${loc[2]}`;
+
+  // Role / current title — look for common title keywords near the top
+  const titleRe=/(Senior |Junior |Lead |Principal |Staff )?(Game |Gameplay |Technical |Software |Systems |UI\/?UX |3D |Environment |Character |Narrative |Level )?(Designer|Developer|Engineer|Artist|Programmer|Producer|Animator|Writer|Manager|Director|Analyst)/i;
+  for(const l of lines.slice(0,8)){
+    const m=l.match(titleRe);
+    if(m&&l.length<60){out.role=m[0].trim();break;}
+  }
+  if(!out.role){const m=flat.match(titleRe);if(m)out.role=m[0].trim();}
+
+  // Education — find a line mentioning a degree
+  const eduLine=lines.find(l=>/\b(B\.?S\.?|B\.?A\.?|M\.?S\.?|M\.?A\.?|Bachelor|Master|Associate|Ph\.?D|Diploma|Certificate)\b/i.test(l)&&l.length<120);
+  if(eduLine)out.education=eduLine;
+
+  // Skills — find a "Skills" section and grab the following content
+  const skillsIdx=lines.findIndex(l=>/^(technical )?skills\b/i.test(l)||/^(core )?competencies\b/i.test(l));
+  if(skillsIdx>-1){
+    const after=lines.slice(skillsIdx+1,skillsIdx+6).join(", ");
+    // stop at next section header
+    const cut=after.split(/\b(experience|education|projects|employment|work history)\b/i)[0];
+    if(cut&&cut.length>3)out.skills=cut.replace(/^[:\-\s]+/,"").slice(0,400);
+  }
+
+  // Years of experience — look for "X years"
+  const yrs=flat.match(/(\d{1,2})\+?\s*years?(\s+of)?\s+(experience|exp)/i);
+  if(yrs){const n=parseInt(yrs[1]);out.yearsExp=n<1?"0-1":n<2?"1-2":n<4?"2-4":n<7?"4-7":n<10?"7-10":"10+";}
+
+  // Bio — first sentence of a summary/objective section, else first long line
+  const sumIdx=lines.findIndex(l=>/^(summary|profile|objective|about)\b/i.test(l));
+  if(sumIdx>-1&&lines[sumIdx+1]){out.bio=lines[sumIdx+1].slice(0,300);}
+
+  return out;
+}
+
 // ── RESUME SECTION ────────────────────────────────────────────────────────────
 function ResumeSection({profile,updateField}) {
   const mobile = useIsMobile();
@@ -1499,54 +1606,48 @@ function ResumeSection({profile,updateField}) {
 
   const toB64=(file)=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
 
-  const upload=async(e)=>{
+const upload=async(e)=>{
     const file=e.target.files?.[0]; if(!file)return;
     const ext="."+file.name.split(".").pop().toLowerCase();
     if(![".pdf",".docx",".doc",".txt"].includes(ext)){setMsg("Use PDF, DOCX, or TXT.");setPs("error");return;}
     if(file.size>10*1024*1024){setMsg("File must be under 10MB.");setPs("error");return;}
     setPs("reading");setMsg("Reading file…");
     try{
-      let messages,headers={"Content-Type":"application/json"};
-      let pdfB64="",pdfExtractPrompt=""; // declared here so they're accessible after the if/else
+      let text="";
       if(ext===".pdf"){
-        setMsg("Processing PDF…");
-        pdfB64=await toB64(file);
-        pdfExtractPrompt=`Extract all resume information. Return ONLY valid JSON (no markdown, no explanation):\n{"name":"full name","role":"current or target job title","location":"city, state","bio":"2-sentence professional summary","skills":"comma-separated list of all skills","yearsExp":"best match: 0-1, 1-2, 2-4, 4-7, 7-10, or 10+","education":"degree, school, year","workHistory":"chronological summary of each role with dates","achievements":"measurable accomplishments with numbers","resumeText":"complete verbatim resume text"}`;
-        messages=[{role:"user",content:pdfExtractPrompt}];
-      } else {
-        setMsg(ext===".txt"?"Reading text…":"Extracting DOCX text…");
-        let text="";
-        if(ext===".txt"){
-          text=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(file);});
-        } else {
-          // DOCX: load mammoth dynamically
-          if(typeof window.mammoth==="undefined"){
-            await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
-          }
-          const buf=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsArrayBuffer(file);});
-          const result=await window.mammoth.extractRawText({arrayBuffer:buf});
-          text=result.value||"";
-          if(text.length<20){throw new Error("Could not extract text. Try saving as PDF.");}
+        setMsg("Extracting PDF text…");
+        // Load PDF.js dynamically (no AI, runs entirely in the browser)
+        if(typeof window.pdfjsLib==="undefined"){
+          await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
         }
-        const extractPrompt=`Extract resume info. Return ONLY valid JSON (no markdown):\n{"name":"","role":"job title","location":"city, state","bio":"2-sentence summary","skills":"comma-separated skills","yearsExp":"0-1|1-2|2-4|4-7|7-10|10+","education":"degree, school, year","workHistory":"summary of each role","achievements":"measurable wins","resumeText":"full text"}\n\nRESUME:\n${text.slice(0,10000)}`;
-        messages=[{role:"user",content:extractPrompt}];
-      }
-      setPs("parsing");setMsg("Extracting resume info with AI…");
-      // PDF uses Gemini inline_data; DOCX/TXT use callAI text
-      let parsedText;
-      if(ext===".pdf"){
-        const gemKey=process.env.NEXT_PUBLIC_GEMINI_KEY;
-        if(!gemKey)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com");
-        const pdfRes=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${gemKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"application/pdf",data:pdfB64}},{text:pdfExtractPrompt}]}],generationConfig:{maxOutputTokens:1500,temperature:0.1}})});
-        if(!pdfRes.ok){const pe=await pdfRes.json().catch(()=>({}));throw new Error(pe?.error?.message||`PDF API error ${pdfRes.status}`);}
-        const pdfData=await pdfRes.json();
-        parsedText=(pdfData.candidates?.[0]?.content?.parts?.[0]?.text||"").replace(/```json|```/g,"").trim();
+        const buf=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsArrayBuffer(file);});
+        const pdf=await window.pdfjsLib.getDocument({data:buf}).promise;
+        for(let i=1;i<=pdf.numPages;i++){
+          const page=await pdf.getPage(i);
+          const tc=await page.getTextContent();
+          text+=tc.items.map(it=>it.str).join(" ")+"\n";
+        }
+      } else if(ext===".txt"){
+        text=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(file);});
       } else {
-        parsedText=(await callAI(messages[0].content,1500)).replace(/```json|```/g,"").trim();
+        // DOCX: load mammoth dynamically
+        setMsg("Extracting DOCX text…");
+        if(typeof window.mammoth==="undefined"){
+          await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+        }
+        const buf=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsArrayBuffer(file);});
+        const result=await window.mammoth.extractRawText({arrayBuffer:buf});
+        text=result.value||"";
       }
-      const parsed=JSON.parse(parsedText.slice(parsedText.indexOf("{"),parsedText.lastIndexOf("}")+1));
+      if(!text||text.trim().length<20){throw new Error("Could not read text from this file. Try a different file or fill fields manually.");}
+      setPs("parsing");setMsg("Parsing resume…");
+      // Heuristic (non-AI) field extraction
+      const parsed=parseResumeText(text);
       Object.entries(parsed).forEach(([k,v])=>{if(v&&typeof v==="string"&&v.trim())updateField(k,v.trim());});
-      setPs("done");setMsg("Resume parsed! Review and edit the fields below.");
+      // Always store the full text so the user has it
+      updateField("resumeText",text.replace(/\s+/g," ").trim().slice(0,8000));
+      setPs("done");setMsg("Resume text extracted! Review and edit the fields below.");
     }catch(err){setPs("error");setMsg(err.message||"Could not parse. Try a different file or paste text manually.");}
     if(fileRef.current)fileRef.current.value="";
   };
@@ -1560,7 +1661,7 @@ function ResumeSection({profile,updateField}) {
   const msgColor=ps==="done"?"#7ecfb3":ps==="error"?"#e07060":"rgba(244,237,216,.7)";
 
   return <div>
-    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Upload your resume to auto-fill all fields, or fill them in manually. This powers the AI Application Assistant.</p>
+    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Upload your resume (PDF, DOCX, or TXT) to auto-fill your profile fields. Everything is processed in your browser — review and edit below.</p>
     <div onClick={()=>ps!=="parsing"&&ps!=="reading"&&fileRef.current?.click()} onDragOver={e=>{e.preventDefault();}} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f){const dt=new DataTransfer();dt.items.add(f);fileRef.current.files=dt.files;upload({target:fileRef.current});}}} style={{border:`1.5px dashed ${zoneColor}`,borderRadius:12,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:8,cursor:ps==="parsing"||ps==="reading"?"default":"pointer",transition:"all .2s",background:zoneBg,marginBottom:16,textAlign:"center"}}>
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{display:"none"}} onChange={upload}/>
       {ps==="idle"&&<><I.Scroll s={26} c="#c9a84c"/><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f4edd8"}}>Upload Resume</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>PDF, DOCX, or TXT · Max 10MB</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer",marginTop:4}}>Choose File or Drag & Drop</div></>}
@@ -1577,6 +1678,66 @@ function ResumeSection({profile,updateField}) {
     <div style={fld}><label style={lbl}>Work History Summary</label><textarea style={{...inp,minHeight:80,resize:"vertical"}} value={profile.workHistory||""} onChange={e=>updateField("workHistory",e.target.value)} placeholder="e.g. Junior Programmer at Studio X (2022–2024): shipped 2 mobile titles..."/></div>
     <div style={fld}><label style={lbl}>Key Achievements</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={profile.achievements||""} onChange={e=>updateField("achievements",e.target.value)} placeholder="e.g. Reduced load times 40%, shipped game with 50k downloads..."/></div>
     <div style={fld}><label style={lbl}>Full Resume Text</label><textarea style={{...inp,minHeight:90,resize:"vertical"}} value={profile.resumeText||""} onChange={e=>updateField("resumeText",e.target.value)} placeholder="Auto-filled from upload, or paste here manually."/></div>
+  </div>;
+}
+
+// ── EMAIL TEMPLATE TAB ────────────────────────────────────────────────────────
+// User writes a template with [x] placeholders. One dropdown per [x], in order.
+// Each dropdown maps that [x] to either Company Name or Position Title.
+// On email-apply, placeholders are filled from the job being applied to.
+function EmailTemplateTab({profile,upd}){
+  const text=profile.emailTemplate||"";
+  const mappings=profile.emailTemplateMap||[];
+  // Count [x] placeholders in order
+  const placeholderCount=(text.match(/\[x\]/gi)||[]).length;
+  const OPTIONS=[["company","Company Name"],["position","Position Title"]];
+
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+  const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"block"};
+
+  const setMapping=(i,val)=>{
+    const next=[...mappings];
+    next[i]=val;
+    upd("emailTemplateMap",next);
+  };
+
+  // Build a live preview using sample values
+  const preview=(()=>{
+    if(!text)return "";
+    let n=-1;
+    return text.replace(/\[x\]/gi,()=>{
+      n++;
+      const m=mappings[n];
+      if(m==="company")return "[Company Name]";
+      if(m==="position")return "[Position Title]";
+      return "[x]";
+    });
+  })();
+
+  return <div>
+    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to the Company Name or Position Title. When you Apply by Email, the [x]'s are filled in from that job.</p>
+    <div style={{marginBottom:14}}>
+      <label style={lbl}>Email Template</label>
+      <textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>
+    </div>
+    {placeholderCount>0&&<div style={{marginBottom:14}}>
+      <label style={lbl}>Assign each [x] ({placeholderCount} found)</label>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {Array.from({length:placeholderCount}).map((_,i)=>
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:11,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif",minWidth:64}}>[x] #{i+1}</span>
+            <select style={{...inp,flex:1}} value={mappings[i]||""} onChange={e=>setMapping(i,e.target.value)}>
+              <option value="">— Select —</option>
+              {OPTIONS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+    </div>}
+    {text&&<div>
+      <label style={lbl}>Preview</label>
+      <div style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8,padding:12,fontSize:12,color:"rgba(244,237,216,.65)",whiteSpace:"pre-wrap",lineHeight:1.5}}>{preview}</div>
+    </div>}
   </div>;
 }
 
@@ -1601,7 +1762,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:4,display:"block"};
   const fld={display:"flex",flexDirection:"column",gap:4,marginBottom:12};
-  const tabs=[["profile","Profile",<I.Person s={14} c="currentColor"/>],["resume","Resume",<I.Scroll s={14} c="currentColor"/>],["links","Links",<I.Link s={14} c="currentColor"/>],["prefs","Prefs",<I.Cog s={14} c="currentColor"/>],["account","Account",<I.Lock s={14} c="currentColor"/>]];
+  const tabs=[["profile","Profile",<I.Person s={14} c="currentColor"/>],["resume","Resume",<I.Scroll s={14} c="currentColor"/>],["links","Links",<I.Link s={14} c="currentColor"/>],["template","Email Template",<I.Send s={14} c="currentColor"/>],["account","Account",<I.Lock s={14} c="currentColor"/>]];
 
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end",alignItems:"stretch",flexDirection:"row"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <div style={{width:"100%",maxWidth:mobile?380:460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
@@ -1628,7 +1789,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
         {tab==="resume"&&<ResumeSection profile={p} updateField={upd}/>}
         {tab==="links"&&<div>
           <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Professional links and email settings for AI-drafted email applications.</p>
-          {[["linkedin","LinkedIn",<I.Globe s={12} c="currentColor"/>,"https://linkedin.com/in/yourname"],["portfolio","Portfolio",<I.Globe s={12} c="currentColor"/>,"https://yourportfolio.com"],["github","GitHub",<I.Link s={12} c="currentColor"/>,"https://github.com/yourhandle"]].map(([k,label,icon,ph])=>
+          {[["linkedin","LinkedIn",<I.Globe s={12} c="currentColor"/>,"https://linkedin.com/in/yourname"],["portfolio","Portfolio",<I.Globe s={12} c="currentColor"/>,"https://yourportfolio.com"],["github","GitHub",<I.Link s={12} c="currentColor"/>,"https://github.com/yourhandle"],["artstation","ArtStation",<I.Globe s={12} c="currentColor"/>,"https://artstation.com/yourname"],["otherWebsite","Other Website",<I.Link s={12} c="currentColor"/>,"https://yourwebsite.com"]].map(([k,label,icon,ph])=>
             <div key={k} style={fld}><label style={{...lbl,display:"flex",alignItems:"center",gap:6}}>{icon}{label}</label><input style={inp} value={p[k]||""} onChange={e=>upd(k,e.target.value)} placeholder={ph}/></div>)}
           <div style={{height:1,background:"rgba(201,168,76,.1)",margin:"16px 0"}}/>
           <div style={{display:"flex",gap:8,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.14)",borderRadius:8,padding:"10px 12px",marginBottom:14,alignItems:"flex-start"}}>
@@ -1637,7 +1798,10 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
           <div style={fld}><label style={lbl}>Your Email Address</label><input style={inp} type="email" value={p.emailAddress||""} onChange={e=>upd("emailAddress",e.target.value)} placeholder="you@email.com"/></div>
           <div style={fld}><label style={lbl}>Preferred Email Provider</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:2}}>{[["gmail","Gmail"],["outlook","Outlook"],["yahoo","Yahoo Mail"],["proton","ProtonMail"]].map(([id,label])=><button key={id} onClick={()=>upd("emailProvider",id)} style={{background:p.emailProvider===id?"rgba(201,168,76,.15)":"rgba(244,237,216,.04)",border:`1px solid ${p.emailProvider===id?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:p.emailProvider===id?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>{p.emailProvider===id&&<I.Check s={11} c="#0a0608"/>}{label}</button>)}</div></div>
         </div>}
-        {tab==="prefs"&&<div>
+        {tab==="template"&&<EmailTemplateTab profile={p} upd={upd}/>}
+        {tab==="account"&&<div>
+          {/* Preferences (merged from Prefs) */}
+          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Preferences</div>
           {[["notifications","In-app Notifications","Show alerts for new postings"],["emailAlerts","Email Alerts","Get notified by email for new postings"]].map(({0:k,1:label,2:desc})=>
             <div key={k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
               <div><div style={{fontSize:13,fontWeight:500,color:"#f4edd8",marginBottom:2}}>{label}</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>{desc}</div></div>
@@ -1645,8 +1809,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
                 <div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:p[k]?"translateX(18px)":"none"}}/>
               </button>
             </div>)}
-        </div>}
-        {tab==="account"&&<div>
+          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",margin:"18px 0 8px"}}>Account Details</div>
           {[["Email",user.email],["Applications Tracked",Object.keys(user.applied||{}).length]].map(([l,v])=>
             <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500}}>{v}</span></div>)}
           <div style={{marginTop:20,padding:14,background:"rgba(192,50,26,.05)",border:"1px solid rgba(192,50,26,.2)",borderRadius:10}}>
@@ -1666,7 +1829,6 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
 
 // ── NO OPENINGS CARD ──────────────────────────────────────────────────────────
 function NoOpenCard({company,companyName,user,onApplied}) {
-  const [showEmail,setShowEmail]=useState(false);
   const synthetic={id:`noop-${companyName}`,title:"General Application",company:companyName,url:company.url,applyUrl:company.url,email:company.email||"",summary:`Open application to ${companyName}.`,responsibilities:[],requirements:[],experience:"",type:"Full-time",salary:"",isRemote:false,isVolunteer:!!company.volunteer};
   const btn=(lbl,icon,onClick,style={})=><button onClick={onClick} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:"5px 11px",fontSize:10,fontFamily:"'Cinzel',serif",fontWeight:700,display:"inline-flex",alignItems:"center",gap:5,transition:"all .15s",...style}}>{icon}{lbl}</button>;
   return <>
@@ -1677,10 +1839,8 @@ function NoOpenCard({company,companyName,user,onApplied}) {
         {company.url&&<a href={company.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Careers",<I.Arrow s={10} c="#f0d080"/>,(()=>{}))}</a>}
         {company.contact&&<a href={company.contact} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Contact Page",<I.Link s={10} c="#8fd0e8"/>,(()=>{}),{background:"rgba(96,160,232,.1)",border:"1px solid rgba(96,160,232,.3)",color:"#8fd0e8"})}</a>}
         {company.email&&<a href={`mailto:${company.email}?subject=${encodeURIComponent(`Inquiry about opportunities at ${companyName}`)}`} style={{textDecoration:"none"}}>{btn("Email",<I.Send s={10} c="#7ecfb3"/>,(()=>{}),{background:"rgba(126,207,179,.1)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3"})}</a>}
-        {company.email&&btn("AI Email",<I.Send s={10} c="#e8a070"/>,(()=>setShowEmail(true)),{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070"})}
-      </div>
+              </div>
     </div>
-    {showEmail&&<AIEmailModal job={synthetic} user={user} onClose={()=>setShowEmail(false)} onApplied={onApplied}/>}
   </>;
 }
 
@@ -1720,15 +1880,28 @@ function JobCard({job,user,onApplied}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
-  const [aiApply,setAiApply]=useState(false);
-  const [aiEmail,setAiEmail]=useState(false);
   const isApplied=user?.applied?.[job.id];
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
   const onApply=()=>{
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
-      window.open(`mailto:${job.applyEmail}?subject=${encodeURIComponent(subj)}`,"_blank");
+      // If the user saved an email template, fill its [x] placeholders from this job
+      let bodyParam="";
+      const tmpl=user?.profile?.emailTemplate;
+      const map=user?.profile?.emailTemplateMap||[];
+      if(tmpl){
+        let n=-1;
+        const filled=tmpl.replace(/\[x\]/gi,()=>{
+          n++;
+          const m=map[n];
+          if(m==="company")return job.company;
+          if(m==="position")return job.title;
+          return "";
+        });
+        bodyParam=`&body=${encodeURIComponent(filled)}`;
+      }
+      window.open(`mailto:${job.applyEmail}?subject=${encodeURIComponent(subj)}${bodyParam}`,"_blank");
     } else {
       window.open(job.url,"_blank");
     }
@@ -1739,15 +1912,12 @@ function JobCard({job,user,onApplied}) {
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     {/* Title row */}
-    {(()=>{const ats=computeATS(job,user?.profile);return(
-    <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
       {job.isNew&&<I.Alert s={18}/>}
       <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
       {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
       {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
-      <ATSPill ats={ats} onClick={()=>setAiApply(true)}/>
     </div>
-    );})()}
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
       {chip(job.type)}
@@ -1765,7 +1935,7 @@ function JobCard({job,user,onApplied}) {
     {expanded&&<div style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
       {job.responsibilities?.length>0&&<><div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:"#c9a84c",fontFamily:"'Cinzel',serif",marginBottom:6}}>Responsibilities</div>{job.responsibilities.map((r,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"flex-start",marginBottom:4}}><span style={{color:"#c9a84c",fontWeight:700,flexShrink:0}}>›</span><span style={{fontSize:12,color:"rgba(244,237,216,.65)",lineHeight:1.5}}>{r}</span></div>)}</>}
       {job.requirements?.length>0&&<><div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:"#c9a84c",fontFamily:"'Cinzel',serif",marginBottom:6,marginTop:job.responsibilities?.length>0?10:0}}>Requirements</div>{job.requirements.map((r,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"flex-start",marginBottom:4}}><span style={{color:"#c9a84c",fontWeight:700,flexShrink:0}}>›</span><span style={{fontSize:12,color:"rgba(244,237,216,.65)",lineHeight:1.5}}>{r}</span></div>)}</>}
-      {(!job.responsibilities?.length&&!job.requirements?.length)&&<><p style={{fontSize:12,color:"rgba(244,237,216,.4)",fontStyle:"italic",margin:"0 0 8px"}}>Visit the careers page for the full job description.</p><a href={job.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>View Full Posting →</a></>}
+      {(!job.responsibilities?.length&&!job.requirements?.length)&&<>{job.fullDescription?<p style={{fontSize:12,color:"rgba(244,237,216,.6)",lineHeight:1.6,margin:"0 0 8px",whiteSpace:"pre-wrap"}}>{job.fullDescription}</p>:<p style={{fontSize:12,color:"rgba(244,237,216,.4)",fontStyle:"italic",margin:"0 0 8px"}}>Visit the careers page for the full job description.</p>}<a href={job.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>View Full Posting →</a></>}
     </div>}
     {/* Apply prompt */}
     {prompt&&<div style={{background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",borderRadius:8,padding:"9px 13px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8,fontSize:12,color:"rgba(244,237,216,.7)"}}>
@@ -1775,12 +1945,8 @@ function JobCard({job,user,onApplied}) {
     </div>}
     {/* Action buttons */}
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-      <button onClick={()=>setAiApply(true)} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}><I.Sparkle s={12} c="#0a0608"/>AI Apply</button>
-      <button onClick={onApply} style={{background:"rgba(201,168,76,.2)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:700,fontFamily:"'Cinzel',serif",display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}><I.Arrow s={11} c="#f0d080"/>{job.isEmailApply?"Apply by Email":"Careers"}</button>
-      <button onClick={()=>setAiEmail(true)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 14px",fontSize:10,fontWeight:600,fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:5,flex:mobile?"1":"none",justifyContent:mobile?"center":"flex-start"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}><I.Send s={11} c="#e8a070"/>Email</button>
+      <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
     </div>
-    {aiApply&&<AIApplyModal job={job} user={user} onClose={()=>setAiApply(false)} onApplied={(id)=>{onApplied(id);setAiApply(false);}}/>}
-    {aiEmail&&<AIEmailModal job={job} user={user} onClose={()=>setAiEmail(false)} onApplied={onApplied}/>}
   </div>;
 }
 
@@ -1872,6 +2038,34 @@ export default function App() {
   const logout = async () => { await supabase.auth.signOut(); setUser(null); setShowAcct(false); };
   const updateUser=u=>setUser(u);
 
+  // Restore session on mount so refreshing the page doesn't log the user out.
+  const [authChecked,setAuthChecked]=useState(false);
+  useEffect(()=>{
+    let active=true;
+    (async()=>{
+      try{
+        const { data:{ session } }=await supabase.auth.getSession();
+        // Respect "stay signed in": if they opted out and the browser was fully closed
+        // (sessionStorage cleared) then end the session instead of restoring it.
+        let stay=true;
+        try{ stay=localStorage.getItem("mq_stay")==="1"||sessionStorage.getItem("mq_session")==="1"; }catch{}
+        if(session?.user&&!stay){ try{await supabase.auth.signOut();}catch{} if(active)setAuthChecked(true); return; }
+        if(session?.user&&active){
+          const uid=session.user.id, em=session.user.email;
+          let profile=null, applied={};
+          try{ const { data }=await supabase.from("profiles").select("*").eq("id",uid).single(); profile=data; }catch{}
+          try{
+            const { data:apps }=await supabase.from("applications").select("*").eq("user_id",uid);
+            (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at }; });
+          }catch{}
+          if(active)setUser({ id:uid, email:em, name:profile?.name||em, applied, profile:profile||{} });
+        }
+      }catch{}
+      if(active)setAuthChecked(true);
+    })();
+    return ()=>{active=false;};
+  },[]);
+
   const markApplied = async (jobId) => {
     setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { date: new Date().toISOString() } } }));
     const job = Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(j => j.id === jobId);
@@ -1921,7 +2115,10 @@ export default function App() {
   const totalCos=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.keys(c))).length;
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
-  if(!user)return <Auth onLogin={login}/>;
+  if(!user){
+    if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1}}>⚔️ Loading…</div></div>;
+    return <Auth onLogin={login}/>;
+  }
 
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const gBg="linear-gradient(135deg,rgba(201,168,76,.2),rgba(232,97,58,.15))";
@@ -2034,8 +2231,15 @@ export default function App() {
             .filter(([country])=>filters.countries.length===0||filters.countries.includes(country))
             .map(([country,states])=>{
               const cKey=`c-${country}`;
-              const cNewJobs=Object.values(states).flatMap(cos=>Object.values(cos).flatMap(co=>co.jobs)).some(j=>j.isNew&&matches(j));
-              const cTotal=Object.values(states).flatMap(cos=>Object.values(cos).flatMap(co=>co.jobs)).filter(matches).length;
+              const cAllJobs=Object.values(states).flatMap(cos=>Object.entries(cos).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs)));
+              const cNewJobs=cAllJobs.some(j=>j.isNew&&matches(j));
+              const cTotal=cAllJobs.filter(matches).length;
+              // Hide country if a filter is active and nothing inside matches
+              if(hasAnyFilter){
+                const anyCoName=filters.search&&Object.values(states).some(cos=>Object.keys(cos).some(n=>n.toLowerCase().includes(filters.search.toLowerCase())));
+                const anyEmail=filters.emailApplyOnly&&Object.values(states).some(cos=>Object.values(cos).some(co=>co.emailApply));
+                if(cTotal===0&&!anyCoName&&!anyEmail)return null;
+              }
               return <div key={country} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.14)",borderRadius:14,overflow:"hidden"}}>
                 <button onClick={()=>toggle(cKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,padding:mobile?"11px 12px":"14px 16px",fontFamily:"'Cinzel',serif",fontSize:mobile?12:13,fontWeight:700,color:"#f4edd8",letterSpacing:.5,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                   <span style={{fontSize:9,color:"rgba(201,168,76,.45)"}}>{expanded[cKey]?"▼":"▶"}</span>
@@ -2049,10 +2253,22 @@ export default function App() {
                     .filter(([state])=>filters.states.length===0||filters.states.includes(state))
                     .map(([state,companies])=>{
                       const sKey=`s-${country}-${state}`;
-                      const sTotal=Object.values(companies).flatMap(co=>co.jobs).filter(matches).length;
-                      const sNewJobs=Object.values(companies).flatMap(co=>co.jobs).some(j=>j.isNew&&matches(j));
-                      // Show state unless search active and nothing matches
-                      if(filters.search){const q=filters.search.toLowerCase();const anyName=Object.keys(companies).some(n=>n.toLowerCase().includes(q));const anyJob=sTotal>0;if(!anyName&&!anyJob)return null;}
+                      const sAllJobs=Object.entries(companies).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs));
+                      const sTotal=sAllJobs.filter(matches).length;
+                      const sNewJobs=sAllJobs.some(j=>j.isNew&&matches(j));
+                      // Count companies that survive the active filters
+                      const sCompaniesShown=Object.entries(companies).filter(([nm,co])=>{
+                        if(!hasAnyFilter)return true;
+                        const dj=getDisplayJobs(nm,co.jobs);
+                        if(filters.activeOnly&&dj.length===0)return false;
+                        if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
+                        if(filters.search){const q=filters.search.toLowerCase();if(nm.toLowerCase().includes(q))return true;}
+                        const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.emailApplyOnly;
+                        if(!jlf)return true;
+                        return dj.some(j=>matches(j));
+                      }).length;
+                      // Hide this state entirely if a filter is active and nothing in it matches
+                      if(hasAnyFilter&&sCompaniesShown===0)return null;
                       return <div key={state} style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,overflow:"hidden"}}>
                         <button onClick={()=>toggle(sKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:mobile?"8px 10px":"10px 12px",fontFamily:"'Cinzel',serif",fontSize:mobile?10:11,fontWeight:600,color:"#c9a84c",letterSpacing:.3,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                           <span style={{fontSize:8,color:"rgba(201,168,76,.4)"}}>{expanded[sKey]?"▼":"▶"}</span>
