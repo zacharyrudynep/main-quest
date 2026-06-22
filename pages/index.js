@@ -874,6 +874,244 @@ const COMPANIES_DATA = {
       { name: "Studio MDHR", url: "https://studiomdhr.com/careers/", email: null, contact: null },
     ],
   },
+
+  // ─────────────── INTERNATIONAL STUDIOS ───────────────
+  "United Kingdom": {
+    "England": [
+      { name: "Rocksteady Studios", url: "https://www.rocksteadyltd.com/", email: "careers@rocksteadyltd.com", contact: null },
+      { name: "Creative Assembly", url: "https://www.creative-assembly.com/careers", email: null, contact: null },
+      { name: "Playground Games", url: "https://www.playground-games.com/careers", email: null, contact: null },
+      { name: "Rare", url: "https://www.rare.co.uk/careers", email: null, contact: null },
+      { name: "Media Molecule", url: "https://www.mediamolecule.com/careers", email: null, contact: null },
+      { name: "Sumo Digital", url: "https://www.sumo-digital.com/careers/", email: null, contact: null },
+      { name: "Codemasters", url: "https://www.codemasters.com/career/", email: null, contact: null },
+      { name: "Mediatonic", url: "https://mediatonic.com/careers", email: null, contact: null },
+      { name: "Splash Damage", url: "https://www.splashdamage.com/careers/", email: null, contact: null },
+      { name: "Bossa Studios", url: "https://www.bossastudios.com/jobs/", email: null, contact: null },
+      { name: "Cloud Imperium Games", url: "https://cloudimperiumgames.com/careers", email: null, contact: null },
+      { name: "nDreams", url: "https://ndreams.com/careers/", email: null, contact: null },
+      { name: "Frontier Developments", url: "https://www.frontier.co.uk/careers", email: null, contact: null },
+      { name: "Jagex", url: "https://www.jagex.com/en-GB/careers", email: null, contact: null },
+      { name: "Supermassive Games", url: "https://www.supermassivegames.com/careers", email: null, contact: null },
+      { name: "Cloud Chamber", url: "https://cloudchambergames.com/open-positions", email: null, contact: null },
+    ],
+    "Scotland": [
+      { name: "Rockstar North", url: "https://www.rockstarnorth.com/", email: null, contact: null },
+      { name: "4J Studios", url: "https://www.4jstudios.com/", email: null, contact: null },
+      { name: "Blazing Griffin", url: "https://blazinggriffin.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Poland": {
+    "Masovian": [
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: null, contact: null },
+      { name: "People Can Fly Warsaw", url: "https://peoplecanfly.com/careers/", email: null, contact: null },
+    ],
+    "Lesser Poland": [
+      { name: "Bloober Team", url: "https://www.blooberteam.com/careers", email: null, contact: null },
+    ],
+    "Silesian": [
+      { name: "Techland", url: "https://techland.net/careers", email: null, contact: null },
+      { name: "Flying Wild Hog", url: "https://flyingwildhog.com/#careers", email: null, contact: null },
+    ],
+  },
+  "Germany": {
+    "Bavaria": [
+      { name: "Crytek", url: "https://www.crytek.com/careers", email: null, contact: null },
+      { name: "Chimera Entertainment", url: "https://www.chimera-entertainment.de/en/jobs/", email: null, contact: null },
+    ],
+    "Hamburg": [
+      { name: "InnoGames", url: "https://www.innogames.com/career/", email: null, contact: null },
+      { name: "Goodgame Studios", url: "https://www.goodgamestudios.com/career/", email: null, contact: null },
+    ],
+    "Berlin": [
+      { name: "Wooga", url: "https://www.wooga.com/jobs", email: null, contact: null },
+      { name: "Yager", url: "https://www.yager.de/careers/", email: null, contact: null },
+      { name: "Klang Games", url: "https://klang.com/careers", email: null, contact: null },
+    ],
+    "Baden-Wurttemberg": [
+      { name: "Kalypso Media", url: "https://www.kalypsomedia.com/en/jobs", email: null, contact: null },
+    ],
+  },
+  "France": {
+    "Ile-de-France": [
+      { name: "Ubisoft Paris", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Quantic Dream", url: "https://www.quanticdream.com/en/careers", email: null, contact: null },
+      { name: "Dontnod Entertainment", url: "https://www.dont-nod.com/en/jobs/", email: null, contact: null },
+      { name: "Sloclap", url: "https://www.sloclap.com/careers", email: null, contact: null },
+    ],
+    "Occitanie": [
+      { name: "Asobo Studio", url: "https://www.asobostudio.com/careers", email: null, contact: null },
+    ],
+    "Auvergne-Rhone-Alpes": [
+      { name: "Arkane Studios", url: "https://www.arkane-studios.com/en/careers", email: null, contact: null },
+    ],
+  },
+  "Sweden": {
+    "Stockholm": [
+      { name: "DICE", url: "https://www.dice.se/careers/", email: null, contact: null },
+      { name: "Paradox Interactive", url: "https://www.paradoxinteractive.com/careers", email: null, contact: null },
+      { name: "Mojang Studios", url: "https://www.minecraft.net/en-us/careers", email: null, contact: null },
+      { name: "Avalanche Studios", url: "https://avalanchestudios.com/careers", email: null, contact: null },
+      { name: "Star Stable Entertainment", url: "https://www.starstable.com/en/jobs", email: null, contact: null },
+    ],
+    "Skane": [
+      { name: "Massive Entertainment", url: "https://www.massive.se/careers/", email: null, contact: null },
+      { name: "Tarsier Studios", url: "https://tarsier.se/", email: null, contact: null },
+    ],
+    "Vastra Gotaland": [
+      { name: "Zenimax Online (Gothenburg)", url: "https://www.zenimax.com/careers", email: null, contact: null },
+      { name: "Stunlock Studios", url: "https://www.stunlock.com/careers", email: null, contact: null },
+    ],
+  },
+  "Finland": {
+    "Uusimaa": [
+      { name: "Supercell", url: "https://supercell.com/en/careers/", email: null, contact: null },
+      { name: "Remedy Entertainment", url: "https://www.remedygames.com/careers", email: null, contact: null },
+      { name: "Rovio", url: "https://www.rovio.com/careers/", email: null, contact: null },
+      { name: "Housemarque", url: "https://housemarque.com/careers/", email: null, contact: null },
+      { name: "Next Games", url: "https://www.nextgames.com/careers", email: null, contact: null },
+    ],
+  },
+  "Netherlands": {
+    "North Holland": [
+      { name: "Guerrilla Games", url: "https://www.guerrilla-games.com/join", email: null, contact: null },
+      { name: "Vlambeer", url: "https://vlambeer.com/", email: null, contact: null },
+    ],
+    "Utrecht": [
+      { name: "Triumph Studios", url: "https://www.triumph.nl/careers", email: null, contact: null },
+      { name: "Abstraction", url: "https://www.abstraction.games/careers", email: null, contact: null },
+    ],
+    "North Brabant": [
+      { name: "Guerrilla Cambridge", url: "https://www.guerrilla-games.com/join", email: null, contact: null },
+    ],
+  },
+  "Denmark": {
+    "Capital Region": [
+      { name: "IO Interactive", url: "https://www.ioi.dk/careers/", email: null, contact: null },
+      { name: "Playdead", url: "https://playdead.com/careers/", email: null, contact: null },
+      { name: "Unity Technologies", url: "https://careers.unity.com/", email: null, contact: null },
+    ],
+  },
+  "Spain": {
+    "Catalonia": [
+      { name: "Ubisoft Barcelona", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Digital Legends", url: "https://www.digital-legends.com/careers/", email: null, contact: null },
+      { name: "Social Point", url: "https://www.socialpoint.es/jobs/", email: null, contact: null },
+    ],
+    "Community of Madrid": [
+      { name: "Tequila Works", url: "https://tequilaworks.com/en/careers/", email: null, contact: null },
+    ],
+  },
+  "Norway": {
+    "Oslo": [
+      { name: "Funcom", url: "https://www.funcom.com/jobs/", email: null, contact: null },
+      { name: "Krillbite Studio", url: "https://krillbite.com/", email: null, contact: null },
+    ],
+  },
+  "Japan": {
+    "Tokyo": [
+      { name: "Square Enix", url: "https://www.jp.square-enix.com/recruit/", email: null, contact: null },
+      { name: "Bandai Namco Studios", url: "https://www.bandainamcostudios.com/recruit/", email: null, contact: null },
+      { name: "Sega", url: "https://www.sega.co.jp/recruit/", email: null, contact: null },
+      { name: "Koei Tecmo", url: "https://www.koeitecmo.co.jp/recruit/", email: null, contact: null },
+      { name: "FromSoftware", url: "https://www.fromsoftware.jp/ww/recruit.html", email: null, contact: null },
+      { name: "PlatinumGames", url: "https://www.platinumgames.com/recruit", email: null, contact: null },
+    ],
+    "Osaka": [
+      { name: "Capcom", url: "https://www.capcom-recruit.jp/", email: null, contact: null },
+    ],
+    "Kyoto": [
+      { name: "Nintendo", url: "https://www.nintendo.co.jp/jobs/", email: null, contact: null },
+    ],
+  },
+  "South Korea": {
+    "Seoul": [
+      { name: "Nexon", url: "https://careers.nexon.com/", email: null, contact: null },
+      { name: "NCSoft", url: "https://careers.ncsoft.com/", email: null, contact: null },
+      { name: "Netmarble", url: "https://company.netmarble.com/recruit", email: null, contact: null },
+      { name: "Pearl Abyss", url: "https://www.pearlabyss.com/en-US/Company/Recruit", email: null, contact: null },
+      { name: "Krafton", url: "https://careers.krafton.com/", email: null, contact: null },
+      { name: "Smilegate", url: "https://careers.smilegate.com/", email: null, contact: null },
+    ],
+  },
+  "China": {
+    "Guangdong": [
+      { name: "Tencent Games", url: "https://join.tencent.com/", email: null, contact: null },
+    ],
+    "Shanghai": [
+      { name: "miHoYo (HoYoverse)", url: "https://www.hoyoverse.com/en-us/careers", email: null, contact: null },
+      { name: "Lilith Games", url: "https://www.lilithgames.com/en/join", email: null, contact: null },
+    ],
+    "Beijing": [
+      { name: "NetEase Games", url: "https://www.neteasegames.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Singapore": {
+    "Singapore": [
+      { name: "Ubisoft Singapore", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Mighty Bear Games", url: "https://www.mightybeargames.com/careers", email: null, contact: null },
+    ],
+  },
+  "Australia": {
+    "Victoria": [
+      { name: "League of Geeks", url: "https://www.leagueofgeeks.com/jobs", email: null, contact: null },
+      { name: "Firemonkeys Studios", url: "https://www.firemonkeys.com.au/careers", email: null, contact: null },
+      { name: "PlaySide Studios", url: "https://www.playsidestudios.com/careers", email: null, contact: null },
+    ],
+    "New South Wales": [
+      { name: "Riot Games Sydney", url: "https://www.riotgames.com/en/work-with-us/jobs", email: null, contact: null },
+      { name: "Big Ant Studios", url: "https://www.bigant.com/careers/", email: null, contact: null },
+    ],
+    "Queensland": [
+      { name: "Halfbrick Studios", url: "https://www.halfbrick.com/careers", email: null, contact: null },
+      { name: "Gameloft Brisbane", url: "https://www.gameloft.com/careers", email: null, contact: null },
+    ],
+  },
+  "New Zealand": {
+    "Auckland": [
+      { name: "Grinding Gear Games", url: "https://www.grindinggear.com/careers/", email: null, contact: null },
+      { name: "RocketWerkz", url: "https://rocketwerkz.com/", email: null, contact: null },
+      { name: "PikPok", url: "https://pikpok.com/careers/", email: null, contact: null },
+    ],
+    "Wellington": [
+      { name: "CerebralFix", url: "https://cerebralfix.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Brazil": {
+    "Sao Paulo": [
+      { name: "Wildlife Studios", url: "https://wildlifestudios.com/careers/", email: null, contact: null },
+      { name: "Aquiris Game Studio", url: "https://aquiris.com.br/careers", email: null, contact: null },
+    ],
+    "Rio Grande do Sul": [
+      { name: "Hoplon", url: "https://www.hoplon.com/careers", email: null, contact: null },
+    ],
+  },
+  "Argentina": {
+    "Buenos Aires": [
+      { name: "Etermax", url: "https://corporate.etermax.com/careers/", email: null, contact: null },
+      { name: "NGD Studios", url: "https://www.ngdstudios.com.ar/", email: null, contact: null },
+    ],
+  },
+  "Mexico": {
+    "Jalisco": [
+      { name: "Lienzo", url: "https://www.lienzo.mx/", email: null, contact: null },
+    ],
+    "Mexico City": [
+      { name: "Larva Game Studios", url: "https://larvagamestudios.com/", email: null, contact: null },
+    ],
+  },
+  "South Africa": {
+    "Western Cape": [
+      { name: "Free Lives", url: "https://www.freelives.net/", email: null, contact: null },
+      { name: "24 Bit Games", url: "https://www.24bit.games/careers", email: null, contact: null },
+    ],
+  },
+  "Canada": {
+    "Quebec": [
+      { name: "Ubisoft Montreal", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Eidos-Montreal", url: "https://www.eidosmontreal.com/en/careers/", email: null, contact: null },
+    ],
+  },
 };
 
 const VOLUNTEER_OVERRIDES = {
@@ -1007,6 +1245,29 @@ const ATS_STUDIOS = {
   "Secret 6":                 { platform:"workable", slug:"secret-6" },
   "Sperasoft":                { platform:"workable", slug:"sperasoft" },
   "Velan Studios":            { platform:"workable", slug:"velanstudios" },
+  // ═══════════ INTERNATIONAL (verify all at /verify) ═══════════
+  // ─── International: Greenhouse studios ───
+  "Avalanche Studios":           { platform:"greenhouse", slug:"avalanchestudios" },
+  "Cloud Imperium Games":        { platform:"greenhouse", slug:"cloudimperiumgames" },
+  "Crytek":                      { platform:"greenhouse", slug:"crytek" },
+  "Etermax":                     { platform:"greenhouse", slug:"etermax" },
+  "InnoGames":                   { platform:"greenhouse", slug:"innogames" },
+  "Jagex":                       { platform:"greenhouse", slug:"jagex" },
+  "Mediatonic":                  { platform:"greenhouse", slug:"mediatonicgames" },
+  "Social Point":                { platform:"greenhouse", slug:"socialpoint" },
+  "Splash Damage":               { platform:"greenhouse", slug:"splashdamage" },
+  "Supercell":                   { platform:"greenhouse", slug:"supercell" },
+  "Unity Technologies":          { platform:"greenhouse", slug:"unity3d" },
+  "Wildlife Studios":            { platform:"greenhouse", slug:"wildlifestudios" },
+  "Wooga":                       { platform:"greenhouse", slug:"wooga" },
+  "nDreams":                     { platform:"greenhouse", slug:"ndreams" },
+  // ─── International: Lever studios ───
+  "Klang Games":                 { platform:"lever", slug:"klang" },
+  // ─── International: Smart Recruiters ───
+  "IO Interactive":              { platform:"smartrecruiters", slug:"iointeractive" },
+  "Remedy Entertainment":        { platform:"smartrecruiters", slug:"remedyentertainment" },
+  "Rovio":                       { platform:"smartrecruiters", slug:"rovio" },
+  "Ubisoft Paris":               { platform:"smartrecruiters", slug:"ubisoft" },
   // NOTE: The slugs above are best guesses. VERIFY each at /verify before trusting.
 };
 
