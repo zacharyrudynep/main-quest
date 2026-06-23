@@ -1860,7 +1860,7 @@ function parseResumeText(text){
 
   // Years of experience — look for "X years"
   const yrs=flat.match(/(\d{1,2})\+?\s*years?(\s+of)?\s+(experience|exp)/i);
-  if(yrs){const n=parseInt(yrs[1]);out.yearsExp=n<1?"0-1":n<2?"1-2":n<4?"2-4":n<7?"4-7":n<10?"7-10":"10+";}
+  if(yrs){const n=parseInt(yrs[1]);out.experience=n<1?"0-1 years":n<2?"1-2 years":n<4?"2-4 years":n<7?"4-7 years":n<10?"7-10 years":"10+ years";}
 
   // Bio — first sentence of a summary/objective section, else first long line
   const sumIdx=lines.findIndex(l=>/^(summary|profile|objective|about)\b/i.test(l));
@@ -1883,6 +1883,20 @@ function parseResumeText(text){
   if(achLines.length)out.achievements=achLines.slice(0,5).join(" • ").slice(0,500);
 
   return out;
+}
+
+// Auto-resizing textarea: grows with content up to maxHeight, then scrolls.
+function AutoTextarea({value,onChange,placeholder,style,minHeight=70,maxHeight=220}) {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const el=ref.current; if(!el)return;
+    el.style.height="auto";
+    const h=Math.min(el.scrollHeight,maxHeight);
+    el.style.height=h+"px";
+    el.style.overflowY=el.scrollHeight>maxHeight?"auto":"hidden";
+  },[value,maxHeight]);
+  return <textarea ref={ref} value={value} onChange={onChange} placeholder={placeholder}
+    style={{...style,minHeight,maxHeight,resize:"none",overflowY:"hidden"}}/>;
 }
 
 // ── RESUME SECTION ────────────────────────────────────────────────────────────
@@ -1971,15 +1985,14 @@ const upload=async(e)=>{
       {ps==="error"&&<><I.X s={26} c="#e07060"/><div style={{fontSize:12,color:"#e07060",fontFamily:"'Cinzel',serif"}}>{msg}</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>Try Again</div></>}
     </div>
     )}
-    <div style={fld}><label style={lbl}>Key Skills</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={profile.skills||""} onChange={e=>updateField("skills",e.target.value)} placeholder="e.g. Unreal Engine 5, C++, Blueprint scripting, multiplayer..."/></div>
+    <div style={fld}><label style={lbl}>Key Skills</label><AutoTextarea style={inp} minHeight={70} maxHeight={200} value={profile.skills||""} onChange={e=>updateField("skills",e.target.value)} placeholder="e.g. Unreal Engine 5, C++, Blueprint scripting, multiplayer..."/></div>
     <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
-      <div style={fld}><label style={lbl}>Years of Experience</label><select style={inp} value={profile.yearsExp||""} onChange={e=>updateField("yearsExp",e.target.value)}><option value="">Select</option>{["0-1","1-2","2-4","4-7","7-10","10+"].map(v=><option key={v} value={v}>{v} years</option>)}</select></div>
+      <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={profile.experience||""} onChange={e=>updateField("experience",e.target.value)}><option value="">Select</option><option value="0-1 years">0-1 years</option><option value="1-2 years">1-2 years</option><option value="2-4 years">2-4 years</option><option value="4-7 years">4-7 years</option><option value="7-10 years">7-10 years</option><option value="10+ years">10+ years</option></select></div>
       <div style={fld}><label style={lbl}>Target Salary</label><input style={inp} value={profile.targetSalary||""} onChange={e=>updateField("targetSalary",e.target.value)} placeholder="e.g. $90k–$120k"/></div>
     </div>
     <div style={fld}><label style={lbl}>Education</label><input style={inp} value={profile.education||""} onChange={e=>updateField("education",e.target.value)} placeholder="e.g. BS Computer Science, DigiPen, 2022"/></div>
-    <div style={fld}><label style={lbl}>Work History Summary</label><textarea style={{...inp,minHeight:80,resize:"vertical"}} value={profile.workHistory||""} onChange={e=>updateField("workHistory",e.target.value)} placeholder="e.g. Junior Programmer at Studio X (2022–2024): shipped 2 mobile titles..."/></div>
-    <div style={fld}><label style={lbl}>Key Achievements</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={profile.achievements||""} onChange={e=>updateField("achievements",e.target.value)} placeholder="e.g. Reduced load times 40%, shipped game with 50k downloads..."/></div>
-    <div style={fld}><label style={lbl}>Full Resume Text</label><textarea style={{...inp,minHeight:90,resize:"vertical"}} value={profile.resumeText||""} onChange={e=>updateField("resumeText",e.target.value)} placeholder="Auto-filled from upload, or paste here manually."/></div>
+    <div style={fld}><label style={lbl}>Work History Summary</label><AutoTextarea style={inp} minHeight={80} maxHeight={260} value={profile.workHistory||""} onChange={e=>updateField("workHistory",e.target.value)} placeholder="e.g. Junior Programmer at Studio X (2022–2024): shipped 2 mobile titles..."/></div>
+    <div style={fld}><label style={lbl}>Key Achievements</label><AutoTextarea style={inp} minHeight={70} maxHeight={220} value={profile.achievements||""} onChange={e=>updateField("achievements",e.target.value)} placeholder="e.g. Reduced load times 40%, shipped game with 50k downloads..."/></div>
   </div>;
 }
 
@@ -1992,7 +2005,16 @@ function EmailTemplateTab({profile,upd}){
   const mappings=profile.emailTemplateMap||[];
   // Count [x] placeholders in order
   const placeholderCount=(text.match(/\[x\]/gi)||[]).length;
-  const OPTIONS=[["company","Company Name"],["position","Position Title"]];
+  // Dropdown options for [x] — job info plus any links the user has filled in.
+  const OPTIONS=[["company","Company Name"],["position","Position Title"],
+    ...(profile.linkedin?[["linkedin","LinkedIn URL"]]:[]),
+    ...(profile.portfolio?[["portfolio","Portfolio URL"]]:[]),
+    ...(profile.github?[["github","GitHub URL"]]:[]),
+    ...(profile.artstation?[["artstation","ArtStation URL"]]:[]),
+    ...(profile.behance?[["behance","Behance URL"]]:[]),
+    ...(profile.otherWebsite?[["otherWebsite","Other Website URL"]]:[]),
+  ];
+  const hasResume=!!(profile.resumeText||profile.resumeFileName);
 
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"block"};
@@ -2004,20 +2026,34 @@ function EmailTemplateTab({profile,upd}){
   };
 
   // Build a live preview using sample values
+  const OPT_LABELS=Object.fromEntries(OPTIONS);
   const preview=(()=>{
     if(!text)return "";
     let n=-1;
     return text.replace(/\[x\]/gi,()=>{
       n++;
       const m=mappings[n];
-      if(m==="company")return "[Company Name]";
-      if(m==="position")return "[Position Title]";
+      if(m&&OPT_LABELS[m])return `[${OPT_LABELS[m].replace(/ URL$/,"")}]`;
       return "[x]";
     });
   })();
 
   return <div>
-    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to the Company Name or Position Title. When you Apply by Email, the [x]'s are filled in from that job.</p>
+    {/* Preferred email provider (moved here from Links) */}
+    <div style={{marginBottom:16}}>
+      <label style={lbl}>Preferred Email Provider</label>
+      <p style={{fontSize:11,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>When you Apply by Email, we'll open a pre-filled draft in this provider's web compose window.</p>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{[["gmail","Gmail"],["outlook","Outlook"],["yahoo","Yahoo Mail"],["default","Default Mail App"]].map(([id,label])=><button key={id} onClick={()=>upd("emailProvider",id)} style={{background:profile.emailProvider===id?"rgba(201,168,76,.15)":"rgba(244,237,216,.04)",border:`1px solid ${profile.emailProvider===id?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:profile.emailProvider===id?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>{profile.emailProvider===id&&<I.Check s={11} c="#0a0608"/>}{label}</button>)}</div>
+    </div>
+    {/* Auto-attach resume checkbox */}
+    <label onClick={()=>upd("autoAttachResume",!profile.autoAttachResume)} style={{display:"flex",alignItems:"flex-start",gap:9,cursor:"pointer",userSelect:"none",marginBottom:16,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:8,padding:"11px 13px"}}>
+      <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${profile.autoAttachResume?"#c9a84c":"rgba(201,168,76,.3)"}`,background:profile.autoAttachResume?"#c9a84c":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{profile.autoAttachResume&&<I.Check s={10} c="#0a0608"/>}</div>
+      <div>
+        <div style={{fontSize:12,color:"#f4edd8",fontWeight:600}}>Auto-attach my resume to email applications</div>
+        <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",marginTop:2}}>{hasResume?"Your saved resume will be attached when you Apply by Email.":"Upload a resume in the Resume tab to enable this."}</div>
+      </div>
+    </label>
+    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
     <div style={{marginBottom:14}}>
       <label style={lbl}>Email Template</label>
       <textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>
@@ -2043,11 +2079,77 @@ function EmailTemplateTab({profile,upd}){
   </div>;
 }
 
+// Validates and manages a single profile link with per-type URL checking.
+function LinkField({fieldKey,label,icon,placeholder,value,onChange}) {
+  const [editing,setEditing]=useState(!value);
+  const [draft,setDraft]=useState(value||"");
+  const [error,setError]=useState("");
+
+  // Per-type validation: the URL must match the expected domain for that link type.
+  const validators={
+    linkedin:{re:/^https?:\/\/(www\.)?linkedin\.com\/.+/i,msg:"Enter a valid LinkedIn URL (linkedin.com/...)"},
+    portfolio:{re:/^https?:\/\/.+\..+/i,msg:"Enter a valid website URL (https://...)"},
+    github:{re:/^https?:\/\/(www\.)?github\.com\/.+/i,msg:"Enter a valid GitHub URL (github.com/...)"},
+    artstation:{re:/^https?:\/\/(www\.)?artstation\.com\/.+/i,msg:"Enter a valid ArtStation URL (artstation.com/...)"},
+    behance:{re:/^https?:\/\/(www\.)?behance\.net\/.+/i,msg:"Enter a valid Behance URL (behance.net/...)"},
+    otherWebsite:{re:/^https?:\/\/.+\..+/i,msg:"Enter a valid website URL (https://...)"},
+  };
+
+  const validate=(url)=>{
+    const u=url.trim();
+    if(!u)return "Please enter a link.";
+    const v=validators[fieldKey];
+    if(v&&!v.re.test(u))return v.msg;
+    return "";
+  };
+
+  const save=()=>{
+    const err=validate(draft);
+    if(err){setError(err);return;}
+    setError("");
+    onChange(draft.trim());
+    setEditing(false);
+  };
+
+  const clear=()=>{
+    setDraft("");
+    setError("");
+    onChange("");
+    setEditing(true);
+  };
+
+  const inpStyle={background:"rgba(201,168,76,.06)",border:`1px solid ${error?"#c0532a":"rgba(201,168,76,.18)"}`,color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
+  const lblStyle={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"flex",alignItems:"center",gap:6};
+
+  if(!editing&&value){
+    // Verified/connected state: icon + name + green check + X to change
+    return <div style={{marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(126,207,179,.06)",border:"1px solid rgba(126,207,179,.3)",borderRadius:8,padding:"10px 12px"}}>
+        <span style={{color:"#7ecfb3",display:"flex"}}>{icon}</span>
+        <span style={{fontSize:12,color:"#f4edd8",fontWeight:600}}>{label}</span>
+        <a href={value} target="_blank" rel="noreferrer" style={{fontSize:11,color:"rgba(244,237,216,.45)",textDecoration:"none",flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{value.replace(/^https?:\/\/(www\.)?/,"")}</a>
+        <span title="Connected" style={{color:"#7ecfb3",display:"flex",flexShrink:0}}><I.Check s={14} c="#7ecfb3"/></span>
+        <button onClick={clear} title="Change link" style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",borderRadius:6,width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,lineHeight:1}}>✕</button>
+      </div>
+    </div>;
+  }
+
+  // Editing state: input + validate-on-blur/save
+  return <div style={{marginBottom:12}}>
+    <label style={lblStyle}>{icon}{label}</label>
+    <div style={{display:"flex",gap:6}}>
+      <input style={inpStyle} value={draft} onChange={e=>{setDraft(e.target.value);if(error)setError("");}} onKeyDown={e=>e.key==="Enter"&&save()} placeholder={placeholder}/>
+      <button onClick={save} style={{background:"rgba(201,168,76,.15)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",cursor:"pointer",borderRadius:8,padding:"0 14px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",flexShrink:0}}>Verify</button>
+    </div>
+    {error&&<div style={{fontSize:10.5,color:"#e07060",marginTop:5}}>{error}</div>}
+  </div>;
+}
+
 // ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
-  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",yearsExp:user.profile?.yearsExp||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false});
+  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false});
   const [saved,setSaved]=useState(false);
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
   const toggleOt=(v)=>setP(prev=>({...prev,openTo:prev.openTo.includes(v)?prev.openTo.filter(x=>x!==v):[...prev.openTo,v]}));
@@ -2086,33 +2188,46 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
           <div style={{width:56,height:56,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",margin:"0 auto 16px"}}>{initials}</div>
           <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}><div style={fld}><label style={lbl}>Display Name</label><input style={inp} value={p.name} onChange={e=>upd("name",e.target.value)} placeholder="Your name"/></div><div style={fld}><label style={lbl}>Location</label><input style={inp} value={p.location} onChange={e=>upd("location",e.target.value)} placeholder="City, State"/></div></div>
           <div style={fld}><label style={lbl}>Target Role</label><input style={inp} value={p.role} onChange={e=>upd("role",e.target.value)} placeholder="e.g. Game Designer, Software Engineer"/></div>
-          <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={p.experience} onChange={e=>upd("experience",e.target.value)}><option value="">Select</option><option>Entry Level (0–2 yrs)</option><option>Mid Level (2–5 yrs)</option><option>Senior (5–10 yrs)</option><option>Principal / Lead (10+ yrs)</option></select></div>
+          <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={p.experience||""} onChange={e=>upd("experience",e.target.value)}><option value="">Select</option><option value="0-1 years">0-1 years</option><option value="1-2 years">1-2 years</option><option value="2-4 years">2-4 years</option><option value="4-7 years">4-7 years</option><option value="7-10 years">7-10 years</option><option value="10+ years">10+ years</option></select></div>
           <div style={fld}><label style={lbl}>Bio</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={p.bio} onChange={e=>upd("bio",e.target.value)} placeholder="Short professional summary..."/></div>
           <div style={fld}><label style={lbl}>Open To</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["Full-time","Contract","Remote","Hybrid","On-site","Relocation"].map(opt=><button key={opt} onClick={()=>toggleOt(opt)} style={{background:p.openTo.includes(opt)?"rgba(201,168,76,.18)":"rgba(244,237,216,.05)",border:`1px solid ${p.openTo.includes(opt)?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:p.openTo.includes(opt)?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:20,fontSize:11,padding:"4px 14px",fontFamily:"inherit"}}>{opt}</button>)}</div></div>
         </div>}
         {tab==="resume"&&<ResumeSection profile={p} updateField={upd}/>}
         {tab==="links"&&<div>
-          <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Professional links and email settings for AI-drafted email applications.</p>
+          <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Add your professional links. Each is checked to make sure it matches the right site before it's saved.</p>
           {[["linkedin","LinkedIn",<I.Globe s={12} c="currentColor"/>,"https://linkedin.com/in/yourname"],["portfolio","Portfolio",<I.Globe s={12} c="currentColor"/>,"https://yourportfolio.com"],["github","GitHub",<I.Link s={12} c="currentColor"/>,"https://github.com/yourhandle"],["artstation","ArtStation",<I.Globe s={12} c="currentColor"/>,"https://artstation.com/yourname"],["behance","Behance",<I.Globe s={12} c="currentColor"/>,"https://behance.net/yourname"],["otherWebsite","Other Website",<I.Link s={12} c="currentColor"/>,"https://yourwebsite.com"]].map(([k,label,icon,ph])=>
-            <div key={k} style={fld}><label style={{...lbl,display:"flex",alignItems:"center",gap:6}}>{icon}{label}</label><input style={inp} value={p[k]||""} onChange={e=>upd(k,e.target.value)} placeholder={ph}/></div>)}
-          <div style={{height:1,background:"rgba(201,168,76,.1)",margin:"16px 0"}}/>
-          <div style={{display:"flex",gap:8,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.14)",borderRadius:8,padding:"10px 12px",marginBottom:14,alignItems:"flex-start"}}>
-            <I.Send s={13} c="#c9a84c"/><span style={{fontSize:11,color:"rgba(244,237,216,.55)"}}>Used to draft AI email applications. Your email is never sent automatically — you always review first.</span>
-          </div>
-          <div style={fld}><label style={lbl}>Your Email Address</label><input style={inp} type="email" value={p.emailAddress||""} onChange={e=>upd("emailAddress",e.target.value)} placeholder="you@email.com"/></div>
-          <div style={fld}><label style={lbl}>Preferred Email Provider</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:2}}>{[["gmail","Gmail"],["outlook","Outlook"],["yahoo","Yahoo Mail"],["proton","ProtonMail"]].map(([id,label])=><button key={id} onClick={()=>upd("emailProvider",id)} style={{background:p.emailProvider===id?"rgba(201,168,76,.15)":"rgba(244,237,216,.04)",border:`1px solid ${p.emailProvider===id?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:p.emailProvider===id?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>{p.emailProvider===id&&<I.Check s={11} c="#0a0608"/>}{label}</button>)}</div></div>
+            <LinkField key={k} fieldKey={k} label={label} icon={icon} placeholder={ph} value={p[k]||""} onChange={v=>upd(k,v)}/>)}
         </div>}
         {tab==="template"&&<EmailTemplateTab profile={p} upd={upd}/>}
         {tab==="account"&&<div>
-          {/* Preferences (merged from Prefs) */}
-          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Preferences</div>
-          {[["notifications","In-app Notifications","Show alerts for new postings"],["emailAlerts","Email Alerts","Get notified by email for new postings"]].map(({0:k,1:label,2:desc})=>
-            <div key={k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
-              <div><div style={{fontSize:13,fontWeight:500,color:"#f4edd8",marginBottom:2}}>{label}</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>{desc}</div></div>
-              <button onClick={()=>upd(k,!p[k])} style={{width:42,height:24,background:p[k]?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
-                <div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:p[k]?"translateX(18px)":"none"}}/>
-              </button>
-            </div>)}
+          {/* Email Alerts */}
+          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Email Alerts</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
+            <div><div style={{fontSize:13,fontWeight:500,color:"#f4edd8",marginBottom:2}}>Alert me for all new postings</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>{p.alertAll?"You'll be alerted about every company.":"Only the companies you've turned on below."}</div></div>
+            <button onClick={()=>upd("alertAll",!p.alertAll)} style={{width:42,height:24,background:p.alertAll?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+              <div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:p.alertAll?"translateX(18px)":"none"}}/>
+            </button>
+          </div>
+          {/* Per-company notification list — hidden when "alert all" is on */}
+          {!p.alertAll&&<div style={{marginBottom:10}}>
+            <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>Companies you're getting alerts for. Click the bell to remove one. (Turn on notifications from any company on the job board using its bell icon.)</div>
+            {(p.notifyCompanies||[]).length===0?
+              <div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"10px 12px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,textAlign:"center"}}>No companies yet. Click the bell icon next to a company on the job board to add it here.</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {(p.notifyCompanies||[]).map(cn=>
+                  <div key={cn} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"9px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8}}>
+                    <span style={{fontSize:12,color:"#f4edd8"}}>{cn}</span>
+                    <span onClick={()=>upd("notifyCompanies",(p.notifyCompanies||[]).filter(x=>x!==cn))} title="Turn off notifications for this company" style={{cursor:"pointer",display:"flex",flexShrink:0}}><I.Bell s={14} c="#c9a84c" fill="#c9a84c"/></span>
+                  </div>)}
+              </div>}
+          </div>}
+          {/* In-app notifications toggle */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
+            <div><div style={{fontSize:13,fontWeight:500,color:"#f4edd8",marginBottom:2}}>In-app Notifications</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>Show new-posting badges while browsing</div></div>
+            <button onClick={()=>upd("notifications",!p.notifications)} style={{width:42,height:24,background:p.notifications?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+              <div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:p.notifications?"translateX(18px)":"none"}}/>
+            </button>
+          </div>
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",margin:"18px 0 8px"}}>Account Details</div>
           {[["Email",user.email],["Applications Tracked",Object.keys(user.applied||{}).length]].map(([l,v])=>
             <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500}}>{v}</span></div>)}
@@ -2158,7 +2273,7 @@ const _scoreCache=new Map(); // jobId+profileKey -> result
 // A short signature of the profile so we know when to invalidate caches.
 function _profileKey(p){
   if(!p)return "";
-  return `${(p.skills||"").length}|${(p.resumeText||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}`;
+  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}`;
 }
 
 function computeMatchScore(job,profile){
@@ -2168,7 +2283,7 @@ function computeMatchScore(job,profile){
   // (Re)build the profile token sets only when the profile actually changes.
   if(_profileCache.key!==pKey){
     const skillsText=(profile.skills||"").toLowerCase();
-    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.resumeText||""].join(" ").toLowerCase();
+    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.education||""].join(" ").toLowerCase();
     if(!corpus.trim()||corpus.replace(/\s/g,"").length<25){
       _profileCache={key:pKey,profileSet:null,skillSet:null,corpus:"",yexp:""};
     } else {
@@ -2252,29 +2367,47 @@ function JobCard({job,user,onApplied}) {
   const match=computeMatchScore(job,user?.profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#888";
   // Does the user have enough profile data to score? (skills/resume/role/experience)
-  const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.resumeText||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()));
+  const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()||(user.profile.education||"").trim()));
   const [showScoreInfo,setShowScoreInfo]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
   const onApply=()=>{
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
-      // If the user saved an email template, fill its [x] placeholders from this job
-      let bodyParam="";
-      const tmpl=user?.profile?.emailTemplate;
-      const map=user?.profile?.emailTemplateMap||[];
+      const prof=user?.profile||{};
+      // Fill the saved template's [x] placeholders from this job + the user's links
+      let body="";
+      const tmpl=prof.emailTemplate;
+      const map=prof.emailTemplateMap||[];
       if(tmpl){
         let n=-1;
-        const filled=tmpl.replace(/\[x\]/gi,()=>{
+        body=tmpl.replace(/\[x\]/gi,()=>{
           n++;
           const m=map[n];
           if(m==="company")return job.company;
           if(m==="position")return job.title;
+          if(m&&prof[m])return prof[m]; // link fields (linkedin, portfolio, etc.)
           return "";
         });
-        bodyParam=`&body=${encodeURIComponent(filled)}`;
       }
-      window.open(`mailto:${job.applyEmail}?subject=${encodeURIComponent(subj)}${bodyParam}`,"_blank");
+      // If auto-attach is on and a resume exists, append a note (browsers can't auto-attach files to a draft)
+      if(prof.autoAttachResume&&(prof.resumeText||prof.resumeFileName)){
+        body+=(body?"\n\n":"")+"(Please find my resume attached.)";
+      }
+      const provider=prof.emailProvider||"default";
+      const to=encodeURIComponent(job.applyEmail);
+      const su=encodeURIComponent(subj);
+      const bo=encodeURIComponent(body);
+      let url;
+      if(provider==="gmail") url=`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`;
+      else if(provider==="outlook") url=`https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${su}&body=${bo}`;
+      else if(provider==="yahoo") url=`https://compose.mail.yahoo.com/?to=${to}&subject=${su}&body=${bo}`;
+      else url=`mailto:${job.applyEmail}?subject=${su}&body=${bo}`;
+      window.open(url,"_blank");
+      // If auto-attach is on, remind the user to attach since web compose can't take a file automatically
+      if(prof.autoAttachResume&&(prof.resumeText||prof.resumeFileName)){
+        setTimeout(()=>{try{alert("Your draft is open. Don't forget to attach your resume — browsers can't attach it automatically for security reasons.");}catch{}},400);
+      }
     } else {
       window.open(job.url,"_blank");
     }
