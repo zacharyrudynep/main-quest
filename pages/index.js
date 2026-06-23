@@ -20,7 +20,7 @@ const COMPANIES_DATA = {
       { name: "E-Line Media", url: "https://www.elinemedia.com/careers", email: "contactus@elinemedia.com", contact: null },
       { name: "Rainbow Studios", url: "https://www.rainbowstudios.com/careers/", email: null, contact: "https://www.rainbowstudios.com/contact-us/" },
       { name: "Razor Edge Games", url: "https://razoredgegames.com/job/", email: null, contact: "https://razoredgegames.com/contact-us/" },
-      { name: "Wolfpack Game Design", url: "https://www.wolfpackgamedesign.com/join-us", email: "community@wolfpackgamedesign.com", contact: null },
+      { name: "Wolfpack Game Design", url: "https://www.wolfpackgamedesign.com/join-us", email: "community@wolfpackgamedesign.com", contact: null, volunteer:true },
     ],
     "Arkansas": [
       { name: "Causeway Studios", url: "https://www.causewaystudios.com/", email: "hello@causewaystudios.com", contact: null },
@@ -1134,7 +1134,7 @@ async function callAI(prompt,maxTokens=2000){
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const I={
   Sword:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><line x1="2" y1="14" x2="10" y2="6"/><line x1="10" y1="2" x2="14" y2="6"/><line x1="9" y1="3" x2="13" y2="7"/></svg>,
-  SwordShield:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.3l7 2.2v6c0 4.4-3 7.7-7 9.2-4-1.5-7-4.8-7-9.2v-6z"/><line x1="7.2" y1="8" x2="14.2" y2="15"/><line x1="14.2" y1="8" x2="7.2" y2="15"/><line x1="13.6" y1="7.2" x2="15.2" y2="8.8"/><line x1="10.4" y1="15.8" x2="8.8" y2="14.2"/><line x1="10.4" y1="7.2" x2="8.8" y2="8.8"/><line x1="13.6" y1="15.8" x2="15.2" y2="14.2"/></svg>,
+  SwordShield:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18.5 3.5l-9 9"/><path d="M3.5 18.5l3-1 3.5-3.5"/><path d="M18.5 3.5l1 1-1 3-2-1z"/><path d="M5.5 3.5l9 9"/><path d="M20.5 18.5l-3-1-3.5-3.5"/><path d="M5.5 3.5l-1 1 1 3 2-1z"/><path d="M6.2 17.8l-2.7 2.7"/><path d="M17.8 17.8l2.7 2.7"/><path d="M9 14l1.2 1.2M15 14l-1.2 1.2"/></svg>,
   Scroll:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h9a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>,
   Map:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="1,3 6,1 10,3 15,1 15,13 10,15 6,13 1,15"/><line x1="6" y1="1" x2="6" y2="13"/><line x1="10" y1="3" x2="10" y2="15"/></svg>,
   Star:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="8,1.5 10,6 15,6.5 11.5,10 12.5,15 8,12.5 3.5,15 4.5,10 1,6.5 6,6"/></svg>,
@@ -1212,6 +1212,150 @@ function LoginPopup({onClose,onLogin}) {
   </div>;
 }
 
+// ── ROTATING WIREFRAME GLOBE HEATMAP ──────────────────────────────────────────
+// Canvas globe: dotted sphere grid + landmass dots, with glowing hotspots whose
+// brightness scales with the number of companies in that region. Slowly rotates
+// on a tilted axis (Black Ops-style). Self-contained — no external libraries.
+const GLOBE_HOTSPOTS = [
+  // [latitude, longitude, weight] — weight ~ company density
+  [37.4,-122.1, 1.00], // SF Bay Area / California
+  [34.0,-118.2, 0.78], // Los Angeles
+  [47.6,-122.3, 0.62], // Seattle / Washington
+  [30.3,-97.7,  0.55], // Austin / Texas
+  [32.8,-96.8,  0.40], // Dallas
+  [40.7,-74.0,  0.42], // New York
+  [42.4,-71.1,  0.36], // Boston / Massachusetts
+  [28.5,-81.4,  0.30], // Orlando / Florida
+  [39.0,-76.9,  0.28], // Maryland / DC
+  [39.7,-105.0, 0.24], // Denver / Colorado
+  [41.9,-87.6,  0.24], // Chicago / Illinois
+  [35.8,-78.6,  0.22], // Raleigh / North Carolina
+  [33.7,-84.4,  0.22], // Atlanta / Georgia
+  [45.5,-122.7, 0.20], // Portland / Oregon
+  [33.4,-112.1, 0.18], // Phoenix / Arizona
+  [43.7,-79.4,  0.40], // Toronto / Canada
+  [45.5,-73.6,  0.46], // Montreal / Canada
+  [49.3,-123.1, 0.30], // Vancouver / Canada
+  [51.0,-114.1, 0.18], // Calgary / Canada
+];
+// A rough world coastline as lat/lon dot clusters (low-res, stylized — enough to read as Earth).
+const GLOBE_LAND = (()=>{
+  const pts=[];
+  // Generate a coarse landmass scatter using bounding boxes for continents.
+  const boxes=[
+    // [latMin,latMax,lonMin,lonMax,density]
+    [25,70,-168,-52,0.020],  // North America
+    [-56,12,-82,-34,0.018],  // South America
+    [36,71,-10,40,0.030],    // Europe
+    [-35,37,-18,52,0.016],   // Africa
+    [5,75,40,150,0.012],     // Asia
+    [-44,-10,113,154,0.020], // Australia
+  ];
+  for(const [laMin,laMax,loMin,loMax,d] of boxes){
+    const n=Math.round((laMax-laMin)*(loMax-loMin)*d);
+    for(let i=0;i<n;i++){
+      pts.push([laMin+Math.random()*(laMax-laMin),loMin+Math.random()*(loMax-loMin)]);
+    }
+  }
+  return pts;
+})();
+
+function GlobeHeatmap({size=180}){
+  const canvasRef=useRef(null);
+  const rafRef=useRef(0);
+  const rotRef=useRef(0);
+  useEffect(()=>{
+    const canvas=canvasRef.current; if(!canvas)return;
+    const ctx=canvas.getContext("2d");
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=size*dpr; canvas.height=size*dpr;
+    ctx.scale(dpr,dpr);
+    const cx=size/2, cy=size/2, R=size*0.42;
+    const tilt=23.5*Math.PI/180; // axial tilt
+    const sinT=Math.sin(tilt), cosT=Math.cos(tilt);
+
+    // Project a lat/lon to 3D, rotate around the (tilted) Y axis, return screen coords + depth.
+    const project=(lat,lon,rot)=>{
+      const la=lat*Math.PI/180, lo=(lon*Math.PI/180)+rot;
+      let x=Math.cos(la)*Math.sin(lo);
+      let y=Math.sin(la);
+      let z=Math.cos(la)*Math.cos(lo);
+      // apply axial tilt around X axis
+      const y2=y*cosT - z*sinT;
+      const z2=y*sinT + z*cosT;
+      return {x:cx+x*R, y:cy-y2*R, z:z2};
+    };
+
+    const draw=()=>{
+      ctx.clearRect(0,0,size,size);
+      const rot=rotRef.current;
+
+      // Sphere base glow
+      const grd=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.05);
+      grd.addColorStop(0,"rgba(40,26,14,0.55)");
+      grd.addColorStop(0.7,"rgba(20,12,8,0.35)");
+      grd.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.fillStyle=grd;
+      ctx.beginPath(); ctx.arc(cx,cy,R*1.05,0,Math.PI*2); ctx.fill();
+
+      // Rim ring
+      ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+      ctx.strokeStyle="rgba(201,168,76,0.28)"; ctx.lineWidth=1; ctx.stroke();
+
+      // Wireframe grid: latitude + longitude lines as faint dots
+      ctx.fillStyle="rgba(201,168,76,0.12)";
+      for(let lat=-60;lat<=60;lat+=30){
+        for(let lon=0;lon<360;lon+=6){
+          const p=project(lat,lon,rot);
+          if(p.z>0){ ctx.beginPath(); ctx.arc(p.x,p.y,0.6,0,Math.PI*2); ctx.fill(); }
+        }
+      }
+      for(let lon=0;lon<360;lon+=30){
+        for(let lat=-80;lat<=80;lat+=5){
+          const p=project(lat,lon,rot);
+          if(p.z>0){ ctx.beginPath(); ctx.arc(p.x,p.y,0.6,0,Math.PI*2); ctx.fill(); }
+        }
+      }
+
+      // Landmass dots (front hemisphere only)
+      for(const [lat,lon] of GLOBE_LAND){
+        const p=project(lat,lon,rot);
+        if(p.z>0.02){
+          const a=0.18+p.z*0.32;
+          ctx.fillStyle=`rgba(201,168,76,${a})`;
+          ctx.beginPath(); ctx.arc(p.x,p.y,1.1,0,Math.PI*2); ctx.fill();
+        }
+      }
+
+      // Hotspots — glowing city lights, brightness ~ weight
+      for(const [lat,lon,w] of GLOBE_HOTSPOTS){
+        const p=project(lat,lon,rot);
+        if(p.z>0){
+          const depth=0.45+p.z*0.55;
+          const rad=(2.2+w*5)*depth;
+          const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rad*2.4);
+          g.addColorStop(0,`rgba(255,190,90,${0.95*depth})`);
+          g.addColorStop(0.4,`rgba(232,97,58,${0.55*depth*w+0.12})`);
+          g.addColorStop(1,"rgba(232,97,58,0)");
+          ctx.fillStyle=g;
+          ctx.beginPath(); ctx.arc(p.x,p.y,rad*2.4,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle=`rgba(255,225,170,${0.9*depth})`;
+          ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(0.8,rad*0.5),0,Math.PI*2); ctx.fill();
+        }
+      }
+
+      rotRef.current+=0.0022; // slow rotation
+      rafRef.current=requestAnimationFrame(draw);
+    };
+    draw();
+    return ()=>cancelAnimationFrame(rafRef.current);
+  },[size]);
+
+  return <div style={{display:"flex",justifyContent:"center",alignItems:"center",position:"relative"}}>
+    <canvas ref={canvasRef} style={{width:size,height:size,display:"block"}}/>
+  </div>;
+}
+
 function Auth({onLogin,onGuest}) {
   const mobile = useIsMobile();
   const [mode,setMode]=useState("login");
@@ -1267,11 +1411,7 @@ function Auth({onLogin,onGuest}) {
     {/* Left branding (info panel) — shown on both desktop and mobile */}
     <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:mobile?"24px 20px 40px":"48px 6vw",position:mobile?"relative":"sticky",top:0,minHeight:mobile?"auto":"100vh",zIndex:1,overflowY:mobile?"visible":"auto",borderRight:mobile?"none":"none",maxWidth:mobile?"100%":"none"}}>
       {/* Mobile-only Sign In button at the top */}
-      {mobile&&<div style={{marginBottom:24,display:"flex",flexDirection:"column",gap:8}}>
-        <button onClick={()=>setMobileFormOpen(true)} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>Sign In or Sign Up →</button>
-        <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Continue as Guest →</button>
-      </div>}
-      <div style={{width:"100%",maxWidth:mobile?"100%":560,margin:"0 auto"}}>
+            <div style={{width:"100%",maxWidth:mobile?"100%":560,margin:"0 auto"}}>
       {/* Logo */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:28}}>
         <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))",display:"flex",alignItems:"center",justifyContent:"center"}}><I.SwordShield s={34} c="#c9a84c"/></div>
@@ -1279,6 +1419,8 @@ function Auth({onLogin,onGuest}) {
           <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(201,168,76,.55)",letterSpacing:5,lineHeight:1,marginBottom:4}}>— YOUR CAREER —</div>
           <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:32,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div>
         </div>
+        {/* Mobile-only inline Sign In button, to the right of the title */}
+        {mobile&&<><div style={{flex:1}}/><button onClick={()=>setMobileFormOpen(true)} style={{background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,flexShrink:0,whiteSpace:"nowrap"}}>Sign In</button></>}
       </div>
       {/* Hero tagline */}
       <h1 style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:700,color:"#f4edd8",lineHeight:1.3,marginBottom:10,letterSpacing:.5}}>Your launchpad into the game industry.</h1>
@@ -1317,7 +1459,7 @@ function Auth({onLogin,onGuest}) {
           </div>
         ))}
       </div>
-      {mobile&&<button onClick={()=>setMobileFormOpen(true)} style={{width:"100%",marginTop:22,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>View Jobs →</button>}
+      {mobile&&<button onClick={()=>onGuest&&onGuest()} style={{width:"100%",marginTop:22,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>View Jobs →</button>}
       </div>
     </div>
     {/* Center divider bar (desktop only) — a short vertical line, not full height */}
@@ -2562,6 +2704,10 @@ export default function App() {
 
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
+        {/* Rotating wireframe globe heatmap */}
+        <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
+          <GlobeHeatmap size={mobile?160:210}/>
+        </div>
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
           {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Countries",false]].map(([n,lbl,hi])=>
