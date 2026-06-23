@@ -877,16 +877,6 @@ const COMPANIES_DATA = {
 
 };
 
-const VOLUNTEER_OVERRIDES = {
-  "Wolfpack Game Design": { isVolunteer:true, jobs:[
-    { title:"3D Character Animator", summary:"Rig and animate the diverse hybrid characters of World Soul, a post-apocalyptic narrative RPG in Unreal Engine 5. Volunteer — excellent for portfolio.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Rig and animate humanoid and creature characters in UE5","Create locomotion, combat, and cinematic animations","Implement UE5 animation blueprints and state machines","Collaborate with character artists on visual direction"], requirements:["Portfolio demonstrating character animation in UE5 or similar","Experience rigging humanoid characters","Passion for narrative RPG games","Ability to work remotely and asynchronously"] },
-    { title:"Art Producer", summary:"Coordinate cross-functional art teams for World Soul, driving milestone deliverables and liaising between creative and technical departments. Volunteer.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Drive scheduling and production planning for art teams","Track asset pipelines across 2D, 3D, VFX, and animation","Maintain documentation and update Jira/ShotGrid","Communicate production goals clearly to team members"], requirements:["2+ years in art development or digital content production","Strong understanding of art workflows and pipelines","Experience with Jira, ShotGrid, or similar tools","Passion for indie game development"] },
-    { title:"3D Character Artist", summary:"Model, sculpt, and texture high-quality character assets for World Soul, a post-apocalyptic RPG in UE5. Volunteer — great for building your portfolio.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Model and sculpt character assets aligned with the visual direction","Create PBR textures in Substance Painter","Collaborate with the art director for visual consistency","Optimize assets for real-time UE5 performance"], requirements:["Strong portfolio of game-ready character art","Proficiency in ZBrush, Maya, or Blender","Experience with Substance Painter for PBR texturing","Interest in narrative RPG games"] },
-    { title:"Environment Artist", summary:"Create immersive optimized environments for the post-apocalyptic world of World Soul in Unreal Engine 5. Volunteer position.", experience:"Mid Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Build modular environment kits and hero assets in UE5","Create tileable textures and materials in Substance","Work with art director on visual quality","Optimize assets for real-time performance"], requirements:["Portfolio showing game-ready environment art","Proficiency with UE5 or similar real-time engine","Experience with modular asset workflows","Knowledge of PBR texturing pipelines"] },
-    { title:"UI/UX Designer", summary:"Design and implement intuitive thematic UI for World Soul — menus, HUDs, and inventory systems native to the post-apocalyptic game world. Volunteer.", experience:"Entry Level", type:"Volunteer", salary:"Volunteer (unpaid)", isRemote:true, responsibilities:["Design UI including HUDs, menus, and inventory screens","Create wireframes and prototypes for key game systems","Collaborate with programmers to implement UI in UE5","Maintain accessibility and visual consistency"], requirements:["Portfolio demonstrating game UI or UX work","Familiarity with UE5 UMG or similar UI frameworks","Strong visual design sense","Experience with Figma a plus"] },
-  ]}
-};
-
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
 // Companies where the ONLY way to apply is by email. Each posting routes to a
 // specific email address. These render as real cards with an "Apply by Email" button.
@@ -918,10 +908,7 @@ function seededRand(seed) { let s=seed; return ()=>{ s=(s*1664525+1013904223)&0x
 
 function genJobs(company, stateKey) {
   const mkDate=(i)=>{const d=new Date(Date.now()-(i*7+2)*86400000);return{posted:d,postedStr:d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),daysAgo:i*7+2};};
-  // 1. Volunteer-override jobs (e.g. WolfPack) — real curated volunteer roles
-  const ov = VOLUNTEER_OVERRIDES[company.name];
-  if (ov) return ov.jobs.map((j,i)=>{const dt=mkDate(i);return{ id:`${company.name}-ov-${i}`, title:j.title, company:company.name, url:company.url, applyUrl:company.url, state:stateKey, ...dt, isNew:i===0, isRemote:j.isRemote, type:j.type, salary:j.salary, email:company.email, experience:j.experience, isVolunteer:true, summary:j.summary, responsibilities:j.responsibilities||[], requirements:j.requirements||[] };});
-  // 2. Email-apply jobs (e.g. BreakAway) — each posting routes to a specific email
+  // Email-apply jobs (e.g. BreakAway) — each posting routes to a specific email
   const ea = EMAIL_APPLY_JOBS[company.name];
   if (ea) return ea.jobs.map((j,i)=>{const dt=mkDate(i);return{ id:`${company.name}-ea-${i}`, title:j.title, company:company.name, url:company.url, applyUrl:company.url, state:stateKey, ...dt, isNew:false, isRemote:j.isRemote, type:j.type, salary:j.salary||"", email:j.applyEmail, applyEmail:j.applyEmail, experience:j.experience, isVolunteer:!!company.volunteer, isEmailApply:true, summary:j.summary, responsibilities:j.responsibilities||[], requirements:j.requirements||[] };});
   return []; // no fake jobs — companies show via ATS live data or contact buttons only
@@ -1147,6 +1134,7 @@ async function callAI(prompt,maxTokens=2000){
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const I={
   Sword:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><line x1="2" y1="14" x2="10" y2="6"/><line x1="10" y1="2" x2="14" y2="6"/><line x1="9" y1="3" x2="13" y2="7"/></svg>,
+  SwordShield:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.3l7 2.2v6c0 4.4-3 7.7-7 9.2-4-1.5-7-4.8-7-9.2v-6z"/><line x1="7.2" y1="8" x2="14.2" y2="15"/><line x1="14.2" y1="8" x2="7.2" y2="15"/><line x1="13.6" y1="7.2" x2="15.2" y2="8.8"/><line x1="10.4" y1="15.8" x2="8.8" y2="14.2"/><line x1="10.4" y1="7.2" x2="8.8" y2="8.8"/><line x1="13.6" y1="15.8" x2="15.2" y2="14.2"/></svg>,
   Scroll:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h9a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>,
   Map:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="1,3 6,1 10,3 15,1 15,13 10,15 6,13 1,15"/><line x1="6" y1="1" x2="6" y2="13"/><line x1="10" y1="3" x2="10" y2="15"/></svg>,
   Star:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="8,1.5 10,6 15,6.5 11.5,10 12.5,15 8,12.5 3.5,15 4.5,10 1,6.5 6,6"/></svg>,
@@ -1231,6 +1219,7 @@ function Auth({onLogin,onGuest}) {
   const [staySignedIn,setStaySignedIn]=useState(true);
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
   const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false);
+  const [mobileFormOpen,setMobileFormOpen]=useState(false);
   const submit = async () => {
     setErr("");
     if (!email || !pass) { setErr("Fill in all fields."); return; }
@@ -1275,11 +1264,17 @@ function Auth({onLogin,onGuest}) {
       <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",filter:"blur(120px)",opacity:.14,background:"radial-gradient(circle,#8b2020,transparent)",bottom:-180,right:-120,animation:"ob2 22s ease-in-out infinite"}}/>
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",backgroundSize:"56px 56px"}}/>
     </div>
-    {/* Left branding */}
-    {!mobile && <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"48px 52px",position:"sticky",top:0,height:"100vh",maxWidth:580,zIndex:1,overflowY:"auto"}}>
+    {/* Left branding (info panel) — shown on both desktop and mobile */}
+    <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:mobile?"24px 20px 40px":"48px 6vw",position:mobile?"relative":"sticky",top:0,minHeight:mobile?"auto":"100vh",zIndex:1,overflowY:mobile?"visible":"auto",borderRight:mobile?"none":"none",maxWidth:mobile?"100%":"none"}}>
+      {/* Mobile-only Sign In button at the top */}
+      {mobile&&<div style={{marginBottom:24,display:"flex",flexDirection:"column",gap:8}}>
+        <button onClick={()=>setMobileFormOpen(true)} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>Sign In or Sign Up →</button>
+        <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Continue as Guest →</button>
+      </div>}
+      <div style={{width:"100%",maxWidth:mobile?"100%":560,margin:"0 auto"}}>
       {/* Logo */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:28}}>
-        <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))",display:"flex",alignItems:"center",justifyContent:"center"}}><I.Sword s={32} c="#c9a84c"/></div>
+        <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))",display:"flex",alignItems:"center",justifyContent:"center"}}><I.SwordShield s={34} c="#c9a84c"/></div>
         <div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(201,168,76,.55)",letterSpacing:5,lineHeight:1,marginBottom:4}}>— YOUR CAREER —</div>
           <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:32,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div>
@@ -1322,10 +1317,16 @@ function Auth({onLogin,onGuest}) {
           </div>
         ))}
       </div>
-    </div>}
-    {/* Right form */}
-    <div style={{flex:mobile?"1":"0 0 500px",display:"flex",alignItems:"center",justifyContent:"center",padding:mobile?"20px 16px":"40px 48px",position:"relative",zIndex:1,overflowY:"auto",minHeight:"100vh"}}>
-      <div style={{width:"100%",maxWidth:420,background:"rgba(20,14,28,.88)",backdropFilter:"blur(30px)",border:"1px solid rgba(201,168,76,.22)",borderRadius:22,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.5)"}}>
+      {mobile&&<button onClick={()=>setMobileFormOpen(true)} style={{width:"100%",marginTop:22,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>View Jobs →</button>}
+      </div>
+    </div>
+    {/* Center divider bar (desktop only) — a short vertical line, not full height */}
+    {!mobile&&<div style={{width:1,alignSelf:"center",height:"55vh",background:"linear-gradient(180deg,transparent,rgba(201,168,76,.35),transparent)",zIndex:1,flexShrink:0}}/>}
+    {/* Right form — desktop: right half centered; mobile: overlay popup when opened */}
+    <div style={{flex:mobile?"none":1,display:mobile?(mobileFormOpen?"flex":"none"):"flex",alignItems:"center",justifyContent:"center",padding:mobile?"20px 16px":"40px 6vw",position:mobile?"fixed":"relative",inset:mobile?0:"auto",background:mobile?"rgba(4,3,2,.85)":"transparent",backdropFilter:mobile?"blur(4px)":"none",zIndex:mobile?1000:1,overflowY:"auto",minHeight:mobile?"100vh":"100vh"}} onClick={mobile?(e=>{if(e.target===e.currentTarget)setMobileFormOpen(false);}):undefined}>
+      <div style={{width:"100%",maxWidth:420,background:"rgba(20,14,28,.88)",backdropFilter:"blur(30px)",border:"1px solid rgba(201,168,76,.22)",borderRadius:22,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.5)",position:"relative"}}>
+        {/* Mobile close button */}
+        {mobile&&<button onClick={()=>setMobileFormOpen(false)} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:20,lineHeight:1,zIndex:5}}>✕</button>}
         <div style={{display:"flex",position:"relative",background:"rgba(0,0,0,.25)"}}>
           {["login","signup"].map((m,i)=><button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,background:"none",border:"none",cursor:"pointer",color:mode===m?"#f4edd8":"rgba(244,237,216,.35)",fontSize:11,fontWeight:600,padding:"14px",fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase"}}>{i===0?"Sign In":"Create Account"}</button>)}
           <div style={{position:"absolute",bottom:0,left:0,width:"50%",height:2,background:G,borderRadius:2,transition:"transform .25s",transform:`translateX(${mode==="login"?"0%":"100%"})`}}/>
@@ -2536,7 +2537,7 @@ export default function App() {
       {/* LEFT: Logo + nav tabs */}
       <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))",display:"inline-flex",alignItems:"center"}}><I.Sword s={18} c="#c9a84c"/></span>
+          <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))",display:"inline-flex",alignItems:"center"}}><I.SwordShield s={20} c="#c9a84c"/></span>
           <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
         </div>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
