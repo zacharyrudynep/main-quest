@@ -874,6 +874,244 @@ const COMPANIES_DATA = {
       { name: "Studio MDHR", url: "https://studiomdhr.com/careers/", email: null, contact: null },
     ],
   },
+
+  // ─────────────── INTERNATIONAL STUDIOS ───────────────
+  "United Kingdom": {
+    "England": [
+      { name: "Rocksteady Studios", url: "https://www.rocksteadyltd.com/", email: "careers@rocksteadyltd.com", contact: null },
+      { name: "Creative Assembly", url: "https://www.creative-assembly.com/careers", email: null, contact: null },
+      { name: "Playground Games", url: "https://www.playground-games.com/careers", email: null, contact: null },
+      { name: "Rare", url: "https://www.rare.co.uk/careers", email: null, contact: null },
+      { name: "Media Molecule", url: "https://www.mediamolecule.com/careers", email: null, contact: null },
+      { name: "Sumo Digital", url: "https://www.sumo-digital.com/careers/", email: null, contact: null },
+      { name: "Codemasters", url: "https://www.codemasters.com/career/", email: null, contact: null },
+      { name: "Mediatonic", url: "https://mediatonic.com/careers", email: null, contact: null },
+      { name: "Splash Damage", url: "https://www.splashdamage.com/careers/", email: null, contact: null },
+      { name: "Bossa Studios", url: "https://www.bossastudios.com/jobs/", email: null, contact: null },
+      { name: "Cloud Imperium Games", url: "https://cloudimperiumgames.com/careers", email: null, contact: null },
+      { name: "nDreams", url: "https://ndreams.com/careers/", email: null, contact: null },
+      { name: "Frontier Developments", url: "https://www.frontier.co.uk/careers", email: null, contact: null },
+      { name: "Jagex", url: "https://www.jagex.com/en-GB/careers", email: null, contact: null },
+      { name: "Supermassive Games", url: "https://www.supermassivegames.com/careers", email: null, contact: null },
+      { name: "Cloud Chamber", url: "https://cloudchambergames.com/open-positions", email: null, contact: null },
+    ],
+    "Scotland": [
+      { name: "Rockstar North", url: "https://www.rockstarnorth.com/", email: null, contact: null },
+      { name: "4J Studios", url: "https://www.4jstudios.com/", email: null, contact: null },
+      { name: "Blazing Griffin", url: "https://blazinggriffin.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Poland": {
+    "Masovian": [
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: null, contact: null },
+      { name: "People Can Fly Warsaw", url: "https://peoplecanfly.com/careers/", email: null, contact: null },
+    ],
+    "Lesser Poland": [
+      { name: "Bloober Team", url: "https://www.blooberteam.com/careers", email: null, contact: null },
+    ],
+    "Silesian": [
+      { name: "Techland", url: "https://techland.net/careers", email: null, contact: null },
+      { name: "Flying Wild Hog", url: "https://flyingwildhog.com/#careers", email: null, contact: null },
+    ],
+  },
+  "Germany": {
+    "Bavaria": [
+      { name: "Crytek", url: "https://www.crytek.com/careers", email: null, contact: null },
+      { name: "Chimera Entertainment", url: "https://www.chimera-entertainment.de/en/jobs/", email: null, contact: null },
+    ],
+    "Hamburg": [
+      { name: "InnoGames", url: "https://www.innogames.com/career/", email: null, contact: null },
+      { name: "Goodgame Studios", url: "https://www.goodgamestudios.com/career/", email: null, contact: null },
+    ],
+    "Berlin": [
+      { name: "Wooga", url: "https://www.wooga.com/jobs", email: null, contact: null },
+      { name: "Yager", url: "https://www.yager.de/careers/", email: null, contact: null },
+      { name: "Klang Games", url: "https://klang.com/careers", email: null, contact: null },
+    ],
+    "Baden-Wurttemberg": [
+      { name: "Kalypso Media", url: "https://www.kalypsomedia.com/en/jobs", email: null, contact: null },
+    ],
+  },
+  "France": {
+    "Ile-de-France": [
+      { name: "Ubisoft Paris", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Quantic Dream", url: "https://www.quanticdream.com/en/careers", email: null, contact: null },
+      { name: "Dontnod Entertainment", url: "https://www.dont-nod.com/en/jobs/", email: null, contact: null },
+      { name: "Sloclap", url: "https://www.sloclap.com/careers", email: null, contact: null },
+    ],
+    "Occitanie": [
+      { name: "Asobo Studio", url: "https://www.asobostudio.com/careers", email: null, contact: null },
+    ],
+    "Auvergne-Rhone-Alpes": [
+      { name: "Arkane Studios", url: "https://www.arkane-studios.com/en/careers", email: null, contact: null },
+    ],
+  },
+  "Sweden": {
+    "Stockholm": [
+      { name: "DICE", url: "https://www.dice.se/careers/", email: null, contact: null },
+      { name: "Paradox Interactive", url: "https://www.paradoxinteractive.com/careers", email: null, contact: null },
+      { name: "Mojang Studios", url: "https://www.minecraft.net/en-us/careers", email: null, contact: null },
+      { name: "Avalanche Studios", url: "https://avalanchestudios.com/careers", email: null, contact: null },
+      { name: "Star Stable Entertainment", url: "https://www.starstable.com/en/jobs", email: null, contact: null },
+    ],
+    "Skane": [
+      { name: "Massive Entertainment", url: "https://www.massive.se/careers/", email: null, contact: null },
+      { name: "Tarsier Studios", url: "https://tarsier.se/", email: null, contact: null },
+    ],
+    "Vastra Gotaland": [
+      { name: "Zenimax Online (Gothenburg)", url: "https://www.zenimax.com/careers", email: null, contact: null },
+      { name: "Stunlock Studios", url: "https://www.stunlock.com/careers", email: null, contact: null },
+    ],
+  },
+  "Finland": {
+    "Uusimaa": [
+      { name: "Supercell", url: "https://supercell.com/en/careers/", email: null, contact: null },
+      { name: "Remedy Entertainment", url: "https://www.remedygames.com/careers", email: null, contact: null },
+      { name: "Rovio", url: "https://www.rovio.com/careers/", email: null, contact: null },
+      { name: "Housemarque", url: "https://housemarque.com/careers/", email: null, contact: null },
+      { name: "Next Games", url: "https://www.nextgames.com/careers", email: null, contact: null },
+    ],
+  },
+  "Netherlands": {
+    "North Holland": [
+      { name: "Guerrilla Games", url: "https://www.guerrilla-games.com/join", email: null, contact: null },
+      { name: "Vlambeer", url: "https://vlambeer.com/", email: null, contact: null },
+    ],
+    "Utrecht": [
+      { name: "Triumph Studios", url: "https://www.triumph.nl/careers", email: null, contact: null },
+      { name: "Abstraction", url: "https://www.abstraction.games/careers", email: null, contact: null },
+    ],
+    "North Brabant": [
+      { name: "Guerrilla Cambridge", url: "https://www.guerrilla-games.com/join", email: null, contact: null },
+    ],
+  },
+  "Denmark": {
+    "Capital Region": [
+      { name: "IO Interactive", url: "https://www.ioi.dk/careers/", email: null, contact: null },
+      { name: "Playdead", url: "https://playdead.com/careers/", email: null, contact: null },
+      { name: "Unity Technologies", url: "https://careers.unity.com/", email: null, contact: null },
+    ],
+  },
+  "Spain": {
+    "Catalonia": [
+      { name: "Ubisoft Barcelona", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Digital Legends", url: "https://www.digital-legends.com/careers/", email: null, contact: null },
+      { name: "Social Point", url: "https://www.socialpoint.es/jobs/", email: null, contact: null },
+    ],
+    "Community of Madrid": [
+      { name: "Tequila Works", url: "https://tequilaworks.com/en/careers/", email: null, contact: null },
+    ],
+  },
+  "Norway": {
+    "Oslo": [
+      { name: "Funcom", url: "https://www.funcom.com/jobs/", email: null, contact: null },
+      { name: "Krillbite Studio", url: "https://krillbite.com/", email: null, contact: null },
+    ],
+  },
+  "Japan": {
+    "Tokyo": [
+      { name: "Square Enix", url: "https://www.jp.square-enix.com/recruit/", email: null, contact: null },
+      { name: "Bandai Namco Studios", url: "https://www.bandainamcostudios.com/recruit/", email: null, contact: null },
+      { name: "Sega", url: "https://www.sega.co.jp/recruit/", email: null, contact: null },
+      { name: "Koei Tecmo", url: "https://www.koeitecmo.co.jp/recruit/", email: null, contact: null },
+      { name: "FromSoftware", url: "https://www.fromsoftware.jp/ww/recruit.html", email: null, contact: null },
+      { name: "PlatinumGames", url: "https://www.platinumgames.com/recruit", email: null, contact: null },
+    ],
+    "Osaka": [
+      { name: "Capcom", url: "https://www.capcom-recruit.jp/", email: null, contact: null },
+    ],
+    "Kyoto": [
+      { name: "Nintendo", url: "https://www.nintendo.co.jp/jobs/", email: null, contact: null },
+    ],
+  },
+  "South Korea": {
+    "Seoul": [
+      { name: "Nexon", url: "https://careers.nexon.com/", email: null, contact: null },
+      { name: "NCSoft", url: "https://careers.ncsoft.com/", email: null, contact: null },
+      { name: "Netmarble", url: "https://company.netmarble.com/recruit", email: null, contact: null },
+      { name: "Pearl Abyss", url: "https://www.pearlabyss.com/en-US/Company/Recruit", email: null, contact: null },
+      { name: "Krafton", url: "https://careers.krafton.com/", email: null, contact: null },
+      { name: "Smilegate", url: "https://careers.smilegate.com/", email: null, contact: null },
+    ],
+  },
+  "China": {
+    "Guangdong": [
+      { name: "Tencent Games", url: "https://join.tencent.com/", email: null, contact: null },
+    ],
+    "Shanghai": [
+      { name: "miHoYo (HoYoverse)", url: "https://www.hoyoverse.com/en-us/careers", email: null, contact: null },
+      { name: "Lilith Games", url: "https://www.lilithgames.com/en/join", email: null, contact: null },
+    ],
+    "Beijing": [
+      { name: "NetEase Games", url: "https://www.neteasegames.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Singapore": {
+    "Singapore": [
+      { name: "Ubisoft Singapore", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Mighty Bear Games", url: "https://www.mightybeargames.com/careers", email: null, contact: null },
+    ],
+  },
+  "Australia": {
+    "Victoria": [
+      { name: "League of Geeks", url: "https://www.leagueofgeeks.com/jobs", email: null, contact: null },
+      { name: "Firemonkeys Studios", url: "https://www.firemonkeys.com.au/careers", email: null, contact: null },
+      { name: "PlaySide Studios", url: "https://www.playsidestudios.com/careers", email: null, contact: null },
+    ],
+    "New South Wales": [
+      { name: "Riot Games Sydney", url: "https://www.riotgames.com/en/work-with-us/jobs", email: null, contact: null },
+      { name: "Big Ant Studios", url: "https://www.bigant.com/careers/", email: null, contact: null },
+    ],
+    "Queensland": [
+      { name: "Halfbrick Studios", url: "https://www.halfbrick.com/careers", email: null, contact: null },
+      { name: "Gameloft Brisbane", url: "https://www.gameloft.com/careers", email: null, contact: null },
+    ],
+  },
+  "New Zealand": {
+    "Auckland": [
+      { name: "Grinding Gear Games", url: "https://www.grindinggear.com/careers/", email: null, contact: null },
+      { name: "RocketWerkz", url: "https://rocketwerkz.com/", email: null, contact: null },
+      { name: "PikPok", url: "https://pikpok.com/careers/", email: null, contact: null },
+    ],
+    "Wellington": [
+      { name: "CerebralFix", url: "https://cerebralfix.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Brazil": {
+    "Sao Paulo": [
+      { name: "Wildlife Studios", url: "https://wildlifestudios.com/careers/", email: null, contact: null },
+      { name: "Aquiris Game Studio", url: "https://aquiris.com.br/careers", email: null, contact: null },
+    ],
+    "Rio Grande do Sul": [
+      { name: "Hoplon", url: "https://www.hoplon.com/careers", email: null, contact: null },
+    ],
+  },
+  "Argentina": {
+    "Buenos Aires": [
+      { name: "Etermax", url: "https://corporate.etermax.com/careers/", email: null, contact: null },
+      { name: "NGD Studios", url: "https://www.ngdstudios.com.ar/", email: null, contact: null },
+    ],
+  },
+  "Mexico": {
+    "Jalisco": [
+      { name: "Lienzo", url: "https://www.lienzo.mx/", email: null, contact: null },
+    ],
+    "Mexico City": [
+      { name: "Larva Game Studios", url: "https://larvagamestudios.com/", email: null, contact: null },
+    ],
+  },
+  "South Africa": {
+    "Western Cape": [
+      { name: "Free Lives", url: "https://www.freelives.net/", email: null, contact: null },
+      { name: "24 Bit Games", url: "https://www.24bit.games/careers", email: null, contact: null },
+    ],
+  },
+  "Canada": {
+    "Quebec": [
+      { name: "Ubisoft Montreal", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Eidos-Montreal", url: "https://www.eidosmontreal.com/en/careers/", email: null, contact: null },
+    ],
+  },
 };
 
 const VOLUNTEER_OVERRIDES = {
@@ -1194,7 +1432,56 @@ const I={
 };
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
-function Auth({onLogin}) {
+// Centered login/signup modal for guests to upgrade to a full account.
+function LoginPopup({onClose,onLogin}) {
+  const [mode,setMode]=useState("login");
+  const [agreed,setAgreed]=useState(false);
+  const [name,setName]=useState(""),[email,setEmail]=useState(""),[pass,setPass]=useState("");
+  const [err,setErr]=useState(""),[loading,setLoading]=useState(false);
+  const G="linear-gradient(135deg,#c9a84c,#e8613a)";
+  const submit=async()=>{
+    setErr("");
+    if(!email||!pass){setErr("Fill in all fields.");return;}
+    if(mode==="signup"&&!name){setErr("Enter your name.");return;}
+    if(mode==="signup"&&!agreed){setErr("Please agree to the Terms and Privacy Policy.");return;}
+    setLoading(true);
+    try{
+      if(mode==="signup"){
+        const {data,error}=await supabase.auth.signUp({email,password:pass});
+        if(error){setErr(error.message);setLoading(false);return;}
+        await supabase.from("profiles").insert({id:data.user.id,name,data:{tosVersion:TOS_VERSION}});
+        onLogin({id:data.user.id,email,name,applied:{},profile:{tosVersion:TOS_VERSION}});
+      }else{
+        const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
+        if(error){setErr("Invalid email or password.");setLoading(false);return;}
+        const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
+        const {data:apps}=await supabase.from("applications").select("*").eq("user_id",data.user.id);
+        const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at};});
+        const profData=(profile&&profile.data)?profile.data:(profile||{});
+        onLogin({id:data.user.id,email,name:profile?.name||profData.name||email,applied,profile:profData});
+      }
+    }catch(e){setErr("Something went wrong. Please try again.");setLoading(false);}
+  };
+  const inp={width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",borderRadius:9,padding:"11px 13px",fontSize:13,fontFamily:"inherit",boxSizing:"border-box",marginBottom:10,outline:"none"};
+  return <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(4,3,2,.8)",backdropFilter:"blur(4px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:380,background:"linear-gradient(160deg,#140e0a,#0a0608)",border:"1px solid rgba(201,168,76,.25)",borderRadius:16,padding:"26px 24px",position:"relative",boxShadow:"0 24px 70px rgba(0,0,0,.6)"}}>
+      <button onClick={onClose} style={{position:"absolute",top:14,right:14,background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:18,lineHeight:1}}>✕</button>
+      <div style={{textAlign:"center",marginBottom:18}}>
+        <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:24,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:4}}>Main Quest</div>
+        <div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>{mode==="login"?"Sign in to unlock all features":"Create a free account"}</div>
+      </div>
+      {mode==="signup"&&<input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>}
+      <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com"/>
+      <input style={inp} type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password"/>
+      {mode==="signup"&&<label onClick={()=>setAgreed(a=>!a)} style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",margin:"2px 0 12px",fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.4}}><div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${agreed?"#c9a84c":"rgba(201,168,76,.3)"}`,background:agreed?"#c9a84c":"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center"}}>{agreed&&<I.Check s={9} c="#0a0608"/>}</div><span>I agree to the <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a>.</span></label>}
+      {err&&<div style={{fontSize:11.5,color:"#e07060",marginBottom:10,textAlign:"center"}}>{err}</div>}
+      <button onClick={submit} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:loading?"default":"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:loading?.7:1,marginBottom:12}}>{loading?"⟳":mode==="login"?"Sign In →":"Create Account →"}</button>
+      <p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button></p>
+    </div>
+  </div>;
+}
+
+function Auth({onLogin,onGuest}) {
   const mobile = useIsMobile();
   const [mode,setMode]=useState("login");
   const [agreed,setAgreed]=useState(false);
@@ -1257,7 +1544,7 @@ function Auth({onLogin}) {
       </div>
       {/* Hero tagline */}
       <h1 style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:700,color:"#f4edd8",lineHeight:1.3,marginBottom:10,letterSpacing:.5}}>Your launchpad into the game industry.</h1>
-      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>Main Quest aggregates job listings from 300+ game studios across North America — with AI-powered tools to help you write better applications, track your progress, and land interviews faster.</p>
+      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>One giant game job hub. Main Quest brings live job listings from game studios worldwide into one convenient place — with smart job match scoring, reusable email templates, and application tracking to help you land your next role faster.</p>
       {/* Divider */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24,opacity:.5}}>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(201,168,76,.6))"}}/>
@@ -1267,12 +1554,12 @@ function Auth({onLogin}) {
       {/* Features */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
-          ["⚔️","Job Board","300+ studios filtered by country, state, role, and experience."],
-          ["🤖","AI Apply","Cover letter, ATS score, and interview prep in seconds."],
-          ["📜","Resume Upload","Upload your resume to auto-fill your profile for AI applications."],
+          ["🌍","Global Job Board","Studios worldwide, filtered by country, region, role, and experience."],
+          ["🎯","Job Match Score","See how well each posting fits your skills and experience, 0–10."],
+          ["📜","Resume Upload","Upload your resume to auto-fill your profile in seconds."],
           ["📋","App Tracker","Track every application with dates and one-click access."],
-          ["✉️","AI Email","Draft a personalized email and send it from Gmail or Outlook."],
-          ["🔔","New Alerts","New postings flagged in real time so you never miss one."],
+          ["✉️","Email Templates","Save a reusable template that auto-fills for each job you apply to."],
+          ["🔔","Company Alerts","Turn on notifications for the studios you care about most."],
         ].map(([ic,title,desc])=>
           <div key={title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
             <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{ic}</span>
@@ -1285,7 +1572,7 @@ function Auth({onLogin}) {
       </div>
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["300+","Studios"],["800+","Openings"],["40+","Live via API"],["2","Countries"]].map(([n,l],i)=>(
+        {[["860+","Studios"],["Live","Job Feeds"],["20+","Countries"],["Free","Always"]].map(([n,l],i)=>(
           <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
             <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
@@ -1326,7 +1613,7 @@ function Auth({onLogin}) {
             <input type="checkbox" checked={staySignedIn} onChange={e=>setStaySignedIn(e.target.checked)} style={{accentColor:"#c9a84c",cursor:"pointer"}}/>
             <span>Stay signed in on this device</span>
           </label>}
-          <button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Enter the Guild":"Forge Account"} →</>}</button>
+          <button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Sign In":"Create Account"} →</>}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,color:"rgba(244,237,216,.2)"}}>
             <div style={{flex:1,height:1,background:"rgba(201,168,76,.12)"}}/>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(201,168,76,.35)",letterSpacing:2}}>✦</span>
@@ -1336,6 +1623,9 @@ function Auth({onLogin}) {
             {mode==="login"?"Don't have an account? ":"Already have an account? "}
             <button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button>
           </p>
+          {/* Continue as Guest */}
+          <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",marginTop:4,background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.06)";e.currentTarget.style.color="#f0d080";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(244,237,216,.6)";}}>Continue as Guest →</button>
+          <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.3)",margin:"8px 0 0",lineHeight:1.4}}>Browse all postings without an account. Sign in any time to unlock match scores, tracking, and alerts.</p>
         </div>
       </div>
     </div>
@@ -1908,6 +2198,36 @@ function LinkField({fieldKey,label,icon,placeholder,value,onChange}) {
 }
 
 // ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
+// Slide-over panel shown when a guest clicks the account avatar.
+function GuestPanel({onClose,onSignIn}) {
+  const mobile=useIsMobile();
+  const G="linear-gradient(135deg,#c9a84c,#e8613a)";
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{width:"100%",maxWidth:mobile?380:460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
+        <div style={{width:42,height:42,borderRadius:"50%",background:"rgba(201,168,76,.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><I.Person s={22} c="rgba(244,237,216,.5)"/></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:600,color:"#f4edd8"}}>Guest</div>
+          <div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>Browsing without an account</div>
+        </div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:20,lineHeight:1}}>✕</button>
+      </div>
+      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"30px 26px",textAlign:"center",gap:16}}>
+        <div style={{fontSize:38}}>⚔️</div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:700,color:"#f4edd8"}}>Unlock your full quest</div>
+        <p style={{fontSize:13,color:"rgba(244,237,216,.55)",lineHeight:1.6,maxWidth:300,margin:0}}>Sign in or create a free account to unlock your profile, job match scores, application tracking, email templates, and company alerts.</p>
+        <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:260,marginTop:6}}>
+          {[["🎯","Job match scoring"],["📋","Application tracking"],["✉️","Saved email templates"],["🔔","Company job alerts"]].map(([ic,t])=>
+            <div key={t} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 13px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:9,textAlign:"left"}}>
+              <span style={{fontSize:15}}>{ic}</span><span style={{fontSize:12.5,color:"rgba(244,237,216,.7)"}}>{t}</span>
+            </div>)}
+        </div>
+        <button onClick={onSignIn} style={{width:"100%",maxWidth:260,background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginTop:8}}>Sign In or Sign Up →</button>
+      </div>
+    </div>
+  </div>;
+}
+
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
@@ -2121,7 +2441,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-function JobCard({job,user,onApplied}) {
+function JobCard({job,user,guest,onRequestLogin,onApplied}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
@@ -2208,16 +2528,31 @@ function JobCard({job,user,onApplied}) {
       {(!job.responsibilities?.length&&!job.requirements?.length)&&<>{job.fullDescription?<p style={{fontSize:12,color:"rgba(244,237,216,.6)",lineHeight:1.6,margin:"0 0 8px",whiteSpace:"pre-wrap"}}>{job.fullDescription}</p>:<p style={{fontSize:12,color:"rgba(244,237,216,.4)",fontStyle:"italic",margin:"0 0 8px"}}>Visit the careers page for the full job description.</p>}<a href={job.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>View Full Posting →</a></>}
     </div>}
     {/* Apply prompt */}
-    {prompt&&<div style={{background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",borderRadius:8,padding:"9px 13px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8,fontSize:12,color:"rgba(244,237,216,.7)"}}>
+    {prompt&&user&&<div style={{background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",borderRadius:8,padding:"9px 13px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8,fontSize:12,color:"rgba(244,237,216,.7)"}}>
       Did you apply?
       <button onClick={()=>confirm(true)} style={{background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",cursor:"pointer",borderRadius:6,fontSize:11,padding:"4px 12px",fontFamily:"'Cinzel',serif"}}>Yes!</button>
       <button onClick={()=>confirm(false)} style={{background:"rgba(244,237,216,.05)",border:"1px solid rgba(244,237,216,.1)",color:"rgba(244,237,216,.4)",cursor:"pointer",borderRadius:6,fontSize:11,padding:"4px 12px",fontFamily:"inherit"}}>Not yet</button>
+    </div>}
+    {prompt&&guest&&<div style={{background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",borderRadius:8,padding:"9px 13px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8,fontSize:12,color:"rgba(244,237,216,.7)"}}>
+      Sign up or log in to track this application.
+      <button onClick={()=>onRequestLogin&&onRequestLogin()} style={{background:"rgba(201,168,76,.18)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",cursor:"pointer",borderRadius:6,fontSize:11,padding:"4px 12px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Sign In</button>
+      <button onClick={()=>setPrompt(false)} style={{background:"rgba(244,237,216,.05)",border:"1px solid rgba(244,237,216,.1)",color:"rgba(244,237,216,.4)",cursor:"pointer",borderRadius:6,fontSize:11,padding:"4px 12px",fontFamily:"inherit"}}>Dismiss</button>
     </div>}
     {/* Action buttons */}
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
     </div>
     </div>
+    {/* Match score square */}
+    {guest&&<div onClick={e=>{e.stopPropagation();onRequestLogin&&onRequestLogin();}} title="Sign up or log in to access this feature" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer",overflow:"hidden"}} onMouseEnter={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=1;}} onMouseLeave={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=0;}}>
+      <div style={{filter:"blur(5px)",opacity:.5,display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{fontSize:mobile?17:20,fontWeight:800,color:"#c9a84c",fontFamily:"'Cinzel',serif",lineHeight:1}}>8.4</div>
+        <div style={{fontSize:8,color:"#c9a84c",opacity:.7,fontFamily:"'Cinzel',serif"}}>/ 10</div>
+        <div style={{fontSize:7,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Match</div>
+      </div>
+      <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><I.Lock s={14} c="rgba(201,168,76,.8)"/></div>
+      <div className="gtip" style={{position:"absolute",top:"100%",right:0,marginTop:6,width:160,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 10px",fontSize:10,lineHeight:1.4,color:"rgba(244,237,216,.85)",zIndex:100,opacity:0,transition:"opacity .15s",pointerEvents:"none",fontFamily:"system-ui,sans-serif",textAlign:"center"}}>Sign up or log in to access your match score</div>
+    </div>}
     {/* Match score square — shows score when profile has data, otherwise a prompt */}
     {user&&<div style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
       {/* Info icon */}
@@ -2269,6 +2604,8 @@ export default function App() {
   useEffect(()=>{ try{ sessionStorage.setItem("mq_expanded",JSON.stringify(expanded)); }catch{} },[expanded]);
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
+  const [guest,setGuest]=useState(false);
+  const [showLoginPopup,setShowLoginPopup]=useState(false);
   const [jobSort,setJobSort]=useState("default");
   const [liveJobs,setLiveJobs]=useState({});
   const [liveStatus,setLiveStatus]=useState("idle");
@@ -2324,6 +2661,7 @@ export default function App() {
   useEffect(()=>{refreshTimer.current=setInterval(()=>setLastRefresh(new Date()),300000);return()=>clearInterval(refreshTimer.current);},[]);
 
   const login=u=>setUser(u);
+  const guestLogin=u=>{setUser(u);setGuest(false);setShowLoginPopup(false);};
   const logout = async () => { await supabase.auth.signOut(); setUser(null); setShowAcct(false); };
   const updateUser=u=>setUser(u);
 
@@ -2422,9 +2760,9 @@ export default function App() {
   const totalCos=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.keys(c))).length;
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
-  if(!user){
+  if(!user&&!guest){
     if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1}}>⚔️ Loading…</div></div>;
-    return <Auth onLogin={login}/>;
+    return <Auth onLogin={login} onGuest={()=>setGuest(true)}/>;
   }
 
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
@@ -2460,7 +2798,7 @@ export default function App() {
         </div>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
           {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
-            <button key={id} onClick={()=>setTab(id)} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s"}}>{cnt}</button>)}
+            <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
         </nav>
         {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
         <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
@@ -2470,11 +2808,13 @@ export default function App() {
       </div>
       {/* RIGHT: Profile avatar */}
       <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 12px 4px 4px",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
-        <div style={{width:28,height:28,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif"}}>{user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"}</div>
-        {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user.name}</span>}
+        <div style={{width:28,height:28,borderRadius:"50%",background:user?G:"rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:user?"#0a0608":"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{user?(user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"):<I.Person s={15} c="rgba(244,237,216,.5)"/>}</div>
+        {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user?user.name:"Guest"}</span>}
       </button>
     </header>
-    {showAcct&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
+    {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
+    {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
+    {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
@@ -2636,7 +2976,7 @@ export default function App() {
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
                                     ?<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>
-                                    :fJobs.map(j=><JobCard key={j.id} job={j} user={user} onApplied={markApplied}/>)}
+                                    :fJobs.map(j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>)}
                                 </div>}
                               </div>;
                             })}
