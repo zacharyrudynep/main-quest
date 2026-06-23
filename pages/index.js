@@ -874,6 +874,7 @@ const COMPANIES_DATA = {
       { name: "Studio MDHR", url: "https://studiomdhr.com/careers/", email: null, contact: null },
     ],
   },
+
 };
 
 const VOLUNTEER_OVERRIDES = {
@@ -1007,30 +1008,6 @@ const ATS_STUDIOS = {
   "Secret 6":                 { platform:"workable", slug:"secret-6" },
   "Sperasoft":                { platform:"workable", slug:"sperasoft" },
   "Velan Studios":            { platform:"workable", slug:"velanstudios" },
-  // ═══════════ INTERNATIONAL (verify all at /verify) ═══════════
-  // ─── International: Greenhouse studios ───
-  "Avalanche Studios":           { platform:"greenhouse", slug:"avalanchestudios" },
-  "Cloud Imperium Games":        { platform:"greenhouse", slug:"cloudimperiumgames" },
-  "Crytek":                      { platform:"greenhouse", slug:"crytek" },
-  "Etermax":                     { platform:"greenhouse", slug:"etermax" },
-  "InnoGames":                   { platform:"greenhouse", slug:"innogames" },
-  "Jagex":                       { platform:"greenhouse", slug:"jagex" },
-  "Mediatonic":                  { platform:"greenhouse", slug:"mediatonicgames" },
-  "Social Point":                { platform:"greenhouse", slug:"socialpoint" },
-  "Splash Damage":               { platform:"greenhouse", slug:"splashdamage" },
-  "Supercell":                   { platform:"greenhouse", slug:"supercell" },
-  "Unity Technologies":          { platform:"greenhouse", slug:"unity3d" },
-  "Wildlife Studios":            { platform:"greenhouse", slug:"wildlifestudios" },
-  "Wooga":                       { platform:"greenhouse", slug:"wooga" },
-  "nDreams":                     { platform:"greenhouse", slug:"ndreams" },
-  // ─── International: Lever studios ───
-  "Klang Games":                 { platform:"lever", slug:"klang" },
-  // ─── International: Smart Recruiters ───
-  "IO Interactive":              { platform:"smartrecruiters", slug:"iointeractive" },
-  "Remedy Entertainment":        { platform:"smartrecruiters", slug:"remedyentertainment" },
-  "Rovio":                       { platform:"smartrecruiters", slug:"rovio" },
-  "Ubisoft Paris":               { platform:"smartrecruiters", slug:"ubisoft" },
-  // NOTE: The slugs above are best guesses. VERIFY each at /verify before trusting.
 };
 
 // Normalize a job from ANY ATS platform into our internal shape
@@ -1190,6 +1167,10 @@ const I={
   Robot:({s=18,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 18 18" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="12" height="9" rx="2"/><rect x="6" y="9" width="2" height="2" rx="0.5"/><rect x="10" y="9" width="2" height="2" rx="0.5"/><line x1="7" y1="13" x2="11" y2="13"/><line x1="9" y1="6" x2="9" y2="3"/><circle cx="9" cy="2.5" r="1.5"/><line x1="1.5" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="16.5" y2="9"/></svg>,
   Arrow:({s=14,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 14 14" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round"><line x1="2" y1="7" x2="12" y2="7"/><polyline points="8,3 12,7 8,11"/></svg>,
   Bell:({s=16,c="currentColor",fill="none"})=><svg width={s} height={s} viewBox="0 0 16 16" fill={fill} stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6v3L2 11h12l-1.5-2V6A4.5 4.5 0 0 0 8 1.5z"/><path d="M6.5 11v.5a1.5 1.5 0 0 0 3 0V11"/></svg>,
+  Target:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3.4"/><circle cx="8" cy="8" r="0.9" fill={c}/></svg>,
+  Clipboard:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="10" height="11.5" rx="1.5"/><path d="M5.6 3V2.2a.8.8 0 0 1 .8-.8h3.2a.8.8 0 0 1 .8.8V3"/><line x1="5.6" y1="6.6" x2="10.4" y2="6.6"/><line x1="5.6" y1="9" x2="10.4" y2="9"/><line x1="5.6" y1="11.4" x2="8.6" y2="11.4"/></svg>,
+  Eye:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1.5 8S3.8 3.8 8 3.8 14.5 8 14.5 8 12.2 12.2 8 12.2 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>,
+  EyeOff:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M6.3 3.9A6.3 6.3 0 0 1 8 3.8C12.2 3.8 14.5 8 14.5 8a11 11 0 0 1-2 2.4M4 4.7A11 11 0 0 0 1.5 8S3.8 12.2 8 12.2a6 6 0 0 0 2.4-.5"/><line x1="2" y1="2" x2="14" y2="14"/></svg>,
   Alert:({s=18})=><svg width={s} height={s} viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#c0321a"/><line x1="9" y1="5" x2="9" y2="10" stroke="white" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="13" r="1" fill="white"/></svg>,
 };
 
@@ -1298,7 +1279,7 @@ function Auth({onLogin,onGuest}) {
     {!mobile && <div className="ai-in" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"48px 52px",position:"sticky",top:0,height:"100vh",maxWidth:580,zIndex:1,overflowY:"auto"}}>
       {/* Logo */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:28}}>
-        <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))"}}>⚔️</div>
+        <div style={{fontSize:44,filter:"drop-shadow(0 0 20px rgba(201,168,76,.6))",display:"flex",alignItems:"center",justifyContent:"center"}}><I.Sword s={32} c="#c9a84c"/></div>
         <div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(201,168,76,.55)",letterSpacing:5,lineHeight:1,marginBottom:4}}>— YOUR CAREER —</div>
           <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:32,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div>
@@ -1306,7 +1287,7 @@ function Auth({onLogin,onGuest}) {
       </div>
       {/* Hero tagline */}
       <h1 style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:700,color:"#f4edd8",lineHeight:1.3,marginBottom:10,letterSpacing:.5}}>Your launchpad into the game industry.</h1>
-      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>One giant game job hub. Main Quest brings live job listings from game studios worldwide into one convenient place — with smart job match scoring, reusable email templates, and application tracking to help you land your next role faster.</p>
+      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>One giant game job hub. Main Quest brings live job listings from game studios across North America into one convenient place — with smart job match scoring, reusable email templates, and application tracking to help you land your next role faster.</p>
       {/* Divider */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24,opacity:.5}}>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(201,168,76,.6))"}}/>
@@ -1316,15 +1297,15 @@ function Auth({onLogin,onGuest}) {
       {/* Features */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
-          ["🌍","Global Job Board","Studios worldwide, filtered by country, region, role, and experience."],
-          ["🎯","Job Match Score","See how well each posting fits your skills and experience, 0–10."],
-          ["📜","Resume Upload","Upload your resume to auto-fill your profile in seconds."],
-          ["📋","App Tracker","Track every application with dates and one-click access."],
-          ["✉️","Email Templates","Save a reusable template that auto-fills for each job you apply to."],
-          ["🔔","Company Alerts","Turn on notifications for the studios you care about most."],
+          [<I.Globe s={17} c="#f0d080"/>,"Job Board","760+ studios across the US and Canada, filtered by state, role, and experience."],
+          [<I.Target s={17} c="#f0d080"/>,"Job Match Score","See how well each posting fits your skills and experience, 0–10."],
+          [<I.Scroll s={17} c="#f0d080"/>,"Resume Upload","Upload your resume to auto-fill your profile in seconds."],
+          [<I.Clipboard s={17} c="#f0d080"/>,"App Tracker","Track every application with dates and one-click access."],
+          [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to."],
+          [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most."],
         ].map(([ic,title,desc])=>
           <div key={title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
-            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{ic}</span>
+            <span style={{flexShrink:0,marginTop:1,display:"flex"}}>{ic}</span>
             <div>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3}}>{title}</div>
               <div style={{fontSize:11,color:"rgba(244,237,216,.48)",lineHeight:1.45}}>{desc}</div>
@@ -1334,7 +1315,7 @@ function Auth({onLogin,onGuest}) {
       </div>
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["860+","Studios"],["Live","Job Feeds"],["20+","Countries"],["Free","Always"]].map(([n,l],i)=>(
+        {[["760+","Studios"],["Live","Job Feeds"],["2","Countries"],["Free","Always"]].map(([n,l],i)=>(
           <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
             <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
@@ -1356,15 +1337,15 @@ function Auth({onLogin,onGuest}) {
           </div>
           {mode==="signup"&&<div>
             <div style={{fontSize:10,color:"rgba(201,168,76,.8)",textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'Cinzel',serif",marginBottom:5}}>Full Name</div>
-            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,opacity:.5,pointerEvents:"none"}}>👤</span><input className="mq-in" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoFocus/></div>
+            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:.5,pointerEvents:"none",display:"flex"}}><I.Person s={14} c="#c9a84c"/></span><input className="mq-in" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoFocus/></div>
           </div>}
           <div>
             <div style={{fontSize:10,color:"rgba(201,168,76,.8)",textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'Cinzel',serif",marginBottom:5}}>Email Address</div>
-            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,opacity:.5,pointerEvents:"none"}}>📜</span><input className="mq-in" type="email" placeholder="you@email.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoFocus={mode==="login"}/></div>
+            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:.5,pointerEvents:"none",display:"flex"}}><I.Scroll s={14} c="#c9a84c"/></span><input className="mq-in" type="email" placeholder="you@email.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoFocus={mode==="login"}/></div>
           </div>
           <div>
             <div style={{fontSize:10,color:"rgba(201,168,76,.8)",textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'Cinzel',serif",marginBottom:5}}>Password</div>
-            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,opacity:.5,pointerEvents:"none"}}>🔐</span><input className="mq-in" type={show?"text":"password"} placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} style={{paddingRight:40}}/><button onClick={()=>setShow(s=>!s)} tabIndex={-1} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.5}}>{show?"🙈":"👁"}</button></div>
+            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:.5,pointerEvents:"none",display:"flex"}}><I.Lock s={14} c="#c9a84c"/></span><input className="mq-in" type={show?"text":"password"} placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} style={{paddingRight:40}}/><button onClick={()=>setShow(s=>!s)} tabIndex={-1} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",opacity:.5,display:"flex"}}>{show?<I.EyeOff s={15} c="#c9a84c"/>:<I.Eye s={15} c="#c9a84c"/>}</button></div>
           </div>
           {err&&<div style={{background:"rgba(192,50,26,.12)",border:"1px solid rgba(192,50,26,.3)",color:"#ff8080",borderRadius:8,padding:"9px 14px",fontSize:12,display:"flex",alignItems:"center",gap:8}}>⚠ {err}</div>}
           {mode==="signup"&&<label style={{display:"flex",alignItems:"flex-start",gap:8,fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.5,cursor:"pointer"}}>
@@ -1975,13 +1956,13 @@ function GuestPanel({onClose,onSignIn}) {
         <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:20,lineHeight:1}}>✕</button>
       </div>
       <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"30px 26px",textAlign:"center",gap:16}}>
-        <div style={{fontSize:38}}>⚔️</div>
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:700,color:"#f4edd8"}}>Unlock your full quest</div>
+        <div style={{display:"flex"}}><I.Sword s={40} c="#c9a84c"/></div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:700,color:"#f4edd8"}}>Unlock your full potential</div>
         <p style={{fontSize:13,color:"rgba(244,237,216,.55)",lineHeight:1.6,maxWidth:300,margin:0}}>Sign in or create a free account to unlock your profile, job match scores, application tracking, email templates, and company alerts.</p>
         <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:260,marginTop:6}}>
-          {[["🎯","Job match scoring"],["📋","Application tracking"],["✉️","Saved email templates"],["🔔","Company job alerts"]].map(([ic,t])=>
+          {[[<I.Target s={15} c="#c9a84c"/>,"Job match scoring"],[<I.Clipboard s={15} c="#c9a84c"/>,"Application tracking"],[<I.Send s={15} c="#c9a84c"/>,"Saved email templates"],[<I.Bell s={15} c="#c9a84c"/>,"Company job alerts"]].map(([ic,t])=>
             <div key={t} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 13px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:9,textAlign:"left"}}>
-              <span style={{fontSize:15}}>{ic}</span><span style={{fontSize:12.5,color:"rgba(244,237,216,.7)"}}>{t}</span>
+              <span style={{display:"flex",flexShrink:0}}>{ic}</span><span style={{fontSize:12.5,color:"rgba(244,237,216,.7)"}}>{t}</span>
             </div>)}
         </div>
         <button onClick={onSignIn} style={{width:"100%",maxWidth:260,background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"13px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginTop:8}}>Sign In or Sign Up →</button>
@@ -2523,7 +2504,7 @@ export default function App() {
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
   if(!user&&!guest){
-    if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1}}>⚔️ Loading…</div></div>;
+    if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}><I.Sword s={16} c="#c9a84c"/>Loading…</div></div>;
     return <Auth onLogin={login} onGuest={()=>setGuest(true)}/>;
   }
 
@@ -2555,7 +2536,7 @@ export default function App() {
       {/* LEFT: Logo + nav tabs */}
       <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))"}}>⚔️</span>
+          <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))",display:"inline-flex",alignItems:"center"}}><I.Sword s={18} c="#c9a84c"/></span>
           <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
         </div>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
@@ -2728,7 +2709,10 @@ export default function App() {
                                   <span style={{fontSize:8,color:"rgba(201,168,76,.35)"}}>{expanded[coKey]?"▼":"▶"}</span>
                                   <span style={{width:6,height:6,borderRadius:"50%",background:noJobs?"rgba(244,237,216,.2)":"#c9a84c",flexShrink:0}}/>
                                   <span style={{fontWeight:500}}>{name}</span>
-                                  {user&&(()=>{const isOn=(user.profile?.notifyCompanies||[]).includes(name);return <span onClick={e=>{e.stopPropagation();toggleNotify(name);}} title={isOn?"Notifications on — click to turn off":"Turn on job post notifications for this company"} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",marginLeft:6,position:"relative",opacity:isOn?1:.5,transition:"opacity .15s"}} onMouseEnter={e=>{e.currentTarget.style.opacity=1;const tip=e.currentTarget.querySelector(".belltip");if(tip)tip.style.opacity=1;}} onMouseLeave={e=>{e.currentTarget.style.opacity=isOn?1:.5;const tip=e.currentTarget.querySelector(".belltip");if(tip)tip.style.opacity=0;}}><I.Bell s={13} c={isOn?"#c9a84c":"rgba(244,237,216,.6)"} fill={isOn?"#c9a84c":"none"}/><span className="belltip" style={{position:"absolute",bottom:"130%",left:"50%",transform:"translateX(-50%)",background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",color:"rgba(244,237,216,.85)",fontSize:10,lineHeight:1.3,padding:"5px 8px",borderRadius:6,width:150,textAlign:"center",opacity:0,transition:"opacity .15s",pointerEvents:"none",zIndex:60,fontFamily:"system-ui,sans-serif",fontWeight:400}}>{isOn?"Notifications on for this company":"Turn on job post notifications for this company"}</span></span>;})()}
+                                  {user&&(()=>{const isOn=(user.profile?.notifyCompanies||[]).includes(name);const tipText=isOn?"Notifications on for this company":"Turn on job post notifications for this company";
+                                    const showTip=(e)=>{const r=e.currentTarget.getBoundingClientRect();let tip=document.getElementById("mq-bell-tooltip");if(!tip){tip=document.createElement("div");tip.id="mq-bell-tooltip";tip.style.cssText="position:fixed;background:rgba(20,14,10,.98);border:1px solid rgba(201,168,76,.35);color:rgba(244,237,216,.9);font-size:11px;line-height:1.35;padding:6px 10px;border-radius:7px;max-width:180px;text-align:center;z-index:9999;pointer-events:none;font-family:system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.5);transition:opacity .12s;";document.body.appendChild(tip);}tip.textContent=tipText;tip.style.opacity="1";const tx=r.left+r.width/2;tip.style.left="0px";tip.style.top="0px";const tw=Math.min(180,tipText.length*6.5+20);tip.style.left=Math.max(8,Math.min(tx-tw/2,window.innerWidth-tw-8))+"px";tip.style.top=(r.top-tip.offsetHeight-8)+"px";};
+                                    const hideTip=()=>{const tip=document.getElementById("mq-bell-tooltip");if(tip)tip.style.opacity="0";};
+                                    return <span onClick={e=>{e.stopPropagation();hideTip();toggleNotify(name);}} onMouseEnter={showTip} onMouseLeave={hideTip} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",marginLeft:6,opacity:isOn?1:.5,transition:"opacity .15s"}}><I.Bell s={13} c={isOn?"#c9a84c":"rgba(244,237,216,.6)"} fill={isOn?"#c9a84c":"none"}/></span>;})()}
                                   <span style={{flex:1}}/>
                                   {hasNew&&<span style={{width:14,height:14,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={12}/></span>}
                                   {(company.volunteer||fJobs.some(j=>j.isVolunteer||j.type==="Volunteer"))&&<span style={{fontSize:9,color:"#7ecfb3",background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginRight:5}}>Volunteer</span>}
@@ -2753,14 +2737,14 @@ export default function App() {
 
       {tab==="applied"&&<div>
         <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18,flexWrap:"wrap"}}>
-          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1}}>📜 Job Applications</h2>
+          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,display:"flex",alignItems:"center",gap:8}}><I.Scroll s={20} c="#c9a84c"/>Job Applications</h2>
           {appliedJobs.length>0&&<div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",paddingTop:mobile?6:4,width:mobile?"100%":"auto"}}>
             <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8}}>Sort:</span>
             {[["date-desc","Date ↓"],["date-asc","Date ↑"],["company","Company"],["title","Role"]].map(([v,l])=><button key={v} onClick={()=>setAppliedSort(v)} style={{background:appliedSort===v?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${appliedSort===v?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:appliedSort===v?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>{l}</button>)}
           </div>}
         </div>
         {appliedJobs.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
-          <span style={{fontSize:40}}>📋</span><p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No applications tracked yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>When you apply and confirm, it'll appear here.</p>
+          <span style={{display:"flex"}}><I.Clipboard s={40} c="rgba(201,168,76,.5)"/></span><p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No applications tracked yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>When you apply and confirm, it'll appear here.</p>
         </div>:<div style={{display:"flex",flexDirection:"column",gap:10}}>
           {[...appliedJobs].sort((a,b)=>{
             const ad=user.applied[a.id]?.date?new Date(user.applied[a.id].date):new Date(0);
@@ -2813,7 +2797,7 @@ export default function App() {
     </footer>
     {/* Terms update notice — shows if the user agreed to an older version */}
     {user&&user.profile&&user.profile.tosVersion&&user.profile.tosVersion!==TOS_VERSION&&<div style={{position:"sticky",bottom:0,zIndex:50,background:"rgba(20,14,10,.98)",borderTop:"2px solid rgba(201,168,76,.4)",padding:"14px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"center",gap:14,boxShadow:"0 -8px 30px rgba(0,0,0,.5)"}}>
-      <span style={{fontSize:13,color:"#f4edd8",lineHeight:1.5,textAlign:"center"}}>📜 Our <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a> have been updated. Please review and agree to continue.</span>
+      <span style={{fontSize:13,color:"#f4edd8",lineHeight:1.5,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexWrap:"wrap"}}><I.Scroll s={13} c="#c9a84c"/>Our <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a> have been updated. Please review and agree to continue.</span>
       <button onClick={async()=>{const np={...user.profile,tosVersion:TOS_VERSION};setUser(u=>({...u,profile:np}));if(user?.id){try{await supabase.from("profiles").upsert({id:user.id,name:user.name,data:np},{onConflict:"id"});}catch(e){console.error(e);}}}} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:8,padding:"8px 22px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,flexShrink:0}}>I Agree</button>
     </div>}
   </div>
