@@ -354,32 +354,32 @@ const COMPANIES_DATA = {
       { name: "Big Huge Games", url: "https://bighugegames.com/careers/", email: null, contact: "https://bighugegames.com/contact-us/" },
       { name: "Bit Reactor", url: "https://www.bitreactor.com/careers/", email: null, contact: "https://www.bitreactor.com/contact-us/" },
       { name: "Break Away Games", url: "https://www.breakawaygames.com/careers/", email: null, contact: "https://www.breakawaygames.com/contact-us/" , emailApply:true },
-      { name: "Bully Entertainment", url: "https://bullyentertainment.com/careers/", email: null, contact: "https://bullyentertainment.com/contact/" },
+      { name: "Bully Entertainment", url: "https://bullyentertainment.com/", email: null, contact: null },
       { name: "Exis Interactive", url: "https://www.exisinteractive.com/", email: null, contact: null },
-      { name: "Firaxis", url: "https://firaxis.com/careers", email: null, contact: null },
-      { name: "Midsummer Studios", url: "https://job-boards.greenhouse.io/midsummerstudios", email: null, contact: "https://www.midsummerstudios.com/contact" },
-      { name: "Mohawk Games", url: "https://mohawkgames.com/jobs/", email: null, contact: null },
-      { name: "Oxide Games", url: "https://www.oxidegames.com/careers/jobs/", email: null, contact: "https://www.oxidegames.com/contact/" },
-      { name: "Pure Bang", url: "http://purebang.com/jobs-at-pure-bang/", email: "jobs@purebang.com", contact: null },
-      { name: "Starcaster Games", url: "https://starcaster.games/partners/", email: null, contact: null },
+      { name: "Firaxis", url: "https://www.firaxis.com/", email: null, contact: null },
+      { name: "Midsummer Studios", url: "https://www.midsummerstudios.com/", email: null, contact: null },
+      { name: "Mohawk Games", url: "https://mohawkgames.com/", email: null, contact: null },
+      { name: "Oxide Games", url: "https://www.oxidegames.com/", email: null, contact: null },
+      { name: "Pure Bang", url: "http://purebang.com/", email: null, contact: null },
+      { name: "Starcaster Games", url: "https://starcaster.games/", email: null, contact: null },
       { name: "ZeniMax", url: "https://www.zenimax.com/en", email: null, contact: null },
     ],
     "Massachusetts": [
-      { name: "Camlann Games", url: "https://camlanngames.com/", email: null, contact: "https://camlanngames.com/contact/" },
-      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: null, contact: null },
-      { name: "Crate Entertainment", url: "https://www.crateentertainment.com/nojobs/", email: "jobs@crateentertainment.com", contact: "https://www.crateentertainment.com/contact/" },
-      { name: "Cryptyd Games", url: "https://cryptydgames.com/join-us/", email: "a.alaa@cryptydgames.com", contact: "https://cryptydgames.com/contact-us/" },
-      { name: "Decoy Games", url: "https://www.decoygames.com/", email: "general@decoygames.com", contact: null },
-      { name: "Deep End Games", url: "https://www.thedeependgames.com/", email: "jobs@thedeependgames.com", contact: null },
-      { name: "Demiurge", url: "https://demiurgestudios.com/job-openings/", email: null, contact: null },
-      { name: "Fable Vision Studios", url: "https://www.fablevisionstudios.com/careers", email: null, contact: "https://www.fablevisionstudios.com/contact-us" },
-      { name: "Firehose Games", url: "https://www.firehosegames.com/", email: null, contact: "https://www.firehosegames.com/contact-us/" },
-      { name: "First Break Labs", url: "http://firstbreaklabs.com/", email: "contact@firstbreaklabs.com", contact: null },
-      { name: "Ghost Story Games", url: "https://job-boards.greenhouse.io/gsgcareers", email: "community@ghoststorygames.com", contact: "https://www.ghoststorygames.com/contact" },
-      { name: "Harmonix", url: "https://www.harmonixmusic.com/about/jobs", email: null, contact: null },
-      { name: "Otherside Entertainment", url: "https://careers.otherside-e.com/jobs", email: null, contact: "https://otherside-e.com/contact-us/" },
-      { name: "Outact", url: "https://www.outact.com/", email: "jobs@outact.net", contact: "https://www.outact.com/#contact" },
-      { name: "Skymap", url: "https://www.useparallel.com/skymapgames/careers", email: null, contact: "https://skymap.com/contact" },
+      { name: "Camlann Games", url: "https://camlanngames.com/", email: null, contact: null },
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en", email: null, contact: null },
+      { name: "Crate Entertainment", url: "https://www.crateentertainment.com/", email: null, contact: null },
+      { name: "Cryptyd Games", url: "https://cryptydgames.com/", email: null, contact: null },
+      { name: "Decoy Games", url: "https://www.decoygames.com/", email: null, contact: null },
+      { name: "Deep End Games", url: "https://www.thedeependgames.com/", email: null, contact: null },
+      { name: "Demiurge", url: "https://demiurgestudios.com/", email: null, contact: null },
+      { name: "Fable Vision Studios", url: "https://www.fablevisionstudios.com/", email: null, contact: null },
+      { name: "Firehose Games", url: "https://www.firehosegames.com/", email: null, contact: null },
+      { name: "First Break Labs", url: "http://firstbreaklabs.com/", email: null, contact: null },
+      { name: "Ghost Story Games", url: "https://www.ghoststorygames.com/", email: null, contact: null },
+      { name: "Harmonix", url: "https://www.harmonixmusic.com/", email: null, contact: null },
+      { name: "Otherside Entertainment", url: "https://otherside-e.com/", email: null, contact: null },
+      { name: "Outact", url: "https://www.outact.com/", email: null, contact: null },
+      { name: "Skymap", url: "https://skymap.com/", email: null, contact: null },
       { name: "Storm Flag Games", url: "https://stormflaggames.com/", email: null, contact: null },
       { name: "Terrible Posture Games", url: "https://www.terribleposture.com/", email: null, contact: null },
       { name: "Warner Bros.", url: "https://careers.wbd.com/global/en/wb-games-jobs", email: null, contact: null },
@@ -874,6 +874,244 @@ const COMPANIES_DATA = {
       { name: "Studio MDHR", url: "https://studiomdhr.com/careers/", email: null, contact: null },
     ],
   },
+
+  // ─────────────── INTERNATIONAL STUDIOS ───────────────
+  "United Kingdom": {
+    "England": [
+      { name: "Rocksteady Studios", url: "https://www.rocksteadyltd.com/", email: "careers@rocksteadyltd.com", contact: null },
+      { name: "Creative Assembly", url: "https://www.creative-assembly.com/careers", email: null, contact: null },
+      { name: "Playground Games", url: "https://www.playground-games.com/careers", email: null, contact: null },
+      { name: "Rare", url: "https://www.rare.co.uk/careers", email: null, contact: null },
+      { name: "Media Molecule", url: "https://www.mediamolecule.com/careers", email: null, contact: null },
+      { name: "Sumo Digital", url: "https://www.sumo-digital.com/careers/", email: null, contact: null },
+      { name: "Codemasters", url: "https://www.codemasters.com/career/", email: null, contact: null },
+      { name: "Mediatonic", url: "https://mediatonic.com/careers", email: null, contact: null },
+      { name: "Splash Damage", url: "https://www.splashdamage.com/careers/", email: null, contact: null },
+      { name: "Bossa Studios", url: "https://www.bossastudios.com/jobs/", email: null, contact: null },
+      { name: "Cloud Imperium Games", url: "https://cloudimperiumgames.com/careers", email: null, contact: null },
+      { name: "nDreams", url: "https://ndreams.com/careers/", email: null, contact: null },
+      { name: "Frontier Developments", url: "https://www.frontier.co.uk/careers", email: null, contact: null },
+      { name: "Jagex", url: "https://www.jagex.com/en-GB/careers", email: null, contact: null },
+      { name: "Supermassive Games", url: "https://www.supermassivegames.com/careers", email: null, contact: null },
+      { name: "Cloud Chamber", url: "https://cloudchambergames.com/open-positions", email: null, contact: null },
+    ],
+    "Scotland": [
+      { name: "Rockstar North", url: "https://www.rockstarnorth.com/", email: null, contact: null },
+      { name: "4J Studios", url: "https://www.4jstudios.com/", email: null, contact: null },
+      { name: "Blazing Griffin", url: "https://blazinggriffin.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Poland": {
+    "Masovian": [
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: null, contact: null },
+      { name: "People Can Fly Warsaw", url: "https://peoplecanfly.com/careers/", email: null, contact: null },
+    ],
+    "Lesser Poland": [
+      { name: "Bloober Team", url: "https://www.blooberteam.com/careers", email: null, contact: null },
+    ],
+    "Silesian": [
+      { name: "Techland", url: "https://techland.net/careers", email: null, contact: null },
+      { name: "Flying Wild Hog", url: "https://flyingwildhog.com/#careers", email: null, contact: null },
+    ],
+  },
+  "Germany": {
+    "Bavaria": [
+      { name: "Crytek", url: "https://www.crytek.com/careers", email: null, contact: null },
+      { name: "Chimera Entertainment", url: "https://www.chimera-entertainment.de/en/jobs/", email: null, contact: null },
+    ],
+    "Hamburg": [
+      { name: "InnoGames", url: "https://www.innogames.com/career/", email: null, contact: null },
+      { name: "Goodgame Studios", url: "https://www.goodgamestudios.com/career/", email: null, contact: null },
+    ],
+    "Berlin": [
+      { name: "Wooga", url: "https://www.wooga.com/jobs", email: null, contact: null },
+      { name: "Yager", url: "https://www.yager.de/careers/", email: null, contact: null },
+      { name: "Klang Games", url: "https://klang.com/careers", email: null, contact: null },
+    ],
+    "Baden-Wurttemberg": [
+      { name: "Kalypso Media", url: "https://www.kalypsomedia.com/en/jobs", email: null, contact: null },
+    ],
+  },
+  "France": {
+    "Ile-de-France": [
+      { name: "Ubisoft Paris", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Quantic Dream", url: "https://www.quanticdream.com/en/careers", email: null, contact: null },
+      { name: "Dontnod Entertainment", url: "https://www.dont-nod.com/en/jobs/", email: null, contact: null },
+      { name: "Sloclap", url: "https://www.sloclap.com/careers", email: null, contact: null },
+    ],
+    "Occitanie": [
+      { name: "Asobo Studio", url: "https://www.asobostudio.com/careers", email: null, contact: null },
+    ],
+    "Auvergne-Rhone-Alpes": [
+      { name: "Arkane Studios", url: "https://www.arkane-studios.com/en/careers", email: null, contact: null },
+    ],
+  },
+  "Sweden": {
+    "Stockholm": [
+      { name: "DICE", url: "https://www.dice.se/careers/", email: null, contact: null },
+      { name: "Paradox Interactive", url: "https://www.paradoxinteractive.com/careers", email: null, contact: null },
+      { name: "Mojang Studios", url: "https://www.minecraft.net/en-us/careers", email: null, contact: null },
+      { name: "Avalanche Studios", url: "https://avalanchestudios.com/careers", email: null, contact: null },
+      { name: "Star Stable Entertainment", url: "https://www.starstable.com/en/jobs", email: null, contact: null },
+    ],
+    "Skane": [
+      { name: "Massive Entertainment", url: "https://www.massive.se/careers/", email: null, contact: null },
+      { name: "Tarsier Studios", url: "https://tarsier.se/", email: null, contact: null },
+    ],
+    "Vastra Gotaland": [
+      { name: "Zenimax Online (Gothenburg)", url: "https://www.zenimax.com/careers", email: null, contact: null },
+      { name: "Stunlock Studios", url: "https://www.stunlock.com/careers", email: null, contact: null },
+    ],
+  },
+  "Finland": {
+    "Uusimaa": [
+      { name: "Supercell", url: "https://supercell.com/en/careers/", email: null, contact: null },
+      { name: "Remedy Entertainment", url: "https://www.remedygames.com/careers", email: null, contact: null },
+      { name: "Rovio", url: "https://www.rovio.com/careers/", email: null, contact: null },
+      { name: "Housemarque", url: "https://housemarque.com/careers/", email: null, contact: null },
+      { name: "Next Games", url: "https://www.nextgames.com/careers", email: null, contact: null },
+    ],
+  },
+  "Netherlands": {
+    "North Holland": [
+      { name: "Guerrilla Games", url: "https://www.guerrilla-games.com/join", email: null, contact: null },
+      { name: "Vlambeer", url: "https://vlambeer.com/", email: null, contact: null },
+    ],
+    "Utrecht": [
+      { name: "Triumph Studios", url: "https://www.triumph.nl/careers", email: null, contact: null },
+      { name: "Abstraction", url: "https://www.abstraction.games/careers", email: null, contact: null },
+    ],
+    "North Brabant": [
+      { name: "Guerrilla Cambridge", url: "https://www.guerrilla-games.com/join", email: null, contact: null },
+    ],
+  },
+  "Denmark": {
+    "Capital Region": [
+      { name: "IO Interactive", url: "https://www.ioi.dk/careers/", email: null, contact: null },
+      { name: "Playdead", url: "https://playdead.com/careers/", email: null, contact: null },
+      { name: "Unity Technologies", url: "https://careers.unity.com/", email: null, contact: null },
+    ],
+  },
+  "Spain": {
+    "Catalonia": [
+      { name: "Ubisoft Barcelona", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Digital Legends", url: "https://www.digital-legends.com/careers/", email: null, contact: null },
+      { name: "Social Point", url: "https://www.socialpoint.es/jobs/", email: null, contact: null },
+    ],
+    "Community of Madrid": [
+      { name: "Tequila Works", url: "https://tequilaworks.com/en/careers/", email: null, contact: null },
+    ],
+  },
+  "Norway": {
+    "Oslo": [
+      { name: "Funcom", url: "https://www.funcom.com/jobs/", email: null, contact: null },
+      { name: "Krillbite Studio", url: "https://krillbite.com/", email: null, contact: null },
+    ],
+  },
+  "Japan": {
+    "Tokyo": [
+      { name: "Square Enix", url: "https://www.jp.square-enix.com/recruit/", email: null, contact: null },
+      { name: "Bandai Namco Studios", url: "https://www.bandainamcostudios.com/recruit/", email: null, contact: null },
+      { name: "Sega", url: "https://www.sega.co.jp/recruit/", email: null, contact: null },
+      { name: "Koei Tecmo", url: "https://www.koeitecmo.co.jp/recruit/", email: null, contact: null },
+      { name: "FromSoftware", url: "https://www.fromsoftware.jp/ww/recruit.html", email: null, contact: null },
+      { name: "PlatinumGames", url: "https://www.platinumgames.com/recruit", email: null, contact: null },
+    ],
+    "Osaka": [
+      { name: "Capcom", url: "https://www.capcom-recruit.jp/", email: null, contact: null },
+    ],
+    "Kyoto": [
+      { name: "Nintendo", url: "https://www.nintendo.co.jp/jobs/", email: null, contact: null },
+    ],
+  },
+  "South Korea": {
+    "Seoul": [
+      { name: "Nexon", url: "https://careers.nexon.com/", email: null, contact: null },
+      { name: "NCSoft", url: "https://careers.ncsoft.com/", email: null, contact: null },
+      { name: "Netmarble", url: "https://company.netmarble.com/recruit", email: null, contact: null },
+      { name: "Pearl Abyss", url: "https://www.pearlabyss.com/en-US/Company/Recruit", email: null, contact: null },
+      { name: "Krafton", url: "https://careers.krafton.com/", email: null, contact: null },
+      { name: "Smilegate", url: "https://careers.smilegate.com/", email: null, contact: null },
+    ],
+  },
+  "China": {
+    "Guangdong": [
+      { name: "Tencent Games", url: "https://join.tencent.com/", email: null, contact: null },
+    ],
+    "Shanghai": [
+      { name: "miHoYo (HoYoverse)", url: "https://www.hoyoverse.com/en-us/careers", email: null, contact: null },
+      { name: "Lilith Games", url: "https://www.lilithgames.com/en/join", email: null, contact: null },
+    ],
+    "Beijing": [
+      { name: "NetEase Games", url: "https://www.neteasegames.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Singapore": {
+    "Singapore": [
+      { name: "Ubisoft Singapore", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Mighty Bear Games", url: "https://www.mightybeargames.com/careers", email: null, contact: null },
+    ],
+  },
+  "Australia": {
+    "Victoria": [
+      { name: "League of Geeks", url: "https://www.leagueofgeeks.com/jobs", email: null, contact: null },
+      { name: "Firemonkeys Studios", url: "https://www.firemonkeys.com.au/careers", email: null, contact: null },
+      { name: "PlaySide Studios", url: "https://www.playsidestudios.com/careers", email: null, contact: null },
+    ],
+    "New South Wales": [
+      { name: "Riot Games Sydney", url: "https://www.riotgames.com/en/work-with-us/jobs", email: null, contact: null },
+      { name: "Big Ant Studios", url: "https://www.bigant.com/careers/", email: null, contact: null },
+    ],
+    "Queensland": [
+      { name: "Halfbrick Studios", url: "https://www.halfbrick.com/careers", email: null, contact: null },
+      { name: "Gameloft Brisbane", url: "https://www.gameloft.com/careers", email: null, contact: null },
+    ],
+  },
+  "New Zealand": {
+    "Auckland": [
+      { name: "Grinding Gear Games", url: "https://www.grindinggear.com/careers/", email: null, contact: null },
+      { name: "RocketWerkz", url: "https://rocketwerkz.com/", email: null, contact: null },
+      { name: "PikPok", url: "https://pikpok.com/careers/", email: null, contact: null },
+    ],
+    "Wellington": [
+      { name: "CerebralFix", url: "https://cerebralfix.com/careers/", email: null, contact: null },
+    ],
+  },
+  "Brazil": {
+    "Sao Paulo": [
+      { name: "Wildlife Studios", url: "https://wildlifestudios.com/careers/", email: null, contact: null },
+      { name: "Aquiris Game Studio", url: "https://aquiris.com.br/careers", email: null, contact: null },
+    ],
+    "Rio Grande do Sul": [
+      { name: "Hoplon", url: "https://www.hoplon.com/careers", email: null, contact: null },
+    ],
+  },
+  "Argentina": {
+    "Buenos Aires": [
+      { name: "Etermax", url: "https://corporate.etermax.com/careers/", email: null, contact: null },
+      { name: "NGD Studios", url: "https://www.ngdstudios.com.ar/", email: null, contact: null },
+    ],
+  },
+  "Mexico": {
+    "Jalisco": [
+      { name: "Lienzo", url: "https://www.lienzo.mx/", email: null, contact: null },
+    ],
+    "Mexico City": [
+      { name: "Larva Game Studios", url: "https://larvagamestudios.com/", email: null, contact: null },
+    ],
+  },
+  "South Africa": {
+    "Western Cape": [
+      { name: "Free Lives", url: "https://www.freelives.net/", email: null, contact: null },
+      { name: "24 Bit Games", url: "https://www.24bit.games/careers", email: null, contact: null },
+    ],
+  },
+  "Canada": {
+    "Quebec": [
+      { name: "Ubisoft Montreal", url: "https://www.ubisoft.com/en-us/company/careers", email: null, contact: null },
+      { name: "Eidos-Montreal", url: "https://www.eidosmontreal.com/en/careers/", email: null, contact: null },
+    ],
+  },
 };
 
 const VOLUNTEER_OVERRIDES = {
@@ -975,7 +1213,6 @@ const ATS_STUDIOS = {
   "Epic Games":               { platform:"greenhouse", slug:"epicgames" },
   "HB Studios":               { platform:"greenhouse", slug:"hbstudios" },
   "Insomniac Games":          { platform:"greenhouse", slug:"insomniac" },
-  "Midsummer Studios":        { platform:"greenhouse", slug:"midsummerstudios" },
   "Nightdive Studios":        { platform:"greenhouse", slug:"nightdivestudios" },
   "Riot Games":               { platform:"greenhouse", slug:"riotgames" },
   "Roblox":                   { platform:"greenhouse", slug:"roblox" },
@@ -990,7 +1227,6 @@ const ATS_STUDIOS = {
   "Probably Monsters":        { platform:"jobvite", slug:"probablymonsters" },
   // ─── Lever studios ───
   "Behaviour Interactive":    { platform:"lever", slug:"bhvr" },
-  "Demiurge Studios":         { platform:"lever", slug:"demiurgestudios" },
   "Double Down Interactive":  { platform:"lever", slug:"doubledown" },
   "Skydance":                 { platform:"lever", slug:"skydance" },
   // ─── Paylocity ───
@@ -1009,6 +1245,29 @@ const ATS_STUDIOS = {
   "Secret 6":                 { platform:"workable", slug:"secret-6" },
   "Sperasoft":                { platform:"workable", slug:"sperasoft" },
   "Velan Studios":            { platform:"workable", slug:"velanstudios" },
+  // ═══════════ INTERNATIONAL (verify all at /verify) ═══════════
+  // ─── International: Greenhouse studios ───
+  "Avalanche Studios":           { platform:"greenhouse", slug:"avalanchestudios" },
+  "Cloud Imperium Games":        { platform:"greenhouse", slug:"cloudimperiumgames" },
+  "Crytek":                      { platform:"greenhouse", slug:"crytek" },
+  "Etermax":                     { platform:"greenhouse", slug:"etermax" },
+  "InnoGames":                   { platform:"greenhouse", slug:"innogames" },
+  "Jagex":                       { platform:"greenhouse", slug:"jagex" },
+  "Mediatonic":                  { platform:"greenhouse", slug:"mediatonicgames" },
+  "Social Point":                { platform:"greenhouse", slug:"socialpoint" },
+  "Splash Damage":               { platform:"greenhouse", slug:"splashdamage" },
+  "Supercell":                   { platform:"greenhouse", slug:"supercell" },
+  "Unity Technologies":          { platform:"greenhouse", slug:"unity3d" },
+  "Wildlife Studios":            { platform:"greenhouse", slug:"wildlifestudios" },
+  "Wooga":                       { platform:"greenhouse", slug:"wooga" },
+  "nDreams":                     { platform:"greenhouse", slug:"ndreams" },
+  // ─── International: Lever studios ───
+  "Klang Games":                 { platform:"lever", slug:"klang" },
+  // ─── International: Smart Recruiters ───
+  "IO Interactive":              { platform:"smartrecruiters", slug:"iointeractive" },
+  "Remedy Entertainment":        { platform:"smartrecruiters", slug:"remedyentertainment" },
+  "Rovio":                       { platform:"smartrecruiters", slug:"rovio" },
+  "Ubisoft Paris":               { platform:"smartrecruiters", slug:"ubisoft" },
   // NOTE: The slugs above are best guesses. VERIFY each at /verify before trusting.
 };
 
@@ -1168,7 +1427,7 @@ const I={
   Copy:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="5" width="9" height="10" rx="1.5"/><path d="M11 5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/></svg>,
   Robot:({s=18,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 18 18" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="12" height="9" rx="2"/><rect x="6" y="9" width="2" height="2" rx="0.5"/><rect x="10" y="9" width="2" height="2" rx="0.5"/><line x1="7" y1="13" x2="11" y2="13"/><line x1="9" y1="6" x2="9" y2="3"/><circle cx="9" cy="2.5" r="1.5"/><line x1="1.5" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="16.5" y2="9"/></svg>,
   Arrow:({s=14,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 14 14" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round"><line x1="2" y1="7" x2="12" y2="7"/><polyline points="8,3 12,7 8,11"/></svg>,
-  Bell:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6v3L2 11h12l-1.5-2V6A4.5 4.5 0 0 0 8 1.5z"/><path d="M6.5 11v.5a1.5 1.5 0 0 0 3 0V11"/></svg>,
+  Bell:({s=16,c="currentColor",fill="none"})=><svg width={s} height={s} viewBox="0 0 16 16" fill={fill} stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6v3L2 11h12l-1.5-2V6A4.5 4.5 0 0 0 8 1.5z"/><path d="M6.5 11v.5a1.5 1.5 0 0 0 3 0V11"/></svg>,
   Alert:({s=18})=><svg width={s} height={s} viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#c0321a"/><line x1="9" y1="5" x2="9" y2="10" stroke="white" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="13" r="1" fill="white"/></svg>,
 };
 
@@ -1992,6 +2251,8 @@ function JobCard({job,user,onApplied}) {
   const isApplied=user?.applied?.[job.id];
   const match=computeMatchScore(job,user?.profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#888";
+  // Does the user have enough profile data to score? (skills/resume/role/experience)
+  const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.resumeText||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()));
   const [showScoreInfo,setShowScoreInfo]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
@@ -2062,14 +2323,19 @@ function JobCard({job,user,onApplied}) {
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
     </div>
     </div>
-    {/* Match score square */}
-    {match&&<div style={{flexShrink:0,width:mobile?54:62,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:`${scoreColor}1a`,border:`1px solid ${scoreColor}55`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
+    {/* Match score square — shows score when profile has data, otherwise a prompt */}
+    {user&&<div style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
       {/* Info icon */}
-      <span onMouseEnter={()=>setShowScoreInfo(true)} onMouseLeave={()=>setShowScoreInfo(false)} onClick={e=>{e.stopPropagation();setShowScoreInfo(v=>!v);}} style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${scoreColor}99`,color:scoreColor,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
-      {showScoreInfo&&<div style={{position:"absolute",top:"100%",right:0,marginTop:6,width:210,background:"rgba(20,14,10,.98)",border:`1px solid ${scoreColor}55`,borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess that compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
-      <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
-      <div style={{fontSize:8,color:scoreColor,opacity:.7,fontFamily:"'Cinzel',serif",letterSpacing:.3}}>/ 10</div>
-      <div style={{fontSize:7,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Match</div>
+      <span onMouseEnter={()=>setShowScoreInfo(true)} onMouseLeave={()=>setShowScoreInfo(false)} onClick={e=>{e.stopPropagation();setShowScoreInfo(v=>!v);}} style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
+      {showScoreInfo&&<div style={{position:"absolute",top:"100%",right:0,marginTop:6,width:210,background:"rgba(20,14,10,.98)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.3)"}`,borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess that compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
+      {match?<>
+        <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
+        <div style={{fontSize:8,color:scoreColor,opacity:.7,fontFamily:"'Cinzel',serif",letterSpacing:.3}}>/ 10</div>
+        <div style={{fontSize:7,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Match</div>
+      </>:<>
+        <div style={{fontSize:mobile?17:20,fontWeight:800,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif",lineHeight:1}}>—</div>
+        <div style={{fontSize:7,color:"rgba(201,168,76,.6)",textAlign:"center",lineHeight:1.25,marginTop:2,padding:"0 1px"}}>Fill out your profile for a match score</div>
+      </>}
     </div>}
     </div>
   </div>;
@@ -2102,7 +2368,10 @@ export default function App() {
   const mobile = useIsMobile();
   const [user,setUser]=useState(null);
   const [tab,setTab]=useState("jobs");
-  const [expanded,setExpanded]=useState({});
+  const [expanded,setExpanded]=useState(()=>{
+    try{ const s=sessionStorage.getItem("mq_expanded"); return s?JSON.parse(s):{}; }catch{ return {}; }
+  });
+  useEffect(()=>{ try{ sessionStorage.setItem("mq_expanded",JSON.stringify(expanded)); }catch{} },[expanded]);
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
   const [jobSort,setJobSort]=useState("default");
@@ -2197,6 +2466,17 @@ export default function App() {
     const job = Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(j => j.id === jobId);
     if (!user?.id || !job) return;
     await supabase.from("applications").upsert({ user_id: user.id, job_id: jobId, job_title: job.title, company: job.company, job_url: job.url, salary: job.salary, applied_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+  };
+
+  // Toggle per-company job-post notifications (stored in profile.notifyCompanies)
+  const toggleNotify = async (companyName) => {
+    setUser(prev => {
+      const cur = prev?.profile?.notifyCompanies || [];
+      const next = cur.includes(companyName) ? cur.filter(c => c !== companyName) : [...cur, companyName];
+      const newProfile = { ...(prev?.profile||{}), notifyCompanies: next };
+      if (prev?.id) { supabase.from("profiles").upsert({ id: prev.id, name: prev.name, data: newProfile }, { onConflict: "id" }).then(()=>{}); }
+      return { ...prev, profile: newProfile };
+    });
   };
   const removeApplied = async (jobId) => {
     setUser(prev => { const na = { ...prev.applied }; delete na[jobId]; return { ...prev, applied: na }; });
@@ -2450,11 +2730,13 @@ export default function App() {
                                 <button onClick={()=>toggle(coKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:mobile?"8px 10px":"9px 11px",fontSize:mobile?11:12,color:"#f4edd8",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                                   <span style={{fontSize:8,color:"rgba(201,168,76,.35)"}}>{expanded[coKey]?"▼":"▶"}</span>
                                   <span style={{width:6,height:6,borderRadius:"50%",background:noJobs?"rgba(244,237,216,.2)":"#c9a84c",flexShrink:0}}/>
-                                  <span style={{flex:1,fontWeight:500}}>{name}</span>
+                                  <span style={{fontWeight:500}}>{name}</span>
+                                  {user&&(()=>{const isOn=(user.profile?.notifyCompanies||[]).includes(name);return <span onClick={e=>{e.stopPropagation();toggleNotify(name);}} title={isOn?"Notifications on — click to turn off":"Turn on job post notifications for this company"} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",marginLeft:6,position:"relative",opacity:isOn?1:.5,transition:"opacity .15s"}} onMouseEnter={e=>{e.currentTarget.style.opacity=1;const tip=e.currentTarget.querySelector(".belltip");if(tip)tip.style.opacity=1;}} onMouseLeave={e=>{e.currentTarget.style.opacity=isOn?1:.5;const tip=e.currentTarget.querySelector(".belltip");if(tip)tip.style.opacity=0;}}><I.Bell s={13} c={isOn?"#c9a84c":"rgba(244,237,216,.6)"} fill={isOn?"#c9a84c":"none"}/><span className="belltip" style={{position:"absolute",bottom:"130%",left:"50%",transform:"translateX(-50%)",background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",color:"rgba(244,237,216,.85)",fontSize:10,lineHeight:1.3,padding:"5px 8px",borderRadius:6,width:150,textAlign:"center",opacity:0,transition:"opacity .15s",pointerEvents:"none",zIndex:60,fontFamily:"system-ui,sans-serif",fontWeight:400}}>{isOn?"Notifications on for this company":"Turn on job post notifications for this company"}</span></span>;})()}
+                                  <span style={{flex:1}}/>
                                   {hasNew&&<span style={{width:14,height:14,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={12}/></span>}
+                                  {(company.volunteer||fJobs.some(j=>j.isVolunteer||j.type==="Volunteer"))&&<span style={{fontSize:9,color:"#7ecfb3",background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginRight:5}}>Volunteer</span>}
+                                  {(company.emailApply)&&<span style={{fontSize:9,color:"#e8a070",background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginRight:5}}>Email Apply</span>}
                                   {isLive&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:8,padding:"1px 6px",fontWeight:700,marginRight:3}}>● Live</span>}<span style={{fontSize:9,color:"rgba(244,237,216,.35)",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.1)",padding:"1px 7px",borderRadius:20,fontStyle:noJobs?"italic":"normal"}}>{(()=>{const hasSource=!!ATS_STUDIOS[name];const isLoading=liveJobs[name]===undefined&&hasSource;return isLoading?"Checking…":noJobs?"No openings":`${fJobs.length} opening${fJobs.length!==1?"s":""}`;})()}</span>
-                                  {(company.volunteer||fJobs.some(j=>j.isVolunteer||j.type==="Volunteer"))&&<span style={{fontSize:9,color:"#7ecfb3",background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginLeft:5}}>Volunteer</span>}
-                                  {(company.emailApply)&&<span style={{fontSize:9,color:"#e8a070",background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginLeft:5}}>Email Apply</span>}
                                 </button>
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
