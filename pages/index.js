@@ -1240,21 +1240,50 @@ const GLOBE_HOTSPOTS = [
 ];
 // A rough world coastline as lat/lon dot clusters (low-res, stylized — enough to read as Earth).
 const GLOBE_LAND = (()=>{
-  const pts=[];
-  // Generate a coarse landmass scatter using bounding boxes for continents.
-  const boxes=[
-    // [latMin,latMax,lonMin,lonMax,density]
-    [25,70,-168,-52,0.020],  // North America
-    [-56,12,-82,-34,0.018],  // South America
-    [36,71,-10,40,0.030],    // Europe
-    [-35,37,-18,52,0.016],   // Africa
-    [5,75,40,150,0.012],     // Asia
-    [-44,-10,113,154,0.020], // Australia
+  // Continent outlines as [lat,lon] polygons (low-res but recognizable).
+  // Points are filled with a dot scatter so each continent reads as its real shape.
+  const POLYS=[
+    // North America
+    [[71,-156],[70,-128],[60,-141],[55,-130],[48,-124],[40,-124],[33,-117],[23,-110],[20,-97],[18,-88],[21,-87],[25,-81],[30,-81],[35,-76],[40,-74],[44,-67],[47,-60],[52,-56],[60,-64],[63,-78],[58,-94],[68,-95],[69,-110],[71,-156]],
+    // Central America bridge
+    [[18,-92],[15,-92],[10,-84],[8,-78],[12,-83],[16,-88],[18,-92]],
+    // South America
+    [[12,-72],[10,-61],[5,-52],[-2,-50],[-10,-37],[-18,-39],[-23,-43],[-30,-50],[-38,-58],[-46,-66],[-53,-69],[-50,-74],[-40,-73],[-30,-71],[-18,-70],[-8,-79],[0,-80],[8,-77],[12,-72]],
+    // Europe
+    [[71,25],[64,11],[58,5],[54,-2],[50,-5],[43,-9],[40,-9],[36,-6],[38,0],[41,3],[44,9],[40,18],[37,15],[40,24],[45,29],[48,38],[55,40],[60,30],[66,24],[71,25]],
+    // Africa
+    [[37,10],[33,11],[31,20],[30,32],[22,37],[12,43],[11,51],[2,42],[-5,40],[-12,40],[-18,37],[-26,33],[-34,26],[-34,19],[-29,16],[-22,14],[-15,12],[-6,9],[4,9],[5,-4],[8,-13],[15,-17],[21,-17],[28,-12],[33,-6],[37,10]],
+    // Asia
+    [[71,55],[68,75],[73,100],[76,110],[72,130],[66,170],[60,160],[55,140],[52,142],[45,135],[40,128],[35,126],[30,122],[22,114],[10,105],[8,98],[15,95],[20,90],[22,88],[18,83],[8,77],[8,68],[20,70],[25,62],[28,50],[30,48],[37,45],[40,52],[47,52],[50,60],[55,55],[60,60],[64,55],[71,55]],
+    // SE Asia islands / Indonesia
+    [[2,96],[-2,100],[-8,110],[-8,120],[-3,128],[1,122],[5,118],[2,104],[2,96]],
+    // Australia
+    [[-11,131],[-12,142],[-18,146],[-26,153],[-34,151],[-38,145],[-38,140],[-35,135],[-32,128],[-34,118],[-31,115],[-22,114],[-16,123],[-13,127],[-11,131]],
+    // Greenland
+    [[83,-30],[80,-20],[70,-22],[60,-43],[67,-53],[76,-58],[81,-45],[83,-30]],
+    // British Isles
+    [[58,-5],[55,-6],[50,-5],[51,1],[54,-1],[58,-5]],
+    // Japan
+    [[45,142],[40,140],[35,136],[33,131],[37,138],[41,141],[45,142]],
+    // Madagascar
+    [[-12,49],[-18,49],[-25,47],[-22,44],[-15,46],[-12,49]],
   ];
-  for(const [laMin,laMax,loMin,loMax,d] of boxes){
-    const n=Math.round((laMax-laMin)*(loMax-loMin)*d);
-    for(let i=0;i<n;i++){
-      pts.push([laMin+Math.random()*(laMax-laMin),loMin+Math.random()*(loMax-loMin)]);
+  // Point-in-polygon test (ray casting) on lat/lon.
+  const inside=(lat,lon,poly)=>{
+    let c=false;
+    for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+      const yi=poly[i][0],xi=poly[i][1],yj=poly[j][0],xj=poly[j][1];
+      if(((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi)+xi))c=!c;
+    }
+    return c;
+  };
+  const pts=[];
+  // Scatter dots across the globe, keep those that fall inside a continent polygon.
+  for(let lat=-56;lat<=78;lat+=2.2){
+    for(let lon=-180;lon<=180;lon+=2.2){
+      // jitter for an organic, sketched look
+      const la=lat+(Math.random()-0.5)*1.6, lo=lon+(Math.random()-0.5)*1.6;
+      for(const poly of POLYS){ if(inside(la,lo,poly)){ pts.push([la,lo]); break; } }
     }
   }
   return pts;
@@ -2665,6 +2694,8 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
+    {/* Desktop background globe — large, bottom-left, behind everything */}
+    {!mobile&&<div style={{position:"fixed",left:-160,bottom:-160,zIndex:0,pointerEvents:"none",opacity:.55}}><GlobeHeatmap size={640}/></div>}
     {/* Styles */}
     <style>{`*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
@@ -2704,10 +2735,10 @@ export default function App() {
 
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
-        {/* Rotating wireframe globe heatmap */}
-        <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
-          <GlobeHeatmap size={mobile?160:210}/>
-        </div>
+        {/* Mobile globe — centered at top */}
+        {mobile&&<div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
+          <GlobeHeatmap size={160}/>
+        </div>}
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
           {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Countries",false]].map(([n,lbl,hi])=>
