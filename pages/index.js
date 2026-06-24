@@ -1238,6 +1238,29 @@ const GLOBE_HOTSPOTS = [
   [49.3,-123.1, 0.30], // Vancouver / Canada
   [51.0,-114.1, 0.18], // Calgary / Canada
 ];
+
+// Night-lights field derived from the hotspots: each city center seeds a cluster of
+// smaller lights so busy regions (e.g. California) bloom into a connected glow rather
+// than a single dot. Format: [lat, lon, weight, spread].
+const GLOBE_LIGHTS = (()=>{
+  const out=[];
+  // simple deterministic PRNG so the field is stable between renders
+  let s=20260101; const rnd=()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
+  for(const [lat,lon,w] of GLOBE_HOTSPOTS){
+    out.push([lat,lon,w,1.15]);                 // bright core
+    const n=Math.round(6+w*26);                 // more satellites for busier areas
+    const ring=0.6+w*4.2;                        // wider sprawl for busier areas
+    for(let i=0;i<n;i++){
+      const ang=rnd()*Math.PI*2;
+      const r=Math.pow(rnd(),0.6)*ring;          // bias toward the center
+      const dLat=Math.sin(ang)*r;
+      const dLon=Math.cos(ang)*r/Math.max(0.35,Math.cos(lat*Math.PI/180));
+      const fall=1-r/(ring+0.001);
+      out.push([lat+dLat, lon+dLon, Math.max(0.05,w*(0.20+0.55*fall*rnd())), 0.7+rnd()*0.5]);
+    }
+  }
+  return out;
+})();
 // A rough world coastline as lat/lon dot clusters (low-res, stylized — enough to read as Earth).
 // Natural Earth boundary data (public domain), simplified for canvas rendering.
 // Format: array of polylines, each polyline a list of [lon,lat] points.
@@ -1327,22 +1350,29 @@ function GlobeHeatmap({size=180,showStates=true}){
       drawGeo(GEO_COUNTRIES,"rgba(201,168,76,0.30)",0.6);
       drawGeo(GEO_COAST,"rgba(214,182,99,0.62)",0.8);
 
-      // Hotspots — glowing city lights, brightness ~ weight
-      for(const [lat,lon,w] of GLOBE_HOTSPOTS){
+      // Night-lights: additive blending makes overlapping glows pool brighter in dense areas.
+      ctx.save();
+      ctx.globalCompositeOperation="lighter";
+      for(const [lat,lon,w,spread] of GLOBE_LIGHTS){
         const p=project(lat,lon,rot);
-        if(p.z>0){
-          const depth=0.45+p.z*0.55;
-          const rad=(2.2+w*5)*depth;
-          const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rad*2.4);
-          g.addColorStop(0,`rgba(255,190,90,${0.95*depth})`);
-          g.addColorStop(0.4,`rgba(232,97,58,${0.55*depth*w+0.12})`);
+        if(p.z>0.04){
+          const depth=0.35+p.z*0.65;             // fade toward the limb
+          const haze=(spread||1)*(2.5+w*7)*depth; // soft outer bloom
+          const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,haze);
+          g.addColorStop(0,`rgba(255,205,120,${0.42*w*depth})`);
+          g.addColorStop(0.35,`rgba(244,140,70,${0.20*w*depth})`);
           g.addColorStop(1,"rgba(232,97,58,0)");
           ctx.fillStyle=g;
-          ctx.beginPath(); ctx.arc(p.x,p.y,rad*2.4,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle=`rgba(255,225,170,${0.9*depth})`;
-          ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(0.8,rad*0.5),0,Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x,p.y,haze,0,Math.PI*2); ctx.fill();
+          // bright pinpoint core for the strongest lights
+          if(w>0.25){
+            const cr=Math.max(0.5,(0.7+w*1.6)*depth);
+            ctx.fillStyle=`rgba(255,235,190,${0.5*depth})`;
+            ctx.beginPath(); ctx.arc(p.x,p.y,cr,0,Math.PI*2); ctx.fill();
+          }
         }
       }
+      ctx.restore();
 
       rotRef.current+=0.0022; // slow rotation
       rafRef.current=requestAnimationFrame(draw);
