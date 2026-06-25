@@ -67,11 +67,20 @@ function buildVariants(platform, slug) {
       ];
     case 'ashby':
       return [
-        // Public GET posting API
-        { url: `https://api.ashbyhq.com/posting-api/job-board/${slug}?includeCompensation=true`, pick: d => d.jobs || [] },
-        { url: `https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams`, method: 'POST',
-          body: { operationName: 'ApiJobBoardWithTeams', variables: { organizationHostedJobsPageName: slug }, query: 'query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) { jobBoard: jobBoardWithTeams(organizationHostedJobsPageName: $organizationHostedJobsPageName) { jobPostings { id title locationName employmentType } } }' },
-          pick: d => d?.data?.jobBoard?.jobPostings || [] },
+        // Public REST posting API — returns all jobs in one call, no pagination.
+        // includeCompensation=true adds salary data. We filter out unlisted/draft jobs
+        // (isListed===false) and attach any board-level compensation to each job so the
+        // normalizer can read it per-job.
+        { url: `https://api.ashbyhq.com/posting-api/job-board/${slug}?includeCompensation=true`,
+          pick: d => {
+            const jobs = (d.jobs || []).filter(j => j.isListed !== false);
+            // If compensation came back at the top level (board-wide), expose it on each
+            // job under _boardCompensation as a fallback for the normalizer.
+            if (d.compensation) {
+              for (const j of jobs) { if (!j.compensation) j._boardCompensation = d.compensation; }
+            }
+            return jobs;
+          } },
       ];
     case 'workable':
       return [

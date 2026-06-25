@@ -998,6 +998,31 @@ const ATS_STUDIOS = {
 };
 
 // Normalize a job from ANY ATS platform into our internal shape
+// Pull a clean salary string out of Ashby's compensation object.
+// Prefers the ready-made "scrapeable" summary, then a Salary-type component's min/max,
+// then the tier summary. Returns "" if no usable salary is present.
+function ashbySalary(comp){
+  if(!comp) return "";
+  // 1. Cleanest: the scrapeable salary summary, e.g. "$81K - $87K"
+  if(comp.scrapeableCompensationSalarySummary) return comp.scrapeableCompensationSalarySummary;
+  // 2. Look for a Salary component inside the tiers or summary components.
+  const pools=[];
+  if(Array.isArray(comp.summaryComponents)) pools.push(comp.summaryComponents);
+  if(Array.isArray(comp.compensationTiers)) for(const t of comp.compensationTiers){ if(Array.isArray(t.components)) pools.push(t.components); }
+  for(const pool of pools){
+    const sal=pool.find(c=>c && c.compensationType==="Salary" && (c.minValue||c.maxValue));
+    if(sal){
+      const fmt=v=>{ if(v==null) return ""; const n=Number(v); if(!isFinite(n)) return ""; return n>=1000?`$${Math.round(n/1000)}K`:`$${n}`; };
+      const lo=fmt(sal.minValue), hi=fmt(sal.maxValue);
+      if(lo&&hi&&lo!==hi) return `${lo} \u2013 ${hi}`;
+      if(lo||hi) return lo||hi;
+    }
+  }
+  // 3. Fall back to the tier summary if it mentions a dollar figure.
+  if(comp.compensationTierSummary && /\$/.test(comp.compensationTierSummary)) return comp.compensationTierSummary;
+  return "";
+}
+
 function normalizeATSJob(raw, platform, company, stateKey) {
   const decodeEntities = h => (h||"")
     .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'")
@@ -1009,13 +1034,21 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   if(platform==="greenhouse"){
     title=raw.title||""; url=raw.absolute_url||company.url; rawHtml=raw.content||""; body=stripHtml(rawHtml);
     loc=raw.location?.name||""; updated=new Date(raw.updated_at||raw.first_published_at||Date.now()).getTime();
+    // Greenhouse pay-transparency ranges, when present.
+    if(Array.isArray(raw.pay_input_ranges)&&raw.pay_input_ranges.length){
+      const pr=raw.pay_input_ranges[0];
+      const fmt=v=>{const n=Number(v);return isFinite(n)?(n>=1000?`$${Math.round(n/1000)}K`:`$${n}`):"";};
+      const lo=fmt(pr.min_cents/100),hi=fmt(pr.max_cents/100);
+      if(lo&&hi&&lo!==hi) salary=`${lo} \u2013 ${hi}`; else if(lo||hi) salary=lo||hi;
+    }
   } else if(platform==="lever"){
     title=raw.text||""; url=raw.hostedUrl||raw.applyUrl||company.url; rawHtml=raw.description||raw.descriptionPlain||""; body=stripHtml(raw.descriptionPlain||raw.description||"");
     loc=raw.categories?.location||""; updated=raw.createdAt||Date.now();
   } else if(platform==="ashby"){
-    title=raw.title||""; url=raw.jobUrl||raw.applyUrl||company.url; rawHtml=raw.descriptionHtml||raw.description||""; body=stripHtml(rawHtml);
-    loc=raw.locationName||raw.location||""; updated=new Date(raw.publishedAt||Date.now()).getTime();
-    if(raw.compensation?.compensationTierSummary) salary=raw.compensation.compensationTierSummary;
+    title=raw.title||""; url=raw.jobUrl||raw.applyUrl||company.url; rawHtml=raw.descriptionHtml||raw.descriptionPlain||""; body=stripHtml(rawHtml)||raw.descriptionPlain||"";
+    loc=raw.location||[raw.address?.postalAddress?.addressLocality,raw.address?.postalAddress?.addressRegion].filter(Boolean).join(", ")||"";
+    updated=new Date(raw.publishedAt||Date.now()).getTime();
+    salary=ashbySalary(raw.compensation)||ashbySalary(raw._boardCompensation)||salary;
   } else if(platform==="workable"){
     title=raw.title||""; url=raw.url||raw.application_url||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.location?.location_str||raw.city||""; updated=new Date(raw.published_on||Date.now()).getTime();
@@ -1041,7 +1074,14 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   }
 
   const daysAgo=Math.floor((Date.now()-updated)/86400000);
-  const isRemote=/remote|distributed|anywhere/i.test(title+" "+loc+" "+body.slice(0,200));
+  let isRemote=/remote|distributed|anywhere/i.test(title+" "+loc+" "+body.slice(0,200));
+  // Structured employment type / remote flag when the ATS provides them (Ashby does).
+  let jobType="Full-time";
+  if(platform==="ashby"){
+    if(raw.isRemote===true||raw.workplaceType==="Remote") isRemote=true;
+    const et={FullTime:"Full-time",PartTime:"Part-time",Intern:"Internship",Contract:"Contract",Temporary:"Temporary"}[raw.employmentType];
+    if(et) jobType=et;
+  }
   // try to find a salary range in the body if not provided
   if(salary==="Salary not listed"){
     const sm=body.match(/\$(\d[\d,]+)\s*[-\u2013]+\s*\$(\d[\d,]+)/);
@@ -1052,7 +1092,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     id:`ats-${platform}-${raw.id||raw.shortcode||raw.uuid||title.replace(/\s+/g,"")}`,
     title, company:company.name, url, applyUrl:url, state:stateKey,
     posted:new Date(updated), postedStr:new Date(updated).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
-    daysAgo, isNew:daysAgo<3, isRemote, type:"Full-time", salary, email:company.email,
+    daysAgo, isNew:daysAgo<3, isRemote, type:jobType, salary, email:company.email,
     experience:guessExp(title), isVolunteer:false, isLive:true,
     summary:(parsed.summary||body.slice(0,240)).trim()+((parsed.summary||body).length>240?"\u2026":""),
     fullDescription:body.slice(0,2000),
@@ -2444,7 +2484,7 @@ function JobCard({job,user,guest,onRequestLogin,onApplied}) {
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
       {chip(job.type)}
       {job.isRemote&&chip("Remote OK",{background:"rgba(126,207,179,.08)",border:"1px solid rgba(126,207,179,.2)",color:"#7ecfb3"})}
-      {job.salary&&chip(job.salary,{background:"rgba(232,97,58,.08)",border:"1px solid rgba(232,97,58,.2)",color:"#e8b070"})}
+      {job.salary&&job.salary!=="Salary not listed"&&chip(job.salary,{background:"rgba(232,97,58,.08)",border:"1px solid rgba(232,97,58,.2)",color:"#e8b070"})}
       {chip(`Posted ${job.postedStr}`,{color:"rgba(244,237,216,.4)"})}
     </div>
     {/* Summary */}
@@ -2962,7 +3002,7 @@ export default function App() {
                   </div>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:"#f4edd8",marginBottom:6,letterSpacing:.5}}>{job.title}</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                    {[job.type,job.isRemote&&"Remote OK",job.salary&&job.salary,`Posted ${job.postedStr}`].filter(Boolean).map((c,i)=><span key={i} style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.6)"}}>{c}</span>)}
+                    {[job.type,job.isRemote&&"Remote OK",(job.salary&&job.salary!=="Salary not listed")&&job.salary,`Posted ${job.postedStr}`].filter(Boolean).map((c,i)=><span key={i} style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.6)"}}>{c}</span>)}
                   </div>
                 </div>
                 <div style={{display:"flex",flexDirection:mobile?"row":"column",alignItems:mobile?"center":"flex-end",gap:8,justifyContent:mobile?"space-between":"flex-start"}}>
