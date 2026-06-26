@@ -1028,6 +1028,32 @@ const ATS_STUDIOS = {
 // Pull a clean salary string out of Ashby's compensation object.
 // Prefers the ready-made "scrapeable" summary, then a Salary-type component's min/max,
 // then the tier summary. Returns "" if no usable salary is present.
+// Normalize a raw job location string into a clean grouping label, e.g.
+// "Los Angeles, CA, USA" -> "Los Angeles, CA"; remote-ish -> "Remote";
+// empty -> "Other". Used to group a studio's jobs by their real location.
+const US_STATE_ABBR={alabama:"AL",alaska:"AK",arizona:"AZ",arkansas:"AR",california:"CA",colorado:"CO",connecticut:"CT",delaware:"DE",florida:"FL",georgia:"GA",hawaii:"HI",idaho:"ID",illinois:"IL",indiana:"IN",iowa:"IA",kansas:"KS",kentucky:"KY",louisiana:"LA",maine:"ME",maryland:"MD",massachusetts:"MA",michigan:"MI",minnesota:"MN",mississippi:"MS",missouri:"MO",montana:"MT",nebraska:"NE",nevada:"NV","new hampshire":"NH","new jersey":"NJ","new mexico":"NM","new york":"NY","north carolina":"NC","north dakota":"ND",ohio:"OH",oklahoma:"OK",oregon:"OR",pennsylvania:"PA","rhode island":"RI","south carolina":"SC","south dakota":"SD",tennessee:"TN",texas:"TX",utah:"UT",vermont:"VT",virginia:"VA",washington:"WA","west virginia":"WV",wisconsin:"WI",wyoming:"WY","district of columbia":"DC",ontario:"ON",quebec:"QC","british columbia":"BC",alberta:"AB",manitoba:"MB",saskatchewan:"SK","nova scotia":"NS","new brunswick":"NB","newfoundland and labrador":"NL","prince edward island":"PE"};
+function locationLabel(loc){
+  const raw=(loc||"").trim();
+  if(!raw) return "Other";
+  if(/remote|distributed|anywhere|work from home|wfh/i.test(raw)) return "Remote";
+  // Split on commas; keep city + state-ish, drop country.
+  const parts=raw.split(/[,\u2022\/|]+/).map(s=>s.trim()).filter(Boolean);
+  if(!parts.length) return "Other";
+  const dropCountry=/^(usa|u\.s\.a?\.?|united states|canada|remote)$/i;
+  const kept=parts.filter(p=>!dropCountry.test(p));
+  const use=kept.length?kept:parts;
+  let city=use[0]||"";
+  let region=use[1]||"";
+  // Normalize a full state name to its abbreviation.
+  const regAbbr=US_STATE_ABBR[region.toLowerCase()];
+  if(regAbbr) region=regAbbr;
+  else if(region.length>2){ const c=US_STATE_ABBR[region.toLowerCase()]; if(c) region=c; }
+  // If city itself is a full state name with no region, just show the state.
+  if(!region && US_STATE_ABBR[city.toLowerCase()]) return city;
+  const out=[city,region].filter(Boolean).join(", ");
+  return out||"Other";
+}
+
 function ashbySalary(comp){
   if(!comp) return "";
   // 1. Cleanest: the scrapeable salary summary, e.g. "$81K - $87K"
@@ -1123,7 +1149,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     experience:guessExp(title), isVolunteer:false, isLive:true,
     summary:(parsed.summary||body.slice(0,240)).trim()+((parsed.summary||body).length>240?"\u2026":""),
     fullDescription:body.slice(0,2000),
-    responsibilities:parsed.responsibilities, requirements:parsed.requirements, location:loc,
+    responsibilities:parsed.responsibilities, requirements:parsed.requirements, location:loc, locationLabel:locationLabel(loc),
   };
 }
 
@@ -2984,7 +3010,31 @@ export default function App() {
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
                                     ?<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>
-                                    :fJobs.map(j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>)}
+                                    :(()=>{
+                                      // Group this studio's jobs by their real location. Only show
+                                      // location headers when the studio has jobs in 2+ locations.
+                                      const groups={};
+                                      for(const j of fJobs){const k=j.locationLabel||"Other";(groups[k]=groups[k]||[]).push(j);}
+                                      const keys=Object.keys(groups).sort((a,b)=>{
+                                        if(a==="Remote")return 1; if(b==="Remote")return -1;
+                                        if(a==="Other")return 1; if(b==="Other")return -1;
+                                        return groups[b].length-groups[a].length;
+                                      });
+                                      const multi=keys.length>1;
+                                      const renderJob=j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>;
+                                      if(!multi) return fJobs.map(renderJob);
+                                      return keys.map(k=>(
+                                        <div key={k} style={{display:"flex",flexDirection:"column",gap:5}}>
+                                          <div style={{display:"flex",alignItems:"center",gap:6,padding:"2px 2px 1px",marginTop:2}}>
+                                            <I.Map s={11} c="rgba(201,168,76,.55)"/>
+                                            <span style={{fontSize:10,fontWeight:700,color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.4}}>{k}</span>
+                                            <span style={{fontSize:8.5,color:"rgba(244,237,216,.3)"}}>{groups[k].length}</span>
+                                            <span style={{flex:1,height:1,background:"rgba(201,168,76,.08)"}}/>
+                                          </div>
+                                          {groups[k].map(renderJob)}
+                                        </div>
+                                      ));
+                                    })()}
                                 </div>}
                               </div>;
                             })}
