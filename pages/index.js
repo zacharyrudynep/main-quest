@@ -1124,6 +1124,9 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   } else if(platform==="jobvite"){
     title=raw.title||raw.jobTitle||""; url=raw.detailUrl||raw.applyUrl||raw.url||company.url; rawHtml=raw.description||raw.jobDescription||""; body=stripHtml(rawHtml);
     loc=raw.location||[raw.city,raw.state].filter(Boolean).join(", ")||""; updated=new Date(raw.date||raw.postedDate||Date.now()).getTime();
+  } else if(platform==="personio"){
+    title=raw.name||""; url=raw.jobUrl||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
+    loc=raw.office||""; updated=new Date(raw.createdAt||Date.now()).getTime();
   }
 
   const daysAgo=Math.floor((Date.now()-updated)/86400000);
@@ -1133,6 +1136,10 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   if(platform==="ashby"){
     if(raw.isRemote===true||raw.workplaceType==="Remote") isRemote=true;
     const et={FullTime:"Full-time",PartTime:"Part-time",Intern:"Internship",Contract:"Contract",Temporary:"Temporary"}[raw.employmentType];
+    if(et) jobType=et;
+  }
+  if(platform==="personio"){
+    const et={full_time:"Full-time","full-time":"Full-time",part_time:"Part-time","part-time":"Part-time",intern:"Internship",trainee:"Internship",temporary:"Temporary",contract:"Contract"}[(raw.employmentType||"").toLowerCase()];
     if(et) jobType=et;
   }
   // try to find a salary range in the body if not provided

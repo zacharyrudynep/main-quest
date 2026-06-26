@@ -115,9 +115,50 @@ function buildVariants(platform, slug) {
       return [
         { url: `https://recruiting.paylocity.com/recruiting/v2/api/jobs/${slug}`, pick: d => d.jobs || d.Jobs || (Array.isArray(d) ? d : []) },
       ];
+    case 'personio':
+      // Personio exposes a public XML feed per company. Some accounts are .de, some .com.
+      return [
+        { url: `https://${slug}.jobs.personio.de/xml?language=en`, pick: d => extractPersonio(d) },
+        { url: `https://${slug}.jobs.personio.com/xml?language=en`, pick: d => extractPersonio(d) },
+      ];
     default:
       return null;
   }
+}
+
+// Parse Personio's XML job feed into an array of plain job objects.
+// The feed wraps each posting in a <position> element with child tags like
+// <name>, <office>, <department>, <employmentType>, <jobDescriptions>, etc.
+function extractPersonio(d) {
+  const xml = (d && d.__html) ? d.__html : (typeof d === 'string' ? d : '');
+  if (!xml || !/<position[ >]/i.test(xml)) return [];
+  const jobs = [];
+  const blocks = xml.match(/<position[\s\S]*?<\/position>/gi) || [];
+  const tag = (block, name) => {
+    const m = block.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`, 'i'));
+    if (!m) return '';
+    return m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
+  };
+  for (const b of blocks) {
+    // Concatenate all <jobDescription><value> blocks into one description.
+    const descParts = (b.match(/<value>[\s\S]*?<\/value>/gi) || [])
+      .map(v => v.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<\/?value>/gi, '').trim());
+    jobs.push({
+      id: tag(b, 'id'),
+      name: tag(b, 'name'),
+      office: tag(b, 'office'),
+      department: tag(b, 'department'),
+      employmentType: tag(b, 'employmentType'),
+      schedule: tag(b, 'schedule'),
+      seniority: tag(b, 'seniority'),
+      yearsOfExperience: tag(b, 'yearsOfExperience'),
+      occupation: tag(b, 'occupationCategory') || tag(b, 'occupation'),
+      createdAt: tag(b, 'createdAt'),
+      description: descParts.join('\n\n'),
+      jobUrl: tag(b, 'url'),
+    });
+  }
+  return jobs;
 }
 
 function extractBamboo(d) {
