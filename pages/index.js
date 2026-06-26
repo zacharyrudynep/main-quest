@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 
 // ── RESPONSIVE HOOK ────────────────────────────────────────────────────────────
@@ -2626,7 +2626,212 @@ function FSection({title,count,children}) {
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
-export default function App() {
+export default // US state polygons (Natural Earth, public domain), simplified for the Journey map.
+// Each: { name, rings: [[[lon,lat],...]], c: [lon,lat] centroid }
+const US_STATES_GEO={"AK":{"name":"Alaska","rings":[[[-139.06,60.0],[-137.59,59.23],[-137.44,58.9],[-136.58,59.15],[-136.32,59.6],[-135.26,59.7],[-133.4,58.41],[-131.82,56.59],[-130.1,56.11],[-130.04,55.3],[-130.85,54.81],[-131.03,56.09],[-132.12,55.57],[-132.21,55.75],[-131.55,56.21],[-132.82,57.06],[-133.47,57.17],[-133.65,57.64],[-133.12,57.57],[-133.54,57.83],[-133.19,57.88],[-134.03,58.07],[-133.88,58.52],[-134.21,58.23],[-134.78,58.45],[-135.36,59.42],[-135.5,59.2],[-135.09,58.25],[-135.9,58.4],[-136.04,58.82],[-135.83,58.9],[-136.15,59.05],[-136.23,58.77],[-136.99,59.03],[-136.06,58.45],[-136.61,58.24],[-139.8,59.55],[-139.51,59.95],[-139.29,59.61],[-138.99,59.84],[-139.43,60.01],[-140.42,59.71],[-141.41,59.9],[-141.41,60.12],[-144.15,60.02],[-144.9,60.34],[-144.69,60.67],[-145.25,60.38],[-145.9,60.48],[-145.67,60.65],[-146.57,60.73],[-146.39,60.81],[-146.6,61.05],[-146.28,61.11],[-147.99,60.95],[-147.75,61.22],[-148.56,60.83],[-148.26,60.68],[-148.64,60.49],[-147.96,60.48],[-148.43,59.99],[-149.4,60.11],[-149.6,59.77],[-149.71,59.92],[-150.93,59.25],[-151.95,59.27],[-151.05,59.77],[-151.85,59.78],[-151.32,60.74],[-150.44,61.02],[-149.08,60.88],[-150.05,61.17],[-149.43,61.5],[-150.95,61.2],[-152.37,60.34],[-153.03,60.3],[-152.66,60.0],[-154.18,59.16],[-153.42,58.96],[-153.44,58.75],[-154.25,58.16],[-156.44,57.36],[-156.63,57.01],[-158.41,56.44],[-158.48,56.08],[-161.18,55.39],[-161.52,55.62],[-162.07,55.14],[-162.63,55.25],[-162.67,55.0],[-163.34,54.84],[-163.28,55.12],[-161.7,55.91],[-160.29,55.81],[-160.54,56.01],[-160.3,56.31],[-158.68,56.79],[-158.32,57.3],[-157.46,57.51],[-157.7,57.68],[-157.61,58.05],[-157.19,58.19],[-157.52,58.42],[-156.81,59.13],[-158.19,58.61],[-158.5,58.85],[-158.08,58.98],[-158.81,58.97],[-158.95,58.4],[-160.36,59.05],[-162.14,58.64],[-161.64,59.11],[-161.98,59.15],[-161.83,59.59],[-162.42,60.28],[-161.95,60.68],[-162.68,60.27],[-162.57,59.99],[-163.91,59.81],[-165.35,60.54],[-164.81,60.89],[-163.73,60.59],[-163.42,60.76],[-163.91,60.85],[-163.59,60.9],[-165.11,60.93],[-164.87,61.11],[-165.57,61.1],[-166.17,61.65],[-165.81,61.7],[-166.08,61.8],[-165.61,61.87],[-165.71,62.1],[-165.19,62.47],[-164.76,62.5],[-164.59,62.71],[-164.79,62.62],[-164.8,62.92],[-164.41,63.22],[-163.29,63.05],[-162.28,63.53],[-160.93,63.66],[-160.99,64.25],[-161.49,64.43],[-160.89,64.8],[-161.76,64.82],[-162.71,64.38],[-163.2,64.65],[-163.14,64.42],[-166.14,64.58],[-166.93,65.16],[-166.16,65.29],[-168.09,65.66],[-164.46,66.59],[-163.64,66.57],[-164.03,66.22],[-163.7,66.08],[-161.03,66.19],[-162.61,66.89],[-162.36,66.95],[-161.59,66.46],[-160.23,66.42],[-161.86,66.7],[-161.72,67.02],[-163.53,67.1],[-164.13,67.61],[-166.79,68.36],[-166.38,68.43],[-166.21,68.89],[-163.54,69.17],[-161.88,70.33],[-162.07,70.16],[-160.12,70.59],[-159.87,70.28],[-159.39,70.52],[-160.08,70.63],[-159.68,70.79],[-157.91,70.86],[-156.47,71.41],[-155.58,71.12],[-156.15,70.93],[-155.97,70.84],[-155.17,71.1],[-154.2,70.8],[-152.3,70.85],[-152.47,70.65],[-151.77,70.56],[-151.94,70.45],[-142.71,70.03],[-141.0,69.65],[-141.0,60.3],[-139.08,60.34],[-139.06,60.0]],[[-171.46,63.64],[-170.43,63.7],[-168.72,63.31],[-169.68,62.96],[-170.53,63.38],[-171.79,63.42],[-171.75,63.7],[-171.46,63.64]],[[-166.14,60.38],[-165.73,60.31],[-165.59,59.91],[-166.15,59.76],[-167.44,60.21],[-166.14,60.38]],[[-152.42,58.36],[-151.98,58.24],[-153.38,58.09],[-152.42,58.36]],[[-134.68,58.16],[-134.24,58.14],[-133.82,57.63],[-134.31,58.03],[-133.91,57.37],[-134.44,57.06],[-134.92,58.35],[-134.68,58.16]],[[-135.73,58.24],[-135.61,57.99],[-134.95,58.02],[-135.34,57.77],[-134.93,57.48],[-135.56,57.67],[-135.91,57.45],[-136.57,57.97],[-135.73,58.24]],[[-152.9,57.82],[-152.22,57.58],[-152.94,57.5],[-152.68,57.35],[-153.97,56.77],[-153.79,56.99],[-154.24,57.14],[-154.34,56.92],[-154.71,57.34],[-154.12,57.65],[-153.69,57.31],[-153.84,57.86],[-152.9,57.82]],[[-134.97,57.35],[-134.62,56.72],[-134.68,56.22],[-135.45,57.25],[-135.81,57.01],[-135.45,57.53],[-134.97,57.35]],[[-133.37,57.0],[-132.95,56.88],[-133.0,56.62],[-133.33,56.83],[-133.18,56.47],[-133.6,56.46],[-133.98,57.01],[-133.37,57.0]],[[-133.99,56.84],[-133.74,56.65],[-134.19,56.08],[-134.08,56.46],[-134.37,56.84],[-133.99,56.84]],[[-132.11,56.11],[-132.37,55.94],[-132.7,56.2],[-132.38,56.5],[-132.11,56.11]],[[-133.57,56.34],[-132.17,55.48],[-132.63,55.47],[-131.98,55.21],[-132.02,54.73],[-133.12,55.33],[-133.03,55.59],[-133.68,55.79],[-133.24,55.92],[-133.74,55.96],[-133.57,56.34]],[[-130.98,55.49],[-131.19,55.21],[-131.45,55.41],[-131.81,55.22],[-131.62,55.83],[-131.27,55.96],[-130.98,55.49]],[[-132.86,54.89],[-132.62,54.89],[-132.71,54.68],[-133.43,55.3],[-132.86,54.89]],[[-163.48,54.98],[-163.08,54.67],[-164.9,54.54],[-164.48,54.91],[-163.48,54.98]],[[-166.62,53.9],[-166.23,53.93],[-166.77,53.48],[-167.81,53.32],[-166.74,53.71],[-167.04,53.94],[-166.62,53.9]],[[-167.96,53.35],[-169.09,52.83],[-168.29,53.5],[-167.83,53.51],[-167.96,53.35]],[[-174.68,52.04],[-175.3,52.02],[-174.02,52.33],[-174.68,52.04]]],"c":[-152.62,61.44]},"AL":{"name":"Alabama","rings":[[[-87.49,30.38],[-88.01,30.23],[-87.79,30.29],[-88.01,30.69],[-88.4,30.37],[-88.2,35.02],[-85.62,35.0],[-84.92,32.29],[-85.01,31.0],[-87.59,31.0],[-87.49,30.38]]],"c":[-87.14,31.51]},"AR":{"name":"Arkansas","rings":[[[-89.7,36.0],[-91.07,33.97],[-91.15,33.02],[-94.04,33.01],[-94.05,33.55],[-94.48,33.65],[-94.62,36.5],[-90.16,36.5],[-90.38,35.99],[-89.7,36.0]]],"c":[-91.94,34.82]},"AZ":{"name":"Arizona","rings":[[[-109.05,31.33],[-111.04,31.32],[-114.84,32.51],[-114.48,32.84],[-114.72,33.33],[-114.51,33.9],[-114.13,34.29],[-114.61,34.91],[-114.74,36.01],[-114.04,36.18],[-114.04,37.0],[-109.05,37.0],[-109.05,31.33]]],"c":[-112.95,34.0]},"CA":{"name":"California","rings":[[[-114.61,34.99],[-114.13,34.32],[-114.7,33.42],[-114.52,32.77],[-117.13,32.53],[-117.47,33.3],[-118.51,34.02],[-120.64,34.58],[-120.66,35.12],[-121.88,36.33],[-121.81,36.85],[-122.5,37.54],[-122.45,37.8],[-122.07,37.48],[-122.31,38.01],[-121.53,38.06],[-122.39,38.14],[-122.52,37.83],[-123.0,37.99],[-122.91,38.2],[-123.7,38.91],[-123.83,39.78],[-124.36,40.37],[-124.07,41.38],[-124.23,42.0],[-120.0,42.0],[-120.0,39.0],[-114.61,34.99]]],"c":[-120.45,37.06]},"CO":{"name":"Colorado","rings":[[[-109.05,37.0],[-109.05,41.0],[-102.03,41.0],[-102.01,37.0],[-109.05,37.0]]],"c":[-106.24,38.6]},"CT":{"name":"Connecticut","rings":[[[-71.8,42.01],[-71.84,41.34],[-73.72,41.1],[-73.48,41.22],[-73.48,42.06],[-71.8,42.01]]],"c":[-72.69,41.62]},"DE":{"name":"Delaware","rings":[[[-75.04,38.46],[-75.71,38.46],[-75.68,39.83],[-75.42,39.82],[-75.57,39.48],[-75.04,38.46]]],"c":[-75.41,39.09]},"FL":{"name":"Florida","rings":[[[-87.49,30.38],[-87.59,31.0],[-85.01,31.0],[-84.88,30.72],[-82.11,30.37],[-81.96,30.81],[-81.5,30.73],[-80.09,26.99],[-80.37,25.33],[-81.11,25.14],[-80.94,25.26],[-81.72,25.98],[-82.01,26.96],[-82.29,26.87],[-82.71,27.5],[-82.4,27.84],[-82.84,27.85],[-82.65,28.89],[-83.69,29.93],[-84.31,30.06],[-85.32,29.68],[-85.6,30.29],[-86.45,30.4],[-86.26,30.49],[-87.2,30.34],[-87.0,30.57],[-87.49,30.38]]],"c":[-83.81,28.95]},"GA":{"name":"Georgia","rings":[[[-85.01,31.0],[-84.92,32.29],[-85.62,35.0],[-83.11,35.0],[-83.36,34.71],[-81.58,33.07],[-80.87,32.03],[-81.5,30.73],[-81.96,30.81],[-82.11,30.37],[-84.88,30.72],[-85.01,31.0]]],"c":[-83.33,32.23]},"HI":{"name":"Hawaii","rings":[[[-156.49,20.93],[-155.99,20.76],[-156.41,20.61],[-156.7,20.95],[-156.49,20.93]],[[-155.58,19.01],[-155.88,19.07],[-156.05,19.75],[-155.83,20.28],[-154.8,19.52],[-155.58,19.01]]],"c":[-155.62,19.44]},"IA":{"name":"Iowa","rings":[[[-91.44,40.38],[-91.73,40.62],[-95.77,40.6],[-96.62,42.73],[-96.6,43.5],[-91.25,43.5],[-91.07,42.79],[-90.15,41.98],[-90.44,41.56],[-91.05,41.37],[-90.95,41.02],[-91.44,40.38]]],"c":[-92.38,41.7]},"ID":{"name":"Idaho","rings":[[[-117.04,48.99],[-116.05,48.99],[-116.05,48.0],[-115.71,47.45],[-114.34,46.66],[-114.53,45.58],[-113.8,45.6],[-112.85,44.4],[-111.37,44.75],[-111.05,44.5],[-111.05,42.0],[-117.02,42.0],[-116.91,44.2],[-117.2,44.44],[-116.48,45.64],[-117.04,46.4],[-117.04,48.99]]],"c":[-115.03,45.8]},"IL":{"name":"Illinois","rings":[[[-91.44,40.38],[-90.95,41.02],[-91.05,41.37],[-90.18,41.88],[-90.65,42.51],[-87.04,42.49],[-87.22,41.76],[-87.52,41.76],[-87.53,38.74],[-88.47,37.09],[-89.41,37.1],[-89.52,37.64],[-90.37,38.25],[-90.13,38.85],[-90.58,38.91],[-91.38,39.75],[-91.44,40.38]]],"c":[-89.7,39.99]},"IN":{"name":"Indiana","rings":[[[-88.04,37.79],[-87.52,38.81],[-87.52,41.76],[-84.8,41.76],[-84.8,38.82],[-85.41,38.73],[-86.02,37.98],[-86.36,38.18],[-86.6,37.87],[-88.04,37.79]]],"c":[-86.51,38.95]},"KS":{"name":"Kansas","rings":[[[-102.01,37.0],[-102.02,40.0],[-95.35,40.0],[-94.93,39.86],[-95.06,39.51],[-94.62,39.12],[-94.62,37.0],[-102.01,37.0]]],"c":[-97.58,38.69]},"KY":{"name":"Kentucky","rings":[[[-89.15,36.99],[-88.47,37.09],[-87.89,37.91],[-86.6,37.87],[-86.36,38.18],[-86.02,37.98],[-85.41,38.73],[-84.8,38.82],[-84.77,39.12],[-83.69,38.65],[-82.88,38.71],[-81.97,37.54],[-83.73,36.59],[-89.45,36.5],[-89.15,36.99]]],"c":[-86.02,37.84]},"LA":{"name":"Louisiana","rings":[[[-94.04,33.01],[-91.15,33.02],[-90.94,32.28],[-91.66,31.0],[-89.74,31.0],[-89.82,30.61],[-89.52,30.19],[-90.23,30.38],[-90.41,30.14],[-89.4,30.05],[-89.72,29.62],[-89.02,29.14],[-89.38,28.98],[-90.16,29.54],[-90.14,29.14],[-90.75,29.13],[-91.89,29.84],[-92.26,29.56],[-93.83,29.73],[-93.53,31.05],[-94.04,32.0],[-94.04,33.01]]],"c":[-91.17,30.56]},"MA":{"name":"Massachusetts","rings":[[[-71.8,42.01],[-73.51,42.08],[-73.25,42.75],[-70.81,42.88],[-70.61,42.62],[-71.05,42.33],[-70.43,41.76],[-70.0,41.83],[-70.11,42.08],[-69.93,41.71],[-71.17,41.49],[-71.39,42.02],[-71.8,42.01]]],"c":[-71.22,42.12]},"MD":{"name":"Maryland","rings":[[[-77.03,38.89],[-78.1,39.68],[-79.49,39.21],[-79.48,39.72],[-75.78,39.72],[-75.71,38.46],[-75.04,38.43],[-75.66,37.95],[-75.86,38.36],[-76.21,38.36],[-76.26,38.6],[-76.0,38.6],[-76.33,38.95],[-75.96,39.59],[-76.57,39.27],[-76.39,38.37],[-76.67,38.54],[-76.34,38.09],[-77.23,38.41],[-77.03,38.89]]],"c":[-76.66,38.8]},"ME":{"name":"Maine","rings":[[[-69.05,47.29],[-68.24,47.35],[-67.81,47.08],[-67.8,45.73],[-67.43,45.6],[-67.47,45.28],[-66.99,44.83],[-68.06,44.38],[-68.45,44.51],[-68.53,44.26],[-68.76,44.57],[-69.23,43.99],[-70.18,43.77],[-70.73,43.07],[-71.08,45.29],[-70.42,45.74],[-70.01,46.71],[-69.36,47.35],[-69.05,47.29]]],"c":[-68.88,45.48]},"MI":{"name":"Michigan","rings":[[[-89.5,48.0],[-88.16,48.23],[-84.88,46.9],[-84.56,46.46],[-84.15,46.54],[-83.98,46.08],[-83.62,46.12],[-83.59,45.82],[-82.55,45.35],[-82.14,43.57],[-83.12,41.95],[-83.46,41.74],[-87.22,41.76],[-87.03,44.09],[-86.26,45.23],[-87.12,45.45],[-87.65,45.12],[-88.15,45.95],[-90.39,46.55],[-89.5,48.0]]],"c":[-85.85,45.45]},"MN":{"name":"Minnesota","rings":[[[-97.23,48.99],[-95.16,48.99],[-95.16,49.37],[-94.94,49.35],[-94.62,48.74],[-93.0,48.61],[-91.52,48.06],[-89.5,48.0],[-89.96,47.29],[-90.65,47.31],[-92.29,46.66],[-92.29,46.08],[-92.9,45.66],[-92.68,45.43],[-92.77,44.73],[-91.38,43.99],[-91.25,43.5],[-96.45,43.5],[-96.45,45.3],[-96.85,45.63],[-96.56,46.14],[-97.23,48.99]]],"c":[-93.67,46.83]},"MO":{"name":"Missouri","rings":[[[-89.7,36.0],[-90.38,35.99],[-90.16,36.5],[-94.62,36.5],[-94.62,39.12],[-95.06,39.51],[-94.93,39.86],[-95.77,40.6],[-91.73,40.62],[-91.38,39.75],[-90.58,38.91],[-90.13,38.85],[-90.37,38.25],[-89.52,37.64],[-89.49,37.21],[-89.15,36.99],[-89.7,36.0]]],"c":[-91.61,38.14]},"MS":{"name":"Mississippi","rings":[[[-88.17,35.0],[-88.4,30.37],[-89.52,30.19],[-89.82,30.61],[-89.74,31.0],[-91.66,31.0],[-90.94,32.28],[-91.21,33.68],[-90.54,34.73],[-90.29,35.0],[-88.17,35.0]]],"c":[-89.86,32.62]},"MT":{"name":"Montana","rings":[[[-114.06,48.99],[-104.03,48.99],[-104.01,45.0],[-111.05,45.0],[-111.05,44.5],[-111.37,44.75],[-112.91,44.42],[-113.8,45.6],[-114.53,45.58],[-114.34,46.66],[-115.7,47.44],[-116.05,48.0],[-116.05,48.99],[-114.06,48.99]]],"c":[-112.36,46.64]},"NC":{"name":"North Carolina","rings":[[[-83.11,35.0],[-84.32,34.99],[-83.87,35.51],[-82.05,36.12],[-81.66,36.61],[-75.97,36.55],[-75.82,36.11],[-76.15,36.28],[-76.56,36.02],[-76.73,36.23],[-76.73,35.96],[-75.74,35.77],[-76.17,35.35],[-77.04,35.53],[-76.51,35.27],[-76.97,35.03],[-76.36,34.94],[-77.41,34.73],[-78.01,33.91],[-78.56,33.88],[-79.65,34.8],[-80.78,34.83],[-81.09,35.16],[-83.11,35.0]]],"c":[-78.77,35.4]},"ND":{"name":"North Dakota","rings":[[[-101.37,48.99],[-97.23,48.99],[-96.56,45.94],[-104.01,45.94],[-104.03,48.99],[-101.37,48.99]]],"c":[-100.76,47.97]},"NE":{"name":"Nebraska","rings":[[[-102.02,40.0],[-102.03,41.0],[-104.02,41.0],[-104.03,43.0],[-97.24,42.86],[-96.38,42.42],[-95.35,40.0],[-102.02,40.0]]],"c":[-100.39,41.28]},"NH":{"name":"New Hampshire","rings":[[[-71.52,45.01],[-71.08,45.29],[-70.78,42.94],[-72.47,42.73],[-72.36,43.59],[-71.52,45.01]]],"c":[-71.62,44.09]},"NJ":{"name":"New Jersey","rings":[[[-75.07,39.98],[-74.73,40.15],[-75.19,40.6],[-74.81,41.3],[-73.91,40.99],[-74.26,40.53],[-73.97,40.4],[-74.08,39.79],[-74.06,39.99],[-74.92,38.94],[-75.52,39.49],[-75.07,39.98]]],"c":[-74.63,40.18]},"NM":{"name":"New Mexico","rings":[[[-109.05,31.33],[-109.05,37.0],[-103.0,37.0],[-103.07,32.0],[-106.67,32.0],[-106.45,31.77],[-108.21,31.78],[-108.21,31.33],[-109.05,31.33]]],"c":[-106.97,32.84]},"NV":{"name":"Nevada","rings":[[[-114.04,37.0],[-114.04,36.18],[-114.74,36.01],[-114.61,34.99],[-120.0,39.0],[-120.0,42.0],[-114.04,42.0],[-114.04,37.0]]],"c":[-115.69,38.02]},"NY":{"name":"New York","rings":[[[-79.76,42.54],[-78.94,42.86],[-79.17,43.47],[-76.82,43.63],[-75.18,44.9],[-73.35,45.01],[-73.25,42.75],[-73.48,41.22],[-73.99,40.75],[-73.93,41.22],[-73.91,40.99],[-74.94,41.47],[-75.35,42.0],[-79.76,42.0],[-79.76,42.54]],[[-72.51,40.99],[-71.9,41.06],[-74.03,40.64],[-72.27,41.15],[-72.51,40.99]]],"c":[-76.11,42.49]},"OH":{"name":"Ohio","rings":[[[-83.12,41.95],[-82.44,41.67],[-80.52,42.32],[-80.52,40.65],[-80.87,39.66],[-82.07,38.96],[-82.39,38.43],[-84.82,39.09],[-84.8,41.7],[-83.12,41.95]]],"c":[-82.47,40.64]},"OK":{"name":"Oklahoma","rings":[[[-94.62,36.5],[-94.48,33.65],[-95.22,33.96],[-96.32,33.71],[-96.93,33.95],[-97.12,33.73],[-100.0,34.59],[-100.0,36.5],[-103.0,36.5],[-103.0,37.0],[-94.62,37.0],[-94.62,36.5]]],"c":[-97.49,35.3]},"OR":{"name":"Oregon","rings":[[[-120.0,42.0],[-124.36,42.12],[-124.54,42.81],[-124.15,43.69],[-123.99,46.22],[-123.04,46.16],[-122.73,45.67],[-122.2,45.59],[-119.02,46.0],[-116.9,46.0],[-116.52,45.72],[-117.2,44.44],[-116.91,44.2],[-117.02,42.0],[-120.0,42.0]]],"c":[-120.57,44.31]},"PA":{"name":"Pennsylvania","rings":[[[-80.52,42.32],[-79.76,42.54],[-79.76,42.0],[-75.35,42.0],[-74.7,41.36],[-75.19,40.69],[-74.73,40.15],[-75.78,39.72],[-80.52,39.72],[-80.52,42.32]]],"c":[-77.68,41.28]},"RI":{"name":"Rhode Island","rings":[[[-71.84,41.34],[-71.8,42.01],[-71.39,42.02],[-71.23,41.71],[-71.84,41.34]]],"c":[-71.62,41.68]},"SC":{"name":"South Carolina","rings":[[[-80.87,32.03],[-81.58,33.07],[-83.36,34.71],[-83.12,35.0],[-81.09,35.16],[-80.78,34.83],[-79.65,34.8],[-78.56,33.88],[-79.94,32.67],[-80.63,32.51],[-80.58,32.29],[-80.8,32.45],[-80.87,32.03]]],"c":[-80.91,33.49]},"SD":{"name":"South Dakota","rings":[[[-96.45,43.5],[-96.48,42.51],[-98.44,43.0],[-104.03,43.0],[-104.01,45.94],[-96.56,45.94],[-96.85,45.63],[-96.45,45.3],[-96.45,43.5]]],"c":[-98.41,44.26]},"TN":{"name":"Tennessee","rings":[[[-85.62,35.0],[-90.29,35.0],[-89.56,36.5],[-81.66,36.61],[-82.05,36.12],[-83.87,35.51],[-84.32,34.99],[-85.62,35.0]]],"c":[-85.37,35.59]},"TX":{"name":"Texas","rings":[[[-94.48,33.65],[-94.05,33.55],[-94.04,32.0],[-93.53,31.05],[-93.71,30.11],[-93.89,29.69],[-94.76,29.38],[-94.53,29.55],[-95.02,29.7],[-94.89,29.37],[-95.85,28.64],[-96.23,28.49],[-96.01,28.63],[-96.64,28.71],[-96.42,28.46],[-97.16,28.14],[-97.44,27.33],[-97.77,27.46],[-97.14,26.03],[-97.36,25.87],[-99.11,26.45],[-99.51,27.55],[-101.38,29.74],[-102.34,29.86],[-103.09,29.04],[-103.42,29.07],[-104.4,29.57],[-104.92,30.58],[-106.67,32.0],[-103.07,32.0],[-103.04,36.5],[-100.0,36.5],[-100.0,34.59],[-99.69,34.42],[-97.15,33.74],[-96.93,33.95],[-96.32,33.71],[-95.22,33.96],[-94.48,33.65]]],"c":[-97.99,30.58]},"UT":{"name":"Utah","rings":[[[-109.05,37.0],[-114.04,37.0],[-114.04,42.0],[-111.05,42.0],[-111.05,41.0],[-109.05,41.0],[-109.05,37.0]]],"c":[-111.05,39.57]},"VA":{"name":"Virginia","rings":[[[-77.12,38.94],[-77.31,38.4],[-76.26,37.89],[-76.49,37.68],[-77.11,38.17],[-76.31,37.57],[-76.45,37.27],[-76.76,37.51],[-76.28,37.05],[-77.25,37.33],[-76.0,36.91],[-75.86,36.55],[-83.67,36.61],[-81.97,37.54],[-81.59,37.21],[-80.37,37.47],[-79.64,38.57],[-79.24,38.48],[-78.32,39.45],[-77.12,38.94]],[[-75.66,37.95],[-75.38,38.02],[-75.93,37.15],[-75.66,37.95]]],"c":[-78.06,37.78]},"VT":{"name":"Vermont","rings":[[[-73.35,45.01],[-71.52,45.01],[-72.36,43.59],[-72.47,42.73],[-73.28,42.81],[-73.35,45.01]]],"c":[-72.72,44.03]},"WA":{"name":"Washington","rings":[[[-122.79,48.99],[-117.04,48.99],[-116.9,46.0],[-122.2,45.59],[-122.73,45.67],[-123.04,46.16],[-124.07,46.28],[-123.89,46.66],[-124.11,46.86],[-123.84,46.96],[-124.14,46.95],[-124.71,48.38],[-122.78,48.14],[-122.66,47.88],[-123.14,47.39],[-122.53,47.92],[-122.58,47.29],[-123.03,47.14],[-122.7,47.11],[-122.35,47.37],[-122.24,48.01],[-122.79,48.99]]],"c":[-122.56,47.31]},"WI":{"name":"Wisconsin","rings":[[[-90.65,42.51],[-91.12,42.88],[-91.32,43.94],[-92.8,44.79],[-92.68,45.43],[-92.9,45.66],[-92.29,46.08],[-92.29,46.66],[-90.65,47.31],[-89.96,47.29],[-90.41,46.59],[-90.12,46.34],[-88.15,45.95],[-87.65,45.12],[-87.12,45.45],[-86.26,45.23],[-87.03,44.09],[-87.04,42.49],[-90.65,42.51]]],"c":[-90.06,45.07]},"WV":{"name":"West Virginia","rings":[[[-81.97,37.54],[-82.59,38.1],[-82.61,38.45],[-80.87,39.66],[-80.64,40.6],[-80.52,39.72],[-79.48,39.72],[-79.49,39.21],[-78.78,39.63],[-77.78,39.49],[-77.84,39.15],[-78.32,39.45],[-79.24,38.48],[-79.64,38.57],[-80.37,37.47],[-81.59,37.21],[-81.97,37.54]]],"c":[-80.22,38.82]},"WY":{"name":"Wyoming","rings":[[[-104.02,41.0],[-111.05,41.0],[-111.05,45.0],[-104.04,45.0],[-104.02,41.0]]],"c":[-106.84,42.6]}};
+const STATE_NAME_TO_POSTAL=(()=>{const m={};for(const[pc,s]of Object.entries(US_STATES_GEO))m[s.name.toLowerCase()]=pc;return m;})();
+
+// ── JOURNEY MODE (gamified exploration map) ───────────────────────────────────
+// Stage 1: stylized US vector map with fog-of-war. The user's home state starts
+// revealed; applying to a job in a state clears its fog. Company pins are
+// scattered deterministically within each state. Session-only persistence.
+
+// Deterministic PRNG seeded by a string (so pins stay put between renders).
+function seededRand(seed){
+  let h=1779033703^seed.length;
+  for(let i=0;i<seed.length;i++){h=Math.imul(h^seed.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+  return ()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h=(h^h>>>16)>>>0;return h/4294967296;};
+}
+
+// Point-in-polygon (ring is [[lon,lat],...]).
+function pointInRing(lon,lat,ring){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+    if(((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
+// Scatter n points inside a state's polygon, deterministically.
+function scatterPins(postal,state,n){
+  const rings=state.rings; const big=rings.reduce((a,b)=>a.length>b.length?a:b);
+  const lons=big.map(p=>p[0]),lats=big.map(p=>p[1]);
+  const minX=Math.min(...lons),maxX=Math.max(...lons),minY=Math.min(...lats),maxY=Math.max(...lats);
+  const rnd=seededRand(postal+"_pins");
+  const pts=[]; let tries=0;
+  while(pts.length<n&&tries<n*40){
+    tries++;
+    const lon=minX+rnd()*(maxX-minX), lat=minY+rnd()*(maxY-minY);
+    if(rings.some(r=>pointInRing(lon,lat,r))) pts.push([lon,lat]);
+  }
+  // Fallback: if polygon scatter failed, cluster around centroid.
+  while(pts.length<n){ const a=rnd()*6.28,r=rnd()*0.6; pts.push([state.c[0]+Math.cos(a)*r,state.c[1]+Math.sin(a)*r]); }
+  return pts;
+}
+
+function JourneyMode({user,allJobs,appliedJobs,onGoToJobs}){
+  const mobile=useIsMobile();
+  // Map projection bounds for the contiguous US (excludes far AK/HI for framing).
+  const VIEW={minLon:-125,maxLon:-66,minLat:24,maxLat:50};
+  const W=mobile?360:920, H=mobile?260:560;
+  const project=(lon,lat)=>{
+    const x=((lon-VIEW.minLon)/(VIEW.maxLon-VIEW.minLon))*W;
+    const y=H-((lat-VIEW.minLat)/(VIEW.maxLat-VIEW.minLat))*H;
+    return [x,y];
+  };
+  const ringToPath=(ring)=>{
+    let d="";
+    for(let i=0;i<ring.length;i++){const[x,y]=project(ring[i][0],ring[i][1]);d+=(i===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1);}
+    return d+"Z";
+  };
+
+  // Determine the user's home state (from profile location free-text).
+  const homeState=useMemo(()=>{
+    const loc=(user?.profile?.location||"").toLowerCase();
+    if(!loc) return null;
+    // Match full state name or postal code.
+    for(const[name,pc] of Object.entries(STATE_NAME_TO_POSTAL)){ if(loc.includes(name)) return pc; }
+    const words=loc.replace(/[^a-z ]/g," ").split(/\s+/);
+    for(const w of words){ if(US_STATES_GEO[w.toUpperCase()]) return w.toUpperCase(); }
+    return null;
+  },[user]);
+
+  // States revealed by completed applications (session-only for now).
+  const exploredFromApps=useMemo(()=>{
+    const set=new Set();
+    for(const j of appliedJobs){
+      const st=(j.state||"").toLowerCase();
+      const pc=STATE_NAME_TO_POSTAL[st];
+      if(pc) set.add(pc);
+    }
+    return set;
+  },[appliedJobs]);
+
+  // Session-explored states (home + applied). Stored in component state so it
+  // updates live; resets on reload (prototype behavior).
+  const [explored,setExplored]=useState(()=>{
+    const s=new Set(exploredFromApps); if(homeState) s.add(homeState); return s;
+  });
+  useEffect(()=>{
+    setExplored(prev=>{
+      const s=new Set(prev); if(homeState)s.add(homeState);
+      exploredFromApps.forEach(pc=>s.add(pc)); return s;
+    });
+  },[homeState,exploredFromApps]);
+
+  // Company counts per state (for pin density), from allJobs grouped by state.
+  const stateCompanyCounts=useMemo(()=>{
+    const counts={};
+    for(const j of allJobs){
+      const pc=STATE_NAME_TO_POSTAL[(j.state||"").toLowerCase()];
+      if(!pc) continue;
+      counts[pc]=counts[pc]||new Set();
+      counts[pc].add(j.company||j.companyName||"?");
+    }
+    const out={}; for(const k in counts) out[k]=counts[k].size; return out;
+  },[allJobs]);
+
+  const [hover,setHover]=useState(null);
+  const exploredCount=explored.size;
+  const totalStates=Object.keys(US_STATES_GEO).filter(pc=>!["AK","HI"].includes(pc)).length;
+
+  return <div style={{display:"flex",flexDirection:"column",gap:14}}>
+    {/* Header / progress */}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+      <div>
+        <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?20:26,fontWeight:700,background:"linear-gradient(135deg,#f0d080,#e8613a)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,margin:0}}>Journey Mode</h2>
+        <p style={{fontSize:12,color:"rgba(244,237,216,.5)",margin:"4px 0 0"}}>Explore the realm by applying to quests. Each application lights up new territory.</p>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",borderRadius:10,padding:"8px 14px"}}>
+        <I.Compass s={18} c="#c9a84c"/>
+        <div>
+          <div style={{fontSize:9,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>Territory Explored</div>
+          <div style={{fontSize:15,fontWeight:800,color:"#f0d080",fontFamily:"'Cinzel',serif"}}>{exploredCount} / {totalStates}</div>
+        </div>
+      </div>
+    </div>
+
+    {/* The map */}
+    <div style={{position:"relative",background:"radial-gradient(ellipse at 50% 40%,rgba(40,28,16,.6),rgba(8,6,8,.9))",border:"1px solid rgba(201,168,76,.25)",borderRadius:16,padding:mobile?8:18,overflow:"hidden"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}} onMouseLeave={()=>setHover(null)}>
+        <defs>
+          <radialGradient id="fogGrad" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor="rgba(20,16,24,.78)"/>
+            <stop offset="100%" stopColor="rgba(8,6,10,.93)"/>
+          </radialGradient>
+          <filter id="pinGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="2.2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        {/* State shapes */}
+        {Object.entries(US_STATES_GEO).map(([pc,st])=>{
+          if(["AK","HI"].includes(pc)) return null;
+          const isExplored=explored.has(pc);
+          const isHover=hover===pc;
+          const path=st.rings.map(ringToPath).join(" ");
+          return <path key={pc} d={path}
+            fill={isExplored?(isHover?"rgba(201,168,76,.22)":"rgba(201,168,76,.13)"):"rgba(30,24,20,.5)"}
+            stroke={isExplored?"rgba(201,168,76,.55)":"rgba(201,168,76,.12)"}
+            strokeWidth={isHover?1.4:0.7}
+            style={{transition:"fill .25s, stroke .25s",cursor:"pointer"}}
+            onMouseEnter={()=>setHover(pc)}/>;
+        })}
+
+        {/* Company pins — only show in explored states */}
+        {Object.entries(US_STATES_GEO).map(([pc,st])=>{
+          if(["AK","HI"].includes(pc)||!explored.has(pc)) return null;
+          const n=Math.min(stateCompanyCounts[pc]||0, mobile?8:18);
+          if(!n) return null;
+          const pins=scatterPins(pc,st,n);
+          return <g key={pc+"_pins"}>
+            {pins.map((p,i)=>{const[x,y]=project(p[0],p[1]);return <circle key={i} cx={x} cy={y} r={mobile?1.5:2}
+              fill="#ffcf7a" opacity={0.85} filter="url(#pinGlow)"/>;})}
+          </g>;
+        })}
+
+        {/* Fog of war over unexplored states */}
+        {Object.entries(US_STATES_GEO).map(([pc,st])=>{
+          if(["AK","HI"].includes(pc)||explored.has(pc)) return null;
+          const path=st.rings.map(ringToPath).join(" ");
+          return <path key={pc+"_fog"} d={path} fill="url(#fogGrad)" stroke="rgba(0,0,0,.4)" strokeWidth="0.5"
+            style={{cursor:"pointer"}} onMouseEnter={()=>setHover(pc)} onMouseLeave={()=>setHover(null)}/>;
+        })}
+      </svg>
+
+      {/* Hover label */}
+      {hover&&<div style={{position:"absolute",top:mobile?10:16,left:mobile?12:20,background:"rgba(12,9,6,.92)",border:"1px solid rgba(201,168,76,.35)",borderRadius:8,padding:"6px 12px",pointerEvents:"none"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#f0d080",fontFamily:"'Cinzel',serif"}}>{US_STATES_GEO[hover]?.name}</div>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.55)"}}>
+          {explored.has(hover)
+            ?`${stateCompanyCounts[hover]||0} studios discovered`
+            :"Unexplored — apply to a quest here to reveal"}
+        </div>
+      </div>}
+
+      {/* Legend */}
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:10,paddingTop:10,borderTop:"1px solid rgba(201,168,76,.1)"}}>
+        <span style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:"rgba(244,237,216,.5)"}}><span style={{width:11,height:11,borderRadius:3,background:"rgba(201,168,76,.18)",border:"1px solid rgba(201,168,76,.5)"}}/>Explored</span>
+        <span style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:"rgba(244,237,216,.5)"}}><span style={{width:11,height:11,borderRadius:3,background:"rgba(20,16,24,.85)",border:"1px solid rgba(0,0,0,.4)"}}/>Fog of war</span>
+        <span style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:"rgba(244,237,216,.5)"}}><span style={{width:8,height:8,borderRadius:"50%",background:"#ffcf7a",boxShadow:"0 0 5px #ffcf7a"}}/>Studio</span>
+      </div>
+    </div>
+
+    {/* Home / empty state prompts */}
+    {!homeState&&<div style={{background:"rgba(232,97,58,.08)",border:"1px solid rgba(232,97,58,.25)",borderRadius:10,padding:"12px 16px",fontSize:12.5,color:"rgba(244,237,216,.7)",lineHeight:1.5}}>
+      Set your location in your <strong style={{color:"#f0d080"}}>Profile</strong> to reveal your home territory on the map and begin your journey.
+    </div>}
+    <div style={{display:"flex",justifyContent:"center"}}>
+      <button onClick={onGoToJobs} style={{background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:"pointer",borderRadius:10,padding:"11px 22px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"flex",alignItems:"center",gap:8}}>
+        <I.Map s={15} c="#0a0608"/>Find Quests to Explore
+      </button>
+    </div>
+  </div>;
+}
+
+function App() {
   const mobile = useIsMobile();
   const [user,setUser]=useState(null);
   const [tab,setTab]=useState("jobs");
@@ -2812,9 +3017,9 @@ export default function App() {
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
     {/* Desktop background globe — large, bottom-left, behind everything */}
-    {!mobile&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
+    {!mobile&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
     {/* Styles */}
-    <style>{`*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
+    <style>{`@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
     <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.16,background:"radial-gradient(circle,#c9a84c,transparent)",top:-200,left:-100,animation:"ob1 20s ease-in-out infinite"}}/>
@@ -2833,6 +3038,8 @@ export default function App() {
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
           {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
+            {/* Journey Mode — special glowing tab */}
+            <button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>
         </nav>
         {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
         <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
@@ -3102,6 +3309,8 @@ export default function App() {
           })}
         </div>}
       </div>}
+
+      {tab==="journey"&&<JourneyMode user={user} allJobs={allJobs} appliedJobs={appliedJobs} onGoToJobs={()=>setTab("jobs")}/>}
     </main>
     {/* Legal footer */}
     <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
