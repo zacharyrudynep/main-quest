@@ -2636,8 +2636,8 @@ const STATE_NAME_TO_POSTAL=(()=>{const m={};for(const[pc,s]of Object.entries(US_
 // revealed; applying to a job in a state clears its fog. Company pins are
 // scattered deterministically within each state. Session-only persistence.
 
-// Deterministic PRNG seeded by a string (so pins stay put between renders).
-function seededRand(seed){
+// Deterministic string-seeded PRNG (so pins stay put between renders).
+function seededRandStr(seed){
   let h=1779033703^seed.length;
   for(let i=0;i<seed.length;i++){h=Math.imul(h^seed.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
   return ()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h=(h^h>>>16)>>>0;return h/4294967296;};
@@ -2658,7 +2658,7 @@ function scatterPins(postal,state,n){
   const rings=state.rings; const big=rings.reduce((a,b)=>a.length>b.length?a:b);
   const lons=big.map(p=>p[0]),lats=big.map(p=>p[1]);
   const minX=Math.min(...lons),maxX=Math.max(...lons),minY=Math.min(...lats),maxY=Math.max(...lats);
-  const rnd=seededRand(postal+"_pins");
+  const rnd=seededRandStr(postal+"_pins");
   const pts=[]; let tries=0;
   while(pts.length<n&&tries<n*40){
     tries++;
