@@ -20,11 +20,15 @@ const GOLD_BRIGHT = "#f0d080";
 const ORANGE = "#e8613a";
 const DARK = "#080608";
 
-export default function JourneyGlobe({ user, onExit }) {
+export default function JourneyGlobe({ user, dots = [], onExit }) {
   const mountRef = useRef(null);
   const globeRef = useRef(null);
+  const dotsRef = useRef(dots);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [zoomedIn, setZoomedIn] = useState(false);
+  // Keep the latest dots available to the (one-time) globe effect without re-running it.
+  dotsRef.current = dots;
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -114,6 +118,60 @@ export default function JourneyGlobe({ user, onExit }) {
           setLoading(false);
         });
 
+      // ── Company dots ───────────────────────────────────────────────────────
+      // Points are placed at each company's scattered lat/lng. They start hidden
+      // (radius 0) and fade in once the camera is zoomed in past a threshold, so
+      // the world view stays clean and dots reveal as you approach a region.
+      const DOT_REVEAL_ALT = 1.4; // camera altitude below which dots appear
+      globe
+        .pointsData(dotsRef.current)
+        .pointLat((d) => d.lat)
+        .pointLng((d) => d.lng)
+        .pointAltitude(0.01)
+        .pointRadius((d) => (d.applied ? 0.28 : 0.22))
+        .pointColor((d) =>
+          d.applied ? "rgba(126,207,179,0.95)" : "rgba(255,207,122,0.92)"
+        )
+        .pointResolution(6)
+        .pointLabel(
+          (d) =>
+            `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.92);border:1px solid rgba(201,168,76,.45);padding:5px 11px;border-radius:7px;font-size:12px;white-space:nowrap"><strong>${
+              d.name
+            }</strong>${
+              d.jobCount
+                ? `<span style=\"color:rgba(244,237,216,.6);font-size:10px\"> · ${d.jobCount} open</span>`
+                : ""
+            }</div>`
+        );
+      // Hide all dots initially (world view).
+      globe.pointRadius(0);
+
+      // Reveal/hide dots based on camera distance. globe.gl exposes the camera
+      // via .camera(); altitude ≈ (distance/globeRadius - 1). We poll on the
+      // controls "change" event, which fires during any zoom/rotate.
+      const GLOBE_R = 100; // globe.gl's internal globe radius
+      let dotsVisible = false;
+      const applyDotSizing = (visible) => {
+        if (visible) {
+          globe.pointRadius((d) => (d.applied ? 0.28 : 0.22));
+        } else {
+          globe.pointRadius(0);
+        }
+      };
+      const updateDotsForZoom = () => {
+        const cam = globe.camera();
+        if (!cam) return;
+        const dist = cam.position.length();
+        const altitude = dist / GLOBE_R - 1;
+        const shouldShow = altitude < DOT_REVEAL_ALT;
+        if (shouldShow !== dotsVisible) {
+          dotsVisible = shouldShow;
+          applyDotSizing(shouldShow);
+          setZoomedIn(shouldShow);
+        }
+      };
+      if (controls) controls.addEventListener("change", updateDotsForZoom);
+
       // Keep the globe sized to the viewport.
       onResize = () => {
         if (!mountRef.current || !globeRef.current) return;
@@ -140,6 +198,13 @@ export default function JourneyGlobe({ user, onExit }) {
       globeRef.current = null;
     };
   }, []);
+
+  // Keep the dots layer in sync if the dots prop arrives/changes after init.
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+    globe.pointsData(dots);
+  }, [dots]);
 
   return (
     <div
@@ -183,7 +248,9 @@ export default function JourneyGlobe({ user, onExit }) {
             Journey Mode
           </div>
           <div style={{ fontSize: 11, color: "rgba(244,237,216,.5)", marginTop: 2 }}>
-            Right-click to rotate · Left-click to pan · Scroll to zoom
+            {zoomedIn
+              ? `${dots.length} studios across the realm — hover a marker to see who`
+              : "Scroll to zoom in and reveal studio locations · drag to rotate"}
           </div>
         </div>
         <button

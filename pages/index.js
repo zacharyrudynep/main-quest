@@ -3048,6 +3048,30 @@ export default function App() {
   const totalJobs=allJobs.filter(matches).length;
   const newJobs=allJobs.filter(j=>j.isNew&&matches(j)).length;
   const totalCos=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.keys(c))).length;
+  // Company dots for Journey Mode: one dot per company, scattered deterministically
+  // within its US state, tagged with how many live jobs it has. Computed once from
+  // the static company tree (cheap, memoized).
+  const journeyDots=useMemo(()=>{
+    const dots=[];
+    for(const [country,states] of Object.entries(ALL_JOBS_DATA)){
+      for(const [stateName,companies] of Object.entries(states)){
+        const pc=STATE_NAME_TO_POSTAL[(stateName||"").toLowerCase()];
+        const geo=pc&&US_STATES_GEO[pc];
+        if(!geo) continue; // skip states we have no polygon for
+        const names=Object.keys(companies);
+        // Scatter one point per company inside the state polygon.
+        const pts=scatterPins(pc,geo,names.length);
+        names.forEach((name,i)=>{
+          const co=companies[name];
+          const jobCount=(co.jobs||[]).length;
+          const [lng,lat]=pts[i]||geo.c;
+          dots.push({ name, state:stateName, country, postal:pc, lat, lng, jobCount,
+            applied: !!(co.jobs||[]).some(j=>user?.applied?.[j.id]) });
+        });
+      }
+    }
+    return dots;
+  },[user]);
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
   if(!user&&!guest){
@@ -3393,7 +3417,7 @@ export default function App() {
     </div>}
 
     {/* Journey Mode — full-screen 3D globe overlay (scroll-locked) */}
-    {tab==="journey"&&user&&<JourneyGlobe user={user} onExit={()=>setTab("jobs")}/>}
+    {tab==="journey"&&user&&<JourneyGlobe user={user} dots={journeyDots} onExit={()=>setTab("jobs")}/>}
   </div>
   </>;
 }
