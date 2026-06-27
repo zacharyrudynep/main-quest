@@ -2848,29 +2848,6 @@ export default function App() {
     try{ const s=sessionStorage.getItem("mq_expanded"); return s?JSON.parse(s):{}; }catch{ return {}; }
   });
   useEffect(()=>{ try{ sessionStorage.setItem("mq_expanded",JSON.stringify(expanded)); }catch{} },[expanded]);
-  // When the user types a search query, auto-expand every country/state that
-  // contains a matching company (by name) or matching job, so results are
-  // immediately visible instead of hidden inside collapsed accordions.
-  useEffect(()=>{
-    const q=(filters.search||"").trim().toLowerCase();
-    if(!q) return;
-    const toOpen={};
-    for(const [country,states] of Object.entries(ALL_JOBS_DATA)){
-      let countryHasMatch=false;
-      for(const [state,companies] of Object.entries(states)){
-        let stateHasMatch=false;
-        for(const [name,co] of Object.entries(companies)){
-          const nameMatch=name.toLowerCase().includes(q);
-          const jobMatch=(co.jobs||[]).some(j=>(j.title||"").toLowerCase().includes(q));
-          const liveMatch=Array.isArray(liveJobs[name])&&liveJobs[name].some(j=>(j.title||"").toLowerCase().includes(q));
-          if(nameMatch||jobMatch||liveMatch){ stateHasMatch=true; countryHasMatch=true; }
-        }
-        if(stateHasMatch) toOpen[`s-${country}-${state}`]=true;
-      }
-      if(countryHasMatch) toOpen[`c-${country}`]=true;
-    }
-    setExpanded(prev=>({...prev,...toOpen}));
-  },[filters.search,liveJobs]);
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
   const [guest,setGuest]=useState(false);
@@ -2925,6 +2902,29 @@ export default function App() {
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""});
   const [filterOpen,setFilterOpen]=useState(false);
+  // When the user types a search query, auto-expand every country/state that
+  // contains a matching company (by name) or matching job, so results are
+  // immediately visible instead of hidden inside collapsed accordions.
+  useEffect(()=>{
+    const q=(filters.search||"").trim().toLowerCase();
+    if(!q) return;
+    const toOpen={};
+    for(const [country,states] of Object.entries(ALL_JOBS_DATA)){
+      let countryHasMatch=false;
+      for(const [state,companies] of Object.entries(states)){
+        let stateHasMatch=false;
+        for(const [name,co] of Object.entries(companies)){
+          const nameMatch=name.toLowerCase().includes(q);
+          const jobMatch=(co.jobs||[]).some(j=>(j.title||"").toLowerCase().includes(q));
+          const liveMatch=Array.isArray(liveJobs[name])&&liveJobs[name].some(j=>(j.title||"").toLowerCase().includes(q));
+          if(nameMatch||jobMatch||liveMatch){ stateHasMatch=true; countryHasMatch=true; }
+        }
+        if(stateHasMatch) toOpen[`s-${country}-${state}`]=true;
+      }
+      if(countryHasMatch) toOpen[`c-${country}`]=true;
+    }
+    setExpanded(prev=>({...prev,...toOpen}));
+  },[filters.search,liveJobs]);
   const refreshTimer=useRef(null);
 
   useEffect(()=>{refreshTimer.current=setInterval(()=>setLastRefresh(new Date()),300000);return()=>clearInterval(refreshTimer.current);},[]);
