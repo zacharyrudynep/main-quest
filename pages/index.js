@@ -3417,7 +3417,7 @@ export default function App() {
     </div>}
 
     {/* Journey Mode — full-screen 3D globe overlay (scroll-locked) */}
-    {tab==="journey"&&user&&<JourneyGlobe user={user} dots={journeyDots} onExit={()=>setTab("jobs")}/>}
+    {tab==="journey"&&user&&<JourneyGlobe user={user} dots={journeyDots} statesGeo={US_STATES_GEO} onExit={()=>setTab("jobs")}/>}
   </div>
   </>;
 }
