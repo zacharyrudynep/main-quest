@@ -103,7 +103,189 @@ function statesToFeatures(statesGeo) {
   return feats;
 }
 
-export default function JourneyGlobe({ user, dots = [], statesGeo = null, provincesGeo = null, onExit }) {
+// Right-side panel showing a single company's open roles, with apply toggles
+// that write through to the shared applications store (synced with the job board).
+function CompanyPanel({ company, jobs, user, onClose, onApplied, onRemoveApplied }) {
+  const applied = user?.applied || {};
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 380,
+        maxWidth: "92vw",
+        background: "linear-gradient(180deg, rgba(16,11,7,.98), rgba(8,6,8,.98))",
+        borderLeft: "1px solid rgba(201,168,76,.3)",
+        boxShadow: "-12px 0 40px rgba(0,0,0,.5)",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: 60,
+        animation: "mqPanelIn .28s ease",
+      }}
+    >
+      <style>{`@keyframes mqPanelIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}`}</style>
+
+      {/* Header */}
+      <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid rgba(201,168,76,.15)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 17, fontWeight: 700, color: GOLD_BRIGHT, lineHeight: 1.2 }}>
+              {company.name}
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(244,237,216,.55)", marginTop: 4 }}>
+              {jobs.length} open {jobs.length === 1 ? "role" : "roles"}
+              {company.state ? ` · ${company.state}` : ""}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "rgba(201,168,76,.1)",
+              border: "1px solid rgba(201,168,76,.3)",
+              color: GOLD_BRIGHT,
+              cursor: "pointer",
+              borderRadius: 8,
+              width: 28,
+              height: 28,
+              fontSize: 14,
+              flexShrink: 0,
+              fontFamily: "'Cinzel',serif",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      {/* Job list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {jobs.length === 0 && (
+          <div style={{ color: "rgba(244,237,216,.5)", fontSize: 12.5, textAlign: "center", marginTop: 30, lineHeight: 1.6 }}>
+            No open roles listed right now.<br />Check back later on your journey.
+          </div>
+        )}
+        {jobs.map((job) => {
+          const isApplied = !!applied[job.id];
+          return (
+            <div
+              key={job.id}
+              style={{
+                background: isApplied ? "rgba(126,207,179,.06)" : "rgba(201,168,76,.05)",
+                border: `1px solid ${isApplied ? "rgba(126,207,179,.3)" : "rgba(201,168,76,.18)"}`,
+                borderRadius: 10,
+                padding: "12px 14px",
+                opacity: isApplied ? 0.72 : 1,
+                transition: "opacity .25s, background .25s, border .25s",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "#f4edd8", lineHeight: 1.3 }}>
+                  {job.title}
+                </div>
+                {job.isNew && (
+                  <span style={{ fontSize: 8.5, fontWeight: 800, color: "#0a0608", background: GOLD, borderRadius: 20, padding: "2px 6px", flexShrink: 0, fontFamily: "'Cinzel',serif" }}>
+                    NEW
+                  </span>
+                )}
+              </div>
+
+              {/* Meta chips */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                {job.type && chipize(job.type)}
+                {job.isRemote && chipize("Remote OK")}
+                {job.salary && job.salary !== "Salary not listed" && chipize(job.salary)}
+                {job.locationLabel && job.locationLabel !== "Other" && chipize(job.locationLabel)}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 8, marginTop: 11, alignItems: "center" }}>
+                <a
+                  href={job.applyUrl || job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: GOLD_BRIGHT,
+                    textDecoration: "none",
+                    fontFamily: "'Cinzel',serif",
+                    border: "1px solid rgba(201,168,76,.35)",
+                    borderRadius: 7,
+                    padding: "6px 11px",
+                  }}
+                >
+                  View Posting
+                </a>
+                {isApplied ? (
+                  <button
+                    onClick={() => onRemoveApplied && onRemoveApplied(job.id)}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#7ecfb3",
+                      background: "rgba(126,207,179,.1)",
+                      border: "1px solid rgba(126,207,179,.35)",
+                      borderRadius: 7,
+                      padding: "6px 11px",
+                      cursor: "pointer",
+                      fontFamily: "'Cinzel',serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    ✓ Applied
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onApplied && onApplied(job.id)}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: "#0a0608",
+                      background: `linear-gradient(135deg,${GOLD},${ORANGE})`,
+                      border: "none",
+                      borderRadius: 7,
+                      padding: "6px 13px",
+                      cursor: "pointer",
+                      fontFamily: "'Cinzel',serif",
+                    }}
+                  >
+                    Mark Applied
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Small chip helper for the panel meta row.
+function chipize(text) {
+  return (
+    <span
+      key={text}
+      style={{
+        fontSize: 9.5,
+        color: "rgba(244,237,216,.65)",
+        background: "rgba(201,168,76,.08)",
+        border: "1px solid rgba(201,168,76,.16)",
+        borderRadius: 20,
+        padding: "2px 8px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+export default function JourneyGlobe({ user, dots = [], statesGeo = null, provincesGeo = null, getCompanyJobs = null, onApplied = null, onRemoveApplied = null, onExit }) {
   const mountRef = useRef(null);
   const globeRef = useRef(null);
   const dotsRef = useRef(dots);
@@ -112,12 +294,15 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
   const navRef = useRef({ level: "continent", continent: null, country: null, state: null });
   const hoverRef = useRef(null);
   const hoveredDotRef = useRef(null);
+  const getCompanyJobsRef = useRef(getCompanyJobs);
+  getCompanyJobsRef.current = getCompanyJobs;
   const lastScrollRef = useRef(0);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [nav, setNav] = useState({ level: "continent", continent: null, country: null, state: null });
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [panelJobs, setPanelJobs] = useState([]);
 
   dotsRef.current = dots;
   const provinceFeatsRef = useRef([]);
@@ -362,8 +547,12 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
           .onPointClick((d) => {
             if (navRef.current.level !== "local") return; // not clickable at country view
             if (d && d.name) {
-              // Stage 3 will open a side panel here; for now, surface the name.
               setSelectedCompany(d);
+              // Pull the company's real jobs (live ATS + overrides) for the panel.
+              const jobs = getCompanyJobsRef.current
+                ? getCompanyJobsRef.current(d.name)
+                : [];
+              setPanelJobs(jobs || []);
             }
           });
       };
@@ -698,44 +887,16 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
         </button>
       </div>
 
-      {/* Temporary selected-company readout (Stage 3 will replace with a panel) */}
+      {/* Company panel — real job listings, apply synced with the job board */}
       {selectedCompany && (
-        <div
-          style={{
-            position: "absolute",
-            right: 20,
-            top: 100,
-            width: 280,
-            background: "rgba(12,9,6,.95)",
-            border: "1px solid rgba(201,168,76,.4)",
-            borderRadius: 12,
-            padding: 16,
-            color: "#f4edd8",
-          }}
-        >
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 15, fontWeight: 700, color: GOLD_BRIGHT }}>
-            {selectedCompany.name}
-          </div>
-          <div style={{ fontSize: 11, color: "rgba(244,237,216,.6)", marginTop: 4 }}>
-            {selectedCompany.jobCount} open {selectedCompany.jobCount === 1 ? "role" : "roles"} · {selectedCompany.state}
-          </div>
-          <button
-            onClick={() => setSelectedCompany(null)}
-            style={{
-              marginTop: 12,
-              background: "rgba(201,168,76,.1)",
-              border: "1px solid rgba(201,168,76,.3)",
-              color: GOLD_BRIGHT,
-              cursor: "pointer",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontSize: 11,
-              fontFamily: "'Cinzel',serif",
-            }}
-          >
-            Close
-          </button>
-        </div>
+        <CompanyPanel
+          company={selectedCompany}
+          jobs={panelJobs}
+          user={user}
+          onClose={() => { setSelectedCompany(null); setPanelJobs([]); }}
+          onApplied={onApplied}
+          onRemoveApplied={onRemoveApplied}
+        />
       )}
 
       {loading && !err && (

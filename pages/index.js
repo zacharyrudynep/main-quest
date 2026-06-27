@@ -3074,6 +3074,20 @@ export default function App() {
     }
     return dots;
   },[user]);
+  // For Journey Mode's company panel: return the real display jobs for a company
+  // (live ATS jobs + any volunteer overrides), matching the job board.
+  const getCompanyJobs=(companyName)=>{
+    if(!companyName) return [];
+    // Find the company's stored jobs in the tree (company names are unique).
+    let gen=[], found=false;
+    for(const states of Object.values(ALL_JOBS_DATA)){
+      for(const companies of Object.values(states)){
+        if(companies[companyName]){ gen=companies[companyName].jobs||[]; found=true; break; }
+      }
+      if(found) break;
+    }
+    return getDisplayJobs(companyName,gen);
+  };
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
   if(!user&&!guest){
@@ -3419,7 +3433,7 @@ export default function App() {
     </div>}
 
     {/* Journey Mode — full-screen 3D globe overlay (scroll-locked) */}
-    {tab==="journey"&&user&&<JourneyGlobe user={user} dots={journeyDots} statesGeo={US_STATES_GEO} provincesGeo={CA_PROVINCES_GEO} onExit={()=>setTab("jobs")}/>}
+    {tab==="journey"&&user&&<JourneyGlobe user={user} dots={journeyDots} statesGeo={US_STATES_GEO} provincesGeo={CA_PROVINCES_GEO} getCompanyJobs={getCompanyJobs} onApplied={markApplied} onRemoveApplied={removeApplied} onExit={()=>setTab("jobs")}/>}
   </div>
   </>;
 }
