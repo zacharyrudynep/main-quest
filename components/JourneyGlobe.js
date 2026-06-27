@@ -123,6 +123,15 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         .width(mountRef.current.clientWidth)
         .height(mountRef.current.clientHeight);
 
+      // Sharpen rendering: cap pixel ratio and enable antialiasing on the WebGL
+      // renderer to reduce the shimmer/fuzz on polygon outlines near the limb.
+      try {
+        const renderer = globe.renderer && globe.renderer();
+        if (renderer) {
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        }
+      } catch (e) {}
+
       const mat = globe.globeMaterial();
       if (mat) {
         mat.color && mat.color.set("#140d09");
@@ -194,12 +203,13 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
           if (isHovered(d)) return "rgba(240,208,128,0.32)";
           return "rgba(201,168,76,0.12)";
         }
-        // state level
+        // state level — outline only on the locked country (no fill sheet over
+        // the dots); neighbors stay very dim.
         if (d.properties.NAME === navRef.current.country)
-          return "rgba(240,208,128,0.22)";
+          return "rgba(201,168,76,0.02)";
         return inActiveContinent(d)
-          ? "rgba(201,168,76,0.07)"
-          : "rgba(201,168,76,0.03)";
+          ? "rgba(201,168,76,0.05)"
+          : "rgba(201,168,76,0.02)";
       };
 
       const strokeColor = (d) => {
@@ -226,11 +236,14 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         g.polygonCapColor(capColor)
           .polygonStrokeColor(strokeColor)
           .polygonSideColor(strokeColor)
-          .polygonAltitude((d) =>
-            isHovered(d) || d.properties.NAME === navRef.current.country
-              ? 0.014
-              : 0.008
-          );
+          .polygonAltitude((d) => {
+            // Keep polygons low to the surface to avoid edge-on shimmer near the
+            // globe's limb. Only the hovered region lifts slightly (and only when
+            // we're picking regions, not at state level).
+            const lvl = navRef.current.level;
+            if (lvl !== "state" && isHovered(d)) return 0.01;
+            return 0.006;
+          });
       };
 
       // ── Load polygons ─────────────────────────────────────────────────────
@@ -244,7 +257,7 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
           featsRef.current = feats;
           globe
             .polygonsData(feats)
-            .polygonAltitude(0.008)
+            .polygonAltitude(0.006)
             .polygonCapColor(capColor)
             .polygonSideColor(strokeColor)
             .polygonStrokeColor(strokeColor)
@@ -297,8 +310,8 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         g.pointsData(visibleDots())
           .pointLat((d) => d.lat)
           .pointLng((d) => d.lng)
-          .pointAltitude(0.012)
-          .pointRadius((d) => (d.applied ? 0.28 : 0.22))
+          .pointAltitude(0.02)
+          .pointRadius((d) => (d.applied ? 0.32 : 0.26))
           .pointColor((d) =>
             d.applied ? "rgba(126,207,179,0.95)" : "rgba(255,207,122,0.95)"
           )
