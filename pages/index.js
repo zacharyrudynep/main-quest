@@ -1247,6 +1247,7 @@ const I={
   Map:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="1,3 6,1 10,3 15,1 15,13 10,15 6,13 1,15"/><line x1="6" y1="1" x2="6" y2="13"/><line x1="10" y1="3" x2="10" y2="15"/></svg>,
   Star:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="8,1.5 10,6 15,6.5 11.5,10 12.5,15 8,12.5 3.5,15 4.5,10 1,6.5 6,6"/></svg>,
   Compass:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6.5"/><polygon points="8,3 9.5,8 8,7 6.5,8" fill={c} stroke="none"/></svg>,
+  Chevron:({s=12,c="currentColor",dir="down"})=><svg width={s} height={s} viewBox="0 0 12 12" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{transition:"transform .2s",transform:dir==="down"?"rotate(0deg)":dir==="up"?"rotate(180deg)":"rotate(-90deg)"}}><path d="M2.5 4.5 6 8 9.5 4.5"/></svg>,
   Flame:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M8 14.5c-3 0-5-2-5-5 0-2 1-3.5 2.5-4.5 0 1.5 1 2.5 1 2.5 0-2 1-4.5 3-6 0 2 1.5 3 2 5 .5-1 .5-2 0-3 2 1.5 2.5 3.5 2.5 5 0 3-2 6-6 6z"/></svg>,
   Lightning:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,1.5 4,9 8,9 6,14.5 12,7 8,7"/></svg>,
   Globe:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 1.5C6 4 5 6 5 8s1 4 3 6.5"/><path d="M8 1.5c2 2.5 3 4.5 3 6.5s-1 4-3 6.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/></svg>,
@@ -2627,7 +2628,7 @@ function FSection({title,count,children}) {
     <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",background:"rgba(201,168,76,.05)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",fontFamily:"'Cinzel',serif",color:"rgba(244,237,216,.6)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:.8,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.09)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.05)"}>
       <span style={{flex:1,textAlign:"left"}}>{title}</span>
       {count>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{count}</span>}
-      <span style={{fontSize:9,color:"rgba(244,237,216,.4)"}}>{open?"▲":"▼"}</span>
+      <span style={{fontSize:9,color:"rgba(244,237,216,.4)"}}><I.Chevron s={11} c="currentColor" dir={open?"up":"down"}/></span>
     </button>
     {open&&<div style={{padding:"8px 10px 10px"}}>{children}</div>}
   </div>;
@@ -2847,6 +2848,29 @@ export default function App() {
     try{ const s=sessionStorage.getItem("mq_expanded"); return s?JSON.parse(s):{}; }catch{ return {}; }
   });
   useEffect(()=>{ try{ sessionStorage.setItem("mq_expanded",JSON.stringify(expanded)); }catch{} },[expanded]);
+  // When the user types a search query, auto-expand every country/state that
+  // contains a matching company (by name) or matching job, so results are
+  // immediately visible instead of hidden inside collapsed accordions.
+  useEffect(()=>{
+    const q=(filters.search||"").trim().toLowerCase();
+    if(!q) return;
+    const toOpen={};
+    for(const [country,states] of Object.entries(ALL_JOBS_DATA)){
+      let countryHasMatch=false;
+      for(const [state,companies] of Object.entries(states)){
+        let stateHasMatch=false;
+        for(const [name,co] of Object.entries(companies)){
+          const nameMatch=name.toLowerCase().includes(q);
+          const jobMatch=(co.jobs||[]).some(j=>(j.title||"").toLowerCase().includes(q));
+          const liveMatch=Array.isArray(liveJobs[name])&&liveJobs[name].some(j=>(j.title||"").toLowerCase().includes(q));
+          if(nameMatch||jobMatch||liveMatch){ stateHasMatch=true; countryHasMatch=true; }
+        }
+        if(stateHasMatch) toOpen[`s-${country}-${state}`]=true;
+      }
+      if(countryHasMatch) toOpen[`c-${country}`]=true;
+    }
+    setExpanded(prev=>({...prev,...toOpen}));
+  },[filters.search,liveJobs]);
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
   const [guest,setGuest]=useState(false);
@@ -3043,23 +3067,27 @@ export default function App() {
     </div>
     {/* Header */}
     <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",padding:mobile?"8px 14px":"0 24px",height:mobile?"auto":66,gap:10,flexWrap:mobile?"wrap":"nowrap"}}>
-      {/* LEFT: Logo + nav tabs */}
-      <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+      {/* LEFT: Logo + sync/refresh */}
+      <div style={{display:"flex",alignItems:"center",gap:10,flex:mobile?1:"0 0 auto",minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))",display:"inline-flex",alignItems:"center"}}><I.SwordShield s={20} c="#c9a84c"/></span>
           <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
         </div>
+        {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+        <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
+        {liveStatus==="fetching"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>fetching…</span>}
+        {liveStatus==="done"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>● {Object.values(liveJobs).filter(v=>Array.isArray(v)&&v.length>0).length} live</span>}</>
+        }
+      </div>
+
+      {/* CENTER: nav tabs */}
+      <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":1,order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
           {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
             {/* Journey Mode — special glowing tab */}
             <button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>
         </nav>
-        {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
-        <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
-        {liveStatus==="fetching"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>fetching…</span>}
-        {liveStatus==="done"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>● {Object.values(liveJobs).filter(v=>Array.isArray(v)&&v.length>0).length} live</span>}</>
-        }
       </div>
       {/* RIGHT: Profile avatar */}
       <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 12px 4px 4px",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
@@ -3089,7 +3117,7 @@ export default function App() {
         <div style={{marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <button onClick={()=>setFilterOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:7,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",cursor:"pointer",fontSize:11,padding:"8px 14px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,flexShrink:0}}>
-              <I.Cog s={13} c="currentColor"/>Filters{activeCount>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{activeCount}</span>}{filterOpen?"▲":"▼"}
+              <I.Cog s={13} c="currentColor"/>Filters{activeCount>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{activeCount}</span>}<I.Chevron s={11} c="currentColor" dir={filterOpen?"up":"down"}/>
             </button>
             <div style={{flex:1,minWidth:180,position:"relative"}}>
               <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:12,opacity:.4,pointerEvents:"none"}}><I.Compass s={12} c="currentColor"/></span>
@@ -3160,8 +3188,8 @@ export default function App() {
               }
               return <div key={country} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.14)",borderRadius:14,overflow:"hidden"}}>
                 <button onClick={()=>toggle(cKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,padding:mobile?"11px 12px":"14px 16px",fontFamily:"'Cinzel',serif",fontSize:mobile?12:13,fontWeight:700,color:"#f4edd8",letterSpacing:.5,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
-                  <span style={{fontSize:9,color:"rgba(201,168,76,.45)"}}>{expanded[cKey]?"▼":"▶"}</span>
-                  <span style={{fontSize:16}}>{country==="United States"?"🇺🇸":"🇨🇦"}</span>
+                  <span style={{display:"inline-flex",color:"rgba(201,168,76,.45)"}}><I.Chevron s={11} c="currentColor" dir={expanded[cKey]?"down":"right"}/></span>
+                  <span style={{fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",color:"rgba(201,168,76,.7)",letterSpacing:.5,minWidth:18}}>{country==="United States"?"US":country==="Canada"?"CA":country.slice(0,2).toUpperCase()}</span>
                   <span style={{flex:1}}>{country}</span>
                   {cNewJobs&&<span style={{width:16,height:16,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={14}/></span>}
                   <span style={{fontSize:9,color:"rgba(244,237,216,.4)",background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.12)",padding:"2px 8px",borderRadius:20,fontFamily:"'Cinzel',serif"}}>{cTotal} jobs</span>
@@ -3190,7 +3218,7 @@ export default function App() {
                       if(hasAnyFilter&&sCompaniesShown===0)return null;
                       return <div key={state} style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,overflow:"hidden"}}>
                         <button onClick={()=>toggle(sKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:mobile?"8px 10px":"10px 12px",fontFamily:"'Cinzel',serif",fontSize:mobile?10:11,fontWeight:600,color:"#c9a84c",letterSpacing:.3,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
-                          <span style={{fontSize:8,color:"rgba(201,168,76,.4)"}}>{expanded[sKey]?"▼":"▶"}</span>
+                          <span style={{display:"inline-flex",color:"rgba(201,168,76,.4)"}}><I.Chevron s={10} c="currentColor" dir={expanded[sKey]?"down":"right"}/></span>
                           <span style={{flex:1}}>{state}</span>
                           {sNewJobs&&<span style={{width:14,height:14,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={12}/></span>}
                           <span style={{fontSize:9,color:"rgba(244,237,216,.35)",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.1)",padding:"1px 7px",borderRadius:20}}>{sTotal} jobs · {Object.keys(companies).length} co.</span>
@@ -3222,7 +3250,7 @@ export default function App() {
                               const noJobs=fJobs.length===0;
                               return <div key={name} style={{background:"rgba(201,168,76,.02)",border:"1px solid rgba(201,168,76,.06)",borderRadius:8,overflow:"hidden",opacity:noJobs?.7:1,transition:"opacity .2s"}} onMouseEnter={e=>{if(noJobs)e.currentTarget.style.opacity="1";}} onMouseLeave={e=>{if(noJobs)e.currentTarget.style.opacity=".7";}}>
                                 <button onClick={()=>toggle(coKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:mobile?"8px 10px":"9px 11px",fontSize:mobile?11:12,color:"#f4edd8",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
-                                  <span style={{fontSize:8,color:"rgba(201,168,76,.35)"}}>{expanded[coKey]?"▼":"▶"}</span>
+                                  <span style={{display:"inline-flex",color:"rgba(201,168,76,.35)"}}><I.Chevron s={9} c="currentColor" dir={expanded[coKey]?"down":"right"}/></span>
                                   <span style={{width:6,height:6,borderRadius:"50%",background:noJobs?"rgba(244,237,216,.2)":"#c9a84c",flexShrink:0}}/>
                                   <span style={{fontWeight:500}}>{name}</span>
                                   {user&&(()=>{const isOn=(user.profile?.notifyCompanies||[]).includes(name);const tipText=isOn?"Notifications on for this company":"Turn on job post notifications for this company";
