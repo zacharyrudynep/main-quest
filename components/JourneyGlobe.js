@@ -20,13 +20,51 @@ const GOLD_BRIGHT = "#f0d080";
 const ORANGE = "#e8613a";
 const DARK = "#080608";
 
+// Continent framing centers (lat/lng the camera points at when "locked" onto a
+// continent). Spans are hand-tuned so each continent fills the view nicely.
+const CONTINENTS = {
+  "North America": { lat: 46, lng: -98 },
+  "South America": { lat: -22, lng: -60 },
+  "Europe": { lat: 52, lng: 15 },
+  "Africa": { lat: 2, lng: 20 },
+  "Asia": { lat: 35, lng: 90 },
+  "Oceania": { lat: -25, lng: 135 },
+};
+
+// Zoom "bands" by camera altitude. As the user scrolls smoothly, the current
+// band determines what gets the gold focus outline:
+//   altitude > CONTINENT_BAND        -> world view (no focus)
+//   COUNTRY_BAND..CONTINENT_BAND     -> continent focus (gold continent outline)
+//   STATE_BAND..COUNTRY_BAND         -> country focus (gold country outline)
+//   altitude < STATE_BAND            -> state focus (dots + state outline)
+const CONTINENT_BAND = 1.9;
+const COUNTRY_BAND = 1.1;
+const STATE_BAND = 0.7;
+
+// Ray-casting point-in-polygon for a single ring ([[lng,lat],...]).
+function pointInPolygon(lng, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if (((yi > lat) !== (yj > lat)) &&
+        (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 export default function JourneyGlobe({ user, dots = [], onExit }) {
   const mountRef = useRef(null);
   const globeRef = useRef(null);
   const dotsRef = useRef(dots);
+  const featsRef = useRef([]);              // loaded country polygons
+  const focusRef = useRef({ level: null, continent: null, country: null });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [zoomedIn, setZoomedIn] = useState(false);
+  const [focusLabel, setFocusLabel] = useState(""); // shown in the top bar
   // Keep the latest dots available to the (one-time) globe effect without re-running it.
   dotsRef.current = dots;
 
@@ -91,6 +129,8 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
       globe.pointOfView({ lat: 30, lng: -40, altitude: 2.4 }, 0);
 
       // Load country polygons and style them in the Main Quest palette.
+      // Coloring is "focus-aware": the country/continent the camera is centered
+      // on gets a brighter gold cap + outline, everything else stays dim.
       fetch(COUNTRIES_URL)
         .then((r) => r.json())
         .then((geo) => {
@@ -98,12 +138,29 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
           const feats = (geo.features || []).filter(
             (d) => d.properties && d.properties.NAME !== "Antarctica"
           );
+          featsRef.current = feats;
+          // A polygon is "focused" when its continent (continent band) or its
+          // country name (country/state band) matches the current focus.
+          const isFocused = (d) => {
+            const f = focusRef.current;
+            if (!f.level) return false;
+            if (f.level === "continent") return d.properties.CONTINENT === f.continent;
+            if (f.level === "country" || f.level === "state")
+              return d.properties.NAME === f.country;
+            return false;
+          };
           globe
             .polygonsData(feats)
-            .polygonAltitude(0.008)
-            .polygonCapColor(() => "rgba(201,168,76,0.10)")
-            .polygonSideColor(() => "rgba(201,168,76,0.06)")
-            .polygonStrokeColor(() => "rgba(214,182,99,0.55)")
+            .polygonAltitude((d) => (isFocused(d) ? 0.014 : 0.008))
+            .polygonCapColor((d) =>
+              isFocused(d) ? "rgba(240,208,128,0.22)" : "rgba(201,168,76,0.08)"
+            )
+            .polygonSideColor((d) =>
+              isFocused(d) ? "rgba(232,97,58,0.18)" : "rgba(201,168,76,0.05)"
+            )
+            .polygonStrokeColor((d) =>
+              isFocused(d) ? "rgba(255,225,166,0.95)" : "rgba(214,182,99,0.4)"
+            )
             .polygonLabel(
               (d) =>
                 `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.9);border:1px solid rgba(201,168,76,.4);padding:4px 10px;border-radius:6px;font-size:12px">${
@@ -158,19 +215,86 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
           globe.pointRadius(0);
         }
       };
-      const updateDotsForZoom = () => {
+      // Nearest continent to a given lat/lng (great-circle-ish, good enough).
+      const nearestContinent = (lat, lng) => {
+        let best = null, bestD = Infinity;
+        for (const [name, c] of Object.entries(CONTINENTS)) {
+          const dLat = lat - c.lat;
+          let dLng = Math.abs(lng - c.lng);
+          if (dLng > 180) dLng = 360 - dLng;
+          const d = dLat * dLat + dLng * dLng;
+          if (d < bestD) { bestD = d; best = name; }
+        }
+        return best;
+      };
+      // Find which country polygon contains a lat/lng (point-in-polygon over the
+      // loaded GeoJSON). Used to label/outline the focused country.
+      const countryAt = (lat, lng) => {
+        const feats = featsRef.current;
+        for (const f of feats) {
+          const g = f.geometry;
+          const polys = g.type === "MultiPolygon" ? g.coordinates : [g.coordinates];
+          for (const poly of polys) {
+            // poly[0] is the outer ring
+            if (pointInPolygon(lng, lat, poly[0])) return f.properties.NAME;
+          }
+        }
+        return null;
+      };
+
+      let lastFocusKey = "";
+      const updateForZoom = () => {
         const cam = globe.camera();
         if (!cam) return;
         const dist = cam.position.length();
         const altitude = dist / GLOBE_R - 1;
+
+        // 1. Dots reveal (unchanged).
         const shouldShow = altitude < DOT_REVEAL_ALT;
         if (shouldShow !== dotsVisible) {
           dotsVisible = shouldShow;
           applyDotSizing(shouldShow);
           setZoomedIn(shouldShow);
         }
+
+        // 2. Focus band — what region gets the gold outline.
+        const pov = globe.pointOfView();
+        const lat = pov.lat, lng = pov.lng;
+        let focus = { level: null, continent: null, country: null };
+        let label = "";
+        if (altitude > CONTINENT_BAND) {
+          focus = { level: null, continent: null, country: null };
+          label = "";
+        } else if (altitude > COUNTRY_BAND) {
+          const cont = nearestContinent(lat, lng);
+          focus = { level: "continent", continent: cont, country: null };
+          label = cont || "";
+        } else {
+          const country = countryAt(lat, lng);
+          const cont = nearestContinent(lat, lng);
+          focus = {
+            level: altitude > STATE_BAND ? "country" : "state",
+            continent: cont,
+            country: country,
+          };
+          label = country || cont || "";
+        }
+        const key = focus.level + "|" + focus.continent + "|" + focus.country;
+        if (key !== lastFocusKey) {
+          lastFocusKey = key;
+          focusRef.current = focus;
+          setFocusLabel(label);
+          // Re-run the polygon color accessors to repaint the focus outline.
+          if (globeRef.current) {
+            globeRef.current
+              .polygonAltitude(globeRef.current.polygonAltitude())
+              .polygonCapColor(globeRef.current.polygonCapColor())
+              .polygonStrokeColor(globeRef.current.polygonStrokeColor())
+              .polygonSideColor(globeRef.current.polygonSideColor());
+          }
+        }
       };
-      if (controls) controls.addEventListener("change", updateDotsForZoom);
+      if (controls) controls.addEventListener("change", updateForZoom);
 
       // Keep the globe sized to the viewport.
       onResize = () => {
@@ -248,7 +372,9 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
             Journey Mode
           </div>
           <div style={{ fontSize: 11, color: "rgba(244,237,216,.5)", marginTop: 2 }}>
-            {zoomedIn
+            {focusLabel
+              ? `Focused: ${focusLabel}`
+              : zoomedIn
               ? `${dots.length} studios across the realm — hover a marker to see who`
               : "Scroll to zoom in and reveal studio locations · drag to rotate"}
           </div>
