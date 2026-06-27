@@ -1,16 +1,20 @@
-// ── JOURNEY GLOBE (Stage 1) ───────────────────────────────────────────────────
+// ── JOURNEY GLOBE (Stage 2b — click-to-drill navigation) ──────────────────────
 // A full-screen, scroll-locked 3D globe for Main Quest's gamified "Journey Mode".
-// Built on globe.gl (Three.js). This file is loaded via next/dynamic with
-// ssr:false from pages/index.js, so the Three.js code never runs during SSR.
+// Built on globe.gl (Three.js). Loaded via next/dynamic (ssr:false) from index.js.
 //
-// Stage 1 scope: the globe renders, fills the viewport, and supports
-// rotate / pan / zoom. Country polygons are drawn in the Main Quest palette.
-// Company pins, stepped zoom, fog, and the side panel come in later stages.
+// Navigation model (click to drill down, scroll to back out):
+//   LEVEL 0  "continent"  — globe rotatable; continents highlight on hover;
+//                           click a continent to lock onto it.
+//   LEVEL 1  "country"    — camera locked/centered on the continent; its
+//                           countries highlight on hover; click one to lock on it.
+//   LEVEL 2  "state"      — camera locked/centered on the country; company dots
+//                           appear; hover a dot for the studio name.
+// Scrolling out steps back exactly one level, with a cooldown so it can't be
+// spammed past the smooth camera transition. All camera moves are smooth lerps.
 
 import { useEffect, useRef, useState } from "react";
 import Globe from "globe.gl";
 
-// Public-domain Natural Earth country polygons (fetched at runtime, not bundled).
 const COUNTRIES_URL =
   "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson";
 
@@ -20,8 +24,15 @@ const GOLD_BRIGHT = "#f0d080";
 const ORANGE = "#e8613a";
 const DARK = "#080608";
 
-// Continent framing centers (lat/lng the camera points at when "locked" onto a
-// continent). Spans are hand-tuned so each continent fills the view nicely.
+// Camera framing per level. altitude is globe.gl's camera altitude (smaller =
+// closer). These are tuned so each layer frames the whole region.
+const ALT_CONTINENT_SELECT = 1.7; // furthest the user can get (no full world view)
+const ALT_CONTINENT_LOCK = 1.15;  // centered on a continent
+const ALT_COUNTRY_LOCK = 0.62;    // centered on a country
+const LERP_MS = 900;              // camera transition duration
+const SCROLL_COOLDOWN_MS = 1000;  // min time between scroll-out steps
+
+// Continent framing centers (where the camera points when locked on a continent).
 const CONTINENTS = {
   "North America": { lat: 46, lng: -98 },
   "South America": { lat: -22, lng: -60 },
@@ -30,16 +41,6 @@ const CONTINENTS = {
   "Asia": { lat: 35, lng: 90 },
   "Oceania": { lat: -25, lng: 135 },
 };
-
-// Zoom "bands" by camera altitude. As the user scrolls smoothly, the current
-// band determines what gets the gold focus outline:
-//   altitude > CONTINENT_BAND        -> world view (no focus)
-//   COUNTRY_BAND..CONTINENT_BAND     -> continent focus (gold continent outline)
-//   STATE_BAND..COUNTRY_BAND         -> country focus (gold country outline)
-//   altitude < STATE_BAND            -> state focus (dots + state outline)
-const CONTINENT_BAND = 1.9;
-const COUNTRY_BAND = 1.1;
-const STATE_BAND = 0.7;
 
 // Ray-casting point-in-polygon for a single ring ([[lng,lat],...]).
 function pointInPolygon(lng, lat, ring) {
@@ -55,27 +56,61 @@ function pointInPolygon(lng, lat, ring) {
   return inside;
 }
 
+// Bounding box + centroid of a GeoJSON feature (for click-to-center framing).
+function featureFrame(feat) {
+  const g = feat.geometry;
+  const polys = g.type === "MultiPolygon" ? g.coordinates : [g.coordinates];
+  let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
+  // Use the largest ring for centering (avoids far-flung islands skewing it).
+  let bigRing = null, bigLen = 0;
+  for (const poly of polys) {
+    const ring = poly[0];
+    if (ring.length > bigLen) { bigLen = ring.length; bigRing = ring; }
+    for (const [lng, lat] of ring) {
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+  }
+  let cLat = 0, cLng = 0;
+  if (bigRing) {
+    for (const [lng, lat] of bigRing) { cLng += lng; cLat += lat; }
+    cLat /= bigRing.length; cLng /= bigRing.length;
+  }
+  return { lat: cLat, lng: cLng, minLat, maxLat, minLng, maxLng };
+}
+
 export default function JourneyGlobe({ user, dots = [], onExit }) {
   const mountRef = useRef(null);
   const globeRef = useRef(null);
   const dotsRef = useRef(dots);
-  const featsRef = useRef([]);              // loaded country polygons
-  const focusRef = useRef({ level: null, continent: null, country: null });
+  const featsRef = useRef([]);          // loaded country polygons
+  // Navigation state (kept in a ref so globe callbacks read the latest value).
+  const navRef = useRef({ level: "continent", continent: null, country: null });
+  const hoverRef = useRef(null);        // currently hovered polygon (for highlight)
+  const lastScrollRef = useRef(0);      // timestamp of last scroll-out step
+  const animRef = useRef(null);         // active camera animation handle
+
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [zoomedIn, setZoomedIn] = useState(false);
-  const [focusLabel, setFocusLabel] = useState(""); // shown in the top bar
-  // Keep the latest dots available to the (one-time) globe effect without re-running it.
+  const [nav, setNav] = useState({ level: "continent", continent: null, country: null });
+
   dotsRef.current = dots;
+
+  // Push a nav change to both the ref (for callbacks) and state (for UI).
+  const setNavBoth = (next) => {
+    navRef.current = next;
+    setNav(next);
+  };
 
   useEffect(() => {
     if (!mountRef.current) return;
     let globe;
     let disposed = false;
-    let onResize;
+    let onResize, onWheel;
 
     try {
-      // Initialize the globe instance bound to our mount node.
       globe = Globe()(mountRef.current);
       globeRef.current = globe;
 
@@ -88,8 +123,6 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         .width(mountRef.current.clientWidth)
         .height(mountRef.current.clientHeight);
 
-      // Give the globe surface a dark, subtly warm material (no external texture).
-      // globeMaterial() returns the THREE.MeshPhongMaterial we can tweak.
       const mat = globe.globeMaterial();
       if (mat) {
         mat.color && mat.color.set("#140d09");
@@ -98,39 +131,109 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         mat.shininess = 6;
       }
 
-      // Controls: right-click rotates, left-click pans (per the design).
+      // ── Controls ──────────────────────────────────────────────────────────
+      // Free zoom is OFF (we drive the camera via clicks). Rotation is only
+      // enabled at the continent-select level (toggled in applyLevelControls).
       const controls = globe.controls();
       if (controls) {
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.35;
-        controls.enableZoom = true;
-        controls.enablePan = false;
-        controls.minDistance = 140;
-        controls.maxDistance = 480;
-        controls.rotateSpeed = 0.8;
-        controls.zoomSpeed = 0.9;
-        // Both mouse buttons rotate the globe. We intentionally keep pan OFF:
-        // OrbitControls' screen-space pan drifts the camera distance (which read
-        // as an unwanted zoom-out while rotating). Stepped zoom is handled by
-        // scroll; lat/lng framing comes later. LEFT and RIGHT both rotate so the
-        // control feels natural with either button.
-        if (controls.mouseButtons) {
-          controls.mouseButtons.LEFT = 0;  // ROTATE
-          controls.mouseButtons.RIGHT = 0; // ROTATE
-        }
+        controls.autoRotateSpeed = 0.3;
+        controls.enableZoom = false;   // no free zoom — clicks drive the camera
         controls.enablePan = false;
         controls.screenSpacePanning = false;
-        // Stop auto-rotation as soon as the user interacts.
+        controls.minDistance = 101 * (1 + ALT_COUNTRY_LOCK);
+        controls.maxDistance = 101 * (1 + ALT_CONTINENT_SELECT);
+        controls.rotateSpeed = 0.8;
+        if (controls.mouseButtons) {
+          controls.mouseButtons.LEFT = 0;   // ROTATE
+          controls.mouseButtons.RIGHT = 0;  // ROTATE
+        }
         const stopSpin = () => { controls.autoRotate = false; };
         controls.addEventListener("start", stopSpin);
       }
 
-      // Initial camera position.
-      globe.pointOfView({ lat: 30, lng: -40, altitude: 2.4 }, 0);
+      const applyLevelControls = () => {
+        const c = globe.controls();
+        if (!c) return;
+        // Rotation only at the continent-select level.
+        const lvl = navRef.current.level;
+        c.enableRotate = lvl === "continent";
+        if (lvl !== "continent") c.autoRotate = false;
+      };
 
-      // Load country polygons and style them in the Main Quest palette.
-      // Coloring is "focus-aware": the country/continent the camera is centered
-      // on gets a brighter gold cap + outline, everything else stays dim.
+      // Smooth camera move to a lat/lng/altitude.
+      const flyTo = (lat, lng, altitude) => {
+        globe.pointOfView({ lat, lng, altitude }, LERP_MS);
+      };
+
+      // Start framed on North America at the continent-select level.
+      globe.pointOfView({ lat: 30, lng: -60, altitude: ALT_CONTINENT_SELECT }, 0);
+
+      // ── Polygon styling (highlight current level's hoverable regions) ──────
+      // At continent level: the hovered continent's countries glow.
+      // At country level: the hovered country glows; the locked continent's
+      //   other countries are dimly outlined.
+      // At state level: the locked country is outlined, dots are shown.
+      const inActiveContinent = (d) =>
+        navRef.current.continent &&
+        d.properties.CONTINENT === navRef.current.continent;
+
+      const isHovered = (d) => hoverRef.current && d === hoverRef.current;
+
+      const capColor = (d) => {
+        const lvl = navRef.current.level;
+        if (lvl === "continent") {
+          // Highlight the whole continent under the cursor.
+          if (hoverRef.current &&
+              d.properties.CONTINENT === hoverRef.current.properties.CONTINENT)
+            return "rgba(240,208,128,0.30)";
+          return "rgba(201,168,76,0.08)";
+        }
+        if (lvl === "country") {
+          if (!inActiveContinent(d)) return "rgba(201,168,76,0.04)";
+          if (isHovered(d)) return "rgba(240,208,128,0.32)";
+          return "rgba(201,168,76,0.12)";
+        }
+        // state level
+        if (d.properties.NAME === navRef.current.country)
+          return "rgba(240,208,128,0.22)";
+        return inActiveContinent(d)
+          ? "rgba(201,168,76,0.07)"
+          : "rgba(201,168,76,0.03)";
+      };
+
+      const strokeColor = (d) => {
+        const lvl = navRef.current.level;
+        if (lvl === "continent") {
+          if (hoverRef.current &&
+              d.properties.CONTINENT === hoverRef.current.properties.CONTINENT)
+            return "rgba(255,225,166,0.95)";
+          return "rgba(214,182,99,0.4)";
+        }
+        if (lvl === "country") {
+          if (!inActiveContinent(d)) return "rgba(214,182,99,0.2)";
+          if (isHovered(d)) return "rgba(255,225,166,0.95)";
+          return "rgba(214,182,99,0.6)";
+        }
+        if (d.properties.NAME === navRef.current.country)
+          return "rgba(255,225,166,0.9)";
+        return "rgba(214,182,99,0.3)";
+      };
+
+      const repaint = () => {
+        const g = globeRef.current;
+        if (!g) return;
+        g.polygonCapColor(capColor)
+          .polygonStrokeColor(strokeColor)
+          .polygonSideColor(strokeColor)
+          .polygonAltitude((d) =>
+            isHovered(d) || d.properties.NAME === navRef.current.country
+              ? 0.014
+              : 0.008
+          );
+      };
+
+      // ── Load polygons ─────────────────────────────────────────────────────
       fetch(COUNTRIES_URL)
         .then((r) => r.json())
         .then((geo) => {
@@ -139,164 +242,138 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
             (d) => d.properties && d.properties.NAME !== "Antarctica"
           );
           featsRef.current = feats;
-          // A polygon is "focused" when its continent (continent band) or its
-          // country name (country/state band) matches the current focus.
-          const isFocused = (d) => {
-            const f = focusRef.current;
-            if (!f.level) return false;
-            if (f.level === "continent") return d.properties.CONTINENT === f.continent;
-            if (f.level === "country" || f.level === "state")
-              return d.properties.NAME === f.country;
-            return false;
-          };
           globe
             .polygonsData(feats)
-            .polygonAltitude((d) => (isFocused(d) ? 0.014 : 0.008))
-            .polygonCapColor((d) =>
-              isFocused(d) ? "rgba(240,208,128,0.22)" : "rgba(201,168,76,0.08)"
-            )
-            .polygonSideColor((d) =>
-              isFocused(d) ? "rgba(232,97,58,0.18)" : "rgba(201,168,76,0.05)"
-            )
-            .polygonStrokeColor((d) =>
-              isFocused(d) ? "rgba(255,225,166,0.95)" : "rgba(214,182,99,0.4)"
-            )
-            .polygonLabel(
-              (d) =>
-                `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.9);border:1px solid rgba(201,168,76,.4);padding:4px 10px;border-radius:6px;font-size:12px">${
-                  d.properties.NAME || ""
-                }</div>`
-            );
+            .polygonAltitude(0.008)
+            .polygonCapColor(capColor)
+            .polygonSideColor(strokeColor)
+            .polygonStrokeColor(strokeColor)
+            .onPolygonHover((d) => {
+              hoverRef.current = d || null;
+              repaint();
+              if (mountRef.current)
+                mountRef.current.style.cursor = d ? "pointer" : "grab";
+            })
+            .onPolygonClick((d) => {
+              if (!d) return;
+              handleRegionClick(d);
+            })
+            .polygonLabel((d) => {
+              const lvl = navRef.current.level;
+              const txt =
+                lvl === "continent" ? d.properties.CONTINENT : d.properties.NAME;
+              return `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.92);border:1px solid rgba(201,168,76,.45);padding:4px 11px;border-radius:7px;font-size:12px;white-space:nowrap">${
+                txt || ""
+              }</div>`;
+            });
+
+          applyLevelControls();
           setLoading(false);
         })
-        .catch((e) => {
+        .catch(() => {
           if (disposed) return;
           setErr("Could not load map data. Check your connection and try again.");
           setLoading(false);
         });
 
-      // ── Company dots ───────────────────────────────────────────────────────
-      // Points are placed at each company's scattered lat/lng. They start hidden
-      // (radius 0) and fade in once the camera is zoomed in past a threshold, so
-      // the world view stays clean and dots reveal as you approach a region.
-      const DOT_REVEAL_ALT = 1.4; // camera altitude below which dots appear
-      globe
-        .pointsData(dotsRef.current)
-        .pointLat((d) => d.lat)
-        .pointLng((d) => d.lng)
-        .pointAltitude(0.01)
-        .pointRadius((d) => (d.applied ? 0.28 : 0.22))
-        .pointColor((d) =>
-          d.applied ? "rgba(126,207,179,0.95)" : "rgba(255,207,122,0.92)"
-        )
-        .pointResolution(6)
-        .pointLabel(
-          (d) =>
-            `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.92);border:1px solid rgba(201,168,76,.45);padding:5px 11px;border-radius:7px;font-size:12px;white-space:nowrap"><strong>${
-              d.name
-            }</strong>${
-              d.jobCount
-                ? `<span style=\"color:rgba(244,237,216,.6);font-size:10px\"> · ${d.jobCount} open</span>`
-                : ""
-            }</div>`
-        );
-      // Hide all dots initially (world view).
-      globe.pointRadius(0);
-
-      // Reveal/hide dots based on camera distance. globe.gl exposes the camera
-      // via .camera(); altitude ≈ (distance/globeRadius - 1). We poll on the
-      // controls "change" event, which fires during any zoom/rotate.
-      const GLOBE_R = 100; // globe.gl's internal globe radius
-      let dotsVisible = false;
-      const applyDotSizing = (visible) => {
-        if (visible) {
-          globe.pointRadius((d) => (d.applied ? 0.28 : 0.22));
-        } else {
-          globe.pointRadius(0);
-        }
-      };
-      // Nearest continent to a given lat/lng (great-circle-ish, good enough).
-      const nearestContinent = (lat, lng) => {
-        let best = null, bestD = Infinity;
-        for (const [name, c] of Object.entries(CONTINENTS)) {
-          const dLat = lat - c.lat;
-          let dLng = Math.abs(lng - c.lng);
-          if (dLng > 180) dLng = 360 - dLng;
-          const d = dLat * dLat + dLng * dLng;
-          if (d < bestD) { bestD = d; best = name; }
-        }
-        return best;
-      };
-      // Find which country polygon contains a lat/lng (point-in-polygon over the
-      // loaded GeoJSON). Used to label/outline the focused country.
-      const countryAt = (lat, lng) => {
-        const feats = featsRef.current;
-        for (const f of feats) {
-          const g = f.geometry;
-          const polys = g.type === "MultiPolygon" ? g.coordinates : [g.coordinates];
-          for (const poly of polys) {
-            // poly[0] is the outer ring
-            if (pointInPolygon(lng, lat, poly[0])) return f.properties.NAME;
-          }
-        }
-        return null;
+      // ── Company dots ──────────────────────────────────────────────────────
+      // Only shown at the state level, and only for the locked country.
+      const visibleDots = () => {
+        if (navRef.current.level !== "state") return [];
+        // dots are US/Canada only; match by country name.
+        const country = navRef.current.country;
+        const wantUS = country === "United States of America";
+        const wantCA = country === "Canada";
+        return dotsRef.current.filter((dt) => {
+          if (wantUS) return dt.country === "United States";
+          if (wantCA) return dt.country === "Canada";
+          return false; // other countries have no dots yet
+        });
       };
 
-      let lastFocusKey = "";
-      const updateForZoom = () => {
-        const cam = globe.camera();
-        if (!cam) return;
-        const dist = cam.position.length();
-        const altitude = dist / GLOBE_R - 1;
-
-        // 1. Dots reveal (unchanged).
-        const shouldShow = altitude < DOT_REVEAL_ALT;
-        if (shouldShow !== dotsVisible) {
-          dotsVisible = shouldShow;
-          applyDotSizing(shouldShow);
-          setZoomedIn(shouldShow);
-        }
-
-        // 2. Focus band — what region gets the gold outline.
-        const pov = globe.pointOfView();
-        const lat = pov.lat, lng = pov.lng;
-        let focus = { level: null, continent: null, country: null };
-        let label = "";
-        if (altitude > CONTINENT_BAND) {
-          focus = { level: null, continent: null, country: null };
-          label = "";
-        } else if (altitude > COUNTRY_BAND) {
-          const cont = nearestContinent(lat, lng);
-          focus = { level: "continent", continent: cont, country: null };
-          label = cont || "";
-        } else {
-          const country = countryAt(lat, lng);
-          const cont = nearestContinent(lat, lng);
-          focus = {
-            level: altitude > STATE_BAND ? "country" : "state",
-            continent: cont,
-            country: country,
-          };
-          label = country || cont || "";
-        }
-        const key = focus.level + "|" + focus.continent + "|" + focus.country;
-        if (key !== lastFocusKey) {
-          lastFocusKey = key;
-          focusRef.current = focus;
-          setFocusLabel(label);
-          // Re-run the polygon color accessors to repaint the focus outline.
-          if (globeRef.current) {
-            globeRef.current
-              .polygonAltitude(globeRef.current.polygonAltitude())
-              .polygonCapColor(globeRef.current.polygonCapColor())
-              .polygonStrokeColor(globeRef.current.polygonStrokeColor())
-              .polygonSideColor(globeRef.current.polygonSideColor());
-          }
-        }
+      const refreshDots = () => {
+        const g = globeRef.current;
+        if (!g) return;
+        g.pointsData(visibleDots())
+          .pointLat((d) => d.lat)
+          .pointLng((d) => d.lng)
+          .pointAltitude(0.012)
+          .pointRadius((d) => (d.applied ? 0.28 : 0.22))
+          .pointColor((d) =>
+            d.applied ? "rgba(126,207,179,0.95)" : "rgba(255,207,122,0.95)"
+          )
+          .pointResolution(6)
+          .pointLabel(
+            (d) =>
+              `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.92);border:1px solid rgba(201,168,76,.45);padding:5px 11px;border-radius:7px;font-size:12px;white-space:nowrap"><strong>${
+                d.name
+              }</strong>${
+                d.jobCount
+                  ? `<span style="color:rgba(244,237,216,.6);font-size:10px"> · ${d.jobCount} open</span>`
+                  : ""
+              }</div>`
+          );
       };
-      if (controls) controls.addEventListener("change", updateForZoom);
 
-      // Keep the globe sized to the viewport.
+      // ── Drill-down click handler ──────────────────────────────────────────
+      const handleRegionClick = (d) => {
+        const lvl = navRef.current.level;
+        if (lvl === "continent") {
+          const cont = d.properties.CONTINENT;
+          if (!cont || !CONTINENTS[cont]) return;
+          const c = CONTINENTS[cont];
+          setNavBoth({ level: "country", continent: cont, country: null });
+          flyTo(c.lat, c.lng, ALT_CONTINENT_LOCK);
+        } else if (lvl === "country") {
+          if (d.properties.CONTINENT !== navRef.current.continent) return;
+          const frame = featureFrame(d);
+          setNavBoth({
+            level: "state",
+            continent: navRef.current.continent,
+            country: d.properties.NAME,
+          });
+          flyTo(frame.lat, frame.lng, ALT_COUNTRY_LOCK);
+        }
+        // After the camera settles, re-apply controls/dots/paint.
+        setTimeout(() => {
+          applyLevelControls();
+          refreshDots();
+          repaint();
+        }, LERP_MS + 40);
+        repaint();
+      };
+
+      // ── Scroll-out: step back one level (throttled) ───────────────────────
+      onWheel = (e) => {
+        e.preventDefault();
+        if (e.deltaY <= 0) return; // only "scroll out" (down/away) backs up
+        const now = Date.now();
+        if (now - lastScrollRef.current < SCROLL_COOLDOWN_MS) return;
+        const lvl = navRef.current.level;
+        if (lvl === "state") {
+          lastScrollRef.current = now;
+          const cont = navRef.current.continent;
+          const c = CONTINENTS[cont] || { lat: 30, lng: -60 };
+          setNavBoth({ level: "country", continent: cont, country: null });
+          flyTo(c.lat, c.lng, ALT_CONTINENT_LOCK);
+          globe.pointsData([]);
+          setTimeout(() => { applyLevelControls(); repaint(); }, LERP_MS + 40);
+          repaint();
+        } else if (lvl === "country") {
+          lastScrollRef.current = now;
+          // Capture the continent's longitude BEFORE clearing nav, so the
+          // camera eases out roughly above where the user was.
+          const prevCont = navRef.current.continent;
+          const outLng = prevCont && CONTINENTS[prevCont] ? CONTINENTS[prevCont].lng : -60;
+          setNavBoth({ level: "continent", continent: null, country: null });
+          flyTo(30, outLng, ALT_CONTINENT_SELECT);
+          setTimeout(() => { applyLevelControls(); repaint(); }, LERP_MS + 40);
+          repaint();
+        }
+        // at continent level, scrolling does nothing (already the top).
+      };
+      mountRef.current.addEventListener("wheel", onWheel, { passive: false });
+
       onResize = () => {
         if (!mountRef.current || !globeRef.current) return;
         globeRef.current
@@ -309,10 +386,11 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
       setLoading(false);
     }
 
-    // Cleanup — critical for Three.js to avoid memory leaks on unmount.
     return () => {
       disposed = true;
       if (onResize) window.removeEventListener("resize", onResize);
+      if (onWheel && mountRef.current)
+        mountRef.current.removeEventListener("wheel", onWheel);
       try {
         if (globeRef.current && globeRef.current._destructor) {
           globeRef.current._destructor();
@@ -323,12 +401,37 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
     };
   }, []);
 
-  // Keep the dots layer in sync if the dots prop arrives/changes after init.
+  // Keep dots in sync if the prop changes (only matters at state level).
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
-    globe.pointsData(dots);
+    if (navRef.current.level === "state") {
+      // trigger a points refresh by re-setting data via the same filter
+      const country = navRef.current.country;
+      const wantUS = country === "United States of America";
+      const wantCA = country === "Canada";
+      globe.pointsData(
+        dots.filter((dt) =>
+          wantUS ? dt.country === "United States" : wantCA ? dt.country === "Canada" : false
+        )
+      );
+    }
   }, [dots]);
+
+  // Breadcrumb label for the top bar.
+  const crumb =
+    nav.level === "continent"
+      ? "Choose a continent"
+      : nav.level === "country"
+      ? `${nav.continent} — choose a country`
+      : `${nav.country}`;
+
+  const hint =
+    nav.level === "continent"
+      ? "Drag to rotate · click a highlighted continent to travel there"
+      : nav.level === "country"
+      ? "Click a country to explore it · scroll out to go back"
+      : "Hover a marker to see the studio · scroll out to go back";
 
   return (
     <div
@@ -340,8 +443,7 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         overflow: "hidden",
       }}
     >
-      {/* The globe mounts here */}
-      <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
 
       {/* Top bar */}
       <div
@@ -371,12 +473,11 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
           >
             Journey Mode
           </div>
+          <div style={{ fontSize: 12, color: GOLD_BRIGHT, marginTop: 3, fontFamily: "'Cinzel',serif", letterSpacing: 0.4 }}>
+            {crumb}
+          </div>
           <div style={{ fontSize: 11, color: "rgba(244,237,216,.5)", marginTop: 2 }}>
-            {focusLabel
-              ? `Focused: ${focusLabel}`
-              : zoomedIn
-              ? `${dots.length} studios across the realm — hover a marker to see who`
-              : "Scroll to zoom in and reveal studio locations · drag to rotate"}
+            {hint}
           </div>
         </div>
         <button
@@ -399,7 +500,6 @@ export default function JourneyGlobe({ user, dots = [], onExit }) {
         </button>
       </div>
 
-      {/* Loading / error overlays */}
       {loading && !err && (
         <div
           style={{
