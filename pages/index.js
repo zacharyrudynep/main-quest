@@ -3008,6 +3008,21 @@ export default function App() {
     if(f.search){const q=f.search.toLowerCase();if(!job.title.toLowerCase().includes(q)&&!job.company.toLowerCase().includes(q))return false;}
     return true;
   };
+  // Same as matches() but ignores the search term (used when a company name already
+  // matched the search, so we show all its jobs that pass the other filters).
+  const matchesExceptSearch=job=>{
+    const f=filters;
+    if(f.titles.length>0&&!f.titles.includes(job.title))return false;
+    if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
+    if(f.remote.includes("Remote OK")&&!job.isRemote)return false;
+    if(f.remote.includes("On-site Only")&&job.isRemote)return false;
+    if(f.types.length>0&&!f.types.includes(job.type))return false;
+    if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
+    if(f.newOnly&&!job.isNew)return false;
+    if(f.emailApplyOnly&&!job.isEmailApply)return false;
+    if(f.minMatch>0){const ms=computeMatchScore(job,user?.profile)?.score??-1;if(ms<f.minMatch)return false;}
+    return true;
+  };
 
   const sortJobs=jobs=>jobs.slice().sort((a,b)=>{
     if(jobSort==="match"){
@@ -3209,10 +3224,10 @@ export default function App() {
                         if(filters.activeOnly&&dj.length===0)return false;
                         if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
                         if(filters.types.length===1&&filters.types[0]==="Volunteer"&&(co.volunteer||dj.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
-                        if(filters.search){const q=filters.search.toLowerCase();if(nm.toLowerCase().includes(q))return true;}
+                        if(filters.search){const q=filters.search.toLowerCase();const nameHit=nm.toLowerCase().includes(q);if(!nameHit&&!dj.some(j=>matches(j)))return false;}
                         const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
-                        if(!jlf)return true;
-                        return dj.some(j=>matches(j));
+                        if(jlf&&!dj.some(j=>matches(j)))return false;
+                        return true;
                       }).length;
                       // Hide this state entirely if a filter is active and nothing in it matches
                       if(hasAnyFilter&&sCompaniesShown===0)return null;
@@ -3235,17 +3250,24 @@ export default function App() {
                               // Volunteer type filter: show companies flagged volunteer even with no listings
                               const volunteerFilterOnly=filters.types.length===1&&filters.types[0]==="Volunteer";
                               if(volunteerFilterOnly&&(company.volunteer||displayJobs.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
-                              if(filters.search){const q=filters.search.toLowerCase();if(name.toLowerCase().includes(q))return true;}
-                              // If only company-level filters are active (no job-level filters), show the company
+                              // Search: company qualifies only if its name matches OR it has a matching job.
+                              if(filters.search){const q=filters.search.toLowerCase();const nameHit=name.toLowerCase().includes(q);if(!nameHit&&!displayJobs.some(j=>matches(j)))return false;}
+                              // Job-level filters: company must have at least one job that passes them.
                               const jobLevelFilters=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
-                              if(!jobLevelFilters)return true;
-                              return displayJobs.some(j=>matches(j));
+                              if(jobLevelFilters&&!displayJobs.some(j=>matches(j)))return false;
+                              return true;
                             })
                             .map(([name,company])=>{
                               const coKey=`co-${country}-${state}-${name}`;
                               const displayJobs=getDisplayJobs(name,company.jobs);
                               const isLive=Array.isArray(liveJobs[name])&&liveJobs[name].length>0;
-                              const fJobs=sortJobs(displayJobs.filter(matches));
+                              const nameMatchesSearch=filters.search&&name.toLowerCase().includes(filters.search.toLowerCase());
+                              // If the company name matches the search, show all its jobs (that pass any
+                              // non-search filters). Otherwise show only jobs matching the search/filters.
+                              const fJobs=sortJobs(displayJobs.filter(j=>{
+                                if(nameMatchesSearch)return matchesExceptSearch(j);
+                                return matches(j);
+                              }));
                               const hasNew=fJobs.some(j=>j.isNew);
                               const noJobs=fJobs.length===0;
                               return <div key={name} style={{background:"rgba(201,168,76,.02)",border:"1px solid rgba(201,168,76,.06)",borderRadius:8,overflow:"hidden",opacity:noJobs?.7:1,transition:"opacity .2s"}} onMouseEnter={e=>{if(noJobs)e.currentTarget.style.opacity="1";}} onMouseLeave={e=>{if(noJobs)e.currentTarget.style.opacity=".7";}}>
