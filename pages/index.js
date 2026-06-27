@@ -1,6 +1,9 @@
 import Head from "next/head";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "../lib/supabase";
+import dynamic from "next/dynamic";
+// Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
+const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
 
 // ── RESPONSIVE HOOK ────────────────────────────────────────────────────────────
 function useIsMobile(bp=640) {
@@ -2899,6 +2902,12 @@ export default function App() {
 
   const login=u=>setUser(u);
   const guestLogin=u=>{setUser(u);setGuest(false);setShowLoginPopup(false);};
+  // Lock page scroll while Journey Mode (full-screen globe) is active.
+  useEffect(()=>{
+    if(tab==="journey"){document.body.style.overflow="hidden";}
+    else{document.body.style.overflow="";}
+    return ()=>{document.body.style.overflow="";};
+  },[tab]);
   const logout = async () => { await supabase.auth.signOut(); setUser(null); setShowAcct(false); };
   const updateUser=u=>setUser(u);
 
@@ -3310,7 +3319,6 @@ export default function App() {
         </div>}
       </div>}
 
-      {tab==="journey"&&<JourneyMode user={user} allJobs={allJobs} appliedJobs={appliedJobs} onGoToJobs={()=>setTab("jobs")}/>}
     </main>
     {/* Legal footer */}
     <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
@@ -3328,6 +3336,9 @@ export default function App() {
       <span style={{fontSize:13,color:"#f4edd8",lineHeight:1.5,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexWrap:"wrap"}}><I.Scroll s={13} c="#c9a84c"/>Our <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a> have been updated. Please review and agree to continue.</span>
       <button onClick={async()=>{const np={...user.profile,tosVersion:TOS_VERSION};setUser(u=>({...u,profile:np}));if(user?.id){try{await supabase.from("profiles").upsert({id:user.id,name:user.name,data:np},{onConflict:"id"});}catch(e){console.error(e);}}}} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:8,padding:"8px 22px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,flexShrink:0}}>I Agree</button>
     </div>}
+
+    {/* Journey Mode — full-screen 3D globe overlay (scroll-locked) */}
+    {tab==="journey"&&user&&<JourneyGlobe user={user} onExit={()=>setTab("jobs")}/>}
   </div>
   </>;
 }
