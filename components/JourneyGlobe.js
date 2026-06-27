@@ -103,7 +103,7 @@ function statesToFeatures(statesGeo) {
   return feats;
 }
 
-export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit }) {
+export default function JourneyGlobe({ user, dots = [], statesGeo = null, provincesGeo = null, onExit }) {
   const mountRef = useRef(null);
   const globeRef = useRef(null);
   const dotsRef = useRef(dots);
@@ -120,9 +120,13 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
   const [selectedCompany, setSelectedCompany] = useState(null);
 
   dotsRef.current = dots;
+  const provinceFeatsRef = useRef([]);
   stateFeatsRef.current = stateFeatsRef.current.length
     ? stateFeatsRef.current
     : statesToFeatures(statesGeo);
+  provinceFeatsRef.current = provinceFeatsRef.current.length
+    ? provinceFeatsRef.current
+    : statesToFeatures(provincesGeo);
 
   const setNavBoth = (next) => {
     navRef.current = next;
@@ -219,9 +223,18 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
         if (lvl === "state" || lvl === "local") {
           const dotKey = COUNTRY_TO_DOTKEY[navRef.current.country];
           if (dotKey === "United States") return stateFeatsRef.current;
+          if (dotKey === "Canada") return provinceFeatsRef.current;
           return countryFeatsRef.current;
         }
         return countryFeatsRef.current;
+      };
+
+      // Resolve the sub-region geo set (US states or CA provinces) for a country.
+      const subGeoFor = (countryName) => {
+        const dk = COUNTRY_TO_DOTKEY[countryName];
+        if (dk === "United States") return statesGeo;
+        if (dk === "Canada") return provincesGeo;
+        return null;
       };
 
       const capColor = (d) => {
@@ -294,8 +307,9 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
         // single state (local level).
         if (lvl === "local") {
           const postal = navRef.current.state;
-          if (!postal || !statesGeo || !statesGeo[postal]) return [];
-          const stateName = statesGeo[postal].name;
+          const geo = subGeoFor(navRef.current.country);
+          if (!postal || !geo || !geo[postal]) return [];
+          const stateName = geo[postal].name;
           return dotsRef.current.filter((dt) => dt.state === stateName);
         }
         if (lvl === "state") {
@@ -323,23 +337,30 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
           )
           .pointResolution(12)
           .onPointHover((d) => {
+            // Dots are only interactive at the local (state/province) level.
+            if (navRef.current.level !== "local") {
+              hoveredDotRef.current = null;
+              return;
+            }
             hoveredDotRef.current = d || null;
             const g2 = globeRef.current;
             if (g2) g2.pointRadius(g2.pointRadius());
             if (mountRef.current)
               mountRef.current.style.cursor = d ? "pointer" : "grab";
           })
-          .pointLabel(
-            (d) =>
-              `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.92);border:1px solid rgba(201,168,76,.45);padding:5px 11px;border-radius:7px;font-size:12px;white-space:nowrap"><strong>${
-                d.name
-              }</strong>${
-                d.jobCount
-                  ? `<span style="color:rgba(244,237,216,.6);font-size:10px"> · ${d.jobCount} open</span>`
-                  : ""
-              }</div>`
+          .pointLabel((d) =>
+            navRef.current.level !== "local"
+              ? ""
+              : `<div style="font-family:'Cinzel',serif;color:${GOLD_BRIGHT};background:rgba(12,9,6,.92);border:1px solid rgba(201,168,76,.45);padding:5px 11px;border-radius:7px;font-size:12px;white-space:nowrap"><strong>${
+                  d.name
+                }</strong>${
+                  d.jobCount
+                    ? `<span style="color:rgba(244,237,216,.6);font-size:10px"> · ${d.jobCount} open</span>`
+                    : ""
+                }</div>`
           )
           .onPointClick((d) => {
+            if (navRef.current.level !== "local") return; // not clickable at country view
             if (d && d.name) {
               // Stage 3 will open a side panel here; for now, surface the name.
               setSelectedCompany(d);
@@ -369,7 +390,8 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
           flyTo(frame.lat, frame.lng, ALT_COUNTRY_LOCK);
         } else if (lvl === "state") {
           if (!isStateFeat(d)) return;
-          const st = statesGeo && statesGeo[d.properties.postal];
+          const geo = subGeoFor(navRef.current.country);
+          const st = geo && geo[d.properties.postal];
           const center = st ? st.c : featureFrame(d);
           const lat = Array.isArray(center) ? center[1] : center.lat;
           const lng = Array.isArray(center) ? center[0] : center.lng;
@@ -385,8 +407,10 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
           applyLevelControls();
           repaint();
           refreshDots();
+          refreshLabels();
         }, LERP_MS + 40);
         repaint();
+        refreshLabels();
       };
 
       // ── Scroll-out: back up one level (throttled) ─────────────────────────
@@ -406,27 +430,98 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
           // Back to the whole-country state view — dots for the whole country show.
           setNavBoth({ level: "state", continent: n.continent, country: n.country, state: null });
           flyTo(frame.lat, frame.lng, ALT_COUNTRY_LOCK);
-          setTimeout(() => { applyLevelControls(); repaint(); refreshDots(); }, LERP_MS + 40);
+          setTimeout(() => { applyLevelControls(); repaint(); refreshDots(); refreshLabels(); }, LERP_MS + 40);
           repaint();
           refreshDots();
+          refreshLabels();
         } else if (n.level === "state") {
           lastScrollRef.current = now;
           const c = CONTINENTS[n.continent] || { lat: 30, lng: -60 };
           globe.pointsData([]); // country level shows no dots
           setNavBoth({ level: "country", continent: n.continent, country: null, state: null });
           flyTo(c.lat, c.lng, ALT_CONTINENT_LOCK);
-          setTimeout(() => { applyLevelControls(); repaint(); }, LERP_MS + 40);
+          setTimeout(() => { applyLevelControls(); repaint(); refreshLabels(); }, LERP_MS + 40);
           repaint();
+          refreshLabels();
         } else if (n.level === "country") {
           lastScrollRef.current = now;
           const outLng = n.continent && CONTINENTS[n.continent] ? CONTINENTS[n.continent].lng : -60;
           setNavBoth({ level: "continent", continent: null, country: null, state: null });
           flyTo(30, outLng, ALT_CONTINENT_SELECT);
-          setTimeout(() => { applyLevelControls(); repaint(); }, LERP_MS + 40);
+          setTimeout(() => { applyLevelControls(); repaint(); refreshLabels(); }, LERP_MS + 40);
           repaint();
+          refreshLabels();
         }
       };
       mountRef.current.addEventListener("wheel", onWheel, { passive: false });
+
+      // ── Floating progress labels (continents at top level, countries after) ─
+      // Uses globe.gl's HTML elements layer. Each label shows a name and a
+      // "Progression %" sub-line (placeholder 0% until exploration tracking lands).
+      const COUNTRY_LABEL_CENTERS = {
+        "United States of America": { lat: 39.5, lng: -98 },
+        "Canada": { lat: 56, lng: -96 },
+        "Mexico": { lat: 23.5, lng: -102 },
+      };
+
+      const buildLabelData = () => {
+        const lvl = navRef.current.level;
+        if (lvl === "continent") {
+          return Object.entries(CONTINENTS).map(([name, c]) => ({
+            id: "cont-" + name,
+            lat: c.lat,
+            lng: c.lng,
+            name,
+            progress: 0, // placeholder until exploration tracking is implemented
+          }));
+        }
+        if (lvl === "country") {
+          // Show country labels for the locked continent's countries.
+          const cont = navRef.current.continent;
+          const seen = {};
+          const out = [];
+          for (const f of countryFeatsRef.current) {
+            if (f.properties.CONTINENT !== cont) continue;
+            const name = f.properties.NAME;
+            if (seen[name]) continue;
+            seen[name] = true;
+            const center =
+              COUNTRY_LABEL_CENTERS[name] || featureFrame(f);
+            out.push({
+              id: "ctry-" + name,
+              lat: center.lat,
+              lng: center.lng,
+              name,
+              progress: 0,
+            });
+          }
+          return out;
+        }
+        return []; // no floating labels at state/local level
+      };
+
+      const makeLabelEl = (d) => {
+        const el = document.createElement("div");
+        el.style.cssText =
+          "pointer-events:none;text-align:center;transform:translate(-50%,-50%);" +
+          "font-family:'Cinzel',serif;white-space:nowrap;";
+        el.innerHTML =
+          `<div style="font-size:15px;font-weight:700;letter-spacing:.5px;` +
+          `color:#ffe9b8;text-shadow:0 0 8px rgba(240,208,128,.8),0 0 16px rgba(232,97,58,.5);">${d.name}</div>` +
+          `<div style="font-size:9px;letter-spacing:.5px;margin-top:1px;` +
+          `color:#f0d080;text-shadow:0 0 6px rgba(240,208,128,.6);opacity:.85;">Progression ${d.progress}%</div>`;
+        return el;
+      };
+
+      const refreshLabels = () => {
+        const g = globeRef.current;
+        if (!g) return;
+        g.htmlElementsData(buildLabelData())
+          .htmlLat((d) => d.lat)
+          .htmlLng((d) => d.lng)
+          .htmlAltitude(0.06)
+          .htmlElement(makeLabelEl);
+      };
 
       // ── Load country polygons ─────────────────────────────────────────────
       fetch(COUNTRIES_URL)
@@ -459,6 +554,7 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
               }</div>`;
             });
           applyLevelControls();
+          refreshLabels();
           setLoading(false);
         })
         .catch(() => {
@@ -501,8 +597,9 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
     const lvl = navRef.current.level;
     if (lvl === "local") {
       const postal = navRef.current.state;
-      if (!postal || !statesGeo || !statesGeo[postal]) return;
-      const stateName = statesGeo[postal].name;
+      const geo = navRef.current.country === "Canada" ? provincesGeo : statesGeo;
+      if (!postal || !geo || !geo[postal]) return;
+      const stateName = geo[postal].name;
       globe.pointsData(dots.filter((dt) => dt.state === stateName));
     } else if (lvl === "state") {
       const dotKey = navRef.current.country === "United States of America"
@@ -519,9 +616,10 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, onExit
       ? `${nav.continent} — choose a country`
       : nav.level === "state"
       ? `${nav.country} — choose a state`
-      : statesGeo && statesGeo[nav.state]
-      ? statesGeo[nav.state].name
-      : "Explore";
+      : (() => {
+          const geo = nav.country === "Canada" ? provincesGeo : statesGeo;
+          return geo && geo[nav.state] ? geo[nav.state].name : "Explore";
+        })();
 
   const hint =
     nav.level === "continent"
