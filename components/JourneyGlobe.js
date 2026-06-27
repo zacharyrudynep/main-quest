@@ -476,22 +476,24 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
           }));
         }
         if (lvl === "country") {
-          // Show country labels for the locked continent's countries.
+          // Only the United States and Canada have progression labels for now.
+          const LABELED = { "United States of America": 1, "Canada": 1 };
           const cont = navRef.current.continent;
           const seen = {};
           const out = [];
           for (const f of countryFeatsRef.current) {
             if (f.properties.CONTINENT !== cont) continue;
             const name = f.properties.NAME;
-            if (seen[name]) continue;
+            if (!LABELED[name] || seen[name]) continue;
             seen[name] = true;
             const center =
               COUNTRY_LABEL_CENTERS[name] || featureFrame(f);
+            const display = name === "United States of America" ? "United States" : name;
             out.push({
               id: "ctry-" + name,
               lat: center.lat,
               lng: center.lng,
-              name,
+              name: display,
               progress: 0,
             });
           }
