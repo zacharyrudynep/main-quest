@@ -62,19 +62,22 @@ export default function JourneyGlobe({ user, onExit }) {
         controls.autoRotate = true;
         controls.autoRotateSpeed = 0.35;
         controls.enableZoom = true;
-        controls.enablePan = false; // OrbitControls pan is screen-space; we map buttons below
+        controls.enablePan = false;
         controls.minDistance = 140;
         controls.maxDistance = 480;
         controls.rotateSpeed = 0.8;
         controls.zoomSpeed = 0.9;
-        // Swap mouse buttons: LEFT = pan, RIGHT = rotate.
-        // globe.gl uses THREE.OrbitControls under the hood.
+        // Both mouse buttons rotate the globe. We intentionally keep pan OFF:
+        // OrbitControls' screen-space pan drifts the camera distance (which read
+        // as an unwanted zoom-out while rotating). Stepped zoom is handled by
+        // scroll; lat/lng framing comes later. LEFT and RIGHT both rotate so the
+        // control feels natural with either button.
         if (controls.mouseButtons) {
-          // THREE.MOUSE: LEFT=0, MIDDLE=1, RIGHT=2; map to ROTATE/DOLLY/PAN
-          controls.mouseButtons.LEFT = 2;  // PAN
+          controls.mouseButtons.LEFT = 0;  // ROTATE
           controls.mouseButtons.RIGHT = 0; // ROTATE
-          controls.enablePan = true;
         }
+        controls.enablePan = false;
+        controls.screenSpacePanning = false;
         // Stop auto-rotation as soon as the user interacts.
         const stopSpin = () => { controls.autoRotate = false; };
         controls.addEventListener("start", stopSpin);
