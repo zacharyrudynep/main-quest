@@ -428,7 +428,6 @@ const COMPANIES_DATA = {
       { name: "Muse Games", url: "https://musegames.com/jobs/", email: "jobs@musegames.com", contact: "https://musegames.com/contact/" },
       { name: "People Can Fly", url: "https://careers.smartrecruiters.com/PeopleCanFly", email: null, contact: null },
       { name: "Riftweaver", url: "https://riftweaver.com", email: null, contact: null },
-      { name: "Riot Games", url: "https://www.riotgames.com/en/work-with-us#job-list", email: null, contact: null },
       { name: "Rockstar", url: "https://www.rockstargames.com/careers/offices/rockstar-new-york", email: null, contact: null },
       { name: "Take-Two Interactive", url: "https://careers.take2games.com/jobs", email: null, contact: null },
       { name: "THQNordic", url: "https://thqnordic.com/company/careers", email: null, contact: "https://thqnordic.com/company/contact" },
@@ -892,6 +891,20 @@ const EMAIL_APPLY_JOBS = {
 
 const JOB_CATS = ["Game Designer","Level Designer","Narrative Designer","Software Engineer","Graphics Engineer","AI Programmer","Gameplay Programmer","Backend Engineer","DevOps Engineer","Mobile Developer","3D Artist","2D Artist","Concept Artist","Technical Artist","Character Artist","Environment Artist","Animator","VFX Artist","UI/UX Designer","Sound Designer","Composer","Audio Engineer","Producer","Project Manager","Scrum Master","QA Tester","QA Lead","Build Engineer","Community Manager","Marketing Specialist","PR Manager","Data Analyst","Data Scientist","Product Manager","IT Support","System Administrator","HR Manager","Recruiter","Finance Analyst"];
 
+// Position titles grouped into categories for the filter UI.
+const TITLE_CATEGORIES = {
+  "Design": ["Game Designer","Level Designer","Narrative Designer","UI/UX Designer"],
+  "Engineering": ["Software Engineer","Graphics Engineer","AI Programmer","Gameplay Programmer","Backend Engineer","DevOps Engineer","Mobile Developer","Build Engineer"],
+  "Art & Animation": ["3D Artist","2D Artist","Concept Artist","Technical Artist","Character Artist","Environment Artist","Animator","VFX Artist"],
+  "Audio": ["Sound Designer","Composer","Audio Engineer"],
+  "Production": ["Producer","Project Manager","Scrum Master","Product Manager"],
+  "QA": ["QA Tester","QA Lead"],
+  "Marketing & Community": ["Community Manager","Marketing Specialist","PR Manager"],
+  "Data": ["Data Analyst","Data Scientist"],
+  "IT & Operations": ["IT Support","System Administrator"],
+  "People & Finance": ["HR Manager","Recruiter","Finance Analyst"],
+};
+
 const JOB_SUMMARIES = {"Game Designer":"Design engaging gameplay systems and player experiences.","Gameplay Programmer":"Build character controllers, physics, and combat mechanics in C++ or C#.","Software Engineer":"Build robust engine systems, tools, and runtime features.","Graphics Engineer":"Develop real-time rendering systems, shaders, and visual effects.","Level Designer":"Craft memorable spaces that guide players through gameplay.","Narrative Designer":"Shape stories through dialogue, quests, and worldbuilding.","3D Artist":"Create high-quality game-ready 3D assets.","2D Artist":"Create 2D art assets including UI, icons, and textures.","Concept Artist":"Define visual language through characters, environments, and props.","Technical Artist":"Bridge art and engineering via pipelines, shaders, and tools.","Character Artist":"Create detailed, game-ready character models and textures.","Environment Artist":"Build immersive, performance-optimized game environments.","Animator":"Bring characters to life through expressive game-ready animation.","VFX Artist":"Create stunning real-time visual effects for gameplay and cinematics.","UI/UX Designer":"Design intuitive interfaces that give players seamless access to systems.","Sound Designer":"Design and implement sounds that make the game world feel alive.","Composer":"Create adaptive musical scores that enhance gameplay and emotion.","Audio Engineer":"Implement and optimize audio systems using Wwise or FMOD.","Producer":"Keep teams aligned and production running smoothly from concept to launch.","Project Manager":"Own schedules, milestones, and cross-team communication.","Scrum Master":"Facilitate agile ceremonies and remove blockers across teams.","QA Tester":"Champion quality by finding and documenting bugs before players do.","QA Lead":"Lead QA strategy, test plans, and quality standards.","Build Engineer":"Design and maintain CI/CD pipelines and build systems.","Community Manager":"Bridge the studio and player community across all platforms.","Marketing Specialist":"Drive awareness and player acquisition through targeted campaigns.","PR Manager":"Manage press relationships and shape the studio's public narrative.","Data Analyst":"Turn player data into actionable insights.","Data Scientist":"Apply ML to telemetry, matchmaking, and monetization.","Product Manager":"Own the product roadmap and drive features from concept to launch.","AI Programmer":"Build sophisticated AI systems for NPCs, enemies, and simulation.","Backend Engineer":"Design and scale server infrastructure for online games.","DevOps Engineer":"Build and maintain reliable cloud infrastructure and deployments.","Mobile Developer":"Build performant game clients for iOS and Android.","IT Support":"Keep studio technology running and support team productivity.","System Administrator":"Manage studio networks, servers, and security.","HR Manager":"Lead people operations, culture, and talent programs.","Recruiter":"Find and bring exceptional talent into the studio.","Finance Analyst":"Support financial planning, forecasting, and reporting."};
 
 const SENIOR_CATS = new Set(["Graphics Engineer","Technical Artist","AI Programmer","Gameplay Programmer","Build Engineer","System Administrator","Data Scientist","Product Manager","Finance Analyst","QA Lead","Producer","Project Manager","Scrum Master","Backend Engineer","DevOps Engineer"]);
@@ -1139,7 +1152,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'")
     .replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"\u2019").replace(/&lsquo;/g,"\u2018").replace(/&ldquo;/g,"\u201c").replace(/&rdquo;/g,"\u201d").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
   const stripHtml = h => decodeEntities(h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
-  const guessExp = t => { const tl=(t||"").toLowerCase(); if(/director|head of|vp/.test(tl))return"Director"; if(/principal/.test(tl))return"Principal"; if(/\blead\b/.test(tl))return"Lead"; if(/senior|sr\./.test(tl))return"Senior"; if(/junior|jr\.|intern|entry/.test(tl))return"Entry Level"; return"Mid Level"; };
+  const guessExp = t => { const tl=(t||"").toLowerCase(); if(/\bintern\b|internship|\bco-?op\b/.test(tl))return"Internship"; if(/director|head of|vp/.test(tl))return"Director"; if(/principal/.test(tl))return"Principal"; if(/\blead\b/.test(tl))return"Lead"; if(/senior|sr\./.test(tl))return"Senior"; if(/junior|jr\.|entry/.test(tl))return"Entry Level"; return"Mid Level"; };
   let title="", url="", body="", loc="", updated=Date.now(), salary="Salary not listed", rawHtml="";
 
   if(platform==="greenhouse"){
@@ -1193,7 +1206,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   }
 
   const daysAgo=Math.floor((Date.now()-updated)/86400000);
-  let isRemote=/remote|distributed|anywhere/i.test(title+" "+loc+" "+body.slice(0,200));
+  let isRemote=/remote|distributed|anywhere/i.test(title+" "+loc+" "+body.slice(0,200)); let isHybrid=false;
   // Structured employment type / remote flag when the ATS provides them (Ashby does).
   let jobType="Full-time";
   if(platform==="ashby"){
@@ -1205,6 +1218,11 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     const et={full_time:"Full-time","full-time":"Full-time",part_time:"Part-time","part-time":"Part-time",intern:"Internship",trainee:"Internship",temporary:"Temporary",contract:"Contract"}[(raw.employmentType||"").toLowerCase()];
     if(et) jobType=et;
   }
+  // Title-based fallbacks (catch internships/part-time the ATS didn't tag).
+  if(/\bintern\b|internship|\bco-?op\b/i.test(title)) jobType="Internship";
+  else if(/\bpart[- ]?time\b/i.test(title)) jobType="Part-time";
+  // Hybrid detection from location/workplace info.
+  if(/\bhybrid\b/i.test(loc)||/\bhybrid\b/i.test(body.slice(0,300))) isHybrid=true;
   // try to find a salary range in the body if not provided
   if(salary==="Salary not listed"){
     const sm=body.match(/\$(\d[\d,]+)\s*[-\u2013]+\s*\$(\d[\d,]+)/);
@@ -1215,7 +1233,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     id:`ats-${platform}-${raw.id||raw.shortcode||raw.uuid||title.replace(/\s+/g,"")}`,
     title, company:company.name, url, applyUrl:url, state:stateKey,
     posted:new Date(updated), postedStr:new Date(updated).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
-    daysAgo, isNew:daysAgo<3, isRemote, type:jobType, salary, email:company.email,
+    daysAgo, isNew:daysAgo<3, isRemote, isHybrid, type:jobType, salary, email:company.email,
     experience:guessExp(title), isVolunteer:false, isLive:true,
     summary:(parsed.summary||body.slice(0,240)).trim()+((parsed.summary||body).length>240?"\u2026":""),
     fullDescription:body.slice(0,2000),
@@ -2008,7 +2026,7 @@ function parseResumeText(text){
 
   // Years of experience — look for "X years"
   const yrs=flat.match(/(\d{1,2})\+?\s*years?(\s+of)?\s+(experience|exp)/i);
-  if(yrs){const n=parseInt(yrs[1]);out.experience=n<1?"0-1 years":n<2?"1-2 years":n<4?"2-4 years":n<7?"4-7 years":n<10?"7-10 years":"10+ years";}
+  if(yrs){const n=parseInt(yrs[1]);out.experience=n<2?"Entry Level":n<5?"Mid Level":n<8?"Senior":n<12?"Lead":"Principal";}
 
   // Bio — first sentence of a summary/objective section, else first long line
   const sumIdx=lines.findIndex(l=>/^(summary|profile|objective|about)\b/i.test(l));
@@ -2135,7 +2153,7 @@ const upload=async(e)=>{
     )}
     <div style={fld}><label style={lbl}>Key Skills</label><AutoTextarea style={inp} minHeight={70} maxHeight={200} value={profile.skills||""} onChange={e=>updateField("skills",e.target.value)} placeholder="e.g. Unreal Engine 5, C++, Blueprint scripting, multiplayer..."/></div>
     <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
-      <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={profile.experience||""} onChange={e=>updateField("experience",e.target.value)}><option value="">Select</option><option value="0-1 years">0-1 years</option><option value="1-2 years">1-2 years</option><option value="2-4 years">2-4 years</option><option value="4-7 years">4-7 years</option><option value="7-10 years">7-10 years</option><option value="10+ years">10+ years</option></select></div>
+      <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={profile.experience||""} onChange={e=>updateField("experience",e.target.value)}><option value="">Select</option><option value="Internship">Internship (student / 0 yrs)</option><option value="Entry Level">Entry Level (0-2 yrs)</option><option value="Mid Level">Mid Level (2-5 yrs)</option><option value="Senior">Senior (5-8 yrs)</option><option value="Lead">Lead (8-12 yrs)</option><option value="Principal">Principal (12+ yrs)</option><option value="Director">Director (15+ yrs)</option></select></div>
       <div style={fld}><label style={lbl}>Target Salary</label><input style={inp} value={profile.targetSalary||""} onChange={e=>updateField("targetSalary",e.target.value)} placeholder="e.g. $90k–$120k"/></div>
     </div>
     <div style={fld}><label style={lbl}>Education</label><input style={inp} value={profile.education||""} onChange={e=>updateField("education",e.target.value)} placeholder="e.g. BS Computer Science, DigiPen, 2022"/></div>
@@ -2366,7 +2384,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
           <div style={{width:56,height:56,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",margin:"0 auto 16px"}}>{initials}</div>
           <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}><div style={fld}><label style={lbl}>Display Name</label><input style={inp} value={p.name} onChange={e=>upd("name",e.target.value)} placeholder="Your name"/></div><div style={fld}><label style={lbl}>Location</label><input style={inp} value={p.location} onChange={e=>upd("location",e.target.value)} placeholder="City, State"/></div></div>
           <div style={fld}><label style={lbl}>Target Role</label><input style={inp} value={p.role} onChange={e=>upd("role",e.target.value)} placeholder="e.g. Game Designer, Software Engineer"/></div>
-          <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={p.experience||""} onChange={e=>upd("experience",e.target.value)}><option value="">Select</option><option value="0-1 years">0-1 years</option><option value="1-2 years">1-2 years</option><option value="2-4 years">2-4 years</option><option value="4-7 years">4-7 years</option><option value="7-10 years">7-10 years</option><option value="10+ years">10+ years</option></select></div>
+          <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={p.experience||""} onChange={e=>upd("experience",e.target.value)}><option value="">Select</option><option value="Internship">Internship (student / 0 yrs)</option><option value="Entry Level">Entry Level (0-2 yrs)</option><option value="Mid Level">Mid Level (2-5 yrs)</option><option value="Senior">Senior (5-8 yrs)</option><option value="Lead">Lead (8-12 yrs)</option><option value="Principal">Principal (12+ yrs)</option><option value="Director">Director (15+ yrs)</option></select></div>
           <div style={fld}><label style={lbl}>Bio</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={p.bio} onChange={e=>upd("bio",e.target.value)} placeholder="Short professional summary..."/></div>
           <div style={fld}><label style={lbl}>Open To</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["Full-time","Contract","Remote","Hybrid","On-site","Relocation"].map(opt=><button key={opt} onClick={()=>toggleOt(opt)} style={{background:p.openTo.includes(opt)?"rgba(201,168,76,.18)":"rgba(244,237,216,.05)",border:`1px solid ${p.openTo.includes(opt)?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:p.openTo.includes(opt)?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:20,fontSize:11,padding:"4px 14px",fontFamily:"inherit"}}>{opt}</button>)}</div></div>
         </div>}
@@ -2678,13 +2696,42 @@ function CheckGroup({opts,sel,onChange}) {
   </label>)}</div>;
 }
 
-function FSection({title,count,children}) {
+// Position titles, chunked into collapsible categories. Each category has a
+// check-all checkbox that toggles every title within it.
+function TitleCategoryGroup({sel,onChange}) {
+  const toggle=v=>onChange(sel.includes(v)?sel.filter(x=>x!==v):[...sel,v]);
+  const [openCats,setOpenCats]=useState({});
+  return <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:240,overflowY:"auto"}}>
+    {Object.entries(TITLE_CATEGORIES).map(([cat,titles])=>{
+      const allOn=titles.every(t=>sel.includes(t));
+      const someOn=titles.some(t=>sel.includes(t));
+      const open=openCats[cat];
+      const toggleCat=()=>{ if(allOn) onChange(sel.filter(t=>!titles.includes(t))); else onChange([...new Set([...sel,...titles])]); };
+      return <div key={cat} style={{border:"1px solid rgba(201,168,76,.08)",borderRadius:7,overflow:"hidden"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 7px",background:"rgba(201,168,76,.04)"}}>
+          <div onClick={toggleCat} title="Toggle all in category" style={{width:14,height:14,borderRadius:4,border:`1.5px solid ${allOn?"#c9a84c":someOn?"rgba(201,168,76,.6)":"rgba(201,168,76,.25)"}`,background:allOn?"#c9a84c":someOn?"rgba(201,168,76,.3)":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{allOn&&<I.Check s={8} c="#0a0608"/>}{!allOn&&someOn&&<div style={{width:6,height:2,background:"#0a0608"}}/>}</div>
+          <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{flex:1,fontSize:10,fontWeight:700,color:"rgba(244,237,216,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.3,cursor:"pointer"}}>{cat}</span>
+          <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{cursor:"pointer",display:"inline-flex"}}><I.Chevron s={10} c="rgba(244,237,216,.4)" dir={open?"up":"down"}/></span>
+        </div>
+        {open&&<div style={{padding:"3px 6px 5px"}}>
+          {titles.map(t=><label key={t} onClick={()=>toggle(t)} style={{display:"flex",alignItems:"center",gap:7,padding:"3px 5px",borderRadius:6,cursor:"pointer",userSelect:"none"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <div style={{width:14,height:14,borderRadius:4,border:`1.5px solid ${sel.includes(t)?"#c9a84c":"rgba(201,168,76,.25)"}`,background:sel.includes(t)?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{sel.includes(t)&&<I.Check s={8} c="#0a0608"/>}</div>
+            <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>{t}</span>
+          </label>)}
+        </div>}
+      </div>;
+    })}
+  </div>;
+}
+
+function FSection({title,count,children,onClear}) {
   const [open,setOpen]=useState(true);
   return <div style={{border:"1px solid rgba(201,168,76,.1)",borderRadius:10,overflow:"hidden",marginBottom:4}}>
     <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",background:"rgba(201,168,76,.05)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",fontFamily:"'Cinzel',serif",color:"rgba(244,237,216,.6)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:.8,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.09)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.05)"}>
       <span style={{flex:1,textAlign:"left"}}>{title}</span>
       {count>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{count}</span>}
       <span style={{fontSize:9,color:"rgba(244,237,216,.4)"}}><I.Chevron s={11} c="currentColor" dir={open?"up":"down"}/></span>
+      {count>0&&onClear&&<span onClick={e=>{e.stopPropagation();onClear();}} title="Clear this category" style={{fontSize:11,color:"rgba(232,97,58,.7)",cursor:"pointer",padding:"0 2px",lineHeight:1}}>✕</span>}
     </button>
     {open&&<div style={{padding:"8px 10px 10px"}}>{children}</div>}
   </div>;
@@ -2970,9 +3017,9 @@ export default function App() {
     });
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
-  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""});
+  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""});
   const [filterOpen,setFilterOpen]=useState(false);
-  const [showNewRegs,setShowNewRegs]=useState(false);
+  const [hideEmpty,setHideEmpty]=useState(false);
   // When the user types a search query, auto-expand every country/state that
   // contains a matching company (by name) or matching job, so results are
   // immediately visible instead of hidden inside collapsed accordions.
@@ -3070,7 +3117,8 @@ export default function App() {
     if(f.titles.length>0&&!f.titles.includes(job.title))return false;
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.includes("Remote OK")&&!job.isRemote)return false;
-    if(f.remote.includes("On-site Only")&&job.isRemote)return false;
+    if(f.remote.includes("Hybrid")&&!job.isHybrid)return false;
+    if(f.remote.includes("On-site Only")&&(job.isRemote||job.isHybrid))return false;
     if(f.types.length>0&&!f.types.includes(job.type))return false;
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
@@ -3086,7 +3134,8 @@ export default function App() {
     if(f.titles.length>0&&!f.titles.includes(job.title))return false;
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.includes("Remote OK")&&!job.isRemote)return false;
-    if(f.remote.includes("On-site Only")&&job.isRemote)return false;
+    if(f.remote.includes("Hybrid")&&!job.isHybrid)return false;
+    if(f.remote.includes("On-site Only")&&(job.isRemote||job.isHybrid))return false;
     if(f.types.length>0&&!f.types.includes(job.type))return false;
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
@@ -3103,7 +3152,10 @@ export default function App() {
     }
     if(jobSort==="newest")return new Date(b.posted)-new Date(a.posted);
     if(jobSort==="oldest")return new Date(a.posted)-new Date(b.posted);
-    if(jobSort==="title")return a.title.localeCompare(b.title);
+    if(jobSort==="experience"){
+      const order={"Internship":0,"Entry Level":1,"Mid Level":2,"Senior":3,"Lead":4,"Principal":5,"Director":6};
+      return (order[a.experience]??99)-(order[b.experience]??99);
+    }
     return 0;
   });
 
@@ -3216,7 +3268,6 @@ export default function App() {
     return {tree,newRegs};
   },[liveJobs]);
   const displayTree=displayTreeData.tree;
-  const newRegistrations=displayTreeData.newRegs;
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
   if(!user&&!guest){
@@ -3310,17 +3361,17 @@ export default function App() {
             {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
           {filterOpen&&<div style={{background:"rgba(16,10,22,.7)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:mobile?12:16,marginTop:8,display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(190px,1fr))",gap:4}}>
-            <FSection title="Country" count={filters.countries.length}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
-            <FSection title="State / Province" count={filters.states.length}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(ALL_JOBS_DATA[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
-            <FSection title="Position Title" count={filters.titles.length}><CheckGroup opts={allTitles} sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
-            <FSection title="Experience Level" count={filters.experience?.length||0}><CheckGroup opts={["Entry Level","Mid Level","Senior","Lead","Principal","Director"]} sel={filters.experience||[]} onChange={v=>setFilters(f=>({...f,experience:v}))}/></FSection>
-            <FSection title="Work Type" count={filters.types.length+filters.remote.length}>
+            <FSection title="Country" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
+            <FSection title="State / Province" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(ALL_JOBS_DATA[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
+            <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
+            <FSection title="Experience Level" count={filters.experience?.length||0} onClear={()=>setFilters(f=>({...f,experience:[]}))}><CheckGroup opts={["Internship","Entry Level","Mid Level","Senior","Lead","Principal","Director"]} sel={filters.experience||[]} onChange={v=>setFilters(f=>({...f,experience:v}))}/></FSection>
+            <FSection title="Work Type" count={filters.types.length+filters.remote.length} onClear={()=>setFilters(f=>({...f,types:[],remote:[]}))}>
               <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:5}}>Job Type</div>
-              <CheckGroup opts={["Full-time","Contract","Volunteer"]} sel={filters.types} onChange={v=>setFilters(f=>({...f,types:v}))}/>
+              <CheckGroup opts={["Full-time","Part-time","Contract","Internship","Volunteer"]} sel={filters.types} onChange={v=>setFilters(f=>({...f,types:v}))}/>
               <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:5,marginTop:8}}>Location</div>
-              <CheckGroup opts={["Remote OK","On-site Only"]} sel={filters.remote} onChange={v=>setFilters(f=>({...f,remote:v}))}/>
+              <CheckGroup opts={["Remote OK","Hybrid","On-site Only"]} sel={filters.remote} onChange={v=>setFilters(f=>({...f,remote:v}))}/>
             </FSection>
-            <FSection title="Date & Other" count={(filters.dateFrom?1:0)+(filters.newOnly?1:0)}>
+            <FSection title="Date & Other" count={(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)} onClear={()=>setFilters(f=>({...f,dateFrom:"",newOnly:false,activeOnly:false,emailApplyOnly:false}))}>
               <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:4}}>Posted After</div>
               <input type="date" value={filters.dateFrom} onChange={e=>setFilters(f=>({...f,dateFrom:e.target.value}))} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"7px 10px",fontSize:11,fontFamily:"inherit",marginBottom:10}}/>
               <label onClick={()=>setFilters(f=>({...f,newOnly:!f.newOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none"}}>
@@ -3351,7 +3402,13 @@ export default function App() {
         {/* Sort bar */}
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",padding:mobile?"7px 10px":"8px 12px",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:12}}>
           <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8,marginRight:2}}>Sort:</span>
-          {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest")}{sortChip("oldest","Oldest")}{!mobile&&sortChip("title","Title A–Z")}
+          {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest")}{sortChip("oldest","Oldest")}{sortChip("experience","Experience Level")}
+          <div style={{flex:1}}/>
+          <button onClick={()=>setExpanded({})} title="Collapse all companies, states and countries" style={{background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:5}}><I.Chevron s={10} c="currentColor" dir="up"/>Close all tabs</button>
+          <label onClick={()=>setHideEmpty(h=>!h)} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",userSelect:"none"}}>
+            <div style={{width:14,height:14,borderRadius:4,border:`1.5px solid ${hideEmpty?"#c9a84c":"rgba(201,168,76,.25)"}`,background:hideEmpty?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{hideEmpty&&<I.Check s={8} c="#0a0608"/>}</div>
+            <span style={{fontSize:10,color:"rgba(244,237,216,.55)",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>Hide empty states/countries</span>
+          </label>
         </div>
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -3370,6 +3427,7 @@ export default function App() {
                 const anyVol=volOnly&&Object.values(states).some(cos=>Object.values(cos).some(co=>co.volunteer));
                 if(cTotal===0&&!anyCoName&&!anyEmail&&!anyVol)return null;
               }
+              if(hideEmpty&&cTotal===0)return null;
               return <div key={country} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.14)",borderRadius:14,overflow:"hidden"}}>
                 <button onClick={()=>toggle(cKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,padding:mobile?"11px 12px":"14px 16px",fontFamily:"'Cinzel',serif",fontSize:mobile?12:13,fontWeight:700,color:"#f4edd8",letterSpacing:.5,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                   <span style={{display:"inline-flex",color:"rgba(201,168,76,.45)"}}><I.Chevron s={11} c="currentColor" dir={expanded[cKey]?"down":"right"}/></span>
@@ -3400,6 +3458,7 @@ export default function App() {
                       }).length;
                       // Hide this state entirely if a filter is active and nothing in it matches
                       if(hasAnyFilter&&sCompaniesShown===0)return null;
+                      if(hideEmpty&&sTotal===0)return null;
                       return <div key={state} style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,overflow:"hidden"}}>
                         <button onClick={()=>toggle(sKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:mobile?"8px 10px":"10px 12px",fontFamily:"'Cinzel',serif",fontSize:mobile?10:11,fontWeight:600,color:"#c9a84c",letterSpacing:.3,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                           <span style={{display:"inline-flex",color:"rgba(201,168,76,.4)"}}><I.Chevron s={10} c="currentColor" dir={expanded[sKey]?"down":"right"}/></span>
@@ -3470,17 +3529,20 @@ export default function App() {
                                       const multi=keys.length>1;
                                       const renderJob=j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>;
                                       if(!multi) return fJobs.map(renderJob);
-                                      return keys.map(k=>(
-                                        <div key={k} style={{display:"flex",flexDirection:"column",gap:5}}>
-                                          <div style={{display:"flex",alignItems:"center",gap:6,padding:"2px 2px 1px",marginTop:2}}>
+                                      return keys.map(k=>{
+                                        const locKey=`loc-${country}-${state}-${name}-${k}`;
+                                        const locOpen=expanded[locKey]!==false; // default open
+                                        return <div key={k} style={{display:"flex",flexDirection:"column",gap:5}}>
+                                          <div onClick={()=>toggle(locKey)} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 4px 3px",marginTop:2,cursor:"pointer",borderRadius:6}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.05)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                                            <span style={{display:"inline-flex",color:"rgba(201,168,76,.5)"}}><I.Chevron s={10} c="currentColor" dir={locOpen?"down":"right"}/></span>
                                             <I.Map s={11} c="rgba(201,168,76,.55)"/>
                                             <span style={{fontSize:10,fontWeight:700,color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.4}}>{k}</span>
-                                            <span style={{fontSize:8.5,color:"rgba(244,237,216,.3)"}}>{groups[k].length}</span>
+                                            <span style={{fontSize:8.5,color:"rgba(244,237,216,.3)"}}>{groups[k].length} {groups[k].length===1?"job":"jobs"}</span>
                                             <span style={{flex:1,height:1,background:"rgba(201,168,76,.08)"}}/>
                                           </div>
-                                          {groups[k].map(renderJob)}
-                                        </div>
-                                      ));
+                                          {locOpen&&groups[k].map(renderJob)}
+                                        </div>;
+                                      });
                                     })()}
                                 </div>}
                               </div>;
@@ -3544,38 +3606,6 @@ export default function App() {
       </div>}
 
     </main>
-    {/* Dev panel: new auto-registered (company, state) pairs to add to COMPANIES_DATA */}
-    {newRegistrations.length>0&&<div style={{position:"fixed",left:12,bottom:12,zIndex:40,maxWidth:340,fontFamily:"system-ui,sans-serif"}}>
-      <button onClick={()=>setShowNewRegs(s=>!s)} style={{background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:showNewRegs?"8px 8px 0 0":8,padding:"7px 12px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6}}>
-        <I.Map s={12} c="currentColor"/> {newRegistrations.length} new {newRegistrations.length===1?"registration":"registrations"} {showNewRegs?"▾":"▸"}
-      </button>
-      {showNewRegs&&<div style={{background:"rgba(12,9,6,.97)",border:"1px solid rgba(201,168,76,.35)",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"10px 12px",maxHeight:320,overflowY:"auto"}}>
-        <div style={{fontSize:10,color:"rgba(244,237,216,.55)",marginBottom:8,lineHeight:1.5}}>
-          These companies have live jobs in states where they weren't registered. Add them to COMPANIES_DATA under the listed state:
-        </div>
-        {(()=>{
-          // Group by country -> state for readability.
-          const byCS={};
-          for(const r of newRegistrations){const k=`${r.country} › ${r.state}`;(byCS[k]=byCS[k]||[]).push(r);}
-          return Object.entries(byCS).sort().map(([cs,regs])=>(
-            <div key={cs} style={{marginBottom:8}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",marginBottom:3}}>{cs}</div>
-              {regs.sort((a,b)=>a.company.localeCompare(b.company)).map(r=>(
-                <div key={r.company} style={{fontSize:11,color:"rgba(244,237,216,.8)",padding:"1px 0"}}>
-                  • {r.company} <span style={{color:"rgba(244,237,216,.4)"}}>({r.jobCount} {r.jobCount===1?"job":"jobs"})</span>
-                </div>
-              ))}
-            </div>
-          ));
-        })()}
-        <button onClick={()=>{
-          const lines=newRegistrations.slice().sort((a,b)=>(a.country+a.state+a.company).localeCompare(b.country+b.state+b.company)).map(r=>`${r.country} / ${r.state}: ${r.company} (${r.jobCount} jobs)`).join("\n");
-          navigator.clipboard&&navigator.clipboard.writeText(lines);
-        }} style={{marginTop:6,width:"100%",background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:6,padding:"6px",fontSize:10,fontFamily:"'Cinzel',serif"}}>
-          Copy all to clipboard
-        </button>
-      </div>}
-    </div>}
     {/* Legal footer */}
     <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
