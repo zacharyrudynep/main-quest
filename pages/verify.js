@@ -21,9 +21,10 @@ export default function Verify() {
       try {
         const r = await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug.trim())}`);
         const data = await r.json();
-        found.push({ platform, count: data.count || 0, ok: (data.count || 0) > 0 });
+        const count = data.count || 0;
+        found.push({ platform, count, ok: count > 0, slugValid: !!data.slugValid });
       } catch {
-        found.push({ platform, count: 0, ok: false });
+        found.push({ platform, count: 0, ok: false, slugValid: false });
       }
     }
     setResults(found);
@@ -31,6 +32,8 @@ export default function Verify() {
   };
 
   const working = results?.filter(r => r.ok) || [];
+  // Slugs that resolved to a real board but currently have no open postings.
+  const validEmpty = results?.filter(r => !r.ok && r.slugValid) || [];
   const G = "linear-gradient(135deg,#c9a84c,#e8613a)";
 
   return <>
@@ -74,17 +77,31 @@ export default function Verify() {
                   </div>
                 ))}
               </div>
+            ) : validEmpty.length > 0 ? (
+              <div style={{ marginBottom: 16, padding: 14, background: "rgba(240,208,128,.1)", border: "1px solid rgba(240,208,128,.35)", borderRadius: 8 }}>
+                <div style={{ color: "#f0d080", fontWeight: 700, marginBottom: 8 }}>✓ Valid slug — but no open postings right now</div>
+                {validEmpty.map(w => (
+                  <div key={w.platform} style={{ fontSize: 13, marginBottom: 6 }}>
+                    <strong>{w.platform}</strong> — the board exists and the slug is correct, but it has 0 active jobs at the moment. It's safe to add now; jobs will appear automatically when the studio posts them.
+                    <pre style={{ background: "rgba(0,0,0,.4)", padding: "8px 10px", borderRadius: 6, marginTop: 4, fontSize: 12, overflow: "auto" }}>
+{`  "${studioName || "Studio Name"}": { platform:"${w.platform}", slug:"${slug.trim()}" },`}
+                    </pre>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div style={{ color: "#e07060", marginBottom: 16, padding: 14, background: "rgba(192,50,26,.08)", border: "1px solid rgba(192,50,26,.25)", borderRadius: 8 }}>
-                No platform returned jobs for slug "<strong>{slug}</strong>". Try a different slug — check the studio's careers page URL for the right one, or they may use an ATS we don't support yet.
+                No platform recognized slug "<strong>{slug}</strong>". The slug didn't resolve to a valid board on any platform. Try a different slug — check the studio's careers page URL for the right one, or they may use an ATS we don't support yet.
               </div>
             )}
             <div style={{ fontSize: 12, color: "rgba(244,237,216,.45)" }}>
               <div style={{ marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Full results:</div>
               {results.map(r => (
                 <div key={r.platform} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(201,168,76,.06)" }}>
-                  <span>{r.ok ? "✓" : "✗"} {r.platform}</span>
-                  <span>{r.count} jobs</span>
+                  <span style={{ color: r.ok ? "#7ecfb3" : r.slugValid ? "#f0d080" : "rgba(244,237,216,.45)" }}>
+                    {r.ok ? "✓" : r.slugValid ? "◐" : "✗"} {r.platform}
+                  </span>
+                  <span>{r.ok ? `${r.count} jobs` : r.slugValid ? "valid, 0 jobs" : "no match"}</span>
                 </div>
               ))}
             </div>

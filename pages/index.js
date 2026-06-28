@@ -915,6 +915,15 @@ function genJobs(company, stateKey) {
 
 
 // Build all job data once at module level
+// Map of company name -> its registered "home" state (where it lives in
+// COMPANIES_DATA). Used so remote/foreign/unknown jobs fall back to one place.
+const companyHomeState = {};
+for (const [country,states] of Object.entries(COMPANIES_DATA)) {
+  for (const [state,companies] of Object.entries(states)) {
+    for (const co of companies) { if(!companyHomeState[co.name]) companyHomeState[co.name]=state; }
+  }
+}
+
 const ALL_JOBS_DATA = {};
 for (const [country,states] of Object.entries(COMPANIES_DATA)) {
   ALL_JOBS_DATA[country] = {};
@@ -1060,6 +1069,41 @@ function locationLabel(loc){
   if(!region && US_STATE_ABBR[city.toLowerCase()]) return city;
   const out=[city,region].filter(Boolean).join(", ");
   return out||"Other";
+}
+
+// Determine which US state or Canada province a job is actually located in,
+// based on its parsed location. Returns the canonical full name used as the
+// tree key (e.g. "California", "Ontario") or null if the job is outside the
+// US/Canada regions we track (so foreign roles like Thailand/Ireland are hidden
+// until those regions exist). Also returns null for Remote/unknown.
+const ABBR_TO_STATENAME=(()=>{const m={};for(const[name,ab] of Object.entries(US_STATE_ABBR)){if(!m[ab])m[ab]=name.replace(/\b\w/g,c=>c.toUpperCase());}
+  // Canonical display names matching the company tree keys.
+  m.NL="Newfoundland"; m.QC="Quebec"; return m;})();
+// Canonical tree-key names (some differ from titlecased map values).
+const STATENAME_CANON={ "District Of Columbia":"District of Columbia", "Newfoundland And Labrador":"Newfoundland", "New Hampshire":"New Hampshire", "New Jersey":"New Jersey", "New Mexico":"New Mexico", "New York":"New York", "North Carolina":"North Carolina", "North Dakota":"North Dakota", "Rhode Island":"Rhode Island", "South Carolina":"South Carolina", "South Dakota":"South Dakota", "West Virginia":"West Virginia", "British Columbia":"British Columbia" };
+function jobStateName(job){
+  const raw=(job.location||"").trim();
+  if(!raw) return "REMOTE"; // unknown location → treat like remote (home-state fallback)
+  if(/^\s*remote/i.test(raw)||(/\b(remote|anywhere|distributed)\b/i.test(raw)&&!/,/.test(raw))) return "REMOTE";
+  const lower=raw.toLowerCase();
+  // 1. Direct full-name match (state or province name appears in the location).
+  for(const name of Object.keys(US_STATE_ABBR)){
+    const re=new RegExp("(^|[ ,])"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([ ,]|$)","i");
+    if(re.test(lower)){ const ab=US_STATE_ABBR[name]; return canonStateName(ab,name); }
+  }
+  // 2. Abbreviation match (", CA", ", TX", ", ON").
+  const parts=raw.split(/[,\u2022\/|]+/).map(s=>s.trim()).filter(Boolean);
+  for(const p of parts){
+    const up=p.toUpperCase();
+    if(ABBR_TO_STATENAME[up]) return canonStateName(up, ABBR_TO_STATENAME[up].toLowerCase());
+  }
+  // Has a real location, but not a US state / CA province we track (e.g. Thailand,
+  // Ireland). Return null → hidden everywhere until we add that region.
+  return null;
+}
+function canonStateName(ab, lowerName){
+  const titled=(lowerName||"").replace(/\b\w/g,c=>c.toUpperCase());
+  return STATENAME_CANON[titled] || ABBR_TO_STATENAME[ab] || titled;
 }
 
 function ashbySalary(comp){
@@ -2894,11 +2938,24 @@ export default function App() {
 
   useEffect(()=>{ const t=setTimeout(fetchLiveJobs,2000); return()=>{clearTimeout(t);abortRef.current?.abort();}; },[]);
 
-  const getDisplayJobs=(name,gen)=>{
+  const getDisplayJobs=(name,gen,stateName)=>{
     const live=liveJobs[name];
+    let all;
     // Live ATS jobs take priority. gen only ever contains real volunteer-override jobs now.
-    if(Array.isArray(live)&&live.length>0) return [...live,...(gen||[])];
-    return gen||[]; // volunteer overrides (if any), else empty — never fake jobs
+    if(Array.isArray(live)&&live.length>0) all=[...live,...(gen||[])];
+    else all=gen||[]; // volunteer overrides (if any), else empty — never fake jobs
+    if(!stateName) return all;
+    // Only show jobs actually located in this state. Jobs whose location maps to
+    // a different US state / CA province are shown under THAT state instead (via
+    // the home-state fallback below); foreign/remote/unknown jobs fall back to the
+    // company's home state so they're not lost.
+    const homeState=companyHomeState[name];
+    return all.filter(j=>{
+      const js=jobStateName(j);
+      if(js==="REMOTE") return stateName===homeState; // remote/unknown → home state only
+      if(js) return js===stateName;                   // tracked state → that state only
+      return false;                                   // foreign/untracked → hidden everywhere
+    });
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""});
@@ -3088,6 +3145,53 @@ export default function App() {
     }
     return getDisplayJobs(companyName,gen);
   };
+  // Corrected display tree: place each company under the state(s) its jobs are
+  // actually located in. Foreign/remote jobs stay under the company's home state.
+  // Recomputes when live jobs change.
+  const displayTree=useMemo(()=>{
+    // Map state name -> country (from the static data + known regions).
+    const stateCountry={};
+    for(const [country,states] of Object.entries(COMPANIES_DATA))
+      for(const state of Object.keys(states)) stateCountry[state]=country;
+    // US states & CA provinces we know about (for new placements).
+    for(const pc in US_STATES_GEO) stateCountry[US_STATES_GEO[pc].name]=stateCountry[US_STATES_GEO[pc].name]||"United States";
+    for(const pc in CA_PROVINCES_GEO) stateCountry[CA_PROVINCES_GEO[pc].name]=stateCountry[CA_PROVINCES_GEO[pc].name]||"Canada";
+
+    // Start from the static tree (clone company objects by reference is fine; we
+    // only read .jobs/.url/etc and never mutate them).
+    const tree={};
+    const ensure=(country,state)=>{
+      if(!country) return null;
+      tree[country]=tree[country]||{};
+      tree[country][state]=tree[country][state]||{};
+      return tree[country][state];
+    };
+    // Seed with existing companies in their home states.
+    for(const [country,states] of Object.entries(ALL_JOBS_DATA))
+      for(const [state,companies] of Object.entries(states))
+        for(const [name,co] of Object.entries(companies)){
+          const node=ensure(country,state); if(node) node[name]=co;
+        }
+    // For each company with live jobs, add it to any state those jobs are in.
+    for(const [name,live] of Object.entries(liveJobs)){
+      if(!Array.isArray(live)||!live.length) continue;
+      const baseCo=(()=>{
+        for(const states of Object.values(ALL_JOBS_DATA))
+          for(const companies of Object.values(states))
+            if(companies[name]) return companies[name];
+        return {name,url:(live[0]&&live[0].url)||"",jobs:[]};
+      })();
+      const statesSeen=new Set();
+      for(const j of live){ const js=jobStateName(j); if(js&&js!=="REMOTE") statesSeen.add(js); }
+      for(const st of statesSeen){
+        const country=stateCountry[st];
+        if(!country) continue; // a region we don't track yet — skip (job hidden)
+        const node=ensure(country,st);
+        if(node && !node[name]) node[name]=baseCo;
+      }
+    }
+    return tree;
+  },[liveJobs]);
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
   if(!user&&!guest){
@@ -3226,11 +3330,11 @@ export default function App() {
         </div>
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {Object.entries(ALL_JOBS_DATA)
+          {Object.entries(displayTree)
             .filter(([country])=>filters.countries.length===0||filters.countries.includes(country))
             .map(([country,states])=>{
               const cKey=`c-${country}`;
-              const cAllJobs=Object.values(states).flatMap(cos=>Object.entries(cos).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs)));
+              const cAllJobs=Object.entries(states).flatMap(([stName,cos])=>Object.entries(cos).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs,stName)));
               const cNewJobs=cAllJobs.some(j=>j.isNew&&matches(j));
               const cTotal=cAllJobs.filter(matches).length;
               // Hide country if a filter is active and nothing inside matches
@@ -3254,13 +3358,13 @@ export default function App() {
                     .filter(([state])=>filters.states.length===0||filters.states.includes(state))
                     .map(([state,companies])=>{
                       const sKey=`s-${country}-${state}`;
-                      const sAllJobs=Object.entries(companies).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs));
+                      const sAllJobs=Object.entries(companies).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs,state));
                       const sTotal=sAllJobs.filter(matches).length;
                       const sNewJobs=sAllJobs.some(j=>j.isNew&&matches(j));
                       // Count companies that survive the active filters
                       const sCompaniesShown=Object.entries(companies).filter(([nm,co])=>{
                         if(!hasAnyFilter)return true;
-                        const dj=getDisplayJobs(nm,co.jobs);
+                        const dj=getDisplayJobs(nm,co.jobs,state);
                         if(filters.activeOnly&&dj.length===0)return false;
                         if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
                         if(filters.types.length===1&&filters.types[0]==="Volunteer"&&(co.volunteer||dj.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
@@ -3282,7 +3386,7 @@ export default function App() {
                           {Object.entries(companies)
                             .filter(([name,company])=>{
                               if(!hasAnyFilter)return true;
-                              const displayJobs=getDisplayJobs(name,company.jobs);
+                              const displayJobs=getDisplayJobs(name,company.jobs,state);
                               // Active Listings Only: company must have at least one real job
                               if(filters.activeOnly&&displayJobs.length===0)return false;
                               // Email Apply Only: company must have an email-apply job (or be flagged emailApply)
@@ -3299,7 +3403,7 @@ export default function App() {
                             })
                             .map(([name,company])=>{
                               const coKey=`co-${country}-${state}-${name}`;
-                              const displayJobs=getDisplayJobs(name,company.jobs);
+                              const displayJobs=getDisplayJobs(name,company.jobs,state);
                               const isLive=Array.isArray(liveJobs[name])&&liveJobs[name].length>0;
                               const nameMatchesSearch=filters.search&&name.toLowerCase().includes(filters.search.toLowerCase());
                               // If the company name matches the search, show all its jobs (that pass any

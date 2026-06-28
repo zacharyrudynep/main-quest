@@ -25,6 +25,10 @@ export default async function handler(req, res) {
   };
 
   const attempts = [];
+  // Track whether any endpoint confirmed the slug is real (HTTP 200 with a valid
+  // response shape), even if it currently has zero open postings.
+  let slugValid = false;
+  let validVia = null;
   for (const v of variants) {
     try {
       const opts = { method: v.method || 'GET', headers: { ...headers }, signal: AbortSignal.timeout(12000) };
@@ -40,18 +44,33 @@ export default async function handler(req, res) {
         try { raw = JSON.parse(txt); } catch { raw = { __html: txt }; }
       }
       const jobs = r.ok ? (v.pick(raw) || []) : [];
-      attempts.push({ url: v.url, status, found: jobs.length });
+      // A 2xx response that produced a parseable jobs array (even empty) means
+      // the board/slug exists. v.pick returning a real array (not null) on an OK
+      // response is our signal the slug resolved.
+      const picked = r.ok ? v.pick(raw) : null;
+      const isValidShape = r.ok && Array.isArray(picked);
+      if (isValidShape && !slugValid) { slugValid = true; validVia = v.url; }
+      attempts.push({ url: v.url, status, found: jobs.length, validShape: isValidShape });
       if (jobs.length > 0) {
         res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
-        return res.status(200).json({ jobs, count: jobs.length, platform, slug, used: v.url, ...(debug ? { attempts } : {}) });
+        return res.status(200).json({ jobs, count: jobs.length, platform, slug, used: v.url, slugValid: true, ...(debug ? { attempts } : {}) });
       }
     } catch (err) {
       attempts.push({ url: v.url, error: err.message.slice(0, 80) });
     }
   }
 
-  // Nothing returned jobs
-  return res.status(200).json({ jobs: [], count: 0, platform, slug, attempts });
+  // No jobs returned. Report whether the slug itself is valid (exists but empty)
+  // versus not found at all, so the verifier can tell the difference.
+  return res.status(200).json({
+    jobs: [],
+    count: 0,
+    platform,
+    slug,
+    slugValid,
+    ...(slugValid ? { used: validVia, note: 'Slug is valid — board exists but has no open postings right now.' } : { note: 'Slug did not resolve to a valid job board.' }),
+    attempts,
+  });
 }
 
 function buildVariants(platform, slug) {
