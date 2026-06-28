@@ -1081,9 +1081,12 @@ const ABBR_TO_STATENAME=(()=>{const m={};for(const[name,ab] of Object.entries(US
   m.NL="Newfoundland"; m.QC="Quebec"; return m;})();
 // Canonical tree-key names (some differ from titlecased map values).
 const STATENAME_CANON={ "District Of Columbia":"District of Columbia", "Newfoundland And Labrador":"Newfoundland", "New Hampshire":"New Hampshire", "New Jersey":"New Jersey", "New Mexico":"New Mexico", "New York":"New York", "North Carolina":"North Carolina", "North Dakota":"North Dakota", "Rhode Island":"Rhode Island", "South Carolina":"South Carolina", "South Dakota":"South Dakota", "West Virginia":"West Virginia", "British Columbia":"British Columbia" };
+// Recognized non-US/CA countries — jobs clearly located here are hidden until we
+// add those regions. (Lowercased, matched as a comma-separated token.)
+const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","england","scotland","wales","germany","france","spain","italy","netherlands","sweden","norway","finland","denmark","poland","romania","czech republic","czechia","austria","switzerland","belgium","portugal","greece","hungary","ukraine","russia","china","japan","south korea","korea","singapore","india","australia","new zealand","brazil","argentina","mexico","colombia","chile","philippines","vietnam","indonesia","malaysia","taiwan","hong kong","israel","turkey","united arab emirates","uae","egypt","south africa","nigeria","kenya"]);
 function jobStateName(job){
   const raw=(job.location||"").trim();
-  if(!raw) return "REMOTE"; // unknown location → treat like remote (home-state fallback)
+  if(!raw) return "UNKNOWN"; // no location → home-state fallback (don't lose it)
   if(/^\s*remote/i.test(raw)||(/\b(remote|anywhere|distributed)\b/i.test(raw)&&!/,/.test(raw))) return "REMOTE";
   const lower=raw.toLowerCase();
   // 1. Direct full-name match (state or province name appears in the location).
@@ -1097,9 +1100,12 @@ function jobStateName(job){
     const up=p.toUpperCase();
     if(ABBR_TO_STATENAME[up]) return canonStateName(up, ABBR_TO_STATENAME[up].toLowerCase());
   }
-  // Has a real location, but not a US state / CA province we track (e.g. Thailand,
-  // Ireland). Return null → hidden everywhere until we add that region.
-  return null;
+  // 3. Clearly a foreign country → hide it (until we support that region).
+  for(const p of parts){ if(FOREIGN_COUNTRIES.has(p.toLowerCase())) return "FOREIGN"; }
+  // 4. Ambiguous (e.g. "Los Angeles", "Los Angeles, USA", "United States") — we
+  //    can't pin a state but it's not clearly foreign, so fall back to the home
+  //    state rather than hiding it. This avoids losing real US jobs.
+  return "UNKNOWN";
 }
 function canonStateName(ab, lowerName){
   const titled=(lowerName||"").replace(/\b\w/g,c=>c.toUpperCase());
@@ -1158,7 +1164,12 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     title=raw.title||""; url=raw.url||raw.application_url||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.location?.location_str||raw.city||""; updated=new Date(raw.published_on||Date.now()).getTime();
   } else if(platform==="smartrecruiters"){
-    title=raw.name||""; url=(raw.ref&&`https://jobs.smartrecruiters.com/${raw.ref}`)||raw.applyUrl||company.url; rawHtml=raw.jobAd?.sections?.jobDescription?.text||""; body=stripHtml(rawHtml);
+    title=raw.name||"";
+    // Correct public posting URL: jobs.smartrecruiters.com/{companyIdentifier}/{postingId}
+    const srCompany=raw.company?.identifier||"";
+    url=(raw.id&&srCompany&&`https://jobs.smartrecruiters.com/${srCompany}/${raw.id}`)||raw.applyUrl||raw.jobAdUrl||company.url;
+    rawHtml=raw.jobAd?.sections?.jobDescription?.text||""; body=stripHtml(rawHtml);
+    // SmartRecruiters region can be a 2-letter code (CA) or full name (California).
     loc=[raw.location?.city,raw.location?.region].filter(Boolean).join(", "); updated=new Date(raw.releasedDate||Date.now()).getTime();
   } else if(platform==="recruitee"){
     title=raw.title||""; url=raw.careers_url||raw.url||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
@@ -2595,6 +2606,7 @@ function JobCard({job,user,guest,onRequestLogin,onApplied}) {
     </div>
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
+      {job.locationLabel&&job.locationLabel!=="Other"&&chip(<span style={{display:"inline-flex",alignItems:"center",gap:4}}><I.Map s={9} c="rgba(201,168,76,.6)"/>{job.locationLabel}</span>,{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.22)",color:"rgba(244,237,216,.8)"})}
       {chip(job.type)}
       {job.isRemote&&chip("Remote OK",{background:"rgba(126,207,179,.08)",border:"1px solid rgba(126,207,179,.2)",color:"#7ecfb3"})}
       {job.salary&&job.salary!=="Salary not listed"&&chip(job.salary,{background:"rgba(232,97,58,.08)",border:"1px solid rgba(232,97,58,.2)",color:"#e8b070"})}
@@ -2952,14 +2964,15 @@ export default function App() {
     const homeState=companyHomeState[name];
     return all.filter(j=>{
       const js=jobStateName(j);
-      if(js==="REMOTE") return stateName===homeState; // remote/unknown → home state only
-      if(js) return js===stateName;                   // tracked state → that state only
-      return false;                                   // foreign/untracked → hidden everywhere
+      if(js==="FOREIGN") return false;                       // clearly abroad → hidden
+      if(js==="REMOTE"||js==="UNKNOWN") return stateName===homeState; // can't pin → home state
+      return js===stateName;                                 // a tracked state → that state only
     });
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""});
   const [filterOpen,setFilterOpen]=useState(false);
+  const [showNewRegs,setShowNewRegs]=useState(false);
   // When the user types a search query, auto-expand every country/state that
   // contains a matching company (by name) or matching job, so results are
   // immediately visible instead of hidden inside collapsed accordions.
@@ -3148,7 +3161,8 @@ export default function App() {
   // Corrected display tree: place each company under the state(s) its jobs are
   // actually located in. Foreign/remote jobs stay under the company's home state.
   // Recomputes when live jobs change.
-  const displayTree=useMemo(()=>{
+  const displayTreeData=useMemo(()=>{
+    const newRegs=[];
     // Map state name -> country (from the static data + known regions).
     const stateCountry={};
     for(const [country,states] of Object.entries(COMPANIES_DATA))
@@ -3182,16 +3196,27 @@ export default function App() {
         return {name,url:(live[0]&&live[0].url)||"",jobs:[]};
       })();
       const statesSeen=new Set();
-      for(const j of live){ const js=jobStateName(j); if(js&&js!=="REMOTE") statesSeen.add(js); }
+      for(const j of live){ const js=jobStateName(j); if(js&&js!=="REMOTE"&&js!=="UNKNOWN"&&js!=="FOREIGN") statesSeen.add(js); }
       for(const st of statesSeen){
         const country=stateCountry[st];
         if(!country) continue; // a region we don't track yet — skip (job hidden)
         const node=ensure(country,st);
-        if(node && !node[name]) node[name]=baseCo;
+        if(node && !node[name]){
+          node[name]=baseCo;
+          // Track this as a NEW registration if the company wasn't originally in
+          // this state in COMPANIES_DATA.
+          const origState=companyHomeState[name];
+          if(origState!==st){
+            const exists=ALL_JOBS_DATA[country]&&ALL_JOBS_DATA[country][st]&&ALL_JOBS_DATA[country][st][name];
+            if(!exists) newRegs.push({company:name,state:st,country,jobCount:live.filter(j=>jobStateName(j)===st).length});
+          }
+        }
       }
     }
-    return tree;
+    return {tree,newRegs};
   },[liveJobs]);
+  const displayTree=displayTreeData.tree;
+  const newRegistrations=displayTreeData.newRegs;
   const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
 
   if(!user&&!guest){
@@ -3519,6 +3544,38 @@ export default function App() {
       </div>}
 
     </main>
+    {/* Dev panel: new auto-registered (company, state) pairs to add to COMPANIES_DATA */}
+    {newRegistrations.length>0&&<div style={{position:"fixed",left:12,bottom:12,zIndex:40,maxWidth:340,fontFamily:"system-ui,sans-serif"}}>
+      <button onClick={()=>setShowNewRegs(s=>!s)} style={{background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:showNewRegs?"8px 8px 0 0":8,padding:"7px 12px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6}}>
+        <I.Map s={12} c="currentColor"/> {newRegistrations.length} new {newRegistrations.length===1?"registration":"registrations"} {showNewRegs?"▾":"▸"}
+      </button>
+      {showNewRegs&&<div style={{background:"rgba(12,9,6,.97)",border:"1px solid rgba(201,168,76,.35)",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"10px 12px",maxHeight:320,overflowY:"auto"}}>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.55)",marginBottom:8,lineHeight:1.5}}>
+          These companies have live jobs in states where they weren't registered. Add them to COMPANIES_DATA under the listed state:
+        </div>
+        {(()=>{
+          // Group by country -> state for readability.
+          const byCS={};
+          for(const r of newRegistrations){const k=`${r.country} › ${r.state}`;(byCS[k]=byCS[k]||[]).push(r);}
+          return Object.entries(byCS).sort().map(([cs,regs])=>(
+            <div key={cs} style={{marginBottom:8}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",marginBottom:3}}>{cs}</div>
+              {regs.sort((a,b)=>a.company.localeCompare(b.company)).map(r=>(
+                <div key={r.company} style={{fontSize:11,color:"rgba(244,237,216,.8)",padding:"1px 0"}}>
+                  • {r.company} <span style={{color:"rgba(244,237,216,.4)"}}>({r.jobCount} {r.jobCount===1?"job":"jobs"})</span>
+                </div>
+              ))}
+            </div>
+          ));
+        })()}
+        <button onClick={()=>{
+          const lines=newRegistrations.slice().sort((a,b)=>(a.country+a.state+a.company).localeCompare(b.country+b.state+b.company)).map(r=>`${r.country} / ${r.state}: ${r.company} (${r.jobCount} jobs)`).join("\n");
+          navigator.clipboard&&navigator.clipboard.writeText(lines);
+        }} style={{marginTop:6,width:"100%",background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:6,padding:"6px",fontSize:10,fontFamily:"'Cinzel',serif"}}>
+          Copy all to clipboard
+        </button>
+      </div>}
+    </div>}
     {/* Legal footer */}
     <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
