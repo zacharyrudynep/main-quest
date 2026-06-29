@@ -2716,13 +2716,13 @@ function RoleBubbleInput({value,onChange,placeholder}) {
 function TitleCategoryGroup({sel,onChange}) {
   const toggle=v=>onChange(sel.includes(v)?sel.filter(x=>x!==v):[...sel,v]);
   const [openCats,setOpenCats]=useState({});
-  return <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:240,overflowY:"auto"}}>
+  return <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:280,overflowY:"auto",overflowX:"hidden",paddingRight:2}}>
     {Object.entries(TITLE_CATEGORIES).map(([cat,titles])=>{
       const allOn=titles.every(t=>sel.includes(t));
       const someOn=titles.some(t=>sel.includes(t));
       const open=openCats[cat];
       const toggleCat=()=>{ if(allOn) onChange(sel.filter(t=>!titles.includes(t))); else onChange([...new Set([...sel,...titles])]); };
-      return <div key={cat} style={{border:"1px solid rgba(201,168,76,.08)",borderRadius:7,overflow:"hidden"}}>
+      return <div key={cat} style={{border:"1px solid rgba(201,168,76,.08)",borderRadius:7,overflow:"hidden",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 7px",background:"rgba(201,168,76,.04)"}}>
           <div onClick={toggleCat} title="Toggle all in category" style={{width:14,height:14,borderRadius:4,border:`1.5px solid ${allOn?"#c9a84c":someOn?"rgba(201,168,76,.6)":"rgba(201,168,76,.25)"}`,background:allOn?"#c9a84c":someOn?"rgba(201,168,76,.3)":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{allOn&&<I.Check s={8} c="#0a0608"/>}{!allOn&&someOn&&<div style={{width:6,height:2,background:"#0a0608"}}/>}</div>
           <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{flex:1,minWidth:0,fontSize:10,fontWeight:700,color:"rgba(244,237,216,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.2,cursor:"pointer",whiteSpace:"normal",overflowWrap:"break-word",lineHeight:1.25}}>{cat}</span>
