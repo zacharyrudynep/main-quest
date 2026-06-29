@@ -295,6 +295,8 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
   const hoverRef = useRef(null);
   const hoveredDotRef = useRef(null);
   const getCompanyJobsRef = useRef(getCompanyJobs);
+  const refreshLabelsRef = useRef(null);
+  const repaintRef = useRef(null);
   getCompanyJobsRef.current = getCompanyJobs;
   const lastScrollRef = useRef(0);
 
@@ -422,6 +424,31 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
         return null;
       };
 
+      // ── Fog of war ────────────────────────────────────────────────────────
+      // A state/province is "explored" once you've applied to at least one of its
+      // companies. Unexplored regions are veiled in a pale cloud-fog that lifts as
+      // you apply. We compute an explored-fraction per state for subtle shading
+      // (more applied companies → thinner fog).
+      const stateFog = (d) => {
+        // d is a state/province polygon feature with properties.postal + .country-ish.
+        const postal = d.properties.postal;
+        if (!postal) return 1; // unknown → fully fogged
+        const dots = dotsRef.current || [];
+        // Match dots to this polygon by postal code.
+        let total = 0, explored = 0;
+        for (const dt of dots) {
+          if (dt.postal !== postal) continue;
+          total++;
+          if (dt.applied) explored++;
+        }
+        if (total === 0) return 0.85;          // no companies here → light haze, not solid
+        if (explored === 0) return 1;          // none explored → full fog
+        const frac = explored / total;
+        return Math.max(0, 1 - frac);          // thins as you explore
+      };
+      // Fog fill color for a given fog amount (0 = clear, 1 = full cloud).
+      const fogCap = (amt) => `rgba(214,214,222,${(amt * 0.34).toFixed(3)})`;
+
       const capColor = (d) => {
         const lvl = navRef.current.level;
         if (lvl === "continent") {
@@ -441,6 +468,9 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
           if (navRef.current.state && d.properties.postal === navRef.current.state)
             return "rgba(201,168,76,0.02)"; // locked state: outline only
           if (isHovered(d)) return "rgba(240,208,128,0.30)";
+          // Veil unexplored regions in cloud-fog; it thins as you apply.
+          const amt = stateFog(d);
+          if (amt > 0.001) return fogCap(amt);
           return "rgba(201,168,76,0.08)";
         }
         return "rgba(201,168,76,0.02)";
@@ -483,6 +513,7 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
           .polygonSideColor(strokeColor)
           .polygonAltitude(polyAlt);
       };
+      repaintRef.current = repaint;
 
       // ── Company dots ──────────────────────────────────────────────────────
       // Shown only at the "local" level, for the locked state.
@@ -653,15 +684,45 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
         "Mexico": { lat: 23.5, lng: -102 },
       };
 
+      // ── Exploration progress (Option A: company-based) ──────────────────
+      // A company counts as "explored" once you've applied to at least one of
+      // its jobs (dot.applied === true). Progress for a region = explored
+      // companies / total companies in that region. Country dots map into their
+      // continent so the continent label aggregates its countries.
+      const DOTKEY_CONTINENT = { "United States": "North America", "Canada": "North America" };
+      const computeProgress = () => {
+        const dots = dotsRef.current || [];
+        const byCountry = {};   // dotKey -> { total, explored }
+        const byContinent = {}; // continent -> { total, explored }
+        for (const d of dots) {
+          const ck = d.country;
+          const cont = DOTKEY_CONTINENT[ck] || null;
+          if (!byCountry[ck]) byCountry[ck] = { total: 0, explored: 0 };
+          byCountry[ck].total++;
+          if (d.applied) byCountry[ck].explored++;
+          if (cont) {
+            if (!byContinent[cont]) byContinent[cont] = { total: 0, explored: 0 };
+            byContinent[cont].total++;
+            if (d.applied) byContinent[cont].explored++;
+          }
+        }
+        const pct = (o) => (o && o.total ? Math.round((o.explored / o.total) * 100) : 0);
+        return {
+          country: (ck) => pct(byCountry[ck]),
+          continent: (cont) => pct(byContinent[cont]),
+        };
+      };
+
       const buildLabelData = () => {
         const lvl = navRef.current.level;
+        const prog = computeProgress();
         if (lvl === "continent") {
           return Object.entries(CONTINENTS).map(([name, c]) => ({
             id: "cont-" + name,
             lat: c.lat,
             lng: c.lng,
             name,
-            progress: 0, // placeholder until exploration tracking is implemented
+            progress: prog.continent(name),
           }));
         }
         if (lvl === "country") {
@@ -683,7 +744,7 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
               lat: center.lat,
               lng: center.lng,
               name: display,
-              progress: 0,
+              progress: prog.country(display),
             });
           }
           return out;
@@ -713,6 +774,7 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
           .htmlAltitude(0.06)
           .htmlElement(makeLabelEl);
       };
+      refreshLabelsRef.current = refreshLabels;
 
       // ── Load country polygons ─────────────────────────────────────────────
       fetch(COUNTRIES_URL)
@@ -798,6 +860,10 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
         : navRef.current.country === "Canada" ? "Canada" : null;
       if (dotKey) globe.pointsData(dots.filter((dt) => dt.country === dotKey));
     }
+    // Applications may have changed (dot.applied), so refresh progress labels
+    // and repaint the fog of war.
+    if (refreshLabelsRef.current) refreshLabelsRef.current();
+    if (repaintRef.current) repaintRef.current();
   }, [dots, statesGeo]);
 
   const crumb =

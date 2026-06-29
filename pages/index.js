@@ -3203,15 +3203,16 @@ export default function App() {
         const pts=scatterPins(pc,geo,names.length);
         names.forEach((name,i)=>{
           const co=companies[name];
-          const jobCount=(co.jobs||[]).length;
+          const djobs=getDisplayJobs(name,co.jobs,stateName);
+          const jobCount=djobs.length;
           const [lng,lat]=pts[i]||geo.c;
           dots.push({ name, state:stateName, country, postal:pc, lat, lng, jobCount,
-            applied: !!(co.jobs||[]).some(j=>user?.applied?.[j.id]) });
+            applied: djobs.some(j=>user?.applied?.[j.id]) });
         });
       }
     }
     return dots;
-  },[user]);
+  },[user,liveJobs]);
   // For Journey Mode's company panel: return the real display jobs for a company
   // (live ATS jobs + any volunteer overrides), matching the job board.
   const getCompanyJobs=(companyName)=>{
