@@ -2725,13 +2725,13 @@ function TitleCategoryGroup({sel,onChange}) {
       return <div key={cat} style={{border:"1px solid rgba(201,168,76,.08)",borderRadius:7,overflow:"hidden"}}>
         <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 7px",background:"rgba(201,168,76,.04)"}}>
           <div onClick={toggleCat} title="Toggle all in category" style={{width:14,height:14,borderRadius:4,border:`1.5px solid ${allOn?"#c9a84c":someOn?"rgba(201,168,76,.6)":"rgba(201,168,76,.25)"}`,background:allOn?"#c9a84c":someOn?"rgba(201,168,76,.3)":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{allOn&&<I.Check s={8} c="#0a0608"/>}{!allOn&&someOn&&<div style={{width:6,height:2,background:"#0a0608"}}/>}</div>
-          <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{flex:1,fontSize:10,fontWeight:700,color:"rgba(244,237,216,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.3,cursor:"pointer"}}>{cat}</span>
-          <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{cursor:"pointer",display:"inline-flex"}}><I.Chevron s={10} c="rgba(244,237,216,.4)" dir={open?"up":"down"}/></span>
+          <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{flex:1,minWidth:0,fontSize:10,fontWeight:700,color:"rgba(244,237,216,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.2,cursor:"pointer",whiteSpace:"normal",overflowWrap:"break-word",lineHeight:1.25}}>{cat}</span>
+          <span onClick={()=>setOpenCats(o=>({...o,[cat]:!o[cat]}))} style={{cursor:"pointer",display:"inline-flex",flexShrink:0}}><I.Chevron s={10} c="rgba(244,237,216,.4)" dir={open?"up":"down"}/></span>
         </div>
         {open&&<div style={{padding:"3px 6px 5px"}}>
           {titles.map(t=><label key={t} onClick={()=>toggle(t)} style={{display:"flex",alignItems:"center",gap:7,padding:"3px 5px",borderRadius:6,cursor:"pointer",userSelect:"none"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
             <div style={{width:14,height:14,borderRadius:4,border:`1.5px solid ${sel.includes(t)?"#c9a84c":"rgba(201,168,76,.25)"}`,background:sel.includes(t)?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{sel.includes(t)&&<I.Check s={8} c="#0a0608"/>}</div>
-            <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>{t}</span>
+            <span style={{fontSize:11,color:"rgba(244,237,216,.65)",whiteSpace:"normal",overflowWrap:"break-word",lineHeight:1.25}}>{t}</span>
           </label>)}
         </div>}
       </div>;
