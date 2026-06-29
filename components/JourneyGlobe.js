@@ -16,6 +16,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Globe from "globe.gl";
+import * as THREE from "three";
 
 const COUNTRIES_URL =
   "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson";
@@ -101,6 +102,125 @@ function statesToFeatures(statesGeo) {
     });
   }
   return feats;
+}
+
+// ── Volumetric-style cloud fog of war ────────────────────────────────────────
+// A translucent cloud "shell" floats just above the globe. A procedurally
+// generated puffy cloud texture provides the billowy look (no external asset).
+// A separate equirectangular MASK controls where the clouds are opaque
+// (unexplored) vs cleared (explored), with soft feathered edges. Civ-V-style
+// blanket-with-holes, adapted to a sphere.
+
+// Tileable fractal-noise cloud texture rendered to a canvas. Returns a canvas
+// whose grayscale value is the cloud density (white = thick cloud).
+function makeCloudTexture(size = 1024) {
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = size;
+  const ctx = cv.getContext("2d");
+  const img = ctx.createImageData(size, size);
+  const data = img.data;
+
+  // Value-noise with a hashed gradient grid, summed across octaves (fBm). The
+  // grid wraps (period p) so the texture tiles seamlessly around the sphere.
+  const hash = (x, y, p) => {
+    x = ((x % p) + p) % p;
+    y = ((y % p) + p) % p;
+    let h = x * 374761393 + y * 668265263;
+    h = (h ^ (h >> 13)) * 1274126177;
+    return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+  };
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = (t) => t * t * (3 - 2 * t);
+  const valueNoise = (x, y, p) => {
+    const x0 = Math.floor(x), y0 = Math.floor(y);
+    const fx = smooth(x - x0), fy = smooth(y - y0);
+    const v00 = hash(x0, y0, p), v10 = hash(x0 + 1, y0, p);
+    const v01 = hash(x0, y0 + 1, p), v11 = hash(x0 + 1, y0 + 1, p);
+    return lerp(lerp(v00, v10, fx), lerp(v01, v11, fx), fy);
+  };
+
+  const octaves = 5;
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      let amp = 0.5, freq = 6, sum = 0, norm = 0;
+      for (let o = 0; o < octaves; o++) {
+        const p = freq; // grid period == frequency keeps it tiling
+        sum += amp * valueNoise((i / size) * freq, (j / size) * freq, p);
+        norm += amp;
+        amp *= 0.5;
+        freq *= 2;
+      }
+      let v = sum / norm; // 0..1
+      // Contrast curve → puffy clumps with clear gaps between them.
+      v = Math.max(0, Math.min(1, (v - 0.42) / 0.32));
+      v = v * v * (3 - 2 * v);
+      const c = Math.floor(200 + v * 55); // bright, slightly warm white
+      const idx = (j * size + i) * 4;
+      data[idx] = c;
+      data[idx + 1] = c;
+      data[idx + 2] = Math.floor(c * 0.99);
+      data[idx + 3] = Math.floor(v * 255); // alpha = density
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv;
+}
+
+// Convert lng/lat to pixel coords on an equirectangular canvas of given size.
+function lngLatToXY(lng, lat, w, h) {
+  const x = ((lng + 180) / 360) * w;
+  const y = ((90 - lat) / 180) * h;
+  return [x, y];
+}
+
+// Paint the cloud MASK: white where fog should show (unexplored), black where
+// cleared (explored). Drawn from state/province polygons, then blurred for the
+// soft feathered border the user asked for. Returns a canvas.
+function buildFogMask(stateFeats, fogForFeat, size = 2048) {
+  const w = size, h = size / 2;
+  const cv = document.createElement("canvas");
+  cv.width = w;
+  cv.height = h;
+  const ctx = cv.getContext("2d");
+  // Default: everything is open ocean / untracked → light global haze so the
+  // planet still reads as cloud-covered outside our regions.
+  ctx.fillStyle = "rgba(255,255,255,0.0)";
+  ctx.fillRect(0, 0, w, h);
+
+  const drawRing = (ring) => {
+    ctx.beginPath();
+    ring.forEach(([lng, lat], k) => {
+      const [x, y] = lngLatToXY(lng, lat, w, h);
+      if (k === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+  };
+
+  for (const f of stateFeats) {
+    const amt = fogForFeat(f); // 0 = clear, 1 = full fog
+    if (amt <= 0.001) continue;
+    const g = f.geometry;
+    const polys = g.type === "MultiPolygon" ? g.coordinates : [g.coordinates];
+    ctx.fillStyle = `rgba(255,255,255,${amt.toFixed(3)})`;
+    for (const poly of polys) {
+      drawRing(poly[0]);
+      ctx.fill();
+    }
+  }
+  // Feather the edges: blur the mask so cloud cover fades gradually at borders
+  // instead of stopping at a hard polygon line.
+  try {
+    const blurred = document.createElement("canvas");
+    blurred.width = w;
+    blurred.height = h;
+    const bctx = blurred.getContext("2d");
+    bctx.filter = "blur(7px)";
+    bctx.drawImage(cv, 0, 0);
+    return blurred;
+  } catch (e) {
+    return cv;
+  }
 }
 
 // Right-side panel showing a single company's open roles, with apply toggles
@@ -297,6 +417,11 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
   const getCompanyJobsRef = useRef(getCompanyJobs);
   const refreshLabelsRef = useRef(null);
   const repaintRef = useRef(null);
+  const cloudMeshRef = useRef(null);
+  const cloudMatRef = useRef(null);
+  const cloudMaskTexRef = useRef(null);
+  const cloudRafRef = useRef(null);
+  const rebuildFogRef = useRef(null);
   getCompanyJobsRef.current = getCompanyJobs;
   const lastScrollRef = useRef(0);
 
@@ -385,6 +510,12 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
         const lvl = navRef.current.level;
         c.enableRotate = lvl === "continent";
         if (lvl !== "continent") c.autoRotate = false;
+        // Cloud fog-of-war is shown only once a country is locked (state/local),
+        // where regions are large enough to read the blanket-and-holes effect.
+        if (cloudMeshRef.current) {
+          cloudMeshRef.current.visible = lvl === "state" || lvl === "local";
+          if (cloudMeshRef.current.visible && rebuildFogRef.current) rebuildFogRef.current();
+        }
       };
 
       const flyTo = (lat, lng, altitude) => {
@@ -468,9 +599,8 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
           if (navRef.current.state && d.properties.postal === navRef.current.state)
             return "rgba(201,168,76,0.02)"; // locked state: outline only
           if (isHovered(d)) return "rgba(240,208,128,0.30)";
-          // Veil unexplored regions in cloud-fog; it thins as you apply.
-          const amt = stateFog(d);
-          if (amt > 0.001) return fogCap(amt);
+          // Fog-of-war is now drawn by the 3D cloud shell, so keep the polygon
+          // fill subtle here (no flat veil to avoid doubling up).
           return "rgba(201,168,76,0.08)";
         }
         return "rgba(201,168,76,0.02)";
@@ -776,6 +906,112 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
       };
       refreshLabelsRef.current = refreshLabels;
 
+      // ── Cloud fog-of-war shell ────────────────────────────────────────────
+      // A translucent sphere just above the globe carries a procedural cloud
+      // texture, modulated by an equirectangular mask (white = fog, black =
+      // cleared). A custom shader multiplies cloud density by mask coverage so
+      // unexplored regions are blanketed and explored ones punch clear holes,
+      // with the mask's blur giving soft feathered borders.
+      try {
+        const scene = globe.scene && globe.scene();
+        if (scene) {
+          const GLOBE_R = globe.getGlobeRadius ? globe.getGlobeRadius() : 100;
+          const cloudCanvas = makeCloudTexture(1024);
+          const cloudTex = new THREE.CanvasTexture(cloudCanvas);
+          cloudTex.wrapS = cloudTex.wrapT = THREE.RepeatWrapping;
+          cloudTex.repeat.set(3, 2); // tile the puffs a few times around
+
+          // Start with an all-clear mask; rebuildFog() fills it from real data.
+          const maskCanvas = document.createElement("canvas");
+          maskCanvas.width = 2048;
+          maskCanvas.height = 1024;
+          const maskTex = new THREE.CanvasTexture(maskCanvas);
+          maskTex.wrapS = maskTex.wrapT = THREE.ClampToEdgeWrapping;
+          cloudMaskTexRef.current = maskTex;
+
+          const cloudMat = new THREE.ShaderMaterial({
+            uniforms: {
+              uClouds: { value: cloudTex },
+              uMask: { value: maskTex },
+              uDrift: { value: 0 },
+              uOpacity: { value: 0.92 },
+              uTint: { value: new THREE.Color("#eef0f4") },
+            },
+            transparent: true,
+            depthWrite: false,
+            side: THREE.FrontSide,
+            vertexShader: `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform sampler2D uClouds;
+              uniform sampler2D uMask;
+              uniform float uDrift;
+              uniform float uOpacity;
+              uniform vec3 uTint;
+              varying vec2 vUv;
+              void main() {
+                // Two cloud samples drifting at different rates → roiling motion.
+                vec2 d1 = vec2(uDrift, uDrift * 0.35);
+                vec2 d2 = vec2(-uDrift * 0.6, uDrift * 0.18);
+                float c1 = texture2D(uClouds, vUv * vec2(3.0, 2.0) + d1).a;
+                float c2 = texture2D(uClouds, vUv * vec2(5.0, 3.0) + d2).a;
+                float density = clamp(c1 * 0.65 + c2 * 0.45, 0.0, 1.0);
+                float cover = texture2D(uMask, vUv).a; // 0 cleared .. 1 fogged
+                float a = density * cover * uOpacity;
+                if (a < 0.01) discard;
+                gl_FragColor = vec4(uTint, a);
+              }
+            `,
+          });
+          cloudMatRef.current = cloudMat;
+
+          const cloudGeo = new THREE.SphereGeometry(GLOBE_R * 1.012, 96, 64);
+          const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+          cloudMesh.renderOrder = 5;
+          cloudMesh.visible = false; // shown only at state/local levels
+          scene.add(cloudMesh);
+          cloudMeshRef.current = cloudMesh;
+
+          // Rebuild the mask from current fog data and push it to the GPU.
+          const rebuildFog = () => {
+            const feats = [
+              ...(stateFeatsRef.current || []),
+              ...(provinceFeatsRef.current || []),
+            ];
+            const painted = buildFogMask(feats, stateFog, 2048);
+            const mctx = maskCanvas.getContext("2d");
+            mctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+            mctx.drawImage(painted, 0, 0, maskCanvas.width, maskCanvas.height);
+            maskTex.needsUpdate = true;
+          };
+          rebuildFogRef.current = rebuildFog;
+          rebuildFog();
+
+          // Drift animation loop.
+          let t0 = performance.now();
+          const animateClouds = () => {
+            if (disposed) return;
+            const now = performance.now();
+            const dt = (now - t0) / 1000;
+            t0 = now;
+            if (cloudMatRef.current && cloudMeshRef.current && cloudMeshRef.current.visible) {
+              cloudMatRef.current.uniforms.uDrift.value += dt * 0.008;
+            }
+            cloudRafRef.current = requestAnimationFrame(animateClouds);
+          };
+          cloudRafRef.current = requestAnimationFrame(animateClouds);
+        }
+      } catch (e) {
+        // Cloud shell is purely decorative; never let it break the globe.
+        // eslint-disable-next-line no-console
+        console.warn("Cloud fog shell unavailable:", e && e.message);
+      }
+
       // ── Load country polygons ─────────────────────────────────────────────
       fetch(COUNTRIES_URL)
         .then((r) => r.json())
@@ -833,6 +1069,25 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
       if (onResize) window.removeEventListener("resize", onResize);
       if (onWheel && mountRef.current)
         mountRef.current.removeEventListener("wheel", onWheel);
+      // Tear down the cloud shell (animation loop + GPU resources).
+      try {
+        if (cloudRafRef.current) cancelAnimationFrame(cloudRafRef.current);
+        if (cloudMeshRef.current) {
+          if (cloudMeshRef.current.parent) cloudMeshRef.current.parent.remove(cloudMeshRef.current);
+          if (cloudMeshRef.current.geometry) cloudMeshRef.current.geometry.dispose();
+        }
+        if (cloudMatRef.current) {
+          const u = cloudMatRef.current.uniforms;
+          if (u && u.uClouds && u.uClouds.value) u.uClouds.value.dispose();
+          if (u && u.uMask && u.uMask.value) u.uMask.value.dispose();
+          cloudMatRef.current.dispose();
+        }
+      } catch (e) {}
+      cloudMeshRef.current = null;
+      cloudMatRef.current = null;
+      cloudMaskTexRef.current = null;
+      cloudRafRef.current = null;
+      rebuildFogRef.current = null;
       try {
         if (globeRef.current && globeRef.current._destructor) {
           globeRef.current._destructor();
@@ -864,6 +1119,7 @@ export default function JourneyGlobe({ user, dots = [], statesGeo = null, provin
     // and repaint the fog of war.
     if (refreshLabelsRef.current) refreshLabelsRef.current();
     if (repaintRef.current) repaintRef.current();
+    if (rebuildFogRef.current) rebuildFogRef.current();
   }, [dots, statesGeo]);
 
   const crumb =
