@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
@@ -873,6 +873,75 @@ const COMPANIES_DATA = {
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
 // Companies where the ONLY way to apply is by email. Each posting routes to a
 // specific email address. These render as real cards with an "Apply by Email" button.
+// What each company asks you to include in your application email (verbatim
+// instructions from their careers page). Shown on the email-apply card so you
+// send exactly what they want.
+const EMAIL_SPECIFICS = {
+  "81 Monkeys": "resume and/or portfolio",
+  "Aether Studios": "resume, portfolio, cover letter",
+  "Annapurna Interactive": "resume",
+  "Autonomicity Games": "resume & portfolio",
+  "Battle Creek Games": "resume and a cover letter explaining why you'd be a great fit for our team",
+  "Blue Isle Studios": "samples of your work, cover letter and resume.",
+  "Bluembo": "resume",
+  "Break Away Games": "please email us your resume & include 'BreakAway Online Job Posting' in the subject line of your email",
+  "Cards and Tankards": "a brief introduction and any relevant experience or portfolio materials",
+  "Core Loop": "Please only apply, if you are located in the UTC -3 - +3 time zones",
+  "Crate Entertainment": "cover letter and resume",
+  "Curious Media": "Send us your resume and portfolio",
+  "Dapper Labs": "Cover these in any order. Use AI to draft. Resume optional. Link to anything you've shipped that you're proud of: code, writing, a working loop, a Notion page, a Figma file, a video. Show, don't tell.",
+  "Deck Nine Games": "resume",
+  "Dire Wolf Digital": "resume and cover letter",
+  "Dragon Snacks Games": "resume & snack suggestions",
+  "Enduring Games": "Resume / CV, Link(s) to portfolio and game credits, Tell us why you want to work with us.",
+  "Forward XP": "Send us your resume",
+  "Frame Interactive": "resume/CV and links to work samples/portfolio/website",
+  "GAMERella": "resume and brief cover letter",
+  "Game Artists": "send your resume",
+  "Game Circus": "submit a resume",
+  "Hidden Variable Studios": "resume, cover letter, portfolio, position name in subject line",
+  "Infernozilla": "send us your resume and portfolio",
+  "Koolhaus Games": "resume",
+  "Look North World": "resume and portfolio pieces",
+  "Loric Games": "Submit your resume and portfolio",
+  "Made on Earth Games": "Send a short intro + 2-3 projects you're proud of",
+  "Mega Cat Studios": "resume",
+  "Meta 3D Studios": "Please send your resume and refer to the job title in the subject line.",
+  "Metanaut Labs": "Your resume or LinkedIn profile, links to any relevant public work (GitHub, portfolio, live products), let us know where you found us and an interesting fact about you.",
+  "Mighty Coconut": "send your resume/portfolio",
+  "Mobius Digital": "resume, cover letter under one page, 3 references of people you've worked on designs with",
+  "Monsarrat": "tell me how you have changed the world",
+  "Muse Games": "send your portfolio, website, and resume",
+  "Outact": "Tell us why you are awesome, and send us your bio and portfolio",
+  "Owlchemy Labs": "What \"superpower\" can you bring to Owlchemy? What is something important to you when choosing a job?",
+  "Paralune": "send your resume (and website/portfolio if applicable)",
+  "Pixel Dash Studios": "send resume, cover letter, and any relevant portfolio materials",
+  "Polymorph Games": "resume and cover letter",
+  "Serenity Forge": "Your resume, cover letter (optional), any supplementary material/links that you think are relevant",
+  "Shiver Entertainment": "Send Resumes",
+  "Siege Camp": "resume and cover letter",
+  "Skyborne Games": "Please include your cover letter, resume and portfolio or demo reel.",
+  "Sound Games": "resume",
+  "Squanch Games": "resume & portfolio",
+  "Storm Flag Games": "resume",
+  "SuperDuperSecret": "send us a message about what excites you about us, along with your resume and/or portfolio link",
+  "Superbrothers": "resume, portfolio, references, a brief intro note and any relevant info",
+  "Tactics Interactive": "resume and cover letter. Subject line = position title",
+  "The Game Band": "resume and feel free to include any details about yourself that you'd like to share",
+  "This Game Studio": "resume",
+  "Tic Toc Games": "cover letter and resume",
+  "Top Hat Studios": "We're particularly looking to hear from people with experience in the following fields: Business Development, QA (both technical and format certification focused), Production and Project Management, Marketing, PR, Media, and Influencer Relations, Creative Media Production (graphics and video), Engineering",
+  "Traega Entertainment": "Let us know what you would like to bring to the team!",
+  "Turning Wheel Games": "please email your resume, portfolio, and any additional materials. Put your desired role, followed by your name, in the subject line.",
+  "Underwater Fire Games": "name, email, location, resume, portfolio",
+  "VC Mobile Entertainment": "resume",
+  "Vivix": "resume",
+  "WDR Studios": "include the position title, your resume, cover letter, portfolio and any other valuable info you'd like us to look at!",
+  "Yellow Brick Games": "Tell us why you'd be the ideal candidate by sending us a brief word of introduction, along with your resume and please indicate the position you are applying for in the subject line.",
+  "Yotta Studios": "the subject as \"Your Legal Name + Position\" you wish to apply to. Please attach your updated portfolio or links to portfolio if you apply for an art position.",
+  "Zephyr Workshop": "Work examples, an emphatic story about what you could offer us, or a letter on why you love us",
+};
+
 const EMAIL_APPLY_JOBS = {
   "Break Away Games": { jobs:[
     { title:"Programmer", applyEmail:"resumes0919a@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your programmer resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
@@ -2704,7 +2773,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-function JobCard({job,user,guest,onRequestLogin,onApplied}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
@@ -2738,6 +2807,10 @@ function JobCard({job,user,guest,onRequestLogin,onApplied}) {
       // If auto-attach is on and a resume exists, append a note (browsers can't auto-attach files to a draft)
       if(prof.autoAttachResume&&(prof.resumeText||prof.resumeFileName)){
         body+=(body?"\n\n":"")+"(Please find my resume attached.)";
+      }
+      // Remind the applicant of this company's specific requirements.
+      if(job.emailSpecifics){
+        body+=(body?"\n\n":"")+`[Reminder — ${job.company} asks you to include: ${job.emailSpecifics}]`;
       }
       const provider=prof.emailProvider||"default";
       const to=encodeURIComponent(job.applyEmail);
@@ -2781,6 +2854,12 @@ function JobCard({job,user,guest,onRequestLogin,onApplied}) {
     </div>
     {/* Summary */}
     {job.summary&&<p style={{fontSize:12,color:"rgba(244,237,216,.6)",lineHeight:1.5,fontStyle:"italic",margin:"0 0 7px"}}>{job.summary}</p>}
+    {/* Email-apply specifics: exactly what the company asks you to include */}
+    {job.emailSpecifics&&<div style={{background:"rgba(232,97,58,.08)",border:"1px solid rgba(232,97,58,.25)",borderRadius:8,padding:"8px 11px",margin:"0 0 8px",display:"flex",gap:8,alignItems:"flex-start"}}>
+      <span style={{display:"inline-flex",marginTop:1,flexShrink:0}}><I.Send s={12} c="#e8a070"/></span>
+      <div><span style={{fontSize:10,fontWeight:700,color:"#e8a070",fontFamily:"'Cinzel',serif",letterSpacing:.3,textTransform:"uppercase"}}>Include in your email</span>
+      <p style={{fontSize:12,color:"rgba(244,237,216,.7)",lineHeight:1.5,margin:"2px 0 0"}}>{job.emailSpecifics}</p></div>
+    </div>}
     {/* Expand */}
     <button onClick={()=>setExpanded(e=>!e)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.55)",fontSize:11,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:5,padding:"3px 0",marginBottom:7,letterSpacing:.3}}>
       <span>{expanded?"Hide details":"View description & requirements"}</span>
@@ -2833,7 +2912,7 @@ function JobCard({job,user,guest,onRequestLogin,onApplied}) {
     </div>}
     </div>
   </div>;
-}
+});
 
 
 // ── FILTER + SORT HELPERS ─────────────────────────────────────────────────────
@@ -3122,6 +3201,7 @@ export default function App() {
   const [showAcct,setShowAcct]=useState(false);
   const [guest,setGuest]=useState(false);
   const [showLoginPopup,setShowLoginPopup]=useState(false);
+  const requestLogin=useCallback(()=>setShowLoginPopup(true),[]);
   const [jobSort,setJobSort]=useState("default");
   const [expSortDir,setExpSortDir]=useState("asc"); // asc = low→high, desc = high→low
   const [liveJobs,setLiveJobs]=useState({});
@@ -3266,12 +3346,12 @@ export default function App() {
     return ()=>{active=false;};
   },[]);
 
-  const markApplied = async (jobId) => {
+  const markApplied = useCallback(async (jobId) => {
     setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { date: new Date().toISOString() } } }));
     const job = Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(j => j.id === jobId);
     if (!user?.id || !job) return;
     await supabase.from("applications").upsert({ user_id: user.id, job_id: jobId, job_title: job.title, company: job.company, job_url: job.url, salary: job.salary, applied_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
-  };
+  }, [user?.id]);
 
   // Toggle per-company job-post notifications (stored in profile.notifyCompanies)
   const toggleNotify = async (companyName) => {
@@ -3701,7 +3781,7 @@ export default function App() {
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
                                     ?((company.emailApply||company.registerInterest==="email")&&company.email
-                                      ?<JobCard key={`${name}-emailapply`} job={{id:`${name}-emailapply`,title:"General Application",company:name,url:company.url,applyUrl:company.url,email:company.email,applyEmail:company.email,isEmailApply:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!company.volunteer,summary:`${name} accepts applications by email. Send your resume to ${company.email} to be considered — they'll reach out if there's a fit.`,responsibilities:[],requirements:[]}} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>
+                                      ?<JobCard key={`${name}-emailapply`} job={{id:`${name}-emailapply`,title:"General Application",company:name,url:company.url,applyUrl:company.url,email:company.email,applyEmail:company.email,isEmailApply:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!company.volunteer,emailSpecifics:EMAIL_SPECIFICS[name]||null,summary:EMAIL_SPECIFICS[name]?`${name} accepts applications by email. They ask that you include: ${EMAIL_SPECIFICS[name]}${/[.!?]$/.test(EMAIL_SPECIFICS[name])?"":"."} Send to ${company.email}.`:`${name} accepts applications by email. Send your resume to ${company.email} to be considered — they'll reach out if there's a fit.`,responsibilities:[],requirements:[]}} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/>
                                       :<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>)
                                     :(()=>{
                                       // Group this studio's jobs by their real location WITHIN this
@@ -3722,7 +3802,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>;
+                                      const renderJob=j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
