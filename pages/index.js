@@ -3206,13 +3206,16 @@ export default function App() {
   const [expSortDir,setExpSortDir]=useState("asc"); // asc = low→high, desc = high→low
   const [liveJobs,setLiveJobs]=useState({});
   const [liveStatus,setLiveStatus]=useState("idle");
+  const [loadProgress,setLoadProgress]=useState(0);      // 0..100 for the intro loader
+  const [introDone,setIntroDone]=useState(false);        // has the first full load finished?
   const abortRef=useRef(null);
 
-  const fetchLiveJobs=async()=>{
+  const fetchLiveJobs=async(isIntro=false)=>{
     if(abortRef.current)abortRef.current.abort();
     abortRef.current=new AbortController();
     const {signal}=abortRef.current;
     setLiveStatus("fetching"); setLiveJobs({});
+    if(isIntro)setLoadProgress(0);
     const entries=Object.entries(ATS_STUDIOS);
     // Precompute company/state lookup once (was an O(n) scan per studio).
     const coLookup={};
@@ -3220,6 +3223,8 @@ export default function App() {
       for(const[state,companies] of Object.entries(states))
         for(const c of companies){ if(!coLookup[c.name])coLookup[c.name]={company:c,stateKey:state}; }
     const BATCH=5;
+    const totalBatches=Math.ceil(entries.length/BATCH);
+    let doneBatches=0;
     for(let i=0;i<entries.length;i+=BATCH){
       if(signal.aborted)break;
       const batch=entries.slice(i,i+BATCH);
@@ -3240,12 +3245,30 @@ export default function App() {
       if(!signal.aborted){
         setLiveJobs(prev=>{const next={...prev};for(const[nm,jobs] of batchResults)next[nm]=jobs;return next;});
       }
+      doneBatches++;
+      if(isIntro&&!signal.aborted)setLoadProgress(Math.round((doneBatches/totalBatches)*100));
       if(!signal.aborted)await new Promise(r=>setTimeout(r,250));
     }
-    if(!signal.aborted)setLiveStatus("done");
+    if(!signal.aborted){
+      setLiveStatus("done");
+      if(isIntro){ setLoadProgress(100); setIntroDone(true); }
+    }
   };
 
-  useEffect(()=>{ const t=setTimeout(fetchLiveJobs,2000); return()=>{clearTimeout(t);abortRef.current?.abort();}; },[]);
+  // Kick off the initial load as soon as the user is in (login or guest). The
+  // intro loader below stays up until this first full pass completes.
+  const introStartedRef=useRef(false);
+  useEffect(()=>{
+    if((user||guest)&&!introStartedRef.current){
+      introStartedRef.current=true;
+      fetchLiveJobs(true);
+      // Safety net: never trap the user on the loader. Reveal the board after a
+      // hard cap even if some ATS calls are slow or unreachable.
+      const cap=setTimeout(()=>setIntroDone(true),18000);
+      return()=>{ clearTimeout(cap); abortRef.current?.abort(); };
+    }
+    return()=>{ abortRef.current?.abort(); };
+  },[user,guest]);
 
   const getDisplayJobs=(name,gen,stateName)=>{
     const live=liveJobs[name];
@@ -3535,6 +3558,29 @@ export default function App() {
   if(!user&&!guest){
     if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}><I.Sword s={16} c="#c9a84c"/>Loading…</div></div>;
     return <Auth onLogin={login} onGuest={()=>setGuest(true)}/>;
+  }
+
+  // Intro loading screen — shown once after login/guest while the job board's
+  // live listings load, so the board appears fully populated and smooth.
+  if(!introDone){
+    const pct=Math.max(4,loadProgress); // never show a totally empty bar
+    return <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 35%, #140d09 0%, #080608 70%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:22,padding:24,textAlign:"center"}}>
+      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{position:"absolute",width:78,height:78,borderRadius:"50%",border:"2px solid rgba(201,168,76,.15)",borderTopColor:"#c9a84c",animation:"mqspin 1s linear infinite"}}/>
+        <I.Sword s={30} c="#c9a84c"/>
+      </div>
+      <div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,color:"#f0d080",letterSpacing:1.5,marginBottom:5}}>Main Quest</div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(244,237,216,.55)",letterSpacing:.5}}>Gathering quests from across the realm…</div>
+      </div>
+      <div style={{width:"min(360px,80vw)"}}>
+        <div style={{height:8,background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#c9a84c,#e8613a)",borderRadius:20,transition:"width .4s ease",boxShadow:"0 0 12px rgba(232,97,58,.5)"}}/>
+        </div>
+        <div style={{fontSize:11,color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",marginTop:8,letterSpacing:.5}}>{pct}%</div>
+      </div>
+      <style>{`@keyframes mqspin{to{transform:rotate(360deg)}}`}</style>
+    </div>;
   }
 
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
