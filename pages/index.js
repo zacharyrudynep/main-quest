@@ -1192,6 +1192,41 @@ const STATENAME_CANON={ "District Of Columbia":"District of Columbia", "Newfound
 // Recognized non-US/CA countries — jobs clearly located here are hidden until we
 // add those regions. (Lowercased, matched as a comma-separated token.)
 const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","england","scotland","wales","germany","france","spain","italy","netherlands","sweden","norway","finland","denmark","poland","romania","czech republic","czechia","austria","switzerland","belgium","portugal","greece","hungary","ukraine","russia","china","japan","south korea","korea","singapore","india","australia","new zealand","brazil","argentina","mexico","colombia","chile","philippines","vietnam","indonesia","malaysia","taiwan","hong kong","israel","turkey","united arab emirates","uae","egypt","south africa","nigeria","kenya"]);
+// Given a job's raw location string and the state it's being shown under, return
+// the clean "City, ST" label(s) that belong to THAT state. Handles multi-location
+// postings (e.g. "Los Angeles, CA / Mercer Island, WA") by keeping only the parts
+// in the current state, and drops foreign/other-state parts. Used to condense the
+// location sub-tabs so each city groups cleanly instead of producing garbled or
+// duplicated headers. Works for every company, not just one.
+function cityLabelsForState(raw, stateName){
+  if(!raw) return [];
+  // Full state name -> abbreviation for the state we're rendering under.
+  let abbr=null;
+  for(const [nm,ab] of Object.entries(US_STATE_ABBR)){
+    const canon=STATENAME_CANON[nm.replace(/\b\w/g,c=>c.toUpperCase())]||ABBR_TO_STATENAME[ab];
+    if(canon===stateName || nm.replace(/\b\w/g,c=>c.toUpperCase())===stateName){ abbr=ab; break; }
+  }
+  if(!abbr) return [];
+  const fullLower=(ABBR_TO_STATENAME[abbr]||"").toLowerCase();
+  // Postings often join multiple offices with ; / | • or the words "or"/"and".
+  const chunks=raw.split(/;|\/|\||\u2022|\bor\b|\band\b/i).map(s=>s.trim()).filter(Boolean);
+  const out=new Set();
+  for(const chunk of chunks){
+    const parts=chunk.split(/,/).map(s=>s.trim()).filter(Boolean);
+    let city="", inState=false;
+    for(let i=0;i<parts.length;i++){
+      const p=parts[i], pl=p.toLowerCase();
+      const isThisState = (US_STATE_ABBR[pl]===abbr) || (p.toUpperCase()===abbr) || (fullLower && pl===fullLower);
+      if(isThisState){ inState=true; if(i>0 && !US_STATE_ABBR[parts[i-1].toLowerCase()] && parts[i-1].toUpperCase()!==abbr) city=parts[i-1]; }
+    }
+    if(inState){
+      if(city) out.add(`${city}, ${abbr}`);
+      else out.add(ABBR_TO_STATENAME[abbr]||abbr); // state-only (no city given)
+    }
+  }
+  return [...out];
+}
+
 function jobStateName(job){
   const raw=(job.location||"").trim();
   if(!raw) return "UNKNOWN"; // no location → home-state fallback (don't lose it)
@@ -3099,29 +3134,32 @@ export default function App() {
     const {signal}=abortRef.current;
     setLiveStatus("fetching"); setLiveJobs({});
     const entries=Object.entries(ATS_STUDIOS);
+    // Precompute company/state lookup once (was an O(n) scan per studio).
+    const coLookup={};
+    for(const[,states] of Object.entries(COMPANIES_DATA))
+      for(const[state,companies] of Object.entries(states))
+        for(const c of companies){ if(!coLookup[c.name])coLookup[c.name]={company:c,stateKey:state}; }
     const BATCH=5;
     for(let i=0;i<entries.length;i+=BATCH){
       if(signal.aborted)break;
       const batch=entries.slice(i,i+BATCH);
-      await Promise.all(batch.map(async([companyName,{platform,slug}])=>{
-        let company=null,stateKey="";
-        for(const[,states] of Object.entries(COMPANIES_DATA)){
-          for(const[state,companies] of Object.entries(states)){
-            const found=companies.find(c=>c.name===companyName);
-            if(found){company=found;stateKey=state;break;}
-          }
-          if(company)break;
-        }
-        // If the studio isn't in COMPANIES_DATA, still fetch but with a minimal company object
-        if(!company){company={name:companyName,url:"",email:null};stateKey="Remote";}
+      // Collect this batch's results, then apply them in ONE state update so the
+      // whole job tree re-renders once per batch instead of once per company.
+      const batchResults=await Promise.all(batch.map(async([companyName,{platform,slug}])=>{
+        const found=coLookup[companyName];
+        const company=found?found.company:{name:companyName,url:"",email:null};
+        const stateKey=found?found.stateKey:"Remote";
         try{
           const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal});
-          if(!res.ok){if(!signal.aborted)setLiveJobs(prev=>({...prev,[companyName]:null}));return;}
+          if(!res.ok)return[companyName,null];
           const data=await res.json();
           const jobs=(data.jobs||[]).map(j=>normalizeATSJob(j,platform,company,stateKey));
-          if(!signal.aborted)setLiveJobs(prev=>({...prev,[companyName]:jobs.length>0?jobs:null}));
-        }catch{if(!signal.aborted)setLiveJobs(prev=>({...prev,[companyName]:null}));}
+          return[companyName,jobs.length>0?jobs:null];
+        }catch{return[companyName,null];}
       }));
+      if(!signal.aborted){
+        setLiveJobs(prev=>{const next={...prev};for(const[nm,jobs] of batchResults)next[nm]=jobs;return next;});
+      }
       if(!signal.aborted)await new Promise(r=>setTimeout(r,250));
     }
     if(!signal.aborted)setLiveStatus("done");
@@ -3150,6 +3188,16 @@ export default function App() {
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""});
+  // Debounced search: the input updates this instantly (responsive typing), but
+  // it's only pushed into the actual filter after a short pause, so the whole job
+  // tree doesn't re-render on every keystroke.
+  const [searchInput,setSearchInput]=useState("");
+  useEffect(()=>{
+    const t=setTimeout(()=>{ setFilters(f=>f.search===searchInput?f:{...f,search:searchInput}); },220);
+    return ()=>clearTimeout(t);
+  },[searchInput]);
+  // Keep the input box in sync if the filter is cleared elsewhere (e.g. Clear All).
+  useEffect(()=>{ if(filters.search===""&&searchInput!=="")setSearchInput(""); },[filters.search]);
   const [filterOpen,setFilterOpen]=useState(false);
   // When the user types a search query, auto-expand every country/state that
   // contains a matching company (by name) or matching job, so results are
@@ -3298,11 +3346,12 @@ export default function App() {
   const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.minMatch>0?1:0);
   const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""};
 
-  // All jobs flat list for stats
-  const allJobs=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.entries(c).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs))));
-  const totalJobs=allJobs.filter(matches).length;
-  const newJobs=allJobs.filter(j=>j.isNew&&matches(j)).length;
-  const totalCos=Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.keys(c))).length;
+  // All jobs flat list for stats — memoized so it doesn't rebuild on every render
+  // (e.g. each keystroke). Rebuilds only when live jobs change.
+  const allJobs=useMemo(()=>Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.entries(c).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs)))),[liveJobs]);
+  const totalJobs=useMemo(()=>allJobs.filter(matches).length,[allJobs,filters,user]);
+  const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
+  const totalCos=useMemo(()=>Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.keys(c))).length,[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically
   // within its US state, tagged with how many live jobs it has. Computed once from
   // the static company tree (cheap, memoized).
@@ -3489,8 +3538,8 @@ export default function App() {
             </button>
             <div style={{flex:1,minWidth:180,position:"relative"}}>
               <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:12,opacity:.4,pointerEvents:"none"}}><I.Compass s={12} c="currentColor"/></span>
-              <input value={filters.search} onChange={e=>setFilters(f=>({...f,search:e.target.value}))} placeholder="Search company or title…" style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 32px 8px 32px",fontSize:12,fontFamily:"inherit"}}/>
-              {filters.search&&<span onClick={()=>setFilters(f=>({...f,search:""}))} title="Clear search" style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(232,97,58,.7)",cursor:"pointer",lineHeight:1,userSelect:"none"}}>✕</span>}
+              <input value={searchInput} onChange={e=>setSearchInput(e.target.value)} placeholder="Search company or title…" style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 32px 8px 32px",fontSize:12,fontFamily:"inherit"}}/>
+              {searchInput&&<span onClick={()=>{setSearchInput("");setFilters(f=>({...f,search:""}));}} title="Clear search" style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(232,97,58,.7)",cursor:"pointer",lineHeight:1,userSelect:"none"}}>✕</span>}
             </div>
             {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
@@ -3580,7 +3629,7 @@ export default function App() {
                         if(!hasAnyFilter)return true;
                         if((filters.tiers?.length||0)>0&&!filters.tiers.includes(companyTier(nm)))return false;
                         const dj=getDisplayJobs(nm,co.jobs,state);
-                        if(filters.activeOnly&&dj.length===0)return false;
+                        if(filters.activeOnly&&dj.length===0&&!(co.emailApply||co.registerInterest==="email"))return false;
                         if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
                         if(filters.types.length===1&&filters.types[0]==="Volunteer"&&(co.volunteer||dj.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
                         if(filters.search){const q=filters.search.toLowerCase();const nameHit=nm.toLowerCase().includes(q);if(!nameHit&&!dj.some(j=>matches(j)))return false;}
@@ -3604,8 +3653,11 @@ export default function App() {
                               // Industry Tier: company's tier must be among selected tiers.
                               if((filters.tiers?.length||0)>0&&!filters.tiers.includes(companyTier(name)))return false;
                               const displayJobs=getDisplayJobs(name,company.jobs,state);
-                              // Active Listings Only: company must have at least one real job
-                              if(filters.activeOnly&&displayJobs.length===0)return false;
+                              // Active Listings Only: company must have at least one real job.
+                              // Email-apply companies are an exception — they actively invite
+                              // applications by email even without live listings, so keep them.
+                              const isEmailApplyCo=company.emailApply||company.registerInterest==="email";
+                              if(filters.activeOnly&&displayJobs.length===0&&!isEmailApplyCo)return false;
                               // Email Apply Only: company must have an email-apply job (or be flagged emailApply)
                               if(filters.emailApplyOnly&&!company.emailApply&&!displayJobs.some(j=>j.isEmailApply))return false;
                               // Volunteer type filter: show companies flagged volunteer even with no listings
@@ -3644,17 +3696,26 @@ export default function App() {
                                   <span style={{flex:1}}/>
                                   {hasNew&&<span style={{width:14,height:14,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={12}/></span>}
                                   {(company.volunteer||fJobs.some(j=>j.isVolunteer||j.type==="Volunteer"))&&<span style={{fontSize:9,color:"#7ecfb3",background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginRight:5}}>Volunteer</span>}
-                                  {(company.emailApply)&&<span style={{fontSize:9,color:"#e8a070",background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",padding:"1px 7px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,marginRight:5}}>Email Apply</span>}
                                   {isLive&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:8,padding:"1px 6px",fontWeight:700,marginRight:3}}>● Live</span>}<span style={{fontSize:9,color:"rgba(244,237,216,.35)",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.1)",padding:"1px 7px",borderRadius:20,fontStyle:noJobs?"italic":"normal"}}>{(()=>{const hasSource=!!ATS_STUDIOS[name];const isLoading=liveJobs[name]===undefined&&hasSource;return isLoading?"Checking…":noJobs?"No openings":`${fJobs.length} opening${fJobs.length!==1?"s":""}`;})()}</span>
                                 </button>
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
-                                    ?<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>
+                                    ?((company.emailApply||company.registerInterest==="email")&&company.email
+                                      ?<JobCard key={`${name}-emailapply`} job={{id:`${name}-emailapply`,title:"General Application",company:name,url:company.url,applyUrl:company.url,email:company.email,applyEmail:company.email,isEmailApply:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!company.volunteer,summary:`${name} accepts applications by email. Send your resume to ${company.email} to be considered — they'll reach out if there's a fit.`,responsibilities:[],requirements:[]}} user={user} guest={guest} onRequestLogin={()=>setShowLoginPopup(true)} onApplied={markApplied}/>
+                                      :<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>)
                                     :(()=>{
-                                      // Group this studio's jobs by their real location. Only show
-                                      // location headers when the studio has jobs in 2+ locations.
+                                      // Group this studio's jobs by their real location WITHIN this
+                                      // state. Multi-location postings are placed under each of their
+                                      // cities in this state; foreign/other-state parts are dropped.
                                       const groups={};
-                                      for(const j of fJobs){const k=j.locationLabel||"Other";(groups[k]=groups[k]||[]).push(j);}
+                                      for(const j of fJobs){
+                                        let labels=cityLabelsForState(j.location,state);
+                                        if(!labels.length){ // remote/unknown/no-city → fall back
+                                          const fb=j.locationLabel&&j.locationLabel!=="Other"?j.locationLabel:(j.isRemote?"Remote":"Other");
+                                          labels=[fb];
+                                        }
+                                        for(const k of labels){ (groups[k]=groups[k]||[]).push(j); }
+                                      }
                                       const keys=Object.keys(groups).sort((a,b)=>{
                                         if(a==="Remote")return 1; if(b==="Remote")return -1;
                                         if(a==="Other")return 1; if(b==="Other")return -1;
