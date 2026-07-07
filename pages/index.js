@@ -1046,7 +1046,7 @@ for (const [country,states] of Object.entries(COMPANIES_DATA)) {
 //   SLUG.recruitee.com              → recruitee
 // Then verify it at /verify in your app before adding it here.
 const ATS_STUDIOS = {
-  // ─── Ashby studios (includes salary data) ───
+  // ─── Ashby ───
   "Arena":                    { platform:"ashby", slug:"arenanet" },
   "Atomic Theory":            { platform:"ashby", slug:"rocketsciencegg" },
   "Bad Robot Games":          { platform:"ashby", slug:"badrobotgames" },
@@ -1059,6 +1059,7 @@ const ATS_STUDIOS = {
   "Second Dinner":            { platform:"ashby", slug:"seconddinner" },
   "Series Entertainment":     { platform:"ashby", slug:"seriesai" },
   "Supercell":                { platform:"ashby", slug:"supercell" },
+  "Super Evil MegaCorp":      { platform:"ashby", slug: null },
   "TapBlaze":                 { platform:"ashby", slug:"tapblaze" },
   "Terminal Velocity":        { platform:"ashby", slug:"rocketsciencegg" },
   "thatgamecompany":          { platform:"ashby", slug:"thatgamecompany" },
@@ -1071,7 +1072,7 @@ const ATS_STUDIOS = {
   "Certain Affinity":         { platform:"applytojob", slug:"certainaffinityinc" },
   "Hi-Rez Studios":           { platform:"applytojob", slug:"hirezstudios" },
   "Hololabs":                 { platform:"applytojob", slug:"hololabs" },
-  "Iron Galaxy":              { platform:"applytojob", slug:"irongalaxy" },
+  "Iron Galaxy Studios":      { platform:"applytojob", slug:"irongalaxy" },
   "Lost Boys Interactive":    { platform:"applytojob", slug:"lostboysinteractive" },
   "Next Level Games":         { platform:"applytojob", slug:"nextlevelgames" },
   "Obsidian Entertainment":   { platform:"applytojob", slug:"obsidian" },
@@ -1080,10 +1081,48 @@ const ATS_STUDIOS = {
   "Templar Media":            { platform:"applytojob", slug:"templar" },
   "Titan Forge":              { platform:"applytojob", slug:"hirezstudios" },
   // ─── BambooHR ───
+  "Avore":                    { platform:"bamboohr", slug:"avore" },
+  "Budge Studios":            { platform:"bamboohr", slug:"budge" },
+  "Cat Face":                 { platform:"bamboohr", slug:"catface" },
+  "Clockwork Labs":           { platform:"bamboohr", slug:"clockworklabs" },
+  "Compulsion Games":         { platform:"bamboohr", slug:"compulsiongames" },
+  "Devolver Digital":         { platform:"bamboohr", slug:"devolverdigital" },
+  "E-Line Media":             { platform:"bamboohr", slug: null },
+  "Emberlab":                 { platform:"bamboohr", slug:"emberlab" },
+  "Final Strike Games":       { platform:"bamboohr", slug:"finalstrikegames" },
   "Gasket Games":             { platform:"bamboohr", slug:"gasketgames" },
-  "King Show Games":          { platform:"bamboohr", slug:"" },
+  "High 5 Games":             { platform:"bamboohr", slug:"high5games" },
+  "Hyper Hippo Games":        { platform:"bamboohr", slug:"hyperhippoproductions" },
+  "InXile Entertainment":     { platform:"bamboohr", slug:"inxile" },
+  "King Show Games":          { platform:"bamboohr", slug: null },
+  "LBC Studios":              { platform:"bamboohr", slug:"lbcstudiosca" },
+  "Ludia":                    { platform:"bamboohr", slug:"ludia" },
+  "Moonshot Games":           { platform:"bamboohr", slug:"dreamhaven" },
   "Motorsport Games":         { platform:"bamboohr", slug:"motorsportgames" },
+  "Offworld":                 { platform:"bamboohr", slug:"owi" },
+  "Race Rocks":               { platform:"bamboohr", slug:"racerocks" },
+  "Red Barrels":              { platform:"bamboohr", slug:"redbarrels" },
+  "Relic":                    { platform:"bamboohr", slug:"relicentertainment" },
+  "Schell Games":             { platform:"bamboohr", slug:"sg" },
+  "Secret Door":              { platform:"bamboohr", slug:"dreamhaven" },
+  "Seismic Squirrel":         { platform:"bamboohr", slug:"seismicsquirrel" },
   "Stardock":                 { platform:"bamboohr", slug:"stardock" },
+  "Studio Wildcard":          { platform:"bamboohr", slug:"studiowildcard" },
+  "Torn Banner Studios":      { platform:"bamboohr", slug:"tornbanner" },
+  "Trio Tech":                { platform:"bamboohr", slug:"triotech" },
+  "Turn Me Up Games":         { platform:"bamboohr", slug:"turnmeup" },
+  "Uken Games":               { platform:"bamboohr", slug:"uken" },
+  // ─── BreezyHR ───
+  "AGBO":                     { platform:"breezy", slug:"agbo" },
+  "Com2Us":                   { platform:"breezy", slug:"com2us" },
+  "Flowplay":                 { platform:"breezy", slug:"flowplay-llc" },
+  "Gamebreaking Studios":     { platform:"breezy", slug:"gamebreaking" },
+  "Illfonic":                 { platform:"breezy", slug:"illfonic" },
+  "Lucky Logic":              { platform:"breezy", slug:"lucky-logic" },
+  "Magic Fuel Games":         { platform:"breezy", slug:"playstack" },
+  "Puzzle Cats":              { platform:"breezy", slug:"puzzy-cats" },
+  "Raid Base":                { platform:"breezy", slug:"raid-base-inc" },
+  "Turbulent":                { platform:"breezy", slug:"turbulent" },
   // ─── Greenhouse studios ───
   "2k Games":                 { platform:"greenhouse", slug:"2k" },
   "2k Sports Lab":            { platform:"greenhouse", slug:"2k" },
@@ -1159,7 +1198,7 @@ const ATS_STUDIOS = {
   "Amber":                    { platform:"jobvite", slug:"amberstudiocareers" },
   "Capcom":                   { platform:"jobvite", slug:"capcomusa" },
   "Probably Monsters":        { platform:"jobvite", slug:"probablymonsters" },
-  // ─── Lever studios ───
+  // ─── Lever ───
   "Avalanche Studios":        { platform:"lever", slug:"avalanchestudios" },
   "Behaviour Interactive":    { platform:"lever", slug:"bhvr" },
   "Blackbird Interactive":    { platform:"lever", slug:"blackbirdinteractive" },
@@ -1181,6 +1220,7 @@ const ATS_STUDIOS = {
   "Theorycraft Games":        { platform:"lever", slug:"theorycraftgames" },
   // ─── Paylocity ───
   "Design Works Gaming":      { platform:"paylocity", slug:"design-works-gaming" },
+  "Gunfire Games":            { platform:"paylocity", slug:"gunfire-games" },
   // ─── Recruitee ───
   "Framestore VR":            { platform:"recruitee", slug:"framestore" },
   // ─── Smart Recruiters ───
@@ -1216,6 +1256,16 @@ const ATS_STUDIOS = {
   "Square Enix":              { platform:"workable", slug:"square-enix-america" },
   "Velan Studios":            { platform:"workable", slug:"velanstudios" },
   "Vertigo Games":            { platform:"workable", slug:"vertigogames" },
+  // ─── Workday ───
+  "King":                     { platform:"workday", slug:"xboxgaming:wd1:King_External_Careers" },
+  "Lightspeed":               { platform:"workday", slug:"tencent:wd1:Tencent_Careers" },
+  "Lucas Films":              { platform:"workday", slug:"disney:wd5:disneycareer" },
+  "Marvel Games":             { platform:"workday", slug:"disney:wd5:disneycareer" },
+  "Sega":                     { platform:"workday", slug:"sega:wd3:SEGA_Careers" },
+  "SciPlay":                  { platform:"workday", slug:"lnw:wd5:SciPlayExternalCareersSite" },
+  "Tencent":                  { platform:"workday", slug:"tencent:wd1:Tencent_Careers" },
+  "Timi Studios":             { platform:"workday", slug:"tencent:wd1:timi_careers" },
+  "Walt Disney":              { platform:"workday", slug:"disney:wd5:disneycareer" },
 };
 
 // Normalize a job from ANY ATS platform into our internal shape
