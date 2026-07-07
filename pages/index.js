@@ -3214,45 +3214,65 @@ export default function App() {
     if(abortRef.current)abortRef.current.abort();
     abortRef.current=new AbortController();
     const {signal}=abortRef.current;
-    setLiveStatus("fetching"); setLiveJobs({});
-    if(isIntro)setLoadProgress(0);
+    setLiveStatus("fetching");
+    if(isIntro)setLoadProgress(0); else setLiveJobs({});
     const entries=Object.entries(ATS_STUDIOS);
     // Precompute company/state lookup once (was an O(n) scan per studio).
     const coLookup={};
     for(const[,states] of Object.entries(COMPANIES_DATA))
       for(const[state,companies] of Object.entries(states))
         for(const c of companies){ if(!coLookup[c.name])coLookup[c.name]={company:c,stateKey:state}; }
+    const fetchOne=async([companyName,{platform,slug}])=>{
+      const found=coLookup[companyName];
+      const company=found?found.company:{name:companyName,url:"",email:null};
+      const stateKey=found?found.stateKey:"Remote";
+      try{
+        const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal});
+        if(!res.ok)return[companyName,null];
+        const data=await res.json();
+        const jobs=(data.jobs||[]).map(j=>normalizeATSJob(j,platform,company,stateKey));
+        return[companyName,jobs.length>0?jobs:null];
+      }catch{return[companyName,null];}
+    };
+
+    if(isIntro){
+      // Behind the loading screen: fetch EVERYTHING first (higher concurrency, no
+      // inter-batch delay, no incremental state updates), then set liveJobs ONCE
+      // and reveal the board fully populated — no more pop-in after entry.
+      const CONC=10;
+      const collected={};
+      let done=0;
+      for(let i=0;i<entries.length;i+=CONC){
+        if(signal.aborted)return;
+        const slice=entries.slice(i,i+CONC);
+        const results=await Promise.all(slice.map(fetchOne));
+        for(const[nm,jobs] of results)collected[nm]=jobs;
+        done+=slice.length;
+        setLoadProgress(Math.min(99,Math.round((done/entries.length)*100)));
+      }
+      if(signal.aborted)return;
+      setLiveJobs(collected);
+      setLiveStatus("done");
+      setLoadProgress(100);
+      // Give React one paint to build the tree with all jobs, then reveal.
+      setTimeout(()=>setIntroDone(true),120);
+      return;
+    }
+
+    // Manual refresh (board already visible): keep the gentle batched updates so
+    // the UI stays responsive while new listings stream in.
+    setLiveJobs({});
     const BATCH=5;
-    const totalBatches=Math.ceil(entries.length/BATCH);
-    let doneBatches=0;
     for(let i=0;i<entries.length;i+=BATCH){
       if(signal.aborted)break;
       const batch=entries.slice(i,i+BATCH);
-      // Collect this batch's results, then apply them in ONE state update so the
-      // whole job tree re-renders once per batch instead of once per company.
-      const batchResults=await Promise.all(batch.map(async([companyName,{platform,slug}])=>{
-        const found=coLookup[companyName];
-        const company=found?found.company:{name:companyName,url:"",email:null};
-        const stateKey=found?found.stateKey:"Remote";
-        try{
-          const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal});
-          if(!res.ok)return[companyName,null];
-          const data=await res.json();
-          const jobs=(data.jobs||[]).map(j=>normalizeATSJob(j,platform,company,stateKey));
-          return[companyName,jobs.length>0?jobs:null];
-        }catch{return[companyName,null];}
-      }));
+      const batchResults=await Promise.all(batch.map(fetchOne));
       if(!signal.aborted){
         setLiveJobs(prev=>{const next={...prev};for(const[nm,jobs] of batchResults)next[nm]=jobs;return next;});
       }
-      doneBatches++;
-      if(isIntro&&!signal.aborted)setLoadProgress(Math.round((doneBatches/totalBatches)*100));
       if(!signal.aborted)await new Promise(r=>setTimeout(r,250));
     }
-    if(!signal.aborted){
-      setLiveStatus("done");
-      if(isIntro){ setLoadProgress(100); setIntroDone(true); }
-    }
+    if(!signal.aborted)setLiveStatus("done");
   };
 
   // Kick off the initial load as soon as the user is in (login or guest). The
@@ -3553,7 +3573,36 @@ export default function App() {
     return {tree,newRegs};
   },[liveJobs]);
   const displayTree=displayTreeData.tree;
-  const appliedJobs=allJobs.filter(j=>user?.applied?.[j.id]);
+  // Precompute country/state totals once per data change (not per expand toggle).
+  const treeCounts=useMemo(()=>{
+    const cc={},sc={};
+    for(const [country,states] of Object.entries(displayTree)){
+      let cAll=[];
+      for(const [state,companies] of Object.entries(states)){
+        const sAll=Object.entries(companies).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs,state));
+        sc[`${country}|${state}`]={total:sAll.filter(matches).length,hasNew:sAll.some(j=>j.isNew&&matches(j))};
+        cAll=cAll.concat(sAll);
+      }
+      cc[country]={total:cAll.filter(matches).length,hasNew:cAll.some(j=>j.isNew&&matches(j))};
+    }
+    return {country:cc,state:sc};
+  },[displayTree,liveJobs,filters,user]);
+  const companyJobsCache=useMemo(()=>{
+    const cache={};
+    const searchQ=(filters.search||"").toLowerCase();
+    for(const [country,states] of Object.entries(displayTree)){
+      for(const [state,companies] of Object.entries(states)){
+        for(const [name,company] of Object.entries(companies)){
+          const displayJobs=getDisplayJobs(name,company.jobs,state);
+          const nameMatchesSearch=searchQ&&name.toLowerCase().includes(searchQ);
+          const fJobs=sortJobs(displayJobs.filter(j=>nameMatchesSearch?matchesExceptSearch(j):matches(j)));
+          cache[`${country}|${state}|${name}`]={fJobs,displayJobs,nameMatchesSearch};
+        }
+      }
+    }
+    return cache;
+  },[displayTree,liveJobs,filters,user,jobSort,expSortDir]);
+  const appliedJobs=useMemo(()=>allJobs.filter(j=>user?.applied?.[j.id]),[allJobs,user]);
 
   if(!user&&!guest){
     if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}><I.Sword s={16} c="#c9a84c"/>Loading…</div></div>;
@@ -3651,7 +3700,8 @@ export default function App() {
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
           {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Countries",false]].map(([n,lbl,hi])=>
-            <div key={lbl} style={{background:hi?"rgba(232,97,58,.07)":"rgba(201,168,76,.05)",border:`1px solid ${hi?"rgba(232,97,58,.3)":"rgba(201,168,76,.15)"}`,borderRadius:10,padding:mobile?"8px 10px":"10px 18px",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+            <div key={lbl} style={{position:"relative",background:hi?"rgba(232,97,58,.07)":"rgba(201,168,76,.05)",border:`1px solid ${hi?"rgba(232,97,58,.3)":"rgba(201,168,76,.15)"}`,borderRadius:10,padding:mobile?"8px 10px":"10px 18px",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              {hi&&n>0&&<span title={`${n} new in the last 48 hours`} style={{position:"absolute",top:-7,right:-7,display:"inline-flex"}}><I.Alert s={18}/></span>}
               <span style={{fontFamily:"'Cinzel',serif",fontSize:mobile?18:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</span>
               <span style={{fontSize:mobile?8:9,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",textAlign:"center"}}>{lbl}</span>
             </div>)}
@@ -3723,9 +3773,9 @@ export default function App() {
             .filter(([country])=>filters.countries.length===0||filters.countries.includes(country))
             .map(([country,states])=>{
               const cKey=`c-${country}`;
-              const cAllJobs=Object.entries(states).flatMap(([stName,cos])=>Object.entries(cos).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs,stName)));
-              const cNewJobs=cAllJobs.some(j=>j.isNew&&matches(j));
-              const cTotal=cAllJobs.filter(matches).length;
+              const cCounts=treeCounts.country[country]||{total:0,hasNew:false};
+              const cNewJobs=cCounts.hasNew;
+              const cTotal=cCounts.total;
               // Hide country if a filter is active and nothing inside matches
               if(hasAnyFilter){
                 const anyCoName=filters.search&&Object.values(states).some(cos=>Object.keys(cos).some(n=>n.toLowerCase().includes(filters.search.toLowerCase())));
@@ -3747,9 +3797,9 @@ export default function App() {
                     .filter(([state])=>filters.states.length===0||filters.states.includes(state))
                     .map(([state,companies])=>{
                       const sKey=`s-${country}-${state}`;
-                      const sAllJobs=Object.entries(companies).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs,state));
-                      const sTotal=sAllJobs.filter(matches).length;
-                      const sNewJobs=sAllJobs.some(j=>j.isNew&&matches(j));
+                      const sCounts=treeCounts.state[`${country}|${state}`]||{total:0,hasNew:false};
+                      const sTotal=sCounts.total;
+                      const sNewJobs=sCounts.hasNew;
                       // Count companies that survive the active filters
                       const sCompaniesShown=Object.entries(companies).filter(([nm,co])=>{
                         if(!hasAnyFilter)return true;
@@ -3798,15 +3848,10 @@ export default function App() {
                             })
                             .map(([name,company])=>{
                               const coKey=`co-${country}-${state}-${name}`;
-                              const displayJobs=getDisplayJobs(name,company.jobs,state);
+                              const cached=companyJobsCache[`${country}|${state}|${name}`]||{};
+                              const displayJobs=cached.displayJobs||getDisplayJobs(name,company.jobs,state);
                               const isLive=Array.isArray(liveJobs[name])&&liveJobs[name].length>0;
-                              const nameMatchesSearch=filters.search&&name.toLowerCase().includes(filters.search.toLowerCase());
-                              // If the company name matches the search, show all its jobs (that pass any
-                              // non-search filters). Otherwise show only jobs matching the search/filters.
-                              const fJobs=sortJobs(displayJobs.filter(j=>{
-                                if(nameMatchesSearch)return matchesExceptSearch(j);
-                                return matches(j);
-                              }));
+                              const fJobs=cached.fJobs||[];
                               const hasNew=fJobs.some(j=>j.isNew);
                               const noJobs=fJobs.length===0;
                               return <div key={name} style={{background:"rgba(201,168,76,.02)",border:"1px solid rgba(201,168,76,.06)",borderRadius:8,overflow:"hidden",opacity:noJobs?.7:1,transition:"opacity .2s"}} onMouseEnter={e=>{if(noJobs)e.currentTarget.style.opacity="1";}} onMouseLeave={e=>{if(noJobs)e.currentTarget.style.opacity=".7";}}>
