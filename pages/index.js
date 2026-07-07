@@ -1413,6 +1413,15 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     const wl=raw.workLocation||raw.location||{};
     loc=(typeof wl==="string"?wl:(wl.label||wl.name||[wl.city,wl.state,wl.country].filter(Boolean).join(", ")))||"";
     updated=new Date(raw.createdAt||raw.postedAt||raw.updatedAt||Date.now()).getTime();
+  } else if(platform==="breezy"){
+    title=raw.name||raw.title||"";
+    // Public posting URL — Breezy provides `url` on each posting.
+    url=raw.url||raw.careersUrl||company.url;
+    rawHtml=raw.description||""; body=stripHtml(rawHtml);
+    // Location can be a string or an object {name,city,state,country}.
+    const bl=raw.location||{};
+    loc=(typeof bl==="string"?bl:(bl.name||[bl.city,bl.state,bl.country_name||bl.country].filter(Boolean).join(", ")))||"";
+    updated=new Date(raw.published_date||raw.creation_date||raw.updated_date||Date.now()).getTime();
   }
 
   const daysAgo=Math.floor((Date.now()-updated)/86400000);
@@ -1435,6 +1444,16 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     else if(wt==="hybrid") isHybrid=true;
     const et={FULL_TIME:"Full-time",PART_TIME:"Part-time",INTERN:"Internship",CONTRACT:"Contract",TEMPORARY:"Temporary"}[(raw.employmentType||"").toUpperCase()];
     if(et) jobType=et;
+  }
+  if(platform==="breezy"){
+    // Breezy `type` is an object like {id:"full_time",name:"Full-Time"}.
+    const tn=((raw.type&&(raw.type.name||raw.type.id))||"").toLowerCase();
+    const et={"full-time":"Full-time","full_time":"Full-time","part-time":"Part-time","part_time":"Part-time","contract":"Contract","contractor":"Contract","internship":"Internship","intern":"Internship","temporary":"Temporary","seasonal":"Temporary","volunteer":"Volunteer"}[tn];
+    if(et) jobType=et;
+    // Workplace/remote flags: `remote` boolean or location.is_remote, or category.
+    const bl=raw.location||{};
+    if(raw.remote===true||bl.is_remote===true||/remote/i.test(bl.name||"")) isRemote=true;
+    if(/hybrid/i.test(bl.name||"")) isHybrid=true;
   }
   // Title-based fallbacks (catch internships/part-time the ATS didn't tag).
   if(/\bintern\b|internship|\bco-?op\b/i.test(title)) jobType="Internship";

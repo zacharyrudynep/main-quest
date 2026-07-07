@@ -147,6 +147,14 @@ function buildVariants(platform, slug) {
       return [
         { url: `https://ats.rippling.com/api/v2/board/${slug}/jobs?page=0&pageSize=100`, pick: d => d.items || d.jobs || (Array.isArray(d) ? d : []) },
       ];
+    case 'breezy':
+      // BreezyHR public career feed. `{slug}.breezy.hr/json` returns an array of
+      // published positions with full descriptions in one call. Some accounts use
+      // `app.breezy.hr/api/company/{slug}/positions` as an alternate shape.
+      return [
+        { url: `https://${slug}.breezy.hr/json`, pick: d => Array.isArray(d) ? d : (d.positions || d.jobs || []) },
+        { url: `https://${slug}.breezy.hr/json/`, pick: d => Array.isArray(d) ? d : (d.positions || d.jobs || []) },
+      ];
     default:
       return null;
   }
