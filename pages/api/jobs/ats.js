@@ -140,6 +140,13 @@ function buildVariants(platform, slug) {
         { url: `https://${slug}.jobs.personio.de/xml?language=en`, pick: d => extractPersonio(d) },
         { url: `https://${slug}.jobs.personio.com/xml?language=en`, pick: d => extractPersonio(d) },
       ];
+    case 'rippling':
+      // Unauthenticated Rippling career-board feed. Returns { items, totalItems,
+      // totalPages }. Listings include title/department/location + apply URL, but
+      // NOT full descriptions (those need a per-job details call we skip for now).
+      return [
+        { url: `https://ats.rippling.com/api/v2/board/${slug}/jobs?page=0&pageSize=100`, pick: d => d.items || d.jobs || (Array.isArray(d) ? d : []) },
+      ];
     default:
       return null;
   }
