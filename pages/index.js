@@ -1346,6 +1346,20 @@ function ashbySalary(comp){
   return "";
 }
 
+// Workday exposes posting dates as relative text ("Posted 5 Days Ago", "Posted
+// Today", "Posted 30+ Days Ago"). Convert to an approximate timestamp.
+function parseWorkdayPosted(txt){
+  const s=(txt||"").toLowerCase();
+  if(!s) return Date.now();
+  if(/today|just posted/.test(s)) return Date.now();
+  if(/yesterday/.test(s)) return Date.now()-86400000;
+  const m=s.match(/(\d+)\+?\s*day/);
+  if(m) return Date.now()-parseInt(m[1],10)*86400000;
+  const mo=s.match(/(\d+)\+?\s*month/);
+  if(mo) return Date.now()-parseInt(mo[1],10)*30*86400000;
+  return Date.now();
+}
+
 function normalizeATSJob(raw, platform, company, stateKey) {
   const decodeEntities = h => (h||"")
     .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'")
@@ -1422,6 +1436,20 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     const bl=raw.location||{};
     loc=(typeof bl==="string"?bl:(bl.name||[bl.city,bl.state,bl.country_name||bl.country].filter(Boolean).join(", ")))||"";
     updated=new Date(raw.published_date||raw.creation_date||raw.updated_date||Date.now()).getTime();
+  } else if(platform==="workday"){
+    title=raw.title||"";
+    // Full apply URL: the CXS host + the posting's externalPath (which already
+    // includes the site segment). __wdHost is attached by the proxy.
+    const host=raw.__wdHost||"";
+    const path=raw.externalPath||"";
+    url=raw.externalUrl||((host&&path)?`${host}${path}`:(company.url||""));
+    // Listings don't include descriptions (they need a per-job call we skip);
+    // body stays empty. Location comes as locationsText, e.g. "Cedar Falls, IA"
+    // or "2 Locations" for multi-site postings.
+    rawHtml=""; body="";
+    loc=raw.locationsText||"";
+    // postedOn is relative text ("Posted 5 Days Ago" / "Posted Today"); parse it.
+    updated=parseWorkdayPosted(raw.postedOn);
   }
 
   const daysAgo=Math.floor((Date.now()-updated)/86400000);

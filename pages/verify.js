@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Head from "next/head";
 
-const PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "applytojob", "bamboohr", "paylocity", "jobvite", "personio", "rippling", "breezy"];
+const PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "applytojob", "bamboohr", "paylocity", "jobvite", "personio", "rippling", "breezy", "workday"];
 
 export default function Verify() {
   const [slug, setSlug] = useState("");
@@ -117,8 +117,13 @@ export default function Verify() {
             <li><code>apply.workable.com/<strong>SLUG</strong></code></li>
             <li><code>careers.smartrecruiters.com/<strong>SLUG</strong></code></li>
             <li><code><strong>SLUG</strong>.recruitee.com</code></li>
+            <li><code><strong>SLUG</strong>.breezy.hr</code></li>
+            <li><code><strong>SLUG</strong>.rippling.com</code> or <code>ats.rippling.com/<strong>SLUG</strong></code></li>
           </ul>
-          If a studio's careers page doesn't use any of these (e.g. it's a custom site or Workday), it won't work with this system.
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(201,168,76,.1)" }}>
+            <strong style={{ color: "#c9a84c" }}>Workday</strong> is special — its careers URL looks like <code>https://<strong>TENANT</strong>.<strong>REGION</strong>.myworkdayjobs.com/<strong>SITE</strong>/...</code> (e.g. <code>lnw.wd5.myworkdayjobs.com/SciPlayExternalCareersSite</code>). Enter the slug as <code><strong>TENANT:REGION:SITE</strong></code> — for that example, <code>lnw:wd5:SciPlayExternalCareersSite</code>.
+          </div>
+          If a studio's careers page doesn't use any of these, it won't work with this system yet.
         </div>
       </div>
     </div>

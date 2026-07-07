@@ -29,6 +29,41 @@ export default async function handler(req, res) {
   // response shape), even if it currently has zero open postings.
   let slugValid = false;
   let validVia = null;
+
+  // Workday paginates (20/page) and needs POST with an incrementing offset. Handle
+  // it specially so we collect ALL postings, not just the first page.
+  if (platform === 'workday') {
+    const v = variants[0];
+    // Workday's edge is picky; a matching Referer/Accept-Language reduces blocks.
+    const wdHeaders = { ...headers, 'Content-Type': 'application/json', 'Accept-Language': 'en-US',
+      'Referer': (v.url || '').replace('/wday/cxs/', '/en-US/').replace(/\/jobs$/, '') };
+    try {
+      let offset = 0, all = [], total = null, pages = 0;
+      while (pages < 50) { // hard cap (1000 jobs) so we never loop forever
+        const body = { appliedFacets: {}, limit: 20, offset, searchText: '' };
+        const r = await fetch(v.url, { method: 'POST', headers: wdHeaders, body: JSON.stringify(body), signal: AbortSignal.timeout(12000) });
+        if (!r.ok) { attempts.push({ url: v.url, status: r.status, offset }); break; }
+        const raw = await r.json();
+        if (total === null) total = raw.total || 0;
+        const page = v.pick(raw) || [];
+        all = all.concat(page);
+        slugValid = true; validVia = v.url;
+        pages++; offset += 20;
+        if (page.length === 0 || all.length >= (total || 0)) break;
+      }
+      attempts.push({ url: v.url, status: 200, found: all.length, total });
+      if (all.length > 0) {
+        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+        return res.status(200).json({ jobs: all, count: all.length, platform, slug, used: v.url, slugValid: true, ...(debug ? { attempts } : {}) });
+      }
+    } catch (err) {
+      attempts.push({ url: v.url, error: err.message.slice(0, 80) });
+    }
+    return res.status(200).json({ jobs: [], count: 0, platform, slug, slugValid,
+      ...(slugValid ? { used: validVia, note: 'Slug is valid — board exists but has no open postings right now.' } : { note: 'Slug did not resolve to a valid job board.' }),
+      attempts });
+  }
+
   for (const v of variants) {
     try {
       const opts = { method: v.method || 'GET', headers: { ...headers }, signal: AbortSignal.timeout(12000) };
@@ -155,6 +190,25 @@ function buildVariants(platform, slug) {
         { url: `https://${slug}.breezy.hr/json`, pick: d => Array.isArray(d) ? d : (d.positions || d.jobs || []) },
         { url: `https://${slug}.breezy.hr/json/`, pick: d => Array.isArray(d) ? d : (d.positions || d.jobs || []) },
       ];
+    case 'workday': {
+      // Workday needs THREE pieces, encoded in the slug as "tenant:region:site"
+      // e.g. "lnw:wd5:SciPlayExternalCareersSite" (from the careers URL
+      // https://lnw.wd5.myworkdayjobs.com/SciPlayExternalCareersSite/...).
+      // The public CXS listings endpoint is a POST with a JSON body and returns
+      // { total, jobPostings:[{title, locationsText, externalPath, postedOn,...}] }.
+      // Descriptions are NOT included here (they need a per-job GET on externalPath),
+      // so listings show title/location/apply-link only.
+      const parts = String(slug).split(':');
+      const tenant = parts[0] || '';
+      const region = parts[1] || 'wd1';
+      const site = parts[2] || parts[0] || '';
+      const base = `https://${tenant}.${region}.myworkdayjobs.com/wday/cxs/${tenant}/${site}`;
+      const body = { appliedFacets: {}, limit: 20, offset: 0, searchText: '' };
+      return [
+        { url: `${base}/jobs`, method: 'POST', body,
+          pick: d => (d.jobPostings || []).map(j => ({ ...j, __wdBase: base, __wdHost: `https://${tenant}.${region}.myworkdayjobs.com` })) },
+      ];
+    }
     default:
       return null;
   }
