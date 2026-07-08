@@ -1667,7 +1667,7 @@ async function callAI(prompt,maxTokens=2000){
 
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const I={
-  Sword:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><line x1="2" y1="14" x2="10" y2="6"/><line x1="10" y1="2" x2="14" y2="6"/><line x1="9" y1="3" x2="13" y2="7"/></svg>,
+  Sword:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5 L13.7 6.4 V12.8 H10.3 V6.4 Z"/><path d="M12 6.8 V12" stroke={c} strokeWidth="0.8" opacity="0.7"/><path d="M7.8 14 H16.2"/><path d="M12 14 V18.4"/><circle cx="12" cy="20.1" r="1.35"/></svg>,
   SwordShield:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18.5 3.5l-9 9"/><path d="M3.5 18.5l3-1 3.5-3.5"/><path d="M18.5 3.5l1 1-1 3-2-1z"/><path d="M5.5 3.5l9 9"/><path d="M20.5 18.5l-3-1-3.5-3.5"/><path d="M5.5 3.5l-1 1 1 3 2-1z"/><path d="M6.2 17.8l-2.7 2.7"/><path d="M17.8 17.8l2.7 2.7"/><path d="M9 14l1.2 1.2M15 14l-1.2 1.2"/></svg>,
   Scroll:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h9a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>,
   Map:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="1,3 6,1 10,3 15,1 15,13 10,15 6,13 1,15"/><line x1="6" y1="1" x2="6" y2="13"/><line x1="10" y1="3" x2="10" y2="15"/></svg>,
@@ -1768,10 +1768,25 @@ const GLOBE_HOTSPOTS = [
   [33.7,-84.4,  0.22], // Atlanta / Georgia
   [45.5,-122.7, 0.20], // Portland / Oregon
   [33.4,-112.1, 0.18], // Phoenix / Arizona
+  [32.8,-117.1, 0.42], // San Diego / California (second CA hub)
+  [38.9,-77.2,  0.24], // Northern Virginia / DC metro
+  [39.95,-75.16,0.20], // Philadelphia / Pennsylvania
+  [40.7,-74.2,  0.22], // New Jersey (Newark metro)
+  [42.3,-83.7,  0.20], // Detroit–Ann Arbor / Michigan
+  [44.98,-93.27,0.20], // Minneapolis / Minnesota
+  [43.07,-89.4, 0.18], // Madison / Wisconsin
+  [36.16,-86.78,0.18], // Nashville / Tennessee
+  [30.0,-90.1,  0.20], // New Orleans / Louisiana
+  [40.76,-111.89,0.18],// Salt Lake City / Utah
   [43.7,-79.4,  0.40], // Toronto / Canada
   [45.5,-73.6,  0.46], // Montreal / Canada
+  [45.42,-75.7, 0.24], // Ottawa / Canada
   [49.3,-123.1, 0.30], // Vancouver / Canada
   [51.0,-114.1, 0.18], // Calgary / Canada
+  [53.5,-113.5, 0.16], // Edmonton / Canada
+  [49.9,-97.1,  0.20], // Winnipeg / Manitoba
+  [44.65,-63.6, 0.20], // Halifax / Nova Scotia
+  [52.1,-106.6, 0.16], // Saskatoon / Saskatchewan
 ];
 // A rough world coastline as lat/lon dot clusters (low-res, stylized — enough to read as Earth).
 // Natural Earth boundary data (public domain), simplified for canvas rendering.
@@ -1838,8 +1853,10 @@ function getGlobeLights(){
     // Blend the curated base weight with the real per-state company density so the
     // busiest states brighten while a hotspot never fully disappears.
     const st=stateOfPoint(lon,lat);
-    const factor=st?((stateCount[st]||0)/maxCount):0;
-    const w=Math.max(0.05,Math.min(1.0, baseW*(0.55+0.95*factor) ));
+    // Compress the density range (sqrt) so busy-but-not-California states still
+    // glow clearly, and keep a floor so every hotspot stays visible.
+    const factor=st?Math.sqrt((stateCount[st]||0)/maxCount):0;
+    const w=Math.max(0.16,Math.min(1.0, 0.30*baseW + 0.70*factor ));
     out.push([lat,lon,w,1.05]);                 // bright core (always kept)
     const n=Math.round(6+w*26);                 // more satellites for busier areas
     const ring=0.5+w*3.4;                        // sprawl radius
@@ -3090,6 +3107,25 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied})
   </div>;
 });
 
+// Isolated, debounced search box. It keeps its own input state so typing only
+// re-renders this small component — the heavy job tree only updates once the
+// debounced value is pushed up via onSearch, keeping search smooth.
+const SearchBox = memo(function SearchBox({value,onSearch}){
+  const [local,setLocal]=useState(value||"");
+  const tRef=useRef();
+  // Sync down if the search is cleared/changed externally (e.g. "Clear All").
+  useEffect(()=>{ setLocal(value||""); },[value]);
+  useEffect(()=>()=>clearTimeout(tRef.current),[]);
+  const push=useCallback((v)=>{ clearTimeout(tRef.current); tRef.current=setTimeout(()=>onSearch(v),200); },[onSearch]);
+  const onChange=e=>{ const v=e.target.value; setLocal(v); push(v); };
+  const clear=()=>{ setLocal(""); clearTimeout(tRef.current); onSearch(""); };
+  return <div style={{flex:1,minWidth:180,position:"relative"}}>
+    <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:12,opacity:.4,pointerEvents:"none"}}><I.Compass s={12} c="currentColor"/></span>
+    <input value={local} onChange={onChange} placeholder="Search company or title…" style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 32px 8px 32px",fontSize:12,fontFamily:"inherit"}}/>
+    {local&&<span onClick={clear} title="Clear search" style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(232,97,58,.7)",cursor:"pointer",lineHeight:1,userSelect:"none"}}>✕</span>}
+  </div>;
+});
+
 
 // ── FILTER + SORT HELPERS ─────────────────────────────────────────────────────
 function CheckGroup({opts,sel,onChange}) {
@@ -3385,6 +3421,7 @@ export default function App() {
   const [loadProgress,setLoadProgress]=useState(0);      // 0..100 for the intro loader
   const [introDone,setIntroDone]=useState(false);        // has the first full load finished?
   const abortRef=useRef(null);
+  const introCollectedRef=useRef({}); // intro results accumulate here; revealed once loading completes
 
   const fetchLiveJobs=async(isIntro=false)=>{
     if(abortRef.current)abortRef.current.abort();
@@ -3398,53 +3435,96 @@ export default function App() {
     for(const[,states] of Object.entries(COMPANIES_DATA))
       for(const[state,companies] of Object.entries(states))
         for(const c of companies){ if(!coLookup[c.name])coLookup[c.name]={company:c,stateKey:state}; }
-    const fetchOne=async([companyName,{platform,slug}])=>{
+
+    // Group studios sharing the same platform+slug so a shared job board is fetched
+    // once and its postings are divided among the studios — a single posting never
+    // shows under two different studios at the same time.
+    const groups={};
+    for(const e of entries){ const [,{platform,slug}]=e; const key=platform+"\u241f"+String(slug); (groups[key]=groups[key]||[]).push(e); }
+    const groupList=Object.values(groups);
+
+    // Assign a raw posting to exactly one studio in a shared group: prefer a studio
+    // whose brand name appears in the posting, then one whose home state matches the
+    // posting's location, else the first-listed studio in the group.
+    const nameTokens=nm=>String(nm||"").toLowerCase()
+      .replace(/\b(studios?|games?|entertainment|interactive|inc|llc|ltd|the|group|co|corp)\b/g," ")
+      .split(/[^a-z0-9]+/).filter(t=>t.length>=3);
+    const rawText=raw=>{
+      const L=raw.location;
+      const locStr=typeof L==="string"?L:(L&&(L.name||L.location_str||[L.city,L.state].filter(Boolean).join(" "))||"");
+      return [raw.title,raw.text,raw.name,raw.brand,raw.team,raw.office,raw.locationsText,raw.department,
+        raw.departments&&JSON.stringify(raw.departments), raw.offices&&JSON.stringify(raw.offices),
+        raw.categories&&(raw.categories.team||raw.categories.department), locStr]
+        .filter(Boolean).join(" ").toLowerCase();
+    };
+    const pickStudio=(raw,members)=>{
+      const text=rawText(raw);
+      let best=members[0][0], bestScore=0;
+      for(const [nm] of members){
+        let sc=0; for(const t of nameTokens(nm)){ if(text.includes(t)) sc+=2; }
+        if(sc>bestScore){ bestScore=sc; best=nm; }
+      }
+      if(bestScore>0) return best;
+      for(const [nm] of members){ const st=((coLookup[nm]&&coLookup[nm].stateKey)||"").toLowerCase(); if(st&&st!=="remote"&&text.includes(st)) return nm; }
+      return members[0][0];
+    };
+    const normFor=(companyName,platform,rawJobs)=>{
       const found=coLookup[companyName];
       const company=found?found.company:{name:companyName,url:"",email:null};
       const stateKey=found?found.stateKey:"Remote";
+      const jobs=rawJobs.map(j=>normalizeATSJob(j,platform,company,stateKey));
+      return [companyName, jobs.length>0?jobs:null];
+    };
+    const fetchGroup=async(members)=>{
+      const [,{platform,slug}]=members[0];
       try{
         const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal});
-        if(!res.ok)return[companyName,null];
+        if(!res.ok)return members.map(([nm])=>[nm,null]);
         const data=await res.json();
-        const jobs=(data.jobs||[]).map(j=>normalizeATSJob(j,platform,company,stateKey));
-        return[companyName,jobs.length>0?jobs:null];
-      }catch{return[companyName,null];}
+        const rawJobs=data.jobs||[];
+        if(members.length===1) return [normFor(members[0][0],platform,rawJobs)];
+        // Shared board: bucket each posting under exactly one studio.
+        const buckets={}; for(const [nm] of members) buckets[nm]=[];
+        for(const rj of rawJobs){ buckets[pickStudio(rj,members)].push(rj); }
+        return members.map(([nm])=>normFor(nm,platform,buckets[nm]));
+      }catch{return members.map(([nm])=>[nm,null]);}
     };
 
     if(isIntro){
-      // Behind the loading screen: fetch EVERYTHING first (higher concurrency, no
-      // inter-batch delay, no incremental state updates), then set liveJobs ONCE
-      // and reveal the board fully populated — no more pop-in after entry.
+      // Behind the loading screen: fetch with high concurrency and accumulate into a
+      // ref. We reveal the board only once everything is in, so it is fully populated
+      // the moment the loader disappears (the safety cap can flush partial results).
+      introCollectedRef.current={};
       const CONC=10;
-      const collected={};
       let done=0;
-      for(let i=0;i<entries.length;i+=CONC){
+      for(let i=0;i<groupList.length;i+=CONC){
         if(signal.aborted)return;
-        const slice=entries.slice(i,i+CONC);
-        const results=await Promise.all(slice.map(fetchOne));
-        for(const[nm,jobs] of results)collected[nm]=jobs;
-        done+=slice.length;
+        const slice=groupList.slice(i,i+CONC);
+        const results=await Promise.all(slice.map(fetchGroup));
+        if(signal.aborted)return;
+        for(const pairs of results)for(const[nm,jobs] of pairs)introCollectedRef.current[nm]=jobs;
+        done+=slice.reduce((a,g)=>a+g.length,0);
         setLoadProgress(Math.min(99,Math.round((done/entries.length)*100)));
       }
       if(signal.aborted)return;
-      setLiveJobs(collected);
+      setLiveJobs({...introCollectedRef.current});
       setLiveStatus("done");
       setLoadProgress(100);
-      // Give React one paint to build the tree with all jobs, then reveal.
-      setTimeout(()=>setIntroDone(true),120);
+      // One paint so the fully-populated tree is ready before we reveal it.
+      setTimeout(()=>setIntroDone(true),150);
       return;
     }
 
-    // Manual refresh (board already visible): keep the gentle batched updates so
-    // the UI stays responsive while new listings stream in.
+    // Manual refresh (board already visible): gentle batched updates so the UI
+    // stays responsive while new listings stream in.
     setLiveJobs({});
     const BATCH=5;
-    for(let i=0;i<entries.length;i+=BATCH){
+    for(let i=0;i<groupList.length;i+=BATCH){
       if(signal.aborted)break;
-      const batch=entries.slice(i,i+BATCH);
-      const batchResults=await Promise.all(batch.map(fetchOne));
+      const batch=groupList.slice(i,i+BATCH);
+      const batchResults=await Promise.all(batch.map(fetchGroup));
       if(!signal.aborted){
-        setLiveJobs(prev=>{const next={...prev};for(const[nm,jobs] of batchResults)next[nm]=jobs;return next;});
+        setLiveJobs(prev=>{const next={...prev};for(const pairs of batchResults)for(const[nm,jobs] of pairs)next[nm]=jobs;return next;});
       }
       if(!signal.aborted)await new Promise(r=>setTimeout(r,250));
     }
@@ -3458,9 +3538,13 @@ export default function App() {
     if((user||guest)&&!introStartedRef.current){
       introStartedRef.current=true;
       fetchLiveJobs(true);
-      // Safety net: never trap the user on the loader. Reveal the board after a
-      // hard cap even if some ATS calls are slow or unreachable.
-      const cap=setTimeout(()=>setIntroDone(true),18000);
+      // Safety net: never trap the user on the loader. If some ATS calls are slow,
+      // reveal the board after a hard cap with whatever has been collected so far
+      // (rather than an empty board).
+      const cap=setTimeout(()=>{
+        setLiveJobs(prev=>Object.keys(prev).length?prev:{...introCollectedRef.current});
+        setIntroDone(true);
+      },18000);
       return()=>{ clearTimeout(cap); abortRef.current?.abort(); };
     }
     return()=>{ abortRef.current?.abort(); };
@@ -3487,16 +3571,9 @@ export default function App() {
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""});
-  // Debounced search: the input updates this instantly (responsive typing), but
-  // it's only pushed into the actual filter after a short pause, so the whole job
-  // tree doesn't re-render on every keystroke.
-  const [searchInput,setSearchInput]=useState("");
-  useEffect(()=>{
-    const t=setTimeout(()=>{ setFilters(f=>f.search===searchInput?f:{...f,search:searchInput}); },220);
-    return ()=>clearTimeout(t);
-  },[searchInput]);
-  // Keep the input box in sync if the filter is cleared elsewhere (e.g. Clear All).
-  useEffect(()=>{ if(filters.search===""&&searchInput!=="")setSearchInput(""); },[filters.search]);
+  // Search updates go through the isolated SearchBox (which debounces locally),
+  // so typing never re-renders the whole board — only the committed value lands here.
+  const onSearch=useCallback((v)=>{ setFilters(f=>f.search===v?f:{...f,search:v}); },[]);
   const [filterOpen,setFilterOpen]=useState(false);
   // When the user types a search query, auto-expand every country/state that
   // contains a matching company (by name) or matching job, so results are
@@ -3796,7 +3873,7 @@ export default function App() {
       </div>
       <div>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,color:"#f0d080",letterSpacing:1.5,marginBottom:5}}>Main Quest</div>
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(244,237,216,.55)",letterSpacing:.5}}>Gathering quests from across the realm…</div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(244,237,216,.55)",letterSpacing:.5}}>Gathering jobs from across the world…</div>
       </div>
       <div style={{width:"min(360px,80vw)"}}>
         <div style={{height:8,background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,overflow:"hidden"}}>
@@ -3888,11 +3965,7 @@ export default function App() {
             <button onClick={()=>setFilterOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:7,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",cursor:"pointer",fontSize:11,padding:"8px 14px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,flexShrink:0}}>
               <I.Cog s={13} c="currentColor"/>Filters{activeCount>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{activeCount}</span>}<I.Chevron s={11} c="currentColor" dir={filterOpen?"up":"down"}/>
             </button>
-            <div style={{flex:1,minWidth:180,position:"relative"}}>
-              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:12,opacity:.4,pointerEvents:"none"}}><I.Compass s={12} c="currentColor"/></span>
-              <input value={searchInput} onChange={e=>setSearchInput(e.target.value)} placeholder="Search company or title…" style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 32px 8px 32px",fontSize:12,fontFamily:"inherit"}}/>
-              {searchInput&&<span onClick={()=>{setSearchInput("");setFilters(f=>({...f,search:""}));}} title="Clear search" style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(232,97,58,.7)",cursor:"pointer",lineHeight:1,userSelect:"none"}}>✕</span>}
-            </div>
+            <SearchBox value={filters.search} onSearch={onSearch}/>
             {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
           {filterOpen&&<div style={{background:"rgba(16,10,22,.7)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:mobile?12:16,marginTop:8,display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(190px,1fr))",gap:4}}>
