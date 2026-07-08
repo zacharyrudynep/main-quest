@@ -1668,7 +1668,7 @@ async function callAI(prompt,maxTokens=2000){
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const I={
   Sword:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5 L13.7 6.4 V12.8 H10.3 V6.4 Z"/><path d="M12 6.8 V12" stroke={c} strokeWidth="0.8" opacity="0.7"/><path d="M7.8 14 H16.2"/><path d="M12 14 V18.4"/><circle cx="12" cy="20.1" r="1.35"/></svg>,
-  SwordShield:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18.5 3.5l-9 9"/><path d="M3.5 18.5l3-1 3.5-3.5"/><path d="M18.5 3.5l1 1-1 3-2-1z"/><path d="M5.5 3.5l9 9"/><path d="M20.5 18.5l-3-1-3.5-3.5"/><path d="M5.5 3.5l-1 1 1 3 2-1z"/><path d="M6.2 17.8l-2.7 2.7"/><path d="M17.8 17.8l2.7 2.7"/><path d="M9 14l1.2 1.2M15 14l-1.2 1.2"/></svg>,
+  SwordShield:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"><g transform="rotate(34 12 11)"><path d="M12 2.2 L13.25 5.2 V12 H10.75 V5.2 Z"/><path d="M12 5.7 V11.4" stroke={c} strokeWidth="0.7" opacity="0.65"/><path d="M9.4 13.2 H14.6"/><path d="M12 13.2 V18"/><circle cx="12" cy="19.3" r="1.1"/></g><g transform="rotate(-34 12 11)"><path d="M12 2.2 L13.25 5.2 V12 H10.75 V5.2 Z"/><path d="M12 5.7 V11.4" stroke={c} strokeWidth="0.7" opacity="0.65"/><path d="M9.4 13.2 H14.6"/><path d="M12 13.2 V18"/><circle cx="12" cy="19.3" r="1.1"/></g></svg>,
   Scroll:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h9a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>,
   Map:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="1,3 6,1 10,3 15,1 15,13 10,15 6,13 1,15"/><line x1="6" y1="1" x2="6" y2="13"/><line x1="10" y1="3" x2="10" y2="15"/></svg>,
   Star:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="8,1.5 10,6 15,6.5 11.5,10 12.5,15 8,12.5 3.5,15 4.5,10 1,6.5 6,6"/></svg>,
@@ -1849,6 +1849,23 @@ function getGlobeLights(){
   };
   const out=[];
   let s=20260101; const rnd=()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
+  // Scatter n dots randomly INSIDE a state/province polygon (rejection sampling
+  // within its bounding box), so even sparse regions show some activity.
+  const scatterInState=(st,n,wLo,wHi)=>{
+    const rings=st&&st.rings; if(!rings||!rings.length) return;
+    let minLon=1e9,maxLon=-1e9,minLat=1e9,maxLat=-1e9;
+    for(const ring of rings) for(const pt of ring){ const lo=pt[0],la=pt[1]; if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo; if(la<minLat)minLat=la; if(la>maxLat)maxLat=la; }
+    let placed=0,tries=0;
+    while(placed<n&&tries<n*30){
+      tries++;
+      const lon=minLon+rnd()*(maxLon-minLon);
+      const lat=minLat+rnd()*(maxLat-minLat);
+      if(!inRings(lon,lat,rings)) continue;
+      out.push([lat,lon, wLo+rnd()*(wHi-wLo), 0.55+rnd()*0.4]);
+      placed++;
+    }
+    if(placed===0&&st.c) out.push([st.c[1],st.c[0], wLo, 0.6]); // guarantee at least one
+  };
   for(const [lat,lon,baseW] of GLOBE_HOTSPOTS){
     // Blend the curated base weight with the real per-state company density so the
     // busiest states brighten while a hotspot never fully disappears.
@@ -1871,6 +1888,19 @@ function getGlobeLights(){
       const fall=1-r/(ring+0.001);
       out.push([nlat,nlon,Math.max(0.05,w*(0.20+0.55*fall*rnd())),0.6+rnd()*0.45]);
       placed++;
+    }
+  }
+  // Sprinkle dots across every US state and Canadian province so the whole map
+  // reads as active — more dots where there are more companies, a faint ambient
+  // sprinkle everywhere else. Kept strictly inside US + Canada polygons.
+  for(const st of geoAll){
+    const cnt=stateCount[st.name]||0;
+    if(cnt>0){
+      const factor=Math.sqrt(cnt/maxCount);
+      const n=Math.min(14, 4+Math.round(cnt*0.4));       // scale dots with company count
+      scatterInState(st, n, 0.09, Math.max(0.15, 0.13+0.45*factor));
+    }else{
+      scatterInState(st, 2, 0.045, 0.085);               // faint ambient filler
     }
   }
   _globeLightsCache=out;
