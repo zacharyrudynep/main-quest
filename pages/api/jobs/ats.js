@@ -64,6 +64,41 @@ export default async function handler(req, res) {
       attempts });
   }
 
+  if (platform === 'dayforce') {
+    // Dayforce geo search: POST, paginated by paginationStart (25/page), returns
+    // maxCount (total) and jobPostings with full descriptions.
+    const v = variants[0];
+    const ns = String(slug).split(':')[0] || '';
+    const board = String(slug).split(':')[1] || 'CANDIDATEPORTAL';
+    const dfHeaders = { ...headers, 'Content-Type': 'application/json',
+      'Referer': `https://jobs.dayforcehcm.com/en-US/${ns}/${board}` };
+    try {
+      let start = 0, all = [], maxCount = null, pages = 0;
+      while (pages < 40) { // hard cap (1000 jobs)
+        const body = { clientNamespace: ns, jobBoardCode: board, cultureCode: 'en-US', distanceUnit: 0, paginationStart: start };
+        const r = await fetch(v.url, { method: 'POST', headers: dfHeaders, body: JSON.stringify(body), signal: AbortSignal.timeout(12000) });
+        if (!r.ok) { attempts.push({ url: v.url, status: r.status, start }); break; }
+        const raw = await r.json();
+        if (maxCount === null) maxCount = raw.maxCount || raw.MaxCount || 0;
+        const page = (raw.jobPostings || raw.JobPostings || []).map(j => ({ ...j, __dfNs: ns, __dfBoard: board }));
+        all = all.concat(page);
+        slugValid = true; validVia = v.url;
+        pages++; start += 25;
+        if (page.length === 0 || all.length >= (maxCount || 0)) break;
+      }
+      attempts.push({ url: v.url, status: 200, found: all.length, total: maxCount });
+      if (all.length > 0) {
+        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+        return res.status(200).json({ jobs: all, count: all.length, platform, slug, used: v.url, slugValid: true, ...(debug ? { attempts } : {}) });
+      }
+    } catch (err) {
+      attempts.push({ url: v.url, error: err.message.slice(0, 80) });
+    }
+    return res.status(200).json({ jobs: [], count: 0, platform, slug, slugValid,
+      ...(slugValid ? { used: validVia, note: 'Slug is valid — board exists but has no open postings right now.' } : { note: 'Slug did not resolve to a valid job board.' }),
+      attempts });
+  }
+
   for (const v of variants) {
     try {
       const opts = { method: v.method || 'GET', headers: { ...headers }, signal: AbortSignal.timeout(12000) };
@@ -209,6 +244,30 @@ function buildVariants(platform, slug) {
           pick: d => (d.jobPostings || []).map(j => ({ ...j, __wdBase: base, __wdHost: `https://${tenant}.${region}.myworkdayjobs.com` })) },
       ];
     }
+    case 'dayforce': {
+      // Dayforce (Ceridian) public geo search API. Slug encodes two pieces as
+      // "namespace:boardcode" e.g. "sciplay:CANDIDATEPORTAL" (from the careers URL
+      // https://jobs.dayforcehcm.com/en-US/sciplay/CANDIDATEPORTAL). It's a POST
+      // that returns FULL HTML descriptions in one call, paginated at 25/page.
+      const parts = String(slug).split(':');
+      const ns = parts[0] || '';
+      const board = parts[1] || 'CANDIDATEPORTAL';
+      return [
+        { url: `https://jobs.dayforcehcm.com/api/geo/${ns}/jobposting/search`, method: 'POST',
+          body: { clientNamespace: ns, jobBoardCode: board, cultureCode: 'en-US', distanceUnit: 0, paginationStart: 0 },
+          pick: d => (d.jobPostings || d.JobPostings || []).map(j => ({ ...j, __dfNs: ns, __dfBoard: board })) },
+      ];
+    }
+    case 'teamtailor':
+      // TeamTailor public career-site feed. The keyless endpoint the career-site
+      // frontend uses returns published jobs with descriptions. Custom domains are
+      // common, so we try the {slug}.teamtailor.com host. NOTE: this is an
+      // undocumented public feed (the official API needs a key), so it's the most
+      // likely of our platforms to shift — verify via /verify before relying on it.
+      return [
+        { url: `https://${slug}.teamtailor.com/api/v1/jobs?include=locations,department&page[size]=100`, pick: d => (d && d.data) ? d.data : [] },
+        { url: `https://career.${slug}.com/api/v1/jobs?include=locations,department&page[size]=100`, pick: d => (d && d.data) ? d.data : [] },
+      ];
     default:
       return null;
   }

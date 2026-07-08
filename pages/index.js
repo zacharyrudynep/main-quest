@@ -996,16 +996,23 @@ function genJobs(company, stateKey) {
 // Industry tier classifications (Indie / AA / AAA). Seeded from the company
 // document plus confidently-known major studios. Companies not listed here
 // show as "Unmarked" — extend this map to classify more over time.
+// Industry tier / classification map, from the tier list document. A company
+// can appear in more than one list (e.g. a big studio that also publishes);
+// companyTier() resolves to a single primary tag by the priority order below.
 const COMPANY_TIERS = {
-  AAA: {"2k Games":1,"2k Sports Lab":1,"31st Union":1,"505 Games":1,"Activision":1,"Activision Portland":1,"Activision Vancouver":1,"Amazon Game Studio":1,"Amazon Games":1,"Bandai Namco":1,"Behaviour Interactive":1,"Bethesda Game Studios":1,"Blizzard Entertainment":1,"Bungie":1,"CD Projekt Red":1,"Capcom":1,"Certain Affinity":1,"Cloud Chamber":1,"Crystal Dynamics":1,"Double Fine Productions":1,"EA":1,"EA Sports":1,"Epic Games":1,"Gameloft":1,"Infinity Ward":1,"Insomniac Games":1,"Jam City":1,"King":1,"Krafton":1,"Larian Studios":1,"Naughty Dog":1,"Niantic":1,"Obsidian Entertainment":1,"Raven Software":1,"Respawn Entertainment":1,"Riot Games":1,"Rockstar Games":1,"Scopely":1,"Sega":1,"Sledgehammer Games":1,"Square Enix":1,"Supercell":1,"Take-Two Interactive":1,"Tencent":1,"Treyarch":1,"Ubisoft":1,"Visual Concepts":1,"Zynga":1},
-  AA: {"Beenox":1,"CI Games":1,"Compulsion Games":1,"Deep Silver":1,"Digital Extremes":1,"Hidden Path Entertainment":1,"Iron Galaxy Studios":1,"Klei Entertainment":1,"People Can Fly":1,"Saber Interactive":1,"Shiny Shoe":1,"Sperasoft":1,"Tripwire Interactive":1},
-  Indie: {"Heavy Pepper":1,"Indie Asylum":1,"Komi Games":1,"Massive Damage":1,"Wicked Interactive":1},
+  AAA: {"2k Games":1,"Activision":1,"Amazon Games":1,"Bethesda Game Studios":1,"Blizzard Entertainment":1,"CD Projekt Red":1,"Digital Extremes":1,"EA":1,"Epic Games":1,"Firaxis":1,"Ghost Story Games":1,"Infinity Ward":1,"Insomniac Games":1,"Konami":1,"Maxis Studios":1,"Naughty Dog":1,"NetEase Games":1,"Obsidian Entertainment":1,"Psyonix":1,"Respawn Entertainment":1,"Riot Games":1,"Rockstar Games":1,"Sega":1,"Sledgehammer Games":1,"Square Enix":1,"Take-Two Interactive":1,"Tencent":1,"Treyarch":1,"Turtle Rock Studios":1,"Ubisoft":1,"Undead Labs":1,"Visual Concepts":1,"Warner Bros.":1,"ZeniMax":1},
+  AA: {"31st Union":1,"Avalanche Studios":1,"Behaviour Interactive":1,"Big Huge Games":1,"Bit Reactor":1,"Blue Isle Studios":1,"Brass Lion Entertainment":1,"Break Away Games":1,"Certain Affinity":1,"Compulsion Games":1,"Deck Nine Games":1,"Dire Wolf Digital":1,"Eastside Games":1,"Endnight Games":1,"Finish Line Games":1,"Fire Fly Studios":1,"Gameloft":1,"Giant Squid":1,"HB Studios":1,"Heavy Iron Studios":1,"Hi-Rez Studios":1,"Hidden Variable Studios":1,"High Voltage":1,"IllFonic":1,"InXile Entertainment":1,"Jackbox Games":1,"Jam City":1,"Kabam":1,"Klei Entertainment":1,"Linden Lab":1,"Ludia":1,"Manticore Games":1,"Midsummer Studios":1,"Mob Entertainment":1,"Monomi Park":1,"Moonshot Games":1,"Motorsport Games":1,"N3twork Studios":1,"Netherrealm Studios":1,"Next Level Games":1,"Other Ocean Interactive":1,"Oxide Games":1,"People Can Fly":1,"Piranha Games":1,"Pixelberry Studios":1,"PlayQ":1,"Playable Worlds":1,"Red Barrels":1,"Relic":1,"Saber Interactive":1,"Scopely":1,"Second Dinner":1,"Secret Door":1,"Serenity Forge":1,"Shiver Entertainment":1,"Singularity 6":1,"Skybox Labs":1,"Snail Games":1,"Snowed In Studios":1,"Steel Wool Studios":1,"Studio Wildcard":1,"Super Evil Megacorp":1,"Supercell":1,"Survios":1,"Telltale Games":1,"Theorycraft Games":1,"Torn Banner Studios":1,"Tripwire Interactive":1,"Unknown Worlds":1,"Vertigo Games":1,"Wildlife Studios":1,"Yellow Brick Games":1,"thatgamecompany":1},
+  Indie: {"Brace Yourself Games":1,"Camlann Games":1,"Chromatic Games":1,"Clockwork Labs":1,"Crate Entertainment":1,"Cryptyd Games":1,"Curious Media":1,"Darkwind Media":1,"Decoy Games":1,"Deep End Games":1,"Drattzy Games":1,"Experiment 7":1,"Finish Line Games":1,"Firehose Games":1,"Free Range Games":1,"Good Dog Studios":1,"Greatsword Game Studio":1,"Half Mermaid":1,"Heavy Pepper":1,"Indie Asylum":1,"Komi Games":1,"Made on Earth Games":1,"Magic Find Studios":1,"Massive Damage":1,"Mighty Coconut":1,"Mohawk Games":1,"Monster Theater Games":1,"Muse Games":1,"Napnok Games":1,"Operative Games":1,"Otherside Entertainment":1,"Outact":1,"Pavonis Interactive":1,"Perfect Garbage Studios":1,"Pixel Dash Studios":1,"Prophecy Games":1,"Pure Bang":1,"Run Games":1,"Seeker Entertainment":1,"Shoreline Games":1,"Six Foot":1,"Sky Lantern Studios":1,"Snowman":1,"Starcaster Games":1,"Stardock":1,"Storm Flag Games":1,"Super Free Games":1,"SuperDuperSecret":1,"Sword and Wand":1,"TapBlaze":1,"Tempo Games":1,"Terrible Posture Games":1,"Theory Studios":1,"Thunder Lotus":1,"Tic Toc Games":1,"Trebuchet":1,"Tribute Games":1,"Underwater Fire Games":1,"Unfold Games":1,"Unico Studio":1,"Virtual Basement":1,"White Lotus Interactive":1,"WhiteMoon Dreams":1,"Wicked Interactive":1,"Wildflower Games":1,"Wonderstorm":1,"You Pass Universe":1,"Zapdot":1,"Zephyr Workshop":1},
+  Publishers: {"App Lovin":1,"Arc Games":1,"Design Works Gaming":1,"Everi":1,"First Break Labs":1,"G5 Entertainment":1,"Kalypso Media":1,"King":1,"Marvel Games":1,"Play Studios":1,"Product Madness":1,"SciPlay":1,"Stardock":1,"Storm 8":1,"Take-Two Interactive":1,"Tiny Build":1,"Versus Evil":1,"Warner Bros.":1,"Zynga":1},
+  Outsourcing: {"BKOM Studios":1,"Blind Squirrel Games":1,"Certain Affinity":1,"Exis Interactive":1,"Game Artists":1,"Game Sim":1,"HiDef":1,"Iron Galaxy Studios":1,"Kevuru Games":1,"Mass Media Games":1,"Room 8 Studio":1,"Secret 6":1,"Shapeshifter Games":1,"Skybox Labs":1,"Snowed In Studios":1,"Sperasoft":1,"The Third Floor":1,"Turn Me Up Games":1},
 };
 function companyTier(name){
   if(COMPANY_TIERS.AAA[name]) return "AAA";
   if(COMPANY_TIERS.AA[name]) return "AA";
   if(COMPANY_TIERS.Indie[name]) return "Indie";
-  return null; // unmarked
+  if(COMPANY_TIERS.Publishers[name]) return "Publishers";
+  if(COMPANY_TIERS.Outsourcing[name]) return "Outsourcing";
+  return null;
 }
 
 // Build all job data once at module level
@@ -1533,9 +1540,40 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     if(raw.remote===true||bl.is_remote===true||/remote/i.test(bl.name||"")) isRemote=true;
     if(/hybrid/i.test(bl.name||"")) isHybrid=true;
   }
-  // Title-based fallbacks (catch internships/part-time the ATS didn't tag).
-  if(/\bintern\b|internship|\bco-?op\b/i.test(title)) jobType="Internship";
-  else if(/\bpart[- ]?time\b/i.test(title)) jobType="Part-time";
+  // Greenhouse/Lever/Workable/SmartRecruiters/Recruitee/etc. expose employment
+  // type in assorted fields; check the common ones generically so Contract,
+  // Part-time, Temporary and Internship get tagged (not just defaulted to Full-time).
+  const typeMap={
+    "full-time":"Full-time","full time":"Full-time","fulltime":"Full-time","full_time":"Full-time","permanent":"Full-time","regular":"Full-time",
+    "part-time":"Part-time","part time":"Part-time","parttime":"Part-time","part_time":"Part-time",
+    "contract":"Contract","contractor":"Contract","contract-to-hire":"Contract","fixed-term":"Contract","fixed term":"Contract","fixed_term":"Contract","freelance":"Contract","consultant":"Contract","b2b":"Contract",
+    "temporary":"Temporary","temp":"Temporary","seasonal":"Temporary",
+    "internship":"Internship","intern":"Internship","co-op":"Internship","coop":"Internship","apprentice":"Internship","apprenticeship":"Internship","working student":"Internship","trainee":"Internship",
+    "volunteer":"Volunteer",
+  };
+  const mapType=(v)=>{ if(!v) return null; const k=String(v).toLowerCase().trim(); if(typeMap[k]) return typeMap[k]; for(const key in typeMap){ if(k.includes(key)) return typeMap[key]; } return null; };
+  // Look through the fields different ATSes commonly use for employment type.
+  const typeCandidates=[
+    raw.employmentType, raw.employment_type, raw.type, raw.jobType, raw.job_type,
+    raw.commitment, raw.contractType, raw.contract_type, raw.workType, raw.work_type,
+    raw.category, raw.EmploymentType, raw.employmentIndicator,
+    raw.type&&raw.type.name, raw.type&&raw.type.id,
+    raw.categories&&raw.categories.commitment,
+    raw.metadata&&Array.isArray(raw.metadata)&&(raw.metadata.find(m=>/employ|type|commit|contract/i.test(m.name||""))||{}).value,
+    ...(Array.isArray(raw.custom_fields)?raw.custom_fields.filter(f=>/employ|type|commit|contract/i.test(f.name||f.title||"")).map(f=>f.value):[]),
+    raw.custom_fields&&raw.custom_fields.employment_type,
+  ];
+  for(const cand of typeCandidates){ const t=mapType(cand); if(t){ jobType=t; break; } }
+
+  // Title/location keyword fallback — catches types the ATS didn't put in a
+  // field. We check title + location (reliable), and only scan the body for the
+  // less ambiguous terms to avoid false hits like "employment contract" in a
+  // full-time posting.
+  const titleLoc=(title+" "+loc);
+  if(/\bintern(ship)?\b|\bco-?op\b|\bapprentice/i.test(title)) jobType="Internship";
+  else if(/\bpart[- ]?time\b/i.test(titleLoc)) jobType="Part-time";
+  else if(/\b(contract|contractor|freelance|fixed[- ]term|contract[- ]to[- ]hire)\b/i.test(titleLoc)) jobType="Contract";
+  else if(/\b(temporary|seasonal)\b/i.test(titleLoc)) jobType="Temporary";
   // Hybrid detection from location/workplace info.
   if(/\bhybrid\b/i.test(loc)||/\bhybrid\b/i.test(body.slice(0,300))) isHybrid=true;
   // try to find a salary range in the body if not provided
@@ -1746,7 +1784,42 @@ const GEO_LANDMASS=[[[-59.57,-80.04],[-60.16,-81.0],[-64.49,-80.92],[-66.29,-80.
 // Night-lights field derived from the hotspots, clipped to land so glows don't spill
 // into the ocean. Each city center seeds a cluster of smaller lights; busy regions
 // (e.g. California) bloom into a connected glow. Format: [lat, lon, weight, spread].
-const GLOBE_LIGHTS = (()=>{
+let _globeLightsCache=null;
+function getGlobeLights(){
+  if(_globeLightsCache) return _globeLightsCache;
+  // Real company count per state/province name (deduped by company name), so the
+  // heatmap reflects the current studio list — busier states glow brighter.
+  const stateCount={};
+  try{
+    for(const country of Object.values(COMPANIES_DATA||{})){
+      for(const [stateName,list] of Object.entries(country||{})){
+        if(!Array.isArray(list)) continue;
+        const seen=new Set();
+        for(const co of list){ if(co&&co.name) seen.add(co.name); }
+        stateCount[stateName]=(stateCount[stateName]||0)+seen.size;
+      }
+    }
+  }catch(e){}
+  // Point-in-(multi-ring) polygon: find which state/province a lon/lat sits in.
+  const inRings=(lon,lat,rings)=>{
+    let inside=false;
+    for(const ring of rings){
+      for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+        const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+        if(((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;
+      }
+    }
+    return inside;
+  };
+  const geoAll=[];
+  try{ for(const s of Object.values(US_STATES_GEO||{})) geoAll.push(s); }catch(e){}
+  try{ for(const s of Object.values(CA_PROVINCES_GEO||{})) geoAll.push(s); }catch(e){}
+  const stateOfPoint=(lon,lat)=>{
+    for(const s of geoAll){ if(s&&s.rings&&inRings(lon,lat,s.rings)) return s.name; }
+    return null;
+  };
+  const counts=Object.values(stateCount);
+  const maxCount=counts.length?Math.max(1,...counts):1;
   // Test a point against proper closed land polygons so glows stay on land.
   const pointOnLand=(lon,lat)=>{
     for(const poly of GEO_LANDMASS){
@@ -1761,7 +1834,12 @@ const GLOBE_LIGHTS = (()=>{
   };
   const out=[];
   let s=20260101; const rnd=()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
-  for(const [lat,lon,w] of GLOBE_HOTSPOTS){
+  for(const [lat,lon,baseW] of GLOBE_HOTSPOTS){
+    // Blend the curated base weight with the real per-state company density so the
+    // busiest states brighten while a hotspot never fully disappears.
+    const st=stateOfPoint(lon,lat);
+    const factor=st?((stateCount[st]||0)/maxCount):0;
+    const w=Math.max(0.05,Math.min(1.0, baseW*(0.55+0.95*factor) ));
     out.push([lat,lon,w,1.05]);                 // bright core (always kept)
     const n=Math.round(6+w*26);                 // more satellites for busier areas
     const ring=0.5+w*3.4;                        // sprawl radius
@@ -1778,8 +1856,9 @@ const GLOBE_LIGHTS = (()=>{
       placed++;
     }
   }
+  _globeLightsCache=out;
   return out;
-})();
+}
 
 function GlobeHeatmap({size=180,showStates=true}){
   const canvasRef=useRef(null);
@@ -1866,7 +1945,7 @@ function GlobeHeatmap({size=180,showStates=true}){
       // Night-lights: additive blending makes overlapping glows pool brighter in dense areas.
       ctx.save();
       ctx.globalCompositeOperation="lighter";
-      for(const [lat,lon,w,spread] of GLOBE_LIGHTS){
+      for(const [lat,lon,w,spread] of getGlobeLights()){
         const p=project(lat,lon,rot);
         if(p.z>0.04){
           const depth=0.35+p.z*0.65;             // fade toward the limb
@@ -3571,7 +3650,7 @@ export default function App() {
   const allJobs=useMemo(()=>Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.entries(c).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs)))),[liveJobs]);
   const totalJobs=useMemo(()=>allJobs.filter(matches).length,[allJobs,filters,user]);
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
-  const totalCos=useMemo(()=>Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.keys(c))).length,[]);
+  const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically
   // within its US state, tagged with how many live jobs it has. Computed once from
   // the static company tree (cheap, memoized).
@@ -3821,7 +3900,7 @@ export default function App() {
             <FSection title="State / Province" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(ALL_JOBS_DATA[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
             <FSection title="Experience Level" count={filters.experience?.length||0} onClear={()=>setFilters(f=>({...f,experience:[]}))}><CheckGroup opts={["Entry Level","Mid Level","Senior","Lead","Principal","Director"]} sel={filters.experience||[]} onChange={v=>setFilters(f=>({...f,experience:v}))}/></FSection>
-            <FSection title="Industry Tier" count={filters.tiers?.length||0} onClear={()=>setFilters(f=>({...f,tiers:[]}))}><CheckGroup opts={["AAA","AA","Indie"]} sel={filters.tiers||[]} onChange={v=>setFilters(f=>({...f,tiers:v}))}/></FSection>
+            <FSection title="Industry Tier" count={filters.tiers?.length||0} onClear={()=>setFilters(f=>({...f,tiers:[]}))}><CheckGroup opts={["AAA","AA","Indie","Publishers","Outsourcing"]} sel={filters.tiers||[]} onChange={v=>setFilters(f=>({...f,tiers:v}))}/></FSection>
             <FSection title="Work Type" count={filters.types.length+filters.remote.length} onClear={()=>setFilters(f=>({...f,types:[],remote:[]}))}>
               <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:5}}>Job Type</div>
               <CheckGroup opts={["Full-time","Part-time","Contract","Internship","Volunteer"]} sel={filters.types} onChange={v=>setFilters(f=>({...f,types:v}))}/>
@@ -3956,7 +4035,7 @@ export default function App() {
                                   <span style={{display:"inline-flex",color:"rgba(201,168,76,.35)"}}><I.Chevron s={9} c="currentColor" dir={expanded[coKey]?"down":"right"}/></span>
                                   <span style={{width:6,height:6,borderRadius:"50%",background:noJobs?"rgba(244,237,216,.2)":"#c9a84c",flexShrink:0}}/>
                                   <span style={{fontWeight:500}}>{name}</span>
-                                  {(()=>{const tier=companyTier(name);if(!tier)return null;const tc={AAA:{c:"#f0d080",b:"rgba(201,168,76,.5)",bg:"rgba(201,168,76,.14)"},AA:{c:"#cfd4dc",b:"rgba(180,190,205,.45)",bg:"rgba(180,190,205,.12)"},Indie:{c:"#7ecfb3",b:"rgba(126,207,179,.4)",bg:"rgba(126,207,179,.12)"}}[tier];return <span title={`${tier} studio`} style={{fontSize:8.5,color:tc.c,background:tc.bg,border:`1px solid ${tc.b}`,padding:"1px 6px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3,marginLeft:6,flexShrink:0}}>{tier}</span>;})()}
+                                  {(()=>{const tier=companyTier(name);if(!tier)return null;const tc={AAA:{c:"#f0d080",b:"rgba(201,168,76,.5)",bg:"rgba(201,168,76,.14)"},AA:{c:"#cfd4dc",b:"rgba(180,190,205,.45)",bg:"rgba(180,190,205,.12)"},Indie:{c:"#7ecfb3",b:"rgba(126,207,179,.4)",bg:"rgba(126,207,179,.12)"},Publishers:{c:"#b89ce0",b:"rgba(160,130,215,.45)",bg:"rgba(160,130,215,.13)"},Outsourcing:{c:"#e0a878",b:"rgba(210,150,100,.45)",bg:"rgba(210,150,100,.12)"}}[tier];return <span title={`${tier} studio`} style={{fontSize:8.5,color:tc.c,background:tc.bg,border:`1px solid ${tc.b}`,padding:"1px 6px",borderRadius:20,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3,marginLeft:6,flexShrink:0}}>{tier}</span>;})()}
                                   {user&&(()=>{const isOn=(user.profile?.notifyCompanies||[]).includes(name);const tipText=isOn?"Notifications on for this company":"Turn on job post notifications for this company";
                                     const showTip=(e)=>{const r=e.currentTarget.getBoundingClientRect();let tip=document.getElementById("mq-bell-tooltip");if(!tip){tip=document.createElement("div");tip.id="mq-bell-tooltip";tip.style.cssText="position:fixed;background:rgba(20,14,10,.98);border:1px solid rgba(201,168,76,.35);color:rgba(244,237,216,.9);font-size:11px;line-height:1.35;padding:6px 10px;border-radius:7px;max-width:180px;text-align:center;z-index:9999;pointer-events:none;font-family:system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.5);transition:opacity .12s;";document.body.appendChild(tip);}tip.textContent=tipText;tip.style.opacity="1";const tx=r.left+r.width/2;tip.style.left="0px";tip.style.top="0px";const tw=Math.min(180,tipText.length*6.5+20);tip.style.left=Math.max(8,Math.min(tx-tw/2,window.innerWidth-tw-8))+"px";tip.style.top=(r.top-tip.offsetHeight-8)+"px";};
                                     const hideTip=()=>{const tip=document.getElementById("mq-bell-tooltip");if(tip)tip.style.opacity="0";};

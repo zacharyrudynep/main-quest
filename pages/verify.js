@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Head from "next/head";
 
-const PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "applytojob", "bamboohr", "paylocity", "jobvite", "personio", "rippling", "breezy", "workday"];
+const PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "applytojob", "bamboohr", "paylocity", "jobvite", "personio", "rippling", "breezy", "workday", "dayforce", "teamtailor"];
 
 export default function Verify() {
   const [slug, setSlug] = useState("");
@@ -122,6 +122,12 @@ export default function Verify() {
           </ul>
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(201,168,76,.1)" }}>
             <strong style={{ color: "#c9a84c" }}>Workday</strong> is special — its careers URL looks like <code>https://<strong>TENANT</strong>.<strong>REGION</strong>.myworkdayjobs.com/<strong>SITE</strong>/...</code> (e.g. <code>lnw.wd5.myworkdayjobs.com/SciPlayExternalCareersSite</code>). Enter the slug as <code><strong>TENANT:REGION:SITE</strong></code> — for that example, <code>lnw:wd5:SciPlayExternalCareersSite</code>.
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <strong style={{ color: "#c9a84c" }}>Dayforce</strong> URL looks like <code>https://jobs.dayforcehcm.com/en-US/<strong>NAMESPACE</strong>/<strong>BOARDCODE</strong></code> (board code is usually <code>CANDIDATEPORTAL</code>). Enter the slug as <code><strong>NAMESPACE:BOARDCODE</strong></code>.
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <strong style={{ color: "#c9a84c" }}>TeamTailor</strong> — enter the subdomain from <code><strong>SLUG</strong>.teamtailor.com</code>. Note this uses an undocumented public feed, so it's the most likely to need re-checking over time.
           </div>
           If a studio's careers page doesn't use any of these, it won't work with this system yet.
         </div>
