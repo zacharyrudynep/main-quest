@@ -41,14 +41,14 @@ const COMPANIES_DATA = {
       { name: "Alta Reality", url: "https://www.altavr.io/", email: null, contact: null },
       { name: "Amazing Seasun Games", url: "https://job.seasungames.com/#/", email: "contact@seasungames.com", contact: null },
       { name: "Amazon Game Studio", url: "https://www.amazongamestudios.com/en-us/careers", email: null, contact: null },
-      { name: "Amber", url: "https://jobs.jobvite.com/amberstudiocareers/", email: null, contact: null },
+      { name: "Amber", url: "https://jobs.jobvite.com/amberstudiocareers/", email: null, contact: "https://amberstudio.com/contact" },
       { name: "ANIMAL", url: "https://animalmade.com/careers", email: null, contact: null },
       { name: "Animal Repair Shop", url: "https://www.animalrepairshop.com/careers/", email: "jobs@animalrepairshop.com", contact: "https://www.animalrepairshop.com/connect/" },
       { name: "Annapurna Interactive", url: "https://www.annapurna.com/jobs", email: null, contact: null, emailApply:true },
       { name: "App Lovin", url: "https://applovin.com/en/careers", email: null, contact: null },
       { name: "Arc Games", url: "https://www.arcgames.com/careers", email: "careers@arcgames.com", contact: "https://www.arcgames.com/contact" },
       { name: "Ares Interactive", url: "https://aresinteractive.com/careers/", email: "hello@atlasv.io", contact: "https://atlasv.io/contact/" },
-      { name: "Atlas V", url: "https://atlasv.io/career/", email: null, contact: null },
+      { name: "Atlas V", url: "https://atlasv.io/career/", email: "hello@atlasv.io", contact: "https://atlasv.io/contact/" },
       { name: "Atlus", url: "https://atlus.com/", email: null, contact: null },
       { name: "Azra Games", url: "https://azragames.com/careers/", email: "recruiting@azragames.com", contact: null },
       { name: "Bad Robot Games", url: "https://www.badrobotgames.com/careers", email: null, contact: "https://www.badrobotgames.com/contact-brg" },
@@ -82,7 +82,7 @@ const COMPANIES_DATA = {
       { name: "Demonware", url: "https://www.demonware.net/careers", email: null, contact: null },
       { name: "Discord", url: "https://discord.com/careers", email: null, contact: null },
       { name: "Double Fine Productions", url: "https://www.doublefine.com/jobs", email: null, contact: "https://www.doublefine.com/about/contact", registerInterest:true },
-      { name: "Dreamhaven", url: "https://www.dreamhaven.com/careers", email: null, contact: null },
+      { name: "Dreamhaven", url: "https://www.dreamhaven.com/careers", email: null, contact: "https://www.dreamhaven.com/sign-up" },
       { name: "Dreamlit", url: "https://www.dreamlit.games/career", email: "contact@dreamlit.games", contact: null },
       { name: "EA", url: "https://www.ea.com/careers", email: null, contact: null },
       { name: "Echtra Games", url: "https://www.zynga.com/jobs/careers/", email: null, contact: null },
@@ -95,7 +95,7 @@ const COMPANIES_DATA = {
       { name: "Exploding Kittens", url: "https://www.explodingkittens.com/pages/careers-our-story", email: null, contact: "https://exploding-kittens.gorgias.help/en-US/contact" },
       { name: "Floor 84 Studio", url: "https://floor84studio.zohorecruit.com/jobs/Careers-at-F84", email: "info@floor84studio.com", contact: null },
       { name: "FarSight Studio", url: "https://farsightstudios.com/", email: "support@farsightstudios.com", contact: null, emailApply:true },
-      { name: "Flatter than Earth", url: "https://www.flatterthanearth.com/join-us", email: null, contact: "https://www.flatterthanearth.com/contact" },
+      { name: "Flatter than Earth", url: "https://www.flatterthanearth.com/join-us", email: "contact@flatterthanearth.com", contact: "https://www.flatterthanearth.com/contact" },
       { name: "Flying Mollusk", url: "https://www.flyingmollusk.com/careers", email: null, contact: "https://www.flyingmollusk.com/contact" },
       { name: "Free Range Games", url: "https://www.freerangegames.com/jobs", email: null, contact: null },
       { name: "Frost Giant Studios", url: "https://frostgiant.com/", email: null, contact: null, registerInterest:true },
@@ -166,14 +166,14 @@ const COMPANIES_DATA = {
       { name: "Niantic", url: "https://careers.scopely.com/us/en", email: null, contact: null },
       { name: "Notorious Studios", url: "https://www.notorious.gg/careers", email: null, contact: "https://www.notorious.gg/contact", registerInterest:true },
       { name: "Obsidian Entertainment", url: "https://www.obsidian.net/careers", email: null, contact: null, registerInterest:true },
-      { name: "Otherside Entertainment", url: "https://careers.otherside-e.com/jobs", email: null, contact: "https://careers.otherside-e.com/connect" },
+      { name: "Otherside Entertainment", url: "https://careers.otherside-e.com/jobs", email: null, contact: "https://otherside-e.com/contact-us/" },
       { name: "Pixelberry Studios", url: "https://www.pixelberrystudios.com/careers", email: null, contact: null },
       { name: "Plaiful", url: "https://www.plaiful.ai/#jobs", email: "careers@plaiful.ai", contact: "https://www.plaiful.ai/#contact" },
       { name: "Playable Worlds", url: "https://www.playableworlds.com/careers/", email: "jobs@playableworlds.com", contact: "https://www.playableworlds.com/contact-us/" },
       { name: "Playco", url: "https://www.play.co/career", email: null, contact: null },
       { name: "Playgig", url: "https://jobs.ashbyhq.com/playgig", email: "playersupport@playgig.com", contact: null },
-      { name: "PlayQ", url: "https://www.playq.com/careers", email: "careers@playq.com", contact: "https://www.playq.com/contact", registerInterest:true },
-      { name: "Playsaurus", url: "https://playsaurus.com/jobs", email: "jobs@playsaurus.com", contact: null, registerInterest:"email" },
+      { name: "PlayQ", url: "https://www.playq.com/careers", email: "careers@playco.com", contact: "https://www.playq.com/contact", registerInterest:true },
+      { name: "Playsaurus", url: "https://playsaurus.com/jobs", email: "jobs@playsaurus.com", contact: "https://playsaurus.com/contact", registerInterest:"email" },
       { name: "Play Studios", url: "https://www.playstudios.com/careers/", email: null, contact: null },
       { name: "Pontoco", url: "https://pontoco.com/jobs", email: null, contact: "https://pontoco.com/general-inquiries" },
       { name: "Product Madness", url: "https://www.productmadness.com/careers/", email: null, contact: null },
@@ -234,7 +234,7 @@ const COMPANIES_DATA = {
       { name: "Tender Claws", url: "https://tenderclaws.com/jobs", email: null, contact: null },
       { name: "That's No Moon", url: "https://thatsnomoon.com/careers", email: null, contact: "https://thatsnomoon.com/contact" },
       { name: "thatgamecompany", url: "https://thatgamecompany.com/careers/", email: null, contact: null },
-      { name: "The Game Band", url: "https://thegameband.com/careers#vacancies", email: " jobs@thegameband.com", contact: null, emailApply:true },
+      { name: "The Game Band", url: "https://thegameband.com/careers#vacancies", email: "jobs@thegameband.com", contact: null, emailApply:true },
       { name: "The Odd Gentlemen", url: "https://www.theoddgentlemen.com/careers", email: "info@theoddgentlemen.com", contact: "https://www.theoddgentlemen.com/contact" },
       { name: "The Third Floor", url: "https://thethirdfloorinc.com/careers/", email: "info@thethirdfloorinc.com", contact: "https://thethirdfloorinc.com/contact/", registerInterest:true },
       { name: "Theorycraft Games", url: "https://www.theorycraftgames.com/careers", email: "info@theorycraftgames.com", contact: null },
@@ -303,7 +303,7 @@ const COMPANIES_DATA = {
       { name: "Shiver Entertainment", url: "https://www.shiver.net", email: "cvs@shiver.net", contact: null , emailApply:true },
       { name: "Sword and Wand", url: "https://swordandwand.com/careers", email: "careers@swordandwand.com", contact: "https://swordandwand.com/contact" },
       { name: "Studio Wildcard", url: "https://www.studiowildcard.com/jobs", email: null, contact: "https://www.studiowildcard.com/contact" },
-      { name: "Theory Studios", url: "https://www.theorystudios.com/jobs/none", email: null, contact: null },
+      { name: "Theory Studios", url: "https://www.theorystudios.com/jobs/none", email: "hi@theorystudios.com", contact: null },
     ],
     "Georgia": [
       { name: "AGS", url: "https://jobs.jobvite.com/agscareer", email: null, contact: "https://www.playags.com/operations-and-contact/get-in-touch" },
@@ -364,7 +364,7 @@ const COMPANIES_DATA = {
     ],
     "Massachusetts": [
       { name: "Camlann Games", url: "https://camlanngames.com/", email: null, contact: "https://camlanngames.com/contact/" },
-      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: null, contact: null },
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: "jobs@cdprojektred.com", contact: null },
       { name: "Crate Entertainment", url: "https://www.crateentertainment.com/nojobs/", email: "jobs@crateentertainment.com", contact: "https://www.crateentertainment.com/contact/", emailApply:true },
       { name: "Cryptyd Games", url: "https://cryptydgames.com/join-us/", email: "a.alaa@cryptydgames.com", contact: "https://cryptydgames.com/contact-us/" },
       { name: "Decoy Games", url: "https://www.decoygames.com/", email: "general@decoygames.com", contact: null },
@@ -402,7 +402,7 @@ const COMPANIES_DATA = {
     ],
     "New Jersey": [
       { name: "High 5 Games", url: "https://high5games.bamboohr.com/careers", email: null, contact: "https://high5games.com/about/contact-us/" },
-      { name: "Kalypso Media", url: "https://jobs.kalypsomedia.com/en", email: null, contact: "https://www.kalypsomedia.com/contact?" },
+      { name: "Kalypso Media", url: "https://jobs.kalypsomedia.com/en", email: null, contact: "https://www.kalypsomedia.com/contact" },
       { name: "N Fusion", url: "https://www.n-fusion.com/", email: "jobs@n-fusion.com", contact: "https://www.n-fusion.com/contact/", emailApply:true },
       { name: "Saber Interactive", url: "https://saber.games/careers/", email: null, contact: "https://saber.games/#contact" },
     ],
@@ -434,12 +434,12 @@ const COMPANIES_DATA = {
     ],
     "North Carolina": [
       { name: "Crater Studios", url: "https://craterstudiosgames.com/careers", email: "craterstudiosdevs@gmail.com", contact: "https://craterstudiosgames.com/contact" },
-      { name: "Imangi", url: "https://imangistudios.com/careers/", email: null, contact: null },
+      { name: "Imangi", url: "https://imangistudios.com/careers/", email: null, contact: "https://imangistudios.com/contact/" },
       { name: "Methodical", url: "https://www.methodical.com/careers", email: null, contact: null },
-      { name: "Studio Hermitage", url: "https://careers.studio-hermitage.com/jobs", email: null, contact: null },
+      { name: "Studio Hermitage", url: "https://careers.studio-hermitage.com/jobs", email: null, contact: "https://careers.studio-hermitage.com/connect" },
       { name: "Third Pie Studios", url: "https://thirdpiestudios.com/careers", email: null, contact: "https://thirdpiestudios.com/contact-us" },
       { name: "Vavel Games", url: "https://careers.vavel.gs/", email: "jobs@vavel.gs", contact: "https://vavel.gs/contact/", emailApply:true },
-      { name: "WDR Studios", url: "https://www.wdrstudios.com/careers", email: "team@wdrstudios.com", contact: null, emailApply:true },
+      { name: "WDR Studios", url: "https://www.wdrstudios.com/careers", email: "team@wdrstudios.com", contact: "https://www.wdrstudios.com/contact", emailApply:true },
       { name: "Zapper Games", url: "https://jobs.zapper.games/jobs", email: null, contact: "https://jobs.zapper.games/connect" },
     ],
     "Ohio": [
@@ -525,7 +525,7 @@ const COMPANIES_DATA = {
       { name: "Moon Beast Productions", url: "https://www.moonbeast.com/careers", email: "inquiries@moonbeast.com", contact: "https://www.moonbeast.com/" },
       { name: "Natural Motion", url: "https://job-boards.greenhouse.io/nmcareers", email: null, contact: "https://www.naturalmotion.com/get-in-touch/" },
       { name: "Otherside Entertainment", url: "https://careers.otherside-e.com/jobs", email: null, contact: "https://otherside-e.com/contact-us/" },
-      { name: "Owlchemy Labs", url: "https://apply.workable.com/owlchemy-labs/", email: " jobs@owlchemylabs.com", contact: null },
+      { name: "Owlchemy Labs", url: "https://apply.workable.com/owlchemy-labs/", email: "jobs@owlchemylabs.com", contact: null },
       { name: "Panic Button Games", url: "https://panicbuttongames.com/careers/", email: null, contact: "https://panicbuttongames.com/contact/" },
       { name: "Paralune", url: "http://paralune.com/jobs/", email: "contact@paralune.com", contact: null },
       { name: "Peoplefun", url: "https://www.tripledot.com/careers", email: null, contact: "https://www.peoplefun.com/contact" },
@@ -661,7 +661,7 @@ const COMPANIES_DATA = {
       { name: "Demonware", url: "https://careers.demonware.net/search-results/", email: null, contact: null },
       { name: "Dogfish Games", url: "https://dogfishgames.com/jobs/", email: null, contact: "https://dogfishgames.com/#contact" },
       { name: "EA Sports", url: "https://www.ea.com/ea-studios/ea-sports", email: null, contact: null },
-      { name: "Eastside Games", url: "https://www.eastsidegames.com/jobs/", email: " jobs@eastsidegamestudio.com", contact: "https://www.eastsidegames.com/contact/" },
+      { name: "Eastside Games", url: "https://www.eastsidegames.com/jobs/", email: "jobs@eastsidegamestudio.com", contact: "https://www.eastsidegames.com/contact/" },
       { name: "Endnight Games", url: "https://endnightgames.com/careers", email: "info@endnightgames.com", contact: "https://endnightgames.com/contact" },
       { name: "Epic Games", url: "https://www.epicgames.com/site/careers/jobs?country=Canada&state=British%20Columbia&page=1", email: null, contact: null },
       { name: "Fluffy Dog Studios", url: "https://www.fluffydogstudio.com/careers", email: "careers@fluffydogstudio.com", contact: null },
@@ -670,7 +670,7 @@ const COMPANIES_DATA = {
       { name: "Hellbent Games", url: "http://hellbentgames.com/careers/", email: null, contact: null },
       { name: "Hololabs", url: "https://hololabs.org/careers/", email: "info@hololabs.studio", contact: "https://hololabs.org/about/#contact-us" },
       { name: "Hyper Hippo Games", url: "https://hyperhippo.com/careers/", email: null, contact: "https://hyperhippo.com/contact/" },
-      { name: "Icefall Interactive", url: "https://icefall-interactive.com/jobs/", email: null, contact: "null" },
+      { name: "Icefall Interactive", url: "https://icefall-interactive.com/jobs/", email: null, contact: "https://icefall-interactive.com/contact/" },
       { name: "IGG", url: "https://jobs.igg.com/public/careers.html", email: null, contact: null },
       { name: "Ironclad Games", url: "https://ironcladgames.com/?page_id=1390", email: null, contact: null },
       { name: "Iron Oak Games", url: "https://ironoakgames.com/careers/", email: "jobs@ironoakgames.com", contact: "https://ironoakgames.com/contact-us/" },
@@ -679,7 +679,7 @@ const COMPANIES_DATA = {
       { name: "Kano", url: "https://job-boards.eu.greenhouse.io/kano", email: "jobs@kanoapps.com", contact: "https://www.kano.ca/contact" },
       { name: "Kerberos Productions", url: "https://www.kerberos-productions.com/", email: "contact@kerberos-productions.com", contact: null },
       { name: "Kixeye", url: "https://corp.kixeye.com/#careers", email: null, contact: null },
-      { name: "Klei Entertainment", url: "https://www.klei.com/careers/", email: " jobs@kleientertainment.com", contact: "https://www.klei.com/contact" },
+      { name: "Klei Entertainment", url: "https://www.klei.com/careers/", email: "jobs@kleientertainment.com", contact: "https://www.klei.com/contact" },
       { name: "Koolhaus Games", url: "https://koolhausgames.com/career.html", email: "careers@koolhausgames.com", contact: "https://koolhausgames.com/contact-us.html", emailApply:true },
       { name: "LBC Studios", url: "https://lbcstudiosca.bamboohr.com/careers", email: "info@lbcstudios.ca", contact: null },
       { name: "Maxis", url: "https://jobs.ea.com/en_US/careers/Home/?4538=8391&4538_format=3021&listFilterMode=1", email: null, contact: null },
@@ -688,7 +688,7 @@ const COMPANIES_DATA = {
       { name: "Next Level Games", url: "https://nextlevelgames.com/jobs-at-next-level-games-subsidiary-of-nintendo-co-ltd/", email: null, contact: "https://nextlevelgames.com/contact/" },
       { name: "Nightmarket Games", url: "https://ca.indeed.com/cmp/Nightmarket-Games-Inc.-1/jobs", email: "hello@nightmarket.games", contact: "https://nightmarket.games/contact/" },
       { name: "Offworld", url: "https://owi.bamboohr.com/careers", email: "contact@offworldindustries.com", contact: "https://www.offworldindustries.com/contact" },
-      { name: "Piranha Games", url: "https://ca.indeed.com/cmp/Piranha-Games-Inc./jobs", email: "recruiting@piranhagames.com", contact: null },
+      { name: "Piranha Games", url: "https://ca.indeed.com/cmp/Piranha-Games-Inc./jobs", email: "recruiting@piranhagames.com", contact: "https://piranhagames.com/contact/" },
       { name: "Popcap", url: "https://jobs.ea.com/en_US/careers/Home/Vancouver?4538=8358&format=3021&listFilterMode=1", email: null, contact: null },
       { name: "Race Rocks", url: "https://racerocks3d.ca/careers-and-internships/", email: null, contact: "https://racerocks3d.ca/contact-us/" },
       { name: "Rattleaxe Games", url: "https://rattleaxegames.ca/jobs", email: null, contact: "https://rattleaxegames.ca/contact" },
@@ -707,13 +707,13 @@ const COMPANIES_DATA = {
       { name: "Thunderous Games", url: "https://www.thunderousgames.com/careers/", email: "contact@thunderousgames.com", contact: "https://www.thunderousgames.com/contact/" },
       { name: "Tiny Mob Games", url: "https://www.tinymobgames.com/", email: null, contact: null },
       { name: "Trepang", url: "https://everplaygroup.careers.hibob.com/", email: null, contact: null },
-      { name: "Tuatara Games", url: "https://tuataragames.com/careers", email: "info@tuatarafx.com", contact: null },
+      { name: "Tuatara Games", url: "https://tuataragames.com/careers", email: "infor@tuatarafx.com", contact: null },
       { name: "Visual Concepts", url: "https://vcentertainment.com/careers/", email: null, contact: null },
     ],
     "Manitoba": [
       { name: "Complex Games", url: "https://www.frontier.co.uk/careers/complex", email: null, contact: "https://www.frontier.co.uk/contact" },
       { name: "Project Whitecard", url: "https://go.projectwhitecard.com/careers/", email: "candidates@projectwhitecard.com", contact: "https://go.projectwhitecard.com/contact/", emailApply:true },
-      { name: "Tactics Interactive", url: "https://tactica.ca/careers/?doing_wp_cron=1780251374.8161730766296386718750", email: "https://go.projectwhitecard.com/contact/", contact: "https://tactica.ca/contact/", emailApply:true },
+      { name: "Tactics Interactive", url: "https://tactica.ca/careers/?doing_wp_cron=1780251374.8161730766296386718750", email: "work@tactica.ca", contact: "https://tactica.ca/contact/", emailApply:true },
       { name: "Ubisoft", url: "https://www.ubisoft.com/en-us/company/careers/our-jobs", email: null, contact: null },
       { name: "Zenfri", url: "https://zenfri.ca/careers/", email: null, contact: "https://zenfri.ca/contact-us/" },
     ],
@@ -1455,8 +1455,8 @@ const CITY_COUNTRY = {
   "łódź":"Poland",
 };
 // Order the top-level tabs are rendered in, and their short badge label.
-const REGION_ORDER = ["United States","Canada","Europe","Asia","South America","Latin America","Oceania","Africa"];
-const REGION_BADGE = {"United States":"US","Canada":"CA","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA"};
+const REGION_ORDER = ["United States","Canada","Europe","Asia","South America","Latin America","Oceania","Africa","Other Locations"];
+const REGION_BADGE = {"United States":"US","Canada":"CA","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA","Other Locations":"??"};
 // Is this top-level key a continent (vs. United States / Canada)?
 const isContinent = (k)=>k!=="United States"&&k!=="Canada";
 // Backwards-compatible foreign-token test, now derived from the geography maps.
@@ -1533,7 +1533,13 @@ function cityLabelsForState(raw, stateName){
     const canon=STATENAME_CANON[nm.replace(/\b\w/g,c=>c.toUpperCase())]||ABBR_TO_STATENAME[ab];
     if(canon===stateName || nm.replace(/\b\w/g,c=>c.toUpperCase())===stateName){ abbr=ab; break; }
   }
-  if(!abbr) return [];
+  if(!abbr){
+    // Not a state/province and not a mapped country → an "Other Locations" bucket.
+    // Show the raw location text, tidied, so the listing still reads sensibly.
+    const chunks=raw.split(/;|\/|\||\u2022/).map(s=>s.trim()).filter(Boolean);
+    const out=[...new Set(chunks.map(c=>titleCasePlace(c)).filter(Boolean))];
+    return out.length?out:[stateName];
+  }
   const fullLower=(ABBR_TO_STATENAME[abbr]||"").toLowerCase();
   // Postings often join multiple offices with ; / | • or the words "or"/"and".
   const chunks=raw.split(/;|\/|\||\u2022|\bor\b|\band\b/i).map(s=>s.trim()).filter(Boolean);
@@ -1603,8 +1609,22 @@ function jobPlace(job){
   }
   // 5. Says US/Canada but no state pinned → home-region fallback.
   if(/\b(usa|u\.s\.a|u\.s|united states|america|canada|north america)\b/i.test(lower)) return "UNKNOWN";
-  // 6. Unrecognized place → hide rather than mis-file it under a US state.
-  return "FOREIGN";
+  // 6. A real place we simply don't have mapped yet. Rather than hide the job, give
+  //    it its own section under "Other Locations" so nothing is silently lost and
+  //    the open-positions count stays honest. We bucket by the LAST comma segment
+  //    (usually the country/region), so "Someplace, Freedonia" groups under Freedonia.
+  const other=otherRegionName(raw,parts);
+  return other?{top:OTHER_REGION,sub:other}:"UNKNOWN";
+}
+// Name of the catch-all top-level region for places we haven't mapped.
+const OTHER_REGION="Other Locations";
+const titleCasePlace=(s)=>s.replace(/\s+/g," ").trim().replace(/\b[\p{L}][\p{L}'’-]*/gu,w=>w[0].toUpperCase()+w.slice(1).toLowerCase());
+// Derive a stable sub-region label for an unmapped location string.
+function otherRegionName(raw,parts){
+  const pick=(parts&&parts.length>1)?parts[parts.length-1]:raw;
+  const name=titleCasePlace(String(pick||"").replace(/[()]/g,""));
+  if(!name||!/\p{L}/u.test(name)||name.length>40) return null;
+  return name;
 }
 // Postal codes that belong to Canada (used to split domestic into US vs Canada).
 const CA_POSTAL = new Set(["ON","QC","BC","AB","MB","SK","NS","NB","NL","PE"]);
@@ -3130,26 +3150,30 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
 function NoOpenCard({company,companyName,user,onApplied}) {
   const synthetic={id:`noop-${companyName}`,title:"General Application",company:companyName,url:company.url,applyUrl:company.url,email:company.email||"",summary:`Open application to ${companyName}.`,responsibilities:[],requirements:[],experience:"",type:"Full-time",salary:"",isRemote:false,isVolunteer:!!company.volunteer};
   const btn=(lbl,icon,onClick,style={})=><button onClick={onClick} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:"5px 11px",fontSize:10,fontFamily:"'Cinzel',serif",fontWeight:700,display:"inline-flex",alignItems:"center",gap:5,transition:"all .15s",...style}}>{icon}{lbl}</button>;
+  // Register Interest destination, using the links from the company list:
+  // an "email" company opens a prefilled mailto; everyone else goes to their
+  // contact page, falling back to a mailto, then their careers page.
+  const riMail=company.email?`mailto:${String(company.email).trim()}?subject=${encodeURIComponent(`Registering interest in opportunities at ${companyName}`)}`:null;
+  const riHref=company.registerInterest==="email"
+    ? (riMail||company.contact||company.url||null)
+    : (company.contact||riMail||company.url||null);
+  const riIsMail=!!riHref&&riHref.startsWith("mailto:");
   return <>
-    <div style={{background:"rgba(201,168,76,.03)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:12}}>
+    <div style={{background:"rgba(201,168,76,.03)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:10,padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}}>
+     <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
       <I.Scroll s={18} c="rgba(201,168,76,.45)"/>
-      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}{company.registerInterest&&(()=>{
-        // Turn the tag into a real link: email companies open a prefilled mailto,
-        // everyone else goes to their contact page (or careers page as a fallback).
-        const useEmail=company.registerInterest==="email"&&company.email;
-        const href=useEmail
-          ?`mailto:${String(company.email).trim()}?subject=${encodeURIComponent(`Registering interest in opportunities at ${companyName}`)}`
-          :(company.contact||company.url||null);
-        const tagStyle={background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700};
-        if(!href) return <span style={tagStyle}>Register Interest</span>;
-        const ext=!useEmail;
-        return <a href={href} {...(ext?{target:"_blank",rel:"noreferrer"}:{})} title={useEmail?`Email ${company.email}`:`Open ${href}`} style={{...tagStyle,textDecoration:"none",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:4}}>Register Interest{useEmail?<I.Send s={9} c="#f0d080"/>:<I.Arrow s={9} c="#f0d080"/>}</a>;
-      })()}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":company.registerInterest?(company.registerInterest==="email"?"No open roles right now — they invite you to email your resume.":"No open roles right now — they invite you to register your interest."):"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>{company.registerInterest==="email"?"Send a general application to the email below.":"Visit their careers page or send a general application email."}</p></div>
+      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":company.registerInterest?(company.registerInterest==="email"?"No open roles right now — they invite you to email your resume.":"No open roles right now — they invite you to register your interest."):"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>{company.registerInterest==="email"?"Send a general application to the email below.":"Visit their careers page or send a general application email."}</p></div>
       <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
         {company.url&&<a href={company.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Careers",<I.Arrow s={10} c="#f0d080"/>,(()=>{}))}</a>}
         {company.contact&&<a href={company.contact} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Contact Page",<I.Link s={10} c="#8fd0e8"/>,(()=>{}),{background:"rgba(96,160,232,.1)",border:"1px solid rgba(96,160,232,.3)",color:"#8fd0e8"})}</a>}
         {company.email&&<a href={`mailto:${company.email}?subject=${encodeURIComponent(`Inquiry about opportunities at ${companyName}`)}`} style={{textDecoration:"none"}}>{btn("Email",<I.Send s={10} c="#7ecfb3"/>,(()=>{}),{background:"rgba(126,207,179,.1)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3"})}</a>}
-              </div>
+      </div>
+     </div>
+     {company.registerInterest&&riHref&&<div style={{display:"flex",justifyContent:"flex-start"}}>
+       <a href={riHref} {...(riIsMail?{}:{target:"_blank",rel:"noreferrer"})} title={riIsMail?`Email ${company.email}`:`Open ${riHref}`} style={{textDecoration:"none"}}>
+         {btn("Register Interest",riIsMail?<I.Send s={10} c="#f0d080"/>:<I.Arrow s={10} c="#f0d080"/>,(()=>{}),{background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.45)"})}
+       </a>
+     </div>}
     </div>
   </>;
 }
@@ -3858,7 +3882,6 @@ export default function App() {
     const homeState=companyHomeState[name];
     return all.filter(j=>{
       const js=jobStateName(j);
-      if(js==="FOREIGN") return false;                       // unrecognized place → hidden
       if(js==="REMOTE"||js==="UNKNOWN") return stateName===homeState; // can't pin → home region
       return js===stateName;                                 // a tracked region → that one only
     });
@@ -4016,7 +4039,22 @@ export default function App() {
 
   // All jobs flat list for stats — memoized so it doesn't rebuild on every render
   // (e.g. each keystroke). Rebuilds only when live jobs change.
-  const allJobs=useMemo(()=>Object.values(ALL_JOBS_DATA).flatMap(s=>Object.values(s).flatMap(c=>Object.entries(c).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs)))),[liveJobs]);
+  // Every open position on the site, counted once per company. Companies listed in
+  // more than one state used to have their jobs counted once per listing, which
+  // inflated this number. Passing no region means no location filtering, so jobs in
+  // every region (including "Other Locations") are included.
+  const allJobs=useMemo(()=>{
+    const seen=new Set();
+    const out=[];
+    for(const states of Object.values(ALL_JOBS_DATA))
+      for(const companies of Object.values(states))
+        for(const [nm,co] of Object.entries(companies)){
+          if(seen.has(nm)) continue;
+          seen.add(nm);
+          out.push(...getDisplayJobs(nm,co.jobs));
+        }
+    return out;
+  },[liveJobs]);
   const totalJobs=useMemo(()=>allJobs.filter(matches).length,[allJobs,filters,user]);
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
   const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
@@ -4261,7 +4299,7 @@ export default function App() {
         </div>}
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
-          {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Countries",false]].map(([n,lbl,hi])=>
+          {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Regions",false]].map(([n,lbl,hi])=>
             <div key={lbl} style={{position:"relative",background:hi?"rgba(232,97,58,.07)":"rgba(201,168,76,.05)",border:`1px solid ${hi?"rgba(232,97,58,.3)":"rgba(201,168,76,.15)"}`,borderRadius:10,padding:mobile?"8px 10px":"10px 18px",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
               {hi&&n>0&&<span title={`${n} new in the last 48 hours`} style={{position:"absolute",top:-7,right:-7,display:"inline-flex"}}><I.Alert s={18}/></span>}
               <span style={{fontFamily:"'Cinzel',serif",fontSize:mobile?18:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</span>
