@@ -8,7 +8,27 @@
 
 export default async function handler(req, res) {
   const { platform, slug, debug } = req.query;
+
+  // Cache at Vercel's edge/CDN so we don't re-hit the ATS for every visitor.
+  //   s-maxage            → how long the CDN serves the cached copy outright
+  //   stale-while-revalidate → how long it may keep serving the stale copy while
+  //                            refreshing in the background (so nobody waits)
+  // The FIRST request after expiry triggers a real ATS fetch; every other visitor
+  // is served instantly from cache. This is the main job-board speedup.
+  //
+  // debug=1 (used by /verify) always bypasses the cache so slug tests hit live.
+  const setCache = (secs, swr) => {
+    if (debug) { res.setHeader('Cache-Control', 'no-store'); return; }
+    res.setHeader('Cache-Control', `s-maxage=${secs}, stale-while-revalidate=${swr}`);
+  };
+  // Boards WITH jobs change slowly — cache an hour.
+  const CACHE_HIT = () => setCache(3600, 7200);
+  // Empty boards: cache for a shorter window so a newly posted job shows up sooner,
+  // but still spare every visitor the (slow) full variant-probing round trip.
+  const CACHE_EMPTY = () => setCache(600, 3600);
+
   if (!platform || !slug) {
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(400).json({ error: 'platform and slug required', jobs: [] });
   }
 
@@ -16,6 +36,7 @@ export default async function handler(req, res) {
   // Each variant: { url, method?, body?, pick } where pick(data) -> jobs array.
   const variants = buildVariants(platform, slug);
   if (!variants) {
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(400).json({ error: `Unknown platform: ${platform}`, jobs: [] });
   }
 
@@ -53,15 +74,16 @@ export default async function handler(req, res) {
       }
       attempts.push({ url: v.url, status: 200, found: all.length, total });
       if (all.length > 0) {
-        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+        CACHE_HIT();
         return res.status(200).json({ jobs: all, count: all.length, platform, slug, used: v.url, slugValid: true, ...(debug ? { attempts } : {}) });
       }
     } catch (err) {
       attempts.push({ url: v.url, error: err.message.slice(0, 80) });
     }
+    CACHE_EMPTY();
     return res.status(200).json({ jobs: [], count: 0, platform, slug, slugValid,
       ...(slugValid ? { used: validVia, note: 'Slug is valid — board exists but has no open postings right now.' } : { note: 'Slug did not resolve to a valid job board.' }),
-      attempts });
+      ...(debug ? { attempts } : {}) });
   }
 
   if (platform === 'dayforce') {
@@ -88,15 +110,16 @@ export default async function handler(req, res) {
       }
       attempts.push({ url: v.url, status: 200, found: all.length, total: maxCount });
       if (all.length > 0) {
-        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+        CACHE_HIT();
         return res.status(200).json({ jobs: all, count: all.length, platform, slug, used: v.url, slugValid: true, ...(debug ? { attempts } : {}) });
       }
     } catch (err) {
       attempts.push({ url: v.url, error: err.message.slice(0, 80) });
     }
+    CACHE_EMPTY();
     return res.status(200).json({ jobs: [], count: 0, platform, slug, slugValid,
       ...(slugValid ? { used: validVia, note: 'Slug is valid — board exists but has no open postings right now.' } : { note: 'Slug did not resolve to a valid job board.' }),
-      attempts });
+      ...(debug ? { attempts } : {}) });
   }
 
   for (const v of variants) {
@@ -122,7 +145,7 @@ export default async function handler(req, res) {
       if (isValidShape && !slugValid) { slugValid = true; validVia = v.url; }
       attempts.push({ url: v.url, status, found: jobs.length, validShape: isValidShape });
       if (jobs.length > 0) {
-        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+        CACHE_HIT();
         return res.status(200).json({ jobs, count: jobs.length, platform, slug, used: v.url, slugValid: true, ...(debug ? { attempts } : {}) });
       }
     } catch (err) {
@@ -132,6 +155,7 @@ export default async function handler(req, res) {
 
   // No jobs returned. Report whether the slug itself is valid (exists but empty)
   // versus not found at all, so the verifier can tell the difference.
+  CACHE_EMPTY();
   return res.status(200).json({
     jobs: [],
     count: 0,
@@ -139,7 +163,7 @@ export default async function handler(req, res) {
     slug,
     slugValid,
     ...(slugValid ? { used: validVia, note: 'Slug is valid — board exists but has no open postings right now.' } : { note: 'Slug did not resolve to a valid job board.' }),
-    attempts,
+    ...(debug ? { attempts } : {}),
   });
 }
 

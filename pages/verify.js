@@ -19,7 +19,9 @@ export default function Verify() {
     const found = [];
     for (const platform of PLATFORMS) {
       try {
-        const r = await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug.trim())}`);
+        // debug=1 bypasses the edge cache so slug tests always hit the live ATS
+        // (and returns the per-URL `attempts` diagnostics).
+        const r = await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug.trim())}&debug=1`);
         const data = await r.json();
         const count = data.count || 0;
         found.push({ platform, count, ok: count > 0, slugValid: !!data.slugValid });

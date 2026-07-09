@@ -3569,6 +3569,7 @@ export default function App() {
   const [introDone,setIntroDone]=useState(false);        // has the first full load finished?
   const abortRef=useRef(null);
   const introCollectedRef=useRef({}); // intro results accumulate here; revealed once loading completes
+  const introStartRef=useRef(0);      // when the intro fetch began, for adaptive reveal timing
 
   const fetchLiveJobs=async(isIntro=false)=>{
     if(abortRef.current)abortRef.current.abort();
@@ -3657,8 +3658,14 @@ export default function App() {
       setLiveJobs({...introCollectedRef.current});
       setLiveStatus("done");
       setLoadProgress(100);
-      // One paint so the fully-populated tree is ready before we reveal it.
-      setTimeout(()=>setIntroDone(true),150);
+      // Adaptive reveal. With the edge cache warm the whole load can finish in a
+      // few hundred ms, so we don't sit on a fixed delay — we reveal as soon as the
+      // data is in. The only floor is a short minimum display time so the loader
+      // doesn't flash on-and-off in a single frame, which reads as a glitch.
+      const MIN_SHOW=550;                                   // ms the loader is visible at minimum
+      const elapsed=Date.now()-(introStartRef.current||Date.now());
+      const wait=Math.max(120,MIN_SHOW-elapsed);            // >=120ms so React paints the full tree first
+      setTimeout(()=>{ if(!signal.aborted) setIntroDone(true); },wait);
       return;
     }
 
@@ -3684,14 +3691,17 @@ export default function App() {
   useEffect(()=>{
     if((user||guest)&&!introStartedRef.current){
       introStartedRef.current=true;
+      introStartRef.current=Date.now();
       fetchLiveJobs(true);
       // Safety net: never trap the user on the loader. If some ATS calls are slow,
       // reveal the board after a hard cap with whatever has been collected so far
-      // (rather than an empty board).
+      // (rather than an empty board). With the edge cache in front of the ATS proxy
+      // a warm load finishes in well under a second, so this only fires on a cold
+      // cache with a slow upstream.
       const cap=setTimeout(()=>{
         setLiveJobs(prev=>Object.keys(prev).length?prev:{...introCollectedRef.current});
         setIntroDone(true);
-      },18000);
+      },14000);
       return()=>{ clearTimeout(cap); abortRef.current?.abort(); };
     }
     return()=>{ abortRef.current?.abort(); };
