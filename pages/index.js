@@ -1322,55 +1322,148 @@ const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","u
 // NO country attached (e.g. "Lviv", "Bucharest", "Ho Chi Minh City"). Without this
 // a bare foreign city name falls through and gets shown under the studio's US
 // home state. Matched on the whole location or any comma-separated part.
-const FOREIGN_CITIES = new Set([
-  // Eastern Europe / CIS
-  "bucharest","bucuresti","cluj","cluj-napoca","iasi","timisoara","brasov","craiova",
-  "lviv","kyiv","kiev","kharkiv","odesa","odessa","dnipro","vinnytsia","ternopil",
-  "warsaw","warszawa","krakow","kraków","cracow","wroclaw","wrocław","poznan","poznań","gdansk","gdańsk","katowice","lodz","łódź",
-  "prague","praha","brno","ostrava","bratislava","budapest","szeged","debrecen",
-  "sofia","plovdiv","varna","burgas","belgrade","beograd","novi sad","nis",
-  "zagreb","split","rijeka","ljubljana","sarajevo","skopje","podgorica","tirana",
-  "vilnius","kaunas","riga","tallinn","minsk","chisinau","yerevan","tbilisi","baku",
-  "moscow","saint petersburg","st petersburg","novosibirsk","kazan","nizhny novgorod",
-  // Western / Northern / Southern Europe
-  "london","manchester","birmingham","leeds","liverpool","bristol","brighton","cambridge","oxford","guildford","leamington spa","nottingham","sheffield","newcastle","southampton","york","dundee","edinburgh","glasgow","belfast","cardiff","sliema",
-  "dublin","cork","galway","limerick",
-  "paris","lyon","marseille","toulouse","bordeaux","nantes","lille","montpellier","strasbourg","annecy",
-  "berlin","munich","münchen","hamburg","frankfurt","cologne","köln","düsseldorf","dusseldorf","stuttgart","leipzig","dresden","hannover","nuremberg","nürnberg","mainz","karlsruhe",
-  "amsterdam","rotterdam","utrecht","eindhoven","the hague","hilversum","breda",
-  "brussels","antwerp","ghent","liege","luxembourg city",
-  "madrid","barcelona","valencia","seville","sevilla","bilbao","malaga","zaragoza",
-  "lisbon","lisboa","porto","braga",
-  "rome","roma","milan","milano","turin","torino","naples","napoli","florence","firenze","bologna",
-  "zurich","zürich","geneva","genève","bern","basel","lausanne","lugano",
-  "vienna","wien","salzburg","graz","linz",
-  "stockholm","gothenburg","göteborg","malmö","malmo","uppsala","skövde","skovde","umeå","umea",
-  "oslo","bergen","trondheim","copenhagen","københavn","aarhus","odense",
-  "helsinki","espoo","tampere","turku","oulu","kotka","reykjavik","reykjavík",
-  "athens","thessaloniki","nicosia","limassol","valletta","st julian's","st julians",
-  // Middle East / Africa
-  "tel aviv","tel-aviv","jerusalem","haifa","herzliya","ramat gan",
-  "istanbul","ankara","izmir","dubai","abu dhabi","doha","riyadh","jeddah","kuwait city","manama","amman","beirut","cairo","alexandria","casablanca","rabat","tunis",
-  "cape town","johannesburg","pretoria","durban","lagos","abuja","nairobi","accra","kampala",
-  // Asia-Pacific
-  "ho chi minh city","ho chi minh","hochiminh","saigon","hanoi","da nang","danang",
-  "bangkok","chiang mai","phnom penh","vientiane","yangon",
-  "singapore","kuala lumpur","penang","johor bahru","jakarta","bandung","surabaya",
-  "manila","cebu","makati","quezon city","taguig","pasig",
-  "tokyo","osaka","kyoto","yokohama","nagoya","fukuoka","sapporo","kobe",
-  "seoul","busan","incheon","daegu","pangyo","seongnam",
-  "beijing","shanghai","shenzhen","guangzhou","chengdu","hangzhou","wuhan","xi'an","xian","nanjing","tianjin","suzhou","chongqing","dalian",
-  "taipei","kaohsiung","taichung","hong kong","kowloon","macau",
-  "mumbai","bombay","delhi","new delhi","bangalore","bengaluru","hyderabad","chennai","pune","kolkata","noida","gurgaon","gurugram","ahmedabad",
-  "karachi","lahore","islamabad","dhaka","colombo","kathmandu",
-  "sydney","melbourne","brisbane","perth","adelaide","canberra","gold coast","hobart",
-  "auckland","wellington","christchurch","dunedin",
-  // Latin America
-  "mexico city","ciudad de mexico","guadalajara","monterrey","tijuana","queretaro","querétaro",
-  "sao paulo","são paulo","rio de janeiro","brasilia","brasília","curitiba","porto alegre","belo horizonte","recife","florianopolis","florianópolis",
-  "buenos aires","cordoba","córdoba","rosario","montevideo","santiago","lima","bogota","bogotá","medellin","medellín","cali","quito","guayaquil","caracas","san jose costa rica","panama city","guatemala city",
-]);
-const isForeignToken=(p)=>{ const s=p.toLowerCase().trim(); return FOREIGN_COUNTRIES.has(s)||FOREIGN_CITIES.has(s); };
+// ── WORLD GEOGRAPHY ──────────────────────────────────────────────────────────
+// Continent bucket for each country we can recognise. The board's top level is
+// "United States" / "Canada" (kept as countries, they're the core market) and
+// then continents; each continent expands into its countries.
+const COUNTRY_CONTINENT = {
+  "Albania":"Europe","Algeria":"Africa","Argentina":"South America","Armenia":"Asia","Australia":"Oceania",
+  "Austria":"Europe","Azerbaijan":"Asia","Bahrain":"Asia","Bangladesh":"Asia","Belarus":"Europe","Belgium":"Europe",
+  "Bolivia":"South America","Bosnia and Herzegovina":"Europe","Brazil":"South America","Bulgaria":"Europe",
+  "Cambodia":"Asia","Chile":"South America","China":"Asia","Colombia":"South America","Costa Rica":"Latin America",
+  "Croatia":"Europe","Cyprus":"Europe","Czechia":"Europe","Denmark":"Europe","Ecuador":"South America",
+  "Egypt":"Africa","Estonia":"Europe","Ethiopia":"Africa","Finland":"Europe","France":"Europe",
+  "Georgia (country)":"Asia","Germany":"Europe","Ghana":"Africa","Greece":"Europe","Guatemala":"Latin America",
+  "Hong Kong":"Asia","Hungary":"Europe","Iceland":"Europe","India":"Asia","Indonesia":"Asia","Ireland":"Europe",
+  "Israel":"Asia","Italy":"Europe","Japan":"Asia","Jordan":"Asia","Kazakhstan":"Asia","Kenya":"Africa",
+  "Kuwait":"Asia","Laos":"Asia","Latvia":"Europe","Lebanon":"Asia","Lithuania":"Europe","Luxembourg":"Europe",
+  "Macau":"Asia","Malaysia":"Asia","Malta":"Europe","Mexico":"Latin America","Moldova":"Europe","Mongolia":"Asia",
+  "Montenegro":"Europe","Morocco":"Africa","Myanmar":"Asia","Nepal":"Asia","Netherlands":"Europe",
+  "New Zealand":"Oceania","Nigeria":"Africa","North Korea":"Asia","North Macedonia":"Europe","Norway":"Europe",
+  "Oman":"Asia","Pakistan":"Asia","Panama":"Latin America","Paraguay":"South America","Peru":"South America",
+  "Philippines":"Asia","Poland":"Europe","Portugal":"Europe","Qatar":"Asia","Romania":"Europe","Russia":"Europe",
+  "Saudi Arabia":"Asia","Serbia":"Europe","Singapore":"Asia","Slovakia":"Europe","Slovenia":"Europe",
+  "South Africa":"Africa","South Korea":"Asia","Spain":"Europe","Sri Lanka":"Asia","Sweden":"Europe",
+  "Switzerland":"Europe","Taiwan":"Asia","Tanzania":"Africa","Thailand":"Asia","Tunisia":"Africa","Turkey":"Asia",
+  "Uganda":"Africa","Ukraine":"Europe","United Arab Emirates":"Asia","United Kingdom":"Europe",
+  "Uruguay":"South America","Uzbekistan":"Asia","Venezuela":"South America","Vietnam":"Asia",
+};
+// Raw country tokens (and spellings/abbreviations) seen in job locations,
+// normalised to the canonical country name used above.
+const COUNTRY_ALIAS = {
+  "algeria":"Algeria","argentina":"Argentina","armenia":"Armenia","australia":"Australia","austria":"Austria",
+  "azerbaijan":"Azerbaijan","bahrain":"Bahrain","bangladesh":"Bangladesh","belarus":"Belarus","belgium":"Belgium",
+  "bolivia":"Bolivia","brasil":"Brazil","brazil":"Brazil","bulgaria":"Bulgaria","cambodia":"Cambodia","chile":"Chile",
+  "china":"China","colombia":"Colombia","costa rica":"Costa Rica","croatia":"Croatia","cyprus":"Cyprus",
+  "czech republic":"Czechia","czechia":"Czechia","denmark":"Denmark","deutschland":"Germany","ecuador":"Ecuador",
+  "egypt":"Egypt","england":"United Kingdom","españa":"Spain","estonia":"Estonia","ethiopia":"Ethiopia",
+  "finland":"Finland","france":"France","georgia country":"Georgia (country)","germany":"Germany","ghana":"Ghana",
+  "great britain":"United Kingdom","greece":"Greece","guatemala":"Guatemala","holland":"Netherlands",
+  "hong kong":"Hong Kong","hungary":"Hungary","iceland":"Iceland","india":"India","indonesia":"Indonesia",
+  "ireland":"Ireland","israel":"Israel","italia":"Italy","italy":"Italy","japan":"Japan","jordan":"Jordan",
+  "kazakhstan":"Kazakhstan","kenya":"Kenya","korea":"South Korea","kuwait":"Kuwait","laos":"Laos","latvia":"Latvia",
+  "lebanon":"Lebanon","lithuania":"Lithuania","luxembourg":"Luxembourg","macau":"Macau","malaysia":"Malaysia",
+  "malta":"Malta","mexico":"Mexico","moldova":"Moldova","mongolia":"Mongolia","morocco":"Morocco","myanmar":"Myanmar",
+  "méxico":"Mexico","nepal":"Nepal","netherlands":"Netherlands","new zealand":"New Zealand","nigeria":"Nigeria",
+  "north korea":"North Korea","northern ireland":"United Kingdom","norway":"Norway","oman":"Oman",
+  "pakistan":"Pakistan","panama":"Panama","paraguay":"Paraguay","peru":"Peru","philippines":"Philippines",
+  "poland":"Poland","polska":"Poland","portugal":"Portugal","qatar":"Qatar","romania":"Romania","russia":"Russia",
+  "saudi arabia":"Saudi Arabia","scotland":"United Kingdom","serbia":"Serbia","singapore":"Singapore",
+  "slovakia":"Slovakia","slovenia":"Slovenia","south africa":"South Africa","south korea":"South Korea",
+  "spain":"Spain","sri lanka":"Sri Lanka","sweden":"Sweden","switzerland":"Switzerland","taiwan":"Taiwan",
+  "tanzania":"Tanzania","thailand":"Thailand","the netherlands":"Netherlands","tunisia":"Tunisia","turkey":"Turkey",
+  "türkiye":"Turkey","u.k.":"United Kingdom","uae":"United Arab Emirates","uganda":"Uganda","uk":"United Kingdom",
+  "ukraine":"Ukraine","united arab emirates":"United Arab Emirates","united kingdom":"United Kingdom",
+  "uruguay":"Uruguay","uzbekistan":"Uzbekistan","venezuela":"Venezuela","viet nam":"Vietnam","vietnam":"Vietnam",
+  "wales":"United Kingdom",
+};
+// Foreign city -> country. Job boards frequently list a bare city with no
+// country attached ("Lviv", "Ho Chi Minh City"), so we resolve those here.
+const CITY_COUNTRY = {
+  "aarhus":"Denmark","abu dhabi":"United Arab Emirates","abuja":"Nigeria","accra":"Ghana","adelaide":"Australia",
+  "ahmedabad":"India","alexandria":"Egypt","amman":"Jordan","amsterdam":"Netherlands","ankara":"Turkey",
+  "annecy":"France","antwerp":"Belgium","athens":"Greece","auckland":"New Zealand","baku":"Azerbaijan",
+  "bandung":"Indonesia","bangalore":"India","bangkok":"Thailand","barcelona":"Spain","basel":"Switzerland",
+  "beijing":"China","beirut":"Lebanon","belfast":"United Kingdom","belgrade":"Serbia","belo horizonte":"Brazil",
+  "bengaluru":"India","beograd":"Serbia","bergen":"Norway","berlin":"Germany","bern":"Switzerland","bilbao":"Spain",
+  "birmingham":"United Kingdom","bogota":"Colombia","bogotá":"Colombia","bologna":"Italy","bombay":"India",
+  "bordeaux":"France","braga":"Portugal","brasilia":"Brazil","brasov":"Romania","brasília":"Brazil",
+  "bratislava":"Slovakia","breda":"Netherlands","brighton":"United Kingdom","brisbane":"Australia",
+  "bristol":"United Kingdom","brno":"Czechia","brussels":"Belgium","bucharest":"Romania","bucuresti":"Romania",
+  "budapest":"Hungary","buenos aires":"Argentina","burgas":"Bulgaria","busan":"South Korea","cairo":"Egypt",
+  "cali":"Colombia","cambridge":"United Kingdom","canberra":"Australia","cape town":"South Africa",
+  "caracas":"Venezuela","cardiff":"United Kingdom","casablanca":"Morocco","cebu":"Philippines","chengdu":"China",
+  "chennai":"India","chiang mai":"Thailand","chisinau":"Moldova","chongqing":"China","christchurch":"New Zealand",
+  "ciudad de mexico":"Mexico","cluj":"Romania","cluj-napoca":"Romania","cologne":"Germany","colombo":"Sri Lanka",
+  "copenhagen":"Denmark","cordoba":"Argentina","cork":"Ireland","cracow":"Poland","craiova":"Romania",
+  "curitiba":"Brazil","córdoba":"Argentina","da nang":"Vietnam","daegu":"South Korea","dalian":"China",
+  "danang":"Vietnam","debrecen":"Hungary","delhi":"India","dhaka":"Bangladesh","dnipro":"Ukraine","doha":"Qatar",
+  "dresden":"Germany","dubai":"United Arab Emirates","dublin":"Ireland","dundee":"United Kingdom",
+  "dunedin":"New Zealand","durban":"South Africa","dusseldorf":"Germany","düsseldorf":"Germany",
+  "edinburgh":"United Kingdom","eindhoven":"Netherlands","espoo":"Finland","firenze":"Italy","florence":"Italy",
+  "florianopolis":"Brazil","florianópolis":"Brazil","frankfurt":"Germany","fukuoka":"Japan","galway":"Ireland",
+  "gdansk":"Poland","gdańsk":"Poland","geneva":"Switzerland","genève":"Switzerland","ghent":"Belgium",
+  "glasgow":"United Kingdom","gold coast":"Australia","gothenburg":"Sweden","graz":"Austria","guadalajara":"Mexico",
+  "guangzhou":"China","guatemala city":"Guatemala","guayaquil":"Ecuador","guildford":"United Kingdom",
+  "gurgaon":"India","gurugram":"India","göteborg":"Sweden","haifa":"Israel","hamburg":"Germany","hangzhou":"China",
+  "hannover":"Germany","hanoi":"Vietnam","helsinki":"Finland","herzliya":"Israel","hilversum":"Netherlands",
+  "ho chi minh":"Vietnam","ho chi minh city":"Vietnam","hobart":"Australia","hochiminh":"Vietnam",
+  "hong kong":"Hong Kong","hyderabad":"India","iasi":"Romania","incheon":"South Korea","islamabad":"Pakistan",
+  "istanbul":"Turkey","izmir":"Turkey","jakarta":"Indonesia","jeddah":"Saudi Arabia","jerusalem":"Israel",
+  "johannesburg":"South Africa","johor bahru":"Malaysia","kampala":"Uganda","kaohsiung":"Taiwan","karachi":"Pakistan",
+  "karlsruhe":"Germany","kathmandu":"Nepal","katowice":"Poland","kaunas":"Lithuania","kazan":"Russia",
+  "kharkiv":"Ukraine","kiev":"Ukraine","kobe":"Japan","kolkata":"India","kotka":"Finland","kowloon":"Hong Kong",
+  "krakow":"Poland","kraków":"Poland","kuala lumpur":"Malaysia","kuwait city":"Kuwait","kyiv":"Ukraine",
+  "kyoto":"Japan","köln":"Germany","københavn":"Denmark","lagos":"Nigeria","lahore":"Pakistan",
+  "lausanne":"Switzerland","leamington spa":"United Kingdom","leeds":"United Kingdom","leipzig":"Germany",
+  "liege":"Belgium","lille":"France","lima":"Peru","limassol":"Cyprus","limerick":"Ireland","linz":"Austria",
+  "lisboa":"Portugal","lisbon":"Portugal","liverpool":"United Kingdom","ljubljana":"Slovenia","lodz":"Poland",
+  "london":"United Kingdom","lugano":"Switzerland","luxembourg city":"Luxembourg","lviv":"Ukraine","lyon":"France",
+  "macau":"Macau","madrid":"Spain","mainz":"Germany","makati":"Philippines","malaga":"Spain","malmo":"Sweden",
+  "malmö":"Sweden","manama":"Bahrain","manchester":"United Kingdom","manila":"Philippines","marseille":"France",
+  "medellin":"Colombia","medellín":"Colombia","melbourne":"Australia","mexico city":"Mexico","milan":"Italy",
+  "milano":"Italy","minsk":"Belarus","monterrey":"Mexico","montevideo":"Uruguay","montpellier":"France",
+  "moscow":"Russia","mumbai":"India","munich":"Germany","münchen":"Germany","nagoya":"Japan","nairobi":"Kenya",
+  "nanjing":"China","nantes":"France","naples":"Italy","napoli":"Italy","new delhi":"India",
+  "newcastle":"United Kingdom","nicosia":"Cyprus","nis":"Serbia","nizhny novgorod":"Russia","noida":"India",
+  "nottingham":"United Kingdom","novi sad":"Serbia","novosibirsk":"Russia","nuremberg":"Germany","nürnberg":"Germany",
+  "odense":"Denmark","odesa":"Ukraine","odessa":"Ukraine","osaka":"Japan","oslo":"Norway","ostrava":"Czechia",
+  "oulu":"Finland","oxford":"United Kingdom","panama city":"Panama","pangyo":"South Korea","paris":"France",
+  "pasig":"Philippines","penang":"Malaysia","perth":"Australia","phnom penh":"Cambodia","plovdiv":"Bulgaria",
+  "podgorica":"Montenegro","porto":"Portugal","porto alegre":"Brazil","poznan":"Poland","poznań":"Poland",
+  "prague":"Czechia","praha":"Czechia","pretoria":"South Africa","pune":"India","queretaro":"Mexico",
+  "querétaro":"Mexico","quezon city":"Philippines","quito":"Ecuador","rabat":"Morocco","ramat gan":"Israel",
+  "recife":"Brazil","reykjavik":"Iceland","reykjavík":"Iceland","riga":"Latvia","rijeka":"Croatia",
+  "rio de janeiro":"Brazil","riyadh":"Saudi Arabia","roma":"Italy","rome":"Italy","rosario":"Argentina",
+  "rotterdam":"Netherlands","saigon":"Vietnam","saint petersburg":"Russia","salzburg":"Austria",
+  "san jose costa rica":"Costa Rica","santiago":"Chile","sao paulo":"Brazil","sapporo":"Japan",
+  "sarajevo":"Bosnia and Herzegovina","seongnam":"South Korea","seoul":"South Korea","sevilla":"Spain",
+  "seville":"Spain","shanghai":"China","sheffield":"United Kingdom","shenzhen":"China","singapore":"Singapore",
+  "skopje":"North Macedonia","skovde":"Sweden","skövde":"Sweden","sliema":"Malta","sofia":"Bulgaria",
+  "southampton":"United Kingdom","split":"Croatia","st julian's":"Malta","st julians":"Malta",
+  "st petersburg":"Russia","stockholm":"Sweden","strasbourg":"France","stuttgart":"Germany","surabaya":"Indonesia",
+  "suzhou":"China","sydney":"Australia","szeged":"Hungary","são paulo":"Brazil","taguig":"Philippines",
+  "taichung":"Taiwan","taipei":"Taiwan","tallinn":"Estonia","tampere":"Finland","tbilisi":"Georgia (country)",
+  "tel aviv":"Israel","tel-aviv":"Israel","ternopil":"Ukraine","the hague":"Netherlands","thessaloniki":"Greece",
+  "tianjin":"China","tijuana":"Mexico","timisoara":"Romania","tirana":"Albania","tokyo":"Japan","torino":"Italy",
+  "toulouse":"France","trondheim":"Norway","tunis":"Tunisia","turin":"Italy","turku":"Finland","umea":"Sweden",
+  "umeå":"Sweden","uppsala":"Sweden","utrecht":"Netherlands","valencia":"Spain","valletta":"Malta","varna":"Bulgaria",
+  "vienna":"Austria","vientiane":"Laos","vilnius":"Lithuania","vinnytsia":"Ukraine","warsaw":"Poland",
+  "warszawa":"Poland","wellington":"New Zealand","wien":"Austria","wroclaw":"Poland","wrocław":"Poland",
+  "wuhan":"China","xi'an":"China","xian":"China","yangon":"Myanmar","yerevan":"Armenia","yokohama":"Japan",
+  "york":"United Kingdom","zagreb":"Croatia","zaragoza":"Spain","zurich":"Switzerland","zürich":"Switzerland",
+  "łódź":"Poland",
+};
+// Order the top-level tabs are rendered in, and their short badge label.
+const REGION_ORDER = ["United States","Canada","Europe","Asia","South America","Latin America","Oceania","Africa"];
+const REGION_BADGE = {"United States":"US","Canada":"CA","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA"};
+// Is this top-level key a continent (vs. United States / Canada)?
+const isContinent = (k)=>k!=="United States"&&k!=="Canada";
+// Backwards-compatible foreign-token test, now derived from the geography maps.
+const FOREIGN_CITIES = new Set(Object.keys(CITY_COUNTRY));
+const isForeignToken=(p)=>{ const s=p.toLowerCase().trim(); return FOREIGN_COUNTRIES.has(s)||FOREIGN_CITIES.has(s)||!!COUNTRY_ALIAS[s]; };
+// Resolve a raw token to a canonical country name (via alias or city lookup).
+const countryOfToken=(p)=>{ const s=p.toLowerCase().trim(); return COUNTRY_ALIAS[s]||CITY_COUNTRY[s]||null; };
 // Bare US/Canada city names (no state/province attached) that appear on job
 // boards. Lets us resolve "Los Angeles" or "Montreal" to the right region instead
 // of treating an unrecognized place name as foreign.
@@ -1416,6 +1509,24 @@ const DOMESTIC_CITY_STATE = {
 // duplicated headers. Works for every company, not just one.
 function cityLabelsForState(raw, stateName){
   if(!raw) return [];
+  // Foreign country sub-region: keep the city parts that belong to this country.
+  if(COUNTRY_CONTINENT[stateName]){
+    const chunks=raw.split(/;|\/|\||\u2022/).map(s=>s.trim()).filter(Boolean);
+    const out=new Set();
+    for(const chunk of chunks){
+      const parts=chunk.split(/,/).map(s=>s.trim()).filter(Boolean);
+      let city="";
+      for(const p of parts){
+        const c=countryOfToken(p);
+        if(c===stateName){ if(CITY_COUNTRY[p.toLowerCase()]) city=p; }
+      }
+      // "Bucharest, Romania" → city=Bucharest; "Romania" alone → no city.
+      if(!city){ for(const p of parts){ if(CITY_COUNTRY[p.toLowerCase()]===stateName){ city=p; break; } } }
+      if(city) out.add(`${city}, ${stateName}`);
+    }
+    if(out.size===0) out.add(stateName);
+    return [...out];
+  }
   // Full state name -> abbreviation for the state we're rendering under.
   let abbr=null;
   for(const [nm,ab] of Object.entries(US_STATE_ABBR)){
@@ -1443,44 +1554,70 @@ function cityLabelsForState(raw, stateName){
   return [...out];
 }
 
-function jobStateName(job){
+// Resolve a job's raw location to where it belongs in the board tree.
+// Returns { top, sub } — e.g. {top:"United States", sub:"California"} or
+// {top:"Europe", sub:"Romania"} — or one of the sentinels:
+//   "REMOTE"  → shown under the company's home region
+//   "UNKNOWN" → domestic but unpinnable; home-region fallback
+//   "FOREIGN" → unrecognized place; hidden rather than mis-filed
+function jobPlace(job){
   const raw=(job.location||"").trim();
-  if(!raw) return "UNKNOWN"; // no location at all → home-state fallback (don't lose it)
+  if(!raw) return "UNKNOWN";
   if(/^\s*remote/i.test(raw)||(/\b(remote|anywhere|distributed)\b/i.test(raw)&&!/,/.test(raw))) return "REMOTE";
   const lower=raw.toLowerCase();
-  // 1. Direct full-name match (state or province name appears in the location).
+  const parts=raw.split(/[,\u2022\/|\u2013\u2014-]+/).map(s=>s.trim()).filter(Boolean);
+  const domestic=(ab,nm)=>{
+    const sub=canonStateName(ab,nm);
+    const top=CA_POSTAL.has(ab)?"Canada":"United States";
+    return {top,sub};
+  };
+  // 1. Full US state / CA province name appears ("Irvine, California").
   for(const name of Object.keys(US_STATE_ABBR)){
     const re=new RegExp("(^|[ ,])"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([ ,]|$)","i");
-    if(re.test(lower)){ const ab=US_STATE_ABBR[name]; return canonStateName(ab,name); }
+    if(re.test(lower)) return domestic(US_STATE_ABBR[name],name);
   }
-  const parts=raw.split(/[,\u2022\/|\u2013\u2014-]+/).map(s=>s.trim()).filter(Boolean);
-  // 2. Clearly foreign (country OR a known foreign city) → hide it. This runs
-  //    BEFORE the abbreviation check and before any fallback, so a bare foreign
-  //    city like "Lviv" or "Ho Chi Minh City" can never land in a US state.
-  for(const p of parts){ if(isForeignToken(p)) return "FOREIGN"; }
-  if(isForeignToken(raw)) return "FOREIGN";
-  // 3. Abbreviation match (", CA", ", TX", ", ON").
+  // 2. State / province abbreviation (", CA", ", ON"). This runs BEFORE the foreign
+  //    checks so "Paris, TX" and "London, ON" stay domestic rather than matching
+  //    the foreign cities named Paris and London.
   for(const p of parts){
     const up=p.toUpperCase();
-    if(ABBR_TO_STATENAME[up]) return canonStateName(up, ABBR_TO_STATENAME[up].toLowerCase());
+    if(ABBR_TO_STATENAME[up]) return domestic(up, ABBR_TO_STATENAME[up].toLowerCase());
   }
-  // 4. Bare domestic city name with no state ("Los Angeles", "Montreal") → resolve
-  //    it via the known US/Canada city map.
+  // 3. Foreign country or a known foreign city → continent + country.
+  for(const p of parts){
+    const country=countryOfToken(p);
+    if(country){ const cont=COUNTRY_CONTINENT[country]; if(cont) return {top:cont,sub:country}; }
+  }
+  {
+    const country=countryOfToken(raw);
+    if(country){ const cont=COUNTRY_CONTINENT[country]; if(cont) return {top:cont,sub:country}; }
+  }
+  // 4. Bare domestic city with no state ("Los Angeles", "Montreal").
   for(const p of parts){
     const ab=DOMESTIC_CITY_STATE[p.toLowerCase()];
-    if(ab&&ABBR_TO_STATENAME[ab]) return canonStateName(ab, ABBR_TO_STATENAME[ab].toLowerCase());
+    if(ab&&ABBR_TO_STATENAME[ab]) return domestic(ab, ABBR_TO_STATENAME[ab].toLowerCase());
   }
   {
     const ab=DOMESTIC_CITY_STATE[lower];
-    if(ab&&ABBR_TO_STATENAME[ab]) return canonStateName(ab, ABBR_TO_STATENAME[ab].toLowerCase());
+    if(ab&&ABBR_TO_STATENAME[ab]) return domestic(ab, ABBR_TO_STATENAME[ab].toLowerCase());
   }
-  // 5. Explicitly says US/Canada but we couldn't pin a state → home-state fallback.
+  // 5. Says US/Canada but no state pinned → home-region fallback.
   if(/\b(usa|u\.s\.a|u\.s|united states|america|canada|north america)\b/i.test(lower)) return "UNKNOWN";
-  // 6. Unrecognized place name, not clearly domestic. Hiding it is the safe call:
-  //    it is far more likely to be a foreign office than a US city we don't know,
-  //    and attributing it to the studio's home state is what produced wrong
-  //    listings (e.g. Bucharest jobs appearing under California).
+  // 6. Unrecognized place → hide rather than mis-file it under a US state.
   return "FOREIGN";
+}
+// Postal codes that belong to Canada (used to split domestic into US vs Canada).
+const CA_POSTAL = new Set(["ON","QC","BC","AB","MB","SK","NS","NB","NL","PE"]);
+// Back-compat: the sub-region name only (state/province for domestic, country for
+// foreign), or the sentinel. Existing call sites that only care about the leaf.
+function jobStateName(job){
+  const p=jobPlace(job);
+  return typeof p==="string"?p:p.sub;
+}
+// The top-level tab a job belongs under, or null for sentinels.
+function jobTopRegion(job){
+  const p=jobPlace(job);
+  return typeof p==="string"?null:p.top;
 }
 function canonStateName(ab, lowerName){
   const titled=(lowerName||"").replace(/\b\w/g,c=>c.toUpperCase());
@@ -3714,16 +3851,16 @@ export default function App() {
     if(Array.isArray(live)&&live.length>0) all=[...live,...(gen||[])];
     else all=gen||[]; // volunteer overrides (if any), else empty — never fake jobs
     if(!stateName) return all;
-    // Only show jobs actually located in this state. Jobs whose location maps to
-    // a different US state / CA province are shown under THAT state instead (via
-    // the home-state fallback below); foreign/remote/unknown jobs fall back to the
-    // company's home state so they're not lost.
+    // Only show jobs actually located in this sub-region. `stateName` is a US state
+    // or CA province for the domestic tabs, and a country for the continent tabs.
+    // Jobs belonging elsewhere appear under THAT region instead; remote/unpinnable
+    // jobs fall back to the company's home region so they're not lost.
     const homeState=companyHomeState[name];
     return all.filter(j=>{
       const js=jobStateName(j);
-      if(js==="FOREIGN") return false;                       // clearly abroad → hidden
-      if(js==="REMOTE"||js==="UNKNOWN") return stateName===homeState; // can't pin → home state
-      return js===stateName;                                 // a tracked state → that state only
+      if(js==="FOREIGN") return false;                       // unrecognized place → hidden
+      if(js==="REMOTE"||js==="UNKNOWN") return stateName===homeState; // can't pin → home region
+      return js===stateName;                                 // a tracked region → that one only
     });
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
@@ -3872,8 +4009,6 @@ export default function App() {
     return 0;
   });
 
-  const allCountries=Object.keys(ALL_JOBS_DATA);
-  const allStates=[...new Set(Object.values(ALL_JOBS_DATA).flatMap(s=>Object.keys(s)))].sort();
   const allTitles=JOB_CATS.slice().sort();
   const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||(filters.tiers?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.minMatch>0||!!filters.search;
   const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.minMatch>0?1:0);
@@ -3953,7 +4088,8 @@ export default function App() {
         for(const [name,co] of Object.entries(companies)){
           const node=ensure(country,state); if(node) node[name]=co;
         }
-    // For each company with live jobs, add it to any state those jobs are in.
+    // For each company with live jobs, add it to any region those jobs are in —
+    // US states, CA provinces, and now foreign countries under their continent.
     for(const [name,live] of Object.entries(liveJobs)){
       if(!Array.isArray(live)||!live.length) continue;
       const baseCo=(()=>{
@@ -3962,20 +4098,25 @@ export default function App() {
             if(companies[name]) return companies[name];
         return {name,url:(live[0]&&live[0].url)||"",jobs:[]};
       })();
-      const statesSeen=new Set();
-      for(const j of live){ const js=jobStateName(j); if(js&&js!=="REMOTE"&&js!=="UNKNOWN"&&js!=="FOREIGN") statesSeen.add(js); }
-      for(const st of statesSeen){
-        const country=stateCountry[st];
-        if(!country) continue; // a region we don't track yet — skip (job hidden)
-        const node=ensure(country,st);
+      // Collect every (top,sub) placement this company's live jobs resolve to.
+      const placements=new Map(); // "top\u241fsub" -> {top,sub}
+      for(const j of live){
+        const p=jobPlace(j);
+        if(typeof p==="string") continue;           // REMOTE / UNKNOWN / FOREIGN
+        placements.set(p.top+"\u241f"+p.sub,p);
+      }
+      for(const {top,sub} of placements.values()){
+        // Domestic subs must be a state/province we track; foreign subs are countries.
+        if(!isContinent(top) && stateCountry[sub]!==top) continue;
+        const node=ensure(top,sub);
         if(node && !node[name]){
           node[name]=baseCo;
-          // Track this as a NEW registration if the company wasn't originally in
-          // this state in COMPANIES_DATA.
+          // Track as a NEW registration when the company wasn't already listed there.
+          const exists=ALL_JOBS_DATA[top]&&ALL_JOBS_DATA[top][sub]&&ALL_JOBS_DATA[top][sub][name];
           const origState=companyHomeState[name];
-          if(origState!==st){
-            const exists=ALL_JOBS_DATA[country]&&ALL_JOBS_DATA[country][st]&&ALL_JOBS_DATA[country][st][name];
-            if(!exists) newRegs.push({company:name,state:st,country,jobCount:live.filter(j=>jobStateName(j)===st).length});
+          if(!exists && origState!==sub){
+            newRegs.push({company:name,state:sub,country:top,
+              jobCount:live.filter(j=>{const p=jobPlace(j);return typeof p!=="string"&&p.top===top&&p.sub===sub;}).length});
           }
         }
       }
@@ -3983,6 +4124,17 @@ export default function App() {
     return {tree,newRegs};
   },[liveJobs]);
   const displayTree=displayTreeData.tree;
+  // Filter options come from the LIVE tree so continents and their countries show
+  // up as soon as jobs are found there (not just the static US/CA seed data).
+  const allCountries=useMemo(()=>{
+    const keys=Object.keys(displayTree);
+    return keys.sort((a,b)=>{
+      const ia=REGION_ORDER.indexOf(a), ib=REGION_ORDER.indexOf(b);
+      const ra=ia===-1?REGION_ORDER.length:ia, rb=ib===-1?REGION_ORDER.length:ib;
+      return ra!==rb?ra-rb:a.localeCompare(b);
+    });
+  },[displayTree]);
+  const allStates=useMemo(()=>[...new Set(Object.values(displayTree).flatMap(s=>Object.keys(s)))].sort(),[displayTree]);
   // Precompute country/state totals once per data change (not per expand toggle).
   const treeCounts=useMemo(()=>{
     const cc={},sc={};
@@ -4126,8 +4278,8 @@ export default function App() {
             {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
           {filterOpen&&<div style={{background:"rgba(16,10,22,.7)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:mobile?12:16,marginTop:8,display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(190px,1fr))",gap:4}}>
-            <FSection title="Country" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
-            <FSection title="State / Province" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(ALL_JOBS_DATA[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
+            <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
+            <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
             <FSection title="Experience Level" count={filters.experience?.length||0} onClear={()=>setFilters(f=>({...f,experience:[]}))}><CheckGroup opts={["Entry Level","Mid Level","Senior","Lead","Principal","Director"]} sel={filters.experience||[]} onChange={v=>setFilters(f=>({...f,experience:v}))}/></FSection>
             <FSection title="Industry Tier" count={filters.tiers?.length||0} onClear={()=>setFilters(f=>({...f,tiers:[]}))}><CheckGroup opts={["AAA","AA","Indie","Publishers","Outsourcing"]} sel={filters.tiers||[]} onChange={v=>setFilters(f=>({...f,tiers:v}))}/></FSection>
@@ -4176,6 +4328,13 @@ export default function App() {
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {Object.entries(displayTree)
+            .sort((a,b)=>{
+              // United States and Canada first, then continents in REGION_ORDER;
+              // anything unlisted falls to the end, alphabetically.
+              const ia=REGION_ORDER.indexOf(a[0]), ib=REGION_ORDER.indexOf(b[0]);
+              const ra=ia===-1?REGION_ORDER.length:ia, rb=ib===-1?REGION_ORDER.length:ib;
+              return ra!==rb?ra-rb:a[0].localeCompare(b[0]);
+            })
             .filter(([country])=>filters.countries.length===0||filters.countries.includes(country))
             .map(([country,states])=>{
               const cKey=`c-${country}`;
@@ -4193,7 +4352,7 @@ export default function App() {
               return <div key={country} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.14)",borderRadius:14,overflow:"hidden"}}>
                 <button onClick={()=>toggle(cKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,padding:mobile?"11px 12px":"14px 16px",fontFamily:"'Cinzel',serif",fontSize:mobile?12:13,fontWeight:700,color:"#f4edd8",letterSpacing:.5,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                   <span style={{display:"inline-flex",color:"rgba(201,168,76,.45)"}}><I.Chevron s={11} c="currentColor" dir={expanded[cKey]?"down":"right"}/></span>
-                  <span style={{fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",color:"rgba(201,168,76,.7)",letterSpacing:.5,minWidth:18}}>{country==="United States"?"US":country==="Canada"?"CA":country.slice(0,2).toUpperCase()}</span>
+                  <span style={{fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",color:"rgba(201,168,76,.7)",letterSpacing:.5,minWidth:18}}>{REGION_BADGE[country]||country.slice(0,2).toUpperCase()}</span>
                   <span style={{flex:1}}>{country}</span>
                   {cNewJobs&&<span style={{width:16,height:16,borderRadius:"50%",background:"#c0321a",display:"flex",alignItems:"center",justifyContent:"center",animation:"pnew 1.5s ease-in-out infinite"}}><I.Alert s={14}/></span>}
                   <span style={{fontSize:9,color:"rgba(244,237,216,.4)",background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.12)",padding:"2px 8px",borderRadius:20,fontFamily:"'Cinzel',serif"}}>{cTotal} jobs</span>
