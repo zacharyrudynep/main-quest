@@ -56,7 +56,7 @@ const COMPANIES_DATA = {
       { name: "Baobab Studios", url: "https://www.baobabstudios.com/about#careers", email: "info@baobabstudios.com", contact: "https://www.baobabstudios.com/contact/form" },
       { name: "Believer Entertainment", url: "https://believer.gg/jobs/", email: null, contact: "https://believer.gg/contact/" },
       { name: "Big Run Studios", url: "https://bigrunstudios.com/careers/", email: "recruiting@bigrunstudios.com", contact: null },
-      { name: "Bigpoint", url: "https://www.bigpoint.net/careers/", email: "career@bigpoint.net.", contact: "https://www.bigpoint.net/contact-2/" },
+      { name: "Bigpoint", url: "https://www.bigpoint.net/careers/", email: "career@bigpoint.net", contact: "https://www.bigpoint.net/contact-2/" },
       { name: "BKOM Studios", url: "https://jobs.bkom.com/jobs/Careers", email: null, contact: "https://bkom.com/contact-us/" },
       { name: "Bladework Games", url: "https://bladeworkgames.com/#careers", email: null, contact: "https://bladeworkgames.com/#contact" },
       { name: "Blind Squirrel Games", url: "https://blindsquirrelentertainment.com/careers", email: "careers@blindsquirrelgames.com", contact: null },
@@ -150,7 +150,7 @@ const COMPANIES_DATA = {
       { name: "Mass Media Games", url: "https://www.massmedia.com/careers.html", email: "contact@massmediagames.com", contact: "https://www.massmedia.com/contact.html" },
       { name: "Maxis Studios", url: "https://jobs.ea.com/en_US/careers/Home/?8171=%5B10618%5D&8171_format=5683&4538=%5B8391%5D&4538_format=3021&listFilterMode=1&jobRecordsPerPage=20&", email: null, contact: null },
       { name: "Mobilityware", url: "https://www.mobilityware.com/jobs/", email: null, contact: "https://www.mobilityware.com/contact/" },
-      { name: "Mobius Digital", url: "https://www.mobiusdigitalgames.com/jobs.html", email: "jobs@mobiusdigitalgames.com . ", contact: "https://www.mobiusdigitalgames.com/contact.html", registerInterest:"email" },
+      { name: "Mobius Digital", url: "https://www.mobiusdigitalgames.com/jobs.html", email: "jobs@mobiusdigitalgames.com", contact: "https://www.mobiusdigitalgames.com/contact.html", registerInterest:"email" },
       { name: "Monomi Park", url: "https://monomipark.com/careers/", email: null, contact: "https://monomipark.com/contact" },
       { name: "Monsarrat", url: "https://monsarrat.com/join/", email: "jmonsarrat@monsarrat.com", contact: "https://monsarrat.com/contact", emailApply:true },
       { name: "Moonbug", url: "https://apply.workable.com/moonbug-entertainment/?lng=en", email: "hello@moonbug.com", contact: null },
@@ -210,7 +210,7 @@ const COMPANIES_DATA = {
       { name: "Six Foot", url: "https://www.6ft.com/about/#careers", email: "careers@6ft.com", contact: "https://www.6ft.com/about/#contact" },
       { name: "Sky Lantern Studios", url: "https://www.skylanternstudios.com/careers", email: "the.sky.lantern.studio@gmail.com", contact: null, registerInterest:true },
       { name: "Skyborne Games", url: "https://www.skybornegames.com/careers.html", email: "careers@skybornegames.com", contact: "https://www.skybornegames.com/contact.html", emailApply:true },
-      { name: "Skybound", url: "https://www.skybound.com/careers#open-positions", email: "help.skybound.com.", contact: "https://insiders.skybound.com/contact?_gl=1*15bqrcf*_ga*MTM4MDk2MzE1OS4xNzgzMzg3NzA2*_ga_G85DZ3VXVP*czE3ODMzODc3MDYkbzEkZzAkdDE3ODMzODc3NTQkajEyJGwwJGgw" },
+      { name: "Skybound", url: "https://www.skybound.com/careers#open-positions", email: null, contact: "https://insiders.skybound.com/contact?_gl=1*15bqrcf*_ga*MTM4MDk2MzE1OS4xNzgzMzg3NzA2*_ga_G85DZ3VXVP*czE3ODMzODc3MDYkbzEkZzAkdDE3ODMzODc3NTQkajEyJGwwJGgw" },
       { name: "Skydance", url: "https://skydance.com/careers/", email: null, contact: "https://skydance.com/about/#contact" },
       { name: "Sledgehammer Games", url: "https://careers.sledgehammergames.com/", email: null, contact: null },
       { name: "Snail Games", url: "https://snail.com/careers", email: null, contact: "https://snail.com/contact" },
@@ -296,7 +296,7 @@ const COMPANIES_DATA = {
       { name: "Game Sim", url: "https://apply.workable.com/gamesim-2/", email: null, contact: null },
       { name: "Good Dog Studios", url: "https://www.gooddogstudios.com/careers", email: "contact@gooddogstudios.com", contact: "https://www.gooddogstudios.com/contact" },
       { name: "Greatsword Game Studio", url: "https://www.greatswordgames.com/careers", email: "greatswordstudios@gmail.com", contact: null , volunteer:true },
-      { name: "Grove Street Games", url: "https://grovestreetgames.com/careers/", email: "jobs@grovestreetgames.com ", contact: null, emailApply:true },
+      { name: "Grove Street Games", url: "https://grovestreetgames.com/careers/", email: "jobs@grovestreetgames.com", contact: null, emailApply:true },
       { name: "Helm Systems", url: "https://www.helmsystems.com/copy-of-about-1", email: null, contact: null },
       { name: "Magic Find Studios", url: "https://www.magicfindstudios.com", email: null, contact: null },
       { name: "Motorsport Games", url: "https://motorsportgames.bamboohr.com/careers", email: null, contact: null },
@@ -546,7 +546,7 @@ const COMPANIES_DATA = {
       { name: "Avalanche", url: "https://www.avalanchesoftware.com/en/careers/", email: null, contact: null },
     ],
     "Vermont": [
-      { name: "Frame Interactive", url: "https://docs.google.com/document/d/1M6AzVOgA2Au6w98knV4TWNy0MLPzE7mrSQu4ig2FItk/edit?tab=t.0#heading=h.ec0j0asdt6w0", email: "jobs@frameinteractive.com ", contact: "https://frameinteractive.com/#cta", emailApply:true },
+      { name: "Frame Interactive", url: "https://docs.google.com/document/d/1M6AzVOgA2Au6w98knV4TWNy0MLPzE7mrSQu4ig2FItk/edit?tab=t.0#heading=h.ec0j0asdt6w0", email: "jobs@frameinteractive.com", contact: "https://frameinteractive.com/#cta", emailApply:true },
     ],
     "Virginia": [
       { name: "2 Wedges", url: "https://www.2wedges.com/", email: "contact@2wedges.com", contact: null, emailApply:true },
@@ -609,7 +609,7 @@ const COMPANIES_DATA = {
       { name: "Take 2 Interactive", url: "https://careers.take2games.com/jobs", email: null, contact: null },
       { name: "team LFG", url: "https://www.playstation.com/en-us/corporate/playstation-studios/teamlfg/", email: null, contact: null },
       { name: "The Pokemon Company", url: "https://job-boards.greenhouse.io/pokemoncareers", email: null, contact: null },
-      { name: "Theorycraft Games", url: "https://www.theorycraftgames.com/careers", email: "info@theorycraftgames.com ", contact: null },
+      { name: "Theorycraft Games", url: "https://www.theorycraftgames.com/careers", email: "info@theorycraftgames.com", contact: null },
       { name: "Timi Studios", url: "https://www.timistudios.com/#careers", email: null, contact: null },
       { name: "Tiny Build", url: "https://www.tinybuild.com/jobs", email: "jobs@tinybuild.com", contact: "https://www.tinybuild.com/contact" },
       { name: "Unbound Creations", url: "https://unboundcreations.com/jobs/", email: null, contact: "https://unboundcreations.com/contact/" },
@@ -1317,7 +1317,97 @@ const ABBR_TO_STATENAME=(()=>{const m={};for(const[name,ab] of Object.entries(US
 const STATENAME_CANON={ "District Of Columbia":"District of Columbia", "Newfoundland And Labrador":"Newfoundland", "New Hampshire":"New Hampshire", "New Jersey":"New Jersey", "New Mexico":"New Mexico", "New York":"New York", "North Carolina":"North Carolina", "North Dakota":"North Dakota", "Rhode Island":"Rhode Island", "South Carolina":"South Carolina", "South Dakota":"South Dakota", "West Virginia":"West Virginia", "British Columbia":"British Columbia" };
 // Recognized non-US/CA countries — jobs clearly located here are hidden until we
 // add those regions. (Lowercased, matched as a comma-separated token.)
-const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","england","scotland","wales","germany","france","spain","italy","netherlands","sweden","norway","finland","denmark","poland","romania","czech republic","czechia","austria","switzerland","belgium","portugal","greece","hungary","ukraine","russia","china","japan","south korea","korea","singapore","india","australia","new zealand","brazil","argentina","mexico","colombia","chile","philippines","vietnam","indonesia","malaysia","taiwan","hong kong","israel","turkey","united arab emirates","uae","egypt","south africa","nigeria","kenya"]);
+const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","u.k.","great britain","england","scotland","wales","northern ireland","germany","deutschland","france","spain","españa","italy","italia","netherlands","the netherlands","holland","sweden","norway","finland","denmark","iceland","poland","polska","romania","bulgaria","serbia","croatia","slovenia","slovakia","lithuania","latvia","estonia","czech republic","czechia","austria","switzerland","belgium","portugal","greece","hungary","ukraine","russia","belarus","moldova","cyprus","malta","luxembourg","china","japan","south korea","korea","north korea","singapore","india","pakistan","bangladesh","sri lanka","nepal","australia","new zealand","brazil","brasil","argentina","mexico","méxico","colombia","chile","peru","uruguay","paraguay","bolivia","ecuador","venezuela","costa rica","panama","guatemala","philippines","vietnam","viet nam","indonesia","malaysia","thailand","cambodia","laos","myanmar","taiwan","hong kong","macau","israel","turkey","türkiye","united arab emirates","uae","saudi arabia","qatar","kuwait","bahrain","oman","jordan","lebanon","egypt","morocco","tunisia","algeria","south africa","nigeria","kenya","ghana","ethiopia","tanzania","uganda","armenia","georgia country","azerbaijan","kazakhstan","uzbekistan","mongolia","emea","apac","latam"]);
+// Major non-US/Canada cities that commonly appear on game-studio job boards with
+// NO country attached (e.g. "Lviv", "Bucharest", "Ho Chi Minh City"). Without this
+// a bare foreign city name falls through and gets shown under the studio's US
+// home state. Matched on the whole location or any comma-separated part.
+const FOREIGN_CITIES = new Set([
+  // Eastern Europe / CIS
+  "bucharest","bucuresti","cluj","cluj-napoca","iasi","timisoara","brasov","craiova",
+  "lviv","kyiv","kiev","kharkiv","odesa","odessa","dnipro","vinnytsia","ternopil",
+  "warsaw","warszawa","krakow","kraków","cracow","wroclaw","wrocław","poznan","poznań","gdansk","gdańsk","katowice","lodz","łódź",
+  "prague","praha","brno","ostrava","bratislava","budapest","szeged","debrecen",
+  "sofia","plovdiv","varna","burgas","belgrade","beograd","novi sad","nis",
+  "zagreb","split","rijeka","ljubljana","sarajevo","skopje","podgorica","tirana",
+  "vilnius","kaunas","riga","tallinn","minsk","chisinau","yerevan","tbilisi","baku",
+  "moscow","saint petersburg","st petersburg","novosibirsk","kazan","nizhny novgorod",
+  // Western / Northern / Southern Europe
+  "london","manchester","birmingham","leeds","liverpool","bristol","brighton","cambridge","oxford","guildford","leamington spa","nottingham","sheffield","newcastle","southampton","york","dundee","edinburgh","glasgow","belfast","cardiff","sliema",
+  "dublin","cork","galway","limerick",
+  "paris","lyon","marseille","toulouse","bordeaux","nantes","lille","montpellier","strasbourg","annecy",
+  "berlin","munich","münchen","hamburg","frankfurt","cologne","köln","düsseldorf","dusseldorf","stuttgart","leipzig","dresden","hannover","nuremberg","nürnberg","mainz","karlsruhe",
+  "amsterdam","rotterdam","utrecht","eindhoven","the hague","hilversum","breda",
+  "brussels","antwerp","ghent","liege","luxembourg city",
+  "madrid","barcelona","valencia","seville","sevilla","bilbao","malaga","zaragoza",
+  "lisbon","lisboa","porto","braga",
+  "rome","roma","milan","milano","turin","torino","naples","napoli","florence","firenze","bologna",
+  "zurich","zürich","geneva","genève","bern","basel","lausanne","lugano",
+  "vienna","wien","salzburg","graz","linz",
+  "stockholm","gothenburg","göteborg","malmö","malmo","uppsala","skövde","skovde","umeå","umea",
+  "oslo","bergen","trondheim","copenhagen","københavn","aarhus","odense",
+  "helsinki","espoo","tampere","turku","oulu","kotka","reykjavik","reykjavík",
+  "athens","thessaloniki","nicosia","limassol","valletta","st julian's","st julians",
+  // Middle East / Africa
+  "tel aviv","tel-aviv","jerusalem","haifa","herzliya","ramat gan",
+  "istanbul","ankara","izmir","dubai","abu dhabi","doha","riyadh","jeddah","kuwait city","manama","amman","beirut","cairo","alexandria","casablanca","rabat","tunis",
+  "cape town","johannesburg","pretoria","durban","lagos","abuja","nairobi","accra","kampala",
+  // Asia-Pacific
+  "ho chi minh city","ho chi minh","hochiminh","saigon","hanoi","da nang","danang",
+  "bangkok","chiang mai","phnom penh","vientiane","yangon",
+  "singapore","kuala lumpur","penang","johor bahru","jakarta","bandung","surabaya",
+  "manila","cebu","makati","quezon city","taguig","pasig",
+  "tokyo","osaka","kyoto","yokohama","nagoya","fukuoka","sapporo","kobe",
+  "seoul","busan","incheon","daegu","pangyo","seongnam",
+  "beijing","shanghai","shenzhen","guangzhou","chengdu","hangzhou","wuhan","xi'an","xian","nanjing","tianjin","suzhou","chongqing","dalian",
+  "taipei","kaohsiung","taichung","hong kong","kowloon","macau",
+  "mumbai","bombay","delhi","new delhi","bangalore","bengaluru","hyderabad","chennai","pune","kolkata","noida","gurgaon","gurugram","ahmedabad",
+  "karachi","lahore","islamabad","dhaka","colombo","kathmandu",
+  "sydney","melbourne","brisbane","perth","adelaide","canberra","gold coast","hobart",
+  "auckland","wellington","christchurch","dunedin",
+  // Latin America
+  "mexico city","ciudad de mexico","guadalajara","monterrey","tijuana","queretaro","querétaro",
+  "sao paulo","são paulo","rio de janeiro","brasilia","brasília","curitiba","porto alegre","belo horizonte","recife","florianopolis","florianópolis",
+  "buenos aires","cordoba","córdoba","rosario","montevideo","santiago","lima","bogota","bogotá","medellin","medellín","cali","quito","guayaquil","caracas","san jose costa rica","panama city","guatemala city",
+]);
+const isForeignToken=(p)=>{ const s=p.toLowerCase().trim(); return FOREIGN_COUNTRIES.has(s)||FOREIGN_CITIES.has(s); };
+// Bare US/Canada city names (no state/province attached) that appear on job
+// boards. Lets us resolve "Los Angeles" or "Montreal" to the right region instead
+// of treating an unrecognized place name as foreign.
+const DOMESTIC_CITY_STATE = {
+  "los angeles":"CA","san francisco":"CA","san diego":"CA","irvine":"CA","san jose":"CA","sacramento":"CA","oakland":"CA","santa monica":"CA","culver city":"CA","burbank":"CA","glendale":"CA","pasadena":"CA","carlsbad":"CA","emeryville":"CA","redwood city":"CA","sunnyvale":"CA","mountain view":"CA","palo alto":"CA","novato":"CA","petaluma":"CA","foster city":"CA","agoura hills":"CA","el segundo":"CA","playa vista":"CA","sherman oaks":"CA","woodland hills":"CA","calabasas":"CA","marina del rey":"CA","long beach":"CA","aliso viejo":"CA","costa mesa":"CA","cupertino":"CA",
+  "seattle":"WA","bellevue":"WA","redmond":"WA","kirkland":"WA","bothell":"WA","spokane":"WA","tacoma":"WA","mercer island":"WA","everett":"WA",
+  "austin":"TX","dallas":"TX","houston":"TX","san antonio":"TX","plano":"TX","frisco":"TX","richardson":"TX","irving":"TX",
+  "new york":"NY","new york city":"NY","nyc":"NY","brooklyn":"NY","manhattan":"NY","albany":"NY","buffalo":"NY","rochester":"NY",
+  "boston":"MA","cambridge ma":"MA","somerville":"MA","quincy":"MA","framingham":"MA","needham":"MA",
+  "chicago":"IL","evanston":"IL","deerfield":"IL",
+  "atlanta":"GA","savannah":"GA","alpharetta":"GA",
+  "orlando":"FL","miami":"FL","tampa":"FL","gainesville":"FL","jacksonville":"FL",
+  "denver":"CO","boulder":"CO","colorado springs":"CO","fort collins":"CO",
+  "portland":"OR","eugene":"OR","hillsboro":"OR","beaverton":"OR",
+  "salt lake city":"UT","provo":"UT","lehi":"UT","draper":"UT",
+  "phoenix":"AZ","tempe":"AZ","scottsdale":"AZ","tucson":"AZ","mesa":"AZ",
+  "las vegas":"NV","reno":"NV","henderson":"NV",
+  "raleigh":"NC","durham":"NC","cary":"NC","charlotte":"NC","morrisville":"NC",
+  "nashville":"TN","knoxville":"TN","memphis":"TN",
+  "baltimore":"MD","hunt valley":"MD","rockville":"MD","bethesda":"MD","columbia md":"MD",
+  "philadelphia":"PA","pittsburgh":"PA","malvern":"PA",
+  "detroit":"MI","ann arbor":"MI","royal oak":"MI","novi":"MI",
+  "minneapolis":"MN","saint paul":"MN","st paul":"MN",
+  "madison":"WI","milwaukee":"WI","middleton":"WI",
+  "salt lake":"UT","boise":"ID","kansas city":"MO","st louis":"MO","saint louis":"MO",
+  "new orleans":"LA","baton rouge":"LA","columbus":"OH","cleveland":"OH","cincinnati":"OH",
+  "indianapolis":"IN","louisville":"KY","richmond":"VA","arlington va":"VA","reston":"VA","mclean":"VA","charlottesville":"VA",
+  "washington dc":"DC","washington, d.c.":"DC",
+  "hartford":"CT","stamford":"CT","new haven":"CT","providence":"RI","portsmouth":"NH","burlington vt":"VT",
+  "omaha":"NE","des moines":"IA","oklahoma city":"OK","tulsa":"OK","little rock":"AR","birmingham al":"AL","jackson ms":"MS","charleston":"SC","columbia sc":"SC","albuquerque":"NM","honolulu":"HI","anchorage":"AK","cheyenne":"WY","billings":"MT","fargo":"ND","sioux falls":"SD",
+  // Canada
+  "toronto":"ON","ottawa":"ON","mississauga":"ON","waterloo":"ON","kitchener":"ON","london ontario":"ON","hamilton":"ON","oakville":"ON",
+  "montreal":"QC","montréal":"QC","quebec city":"QC","québec":"QC","laval":"QC","gatineau":"QC","sherbrooke":"QC",
+  "vancouver":"BC","burnaby":"BC","victoria":"BC","kelowna":"BC","surrey":"BC","new westminster":"BC",
+  "calgary":"AB","edmonton":"AB","winnipeg":"MB","saskatoon":"SK","regina":"SK",
+  "halifax":"NS","st john's":"NL","fredericton":"NB","moncton":"NB","charlottetown":"PE",
+};
 // Given a job's raw location string and the state it's being shown under, return
 // the clean "City, ST" label(s) that belong to THAT state. Handles multi-location
 // postings (e.g. "Los Angeles, CA / Mercer Island, WA") by keeping only the parts
@@ -1355,7 +1445,7 @@ function cityLabelsForState(raw, stateName){
 
 function jobStateName(job){
   const raw=(job.location||"").trim();
-  if(!raw) return "UNKNOWN"; // no location → home-state fallback (don't lose it)
+  if(!raw) return "UNKNOWN"; // no location at all → home-state fallback (don't lose it)
   if(/^\s*remote/i.test(raw)||(/\b(remote|anywhere|distributed)\b/i.test(raw)&&!/,/.test(raw))) return "REMOTE";
   const lower=raw.toLowerCase();
   // 1. Direct full-name match (state or province name appears in the location).
@@ -1363,18 +1453,34 @@ function jobStateName(job){
     const re=new RegExp("(^|[ ,])"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([ ,]|$)","i");
     if(re.test(lower)){ const ab=US_STATE_ABBR[name]; return canonStateName(ab,name); }
   }
-  // 2. Abbreviation match (", CA", ", TX", ", ON").
-  const parts=raw.split(/[,\u2022\/|]+/).map(s=>s.trim()).filter(Boolean);
+  const parts=raw.split(/[,\u2022\/|\u2013\u2014-]+/).map(s=>s.trim()).filter(Boolean);
+  // 2. Clearly foreign (country OR a known foreign city) → hide it. This runs
+  //    BEFORE the abbreviation check and before any fallback, so a bare foreign
+  //    city like "Lviv" or "Ho Chi Minh City" can never land in a US state.
+  for(const p of parts){ if(isForeignToken(p)) return "FOREIGN"; }
+  if(isForeignToken(raw)) return "FOREIGN";
+  // 3. Abbreviation match (", CA", ", TX", ", ON").
   for(const p of parts){
     const up=p.toUpperCase();
     if(ABBR_TO_STATENAME[up]) return canonStateName(up, ABBR_TO_STATENAME[up].toLowerCase());
   }
-  // 3. Clearly a foreign country → hide it (until we support that region).
-  for(const p of parts){ if(FOREIGN_COUNTRIES.has(p.toLowerCase())) return "FOREIGN"; }
-  // 4. Ambiguous (e.g. "Los Angeles", "Los Angeles, USA", "United States") — we
-  //    can't pin a state but it's not clearly foreign, so fall back to the home
-  //    state rather than hiding it. This avoids losing real US jobs.
-  return "UNKNOWN";
+  // 4. Bare domestic city name with no state ("Los Angeles", "Montreal") → resolve
+  //    it via the known US/Canada city map.
+  for(const p of parts){
+    const ab=DOMESTIC_CITY_STATE[p.toLowerCase()];
+    if(ab&&ABBR_TO_STATENAME[ab]) return canonStateName(ab, ABBR_TO_STATENAME[ab].toLowerCase());
+  }
+  {
+    const ab=DOMESTIC_CITY_STATE[lower];
+    if(ab&&ABBR_TO_STATENAME[ab]) return canonStateName(ab, ABBR_TO_STATENAME[ab].toLowerCase());
+  }
+  // 5. Explicitly says US/Canada but we couldn't pin a state → home-state fallback.
+  if(/\b(usa|u\.s\.a|u\.s|united states|america|canada|north america)\b/i.test(lower)) return "UNKNOWN";
+  // 6. Unrecognized place name, not clearly domestic. Hiding it is the safe call:
+  //    it is far more likely to be a foreign office than a US city we don't know,
+  //    and attributing it to the studio's home state is what produced wrong
+  //    listings (e.g. Bucharest jobs appearing under California).
+  return "FOREIGN";
 }
 function canonStateName(ab, lowerName){
   const titled=(lowerName||"").replace(/\b\w/g,c=>c.toUpperCase());
@@ -2890,7 +2996,18 @@ function NoOpenCard({company,companyName,user,onApplied}) {
   return <>
     <div style={{background:"rgba(201,168,76,.03)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:12}}>
       <I.Scroll s={18} c="rgba(201,168,76,.45)"/>
-      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}{company.registerInterest&&<span style={{background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Register Interest</span>}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":company.registerInterest?(company.registerInterest==="email"?"No open roles right now — they invite you to email your resume.":"No open roles right now — they invite you to register your interest."):"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>{company.registerInterest==="email"?"Send a general application to the email below.":"Visit their careers page or send a general application email."}</p></div>
+      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}{company.registerInterest&&(()=>{
+        // Turn the tag into a real link: email companies open a prefilled mailto,
+        // everyone else goes to their contact page (or careers page as a fallback).
+        const useEmail=company.registerInterest==="email"&&company.email;
+        const href=useEmail
+          ?`mailto:${String(company.email).trim()}?subject=${encodeURIComponent(`Registering interest in opportunities at ${companyName}`)}`
+          :(company.contact||company.url||null);
+        const tagStyle={background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700};
+        if(!href) return <span style={tagStyle}>Register Interest</span>;
+        const ext=!useEmail;
+        return <a href={href} {...(ext?{target:"_blank",rel:"noreferrer"}:{})} title={useEmail?`Email ${company.email}`:`Open ${href}`} style={{...tagStyle,textDecoration:"none",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:4}}>Register Interest{useEmail?<I.Send s={9} c="#f0d080"/>:<I.Arrow s={9} c="#f0d080"/>}</a>;
+      })()}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":company.registerInterest?(company.registerInterest==="email"?"No open roles right now — they invite you to email your resume.":"No open roles right now — they invite you to register your interest."):"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>{company.registerInterest==="email"?"Send a general application to the email below.":"Visit their careers page or send a general application email."}</p></div>
       <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
         {company.url&&<a href={company.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Careers",<I.Arrow s={10} c="#f0d080"/>,(()=>{}))}</a>}
         {company.contact&&<a href={company.contact} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Contact Page",<I.Link s={10} c="#8fd0e8"/>,(()=>{}),{background:"rgba(96,160,232,.1)",border:"1px solid rgba(96,160,232,.3)",color:"#8fd0e8"})}</a>}
