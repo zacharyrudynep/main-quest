@@ -4576,11 +4576,12 @@ export default function App() {
             {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
         </div>
-        {/* Main area: job tree on the left, filters as a sidebar on the right, so
-            opening filters no longer pushes the job posts down. On mobile it stacks
-            (filters above jobs). */}
+        {/* Main area: the job list keeps its full width at all times. On desktop the
+            filter panel floats as a fixed drawer to the RIGHT (beside the list on wide
+            screens, pinned to the right edge on narrower ones) so opening it never
+            resizes or pushes the job posts. On mobile it stacks in-flow above jobs. */}
         <div style={{display:"flex",flexDirection:mobile?"column":"row",gap:16,alignItems:"flex-start"}}>
-          {filterOpen&&<div style={{order:mobile?0:2,width:mobile?"100%":320,flexShrink:0,background:"rgba(16,10,22,.7)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:mobile?12:16,display:"flex",flexDirection:"column",gap:4,...(mobile?{}:{position:"sticky",top:12,maxHeight:"calc(100vh - 24px)",overflowY:"auto"})}}>
+          {filterOpen&&<div style={mobile?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"min(calc(50% + 566px), calc(100vw - 336px))",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
             <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
@@ -4692,6 +4693,7 @@ export default function App() {
                         </button>
                         {expanded[sKey]&&<div style={{padding:"4px 8px 8px",display:"flex",flexDirection:"column",gap:4}}>
                           {Object.entries(companies)
+                            .sort((a,b)=>a[0].localeCompare(b[0]))
                             .filter(([name,company])=>{
                               if(!hasAnyFilter)return true;
                               // Industry Tier: company's tier must be among selected tiers.
