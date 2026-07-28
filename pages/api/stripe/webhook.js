@@ -1,17 +1,16 @@
 // POST /api/stripe/webhook
-// Stripe calls this after events (payment succeeded, subscription changed, etc.).
-// This is the ONLY place that grants or removes Premium — never trust the
-// browser redirect for that, because a user can close the tab before it fires.
+// Stripe calls this after events. This is the ONLY place that grants or removes
+// Premium — never trust the browser redirect for that.
 //
-// The signature is verified with STRIPE_WEBHOOK_SECRET so nobody can fake events.
+// Handles two kinds of purchase:
+//   • subscription (monthly / annual) → is_premium while active, revoked on cancel
+//   • one-time lifetime payment       → is_premium forever, never revoked
 import { stripe } from "../../../lib/stripe";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
-// Stripe needs the RAW request body to verify the signature, so we turn off
-// Next.js's automatic JSON body parsing for this route.
+// Stripe needs the RAW body to verify the signature.
 export const config = { api: { bodyParser: false } };
 
-// Read the raw request body without pulling in an extra dependency.
 async function readRawBody(readable) {
   const chunks = [];
   for await (const chunk of readable)
@@ -19,7 +18,6 @@ async function readRawBody(readable) {
   return Buffer.concat(chunks);
 }
 
-// Patch a profile row by user id.
 async function updateProfile(userId, patch) {
   if (!userId || Object.keys(patch).length === 0) return;
   const { error } = await supabaseAdmin
@@ -29,15 +27,32 @@ async function updateProfile(userId, patch) {
   if (error) console.error("Supabase update error:", error.message);
 }
 
-// When an event only carries the Stripe customer id, look up which user that is.
-async function updateByCustomer(customerId, patch) {
-  if (!customerId) return;
+// Look up which user a Stripe customer id belongs to.
+async function userIdForCustomer(customerId) {
+  if (!customerId) return null;
   const { data: rows } = await supabaseAdmin
     .from("profiles")
     .select("id")
     .eq("stripe_customer_id", customerId)
     .limit(1);
-  if (rows && rows[0]) await updateProfile(rows[0].id, patch);
+  return rows && rows[0] ? rows[0].id : null;
+}
+
+async function statusFor(userId) {
+  if (!userId) return null;
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("subscription_status")
+    .eq("id", userId)
+    .single();
+  return data ? data.subscription_status : null;
+}
+
+// Revoke access — but NEVER downgrade a lifetime buyer.
+async function revoke(userId, patch) {
+  if (!userId) return;
+  if ((await statusFor(userId)) === "lifetime") return;
+  await updateProfile(userId, patch);
 }
 
 const periodEndISO = (sub) =>
@@ -67,56 +82,65 @@ export default async function handler(req, res) {
 
   try {
     switch (event.type) {
-      // First successful payment through Checkout → turn Premium on and save the
-      // customer id so we can find this person again later.
       case "checkout.session.completed": {
         const s = event.data.object;
         const userId = s.client_reference_id || (s.metadata && s.metadata.userId);
-        await updateProfile(userId, {
-          is_premium: true,
-          subscription_status: "active",
-          stripe_customer_id: s.customer,
-        });
+        if (s.mode === "payment") {
+          // One-time lifetime purchase — permanent access, no renewal.
+          await updateProfile(userId, {
+            is_premium: true,
+            subscription_status: "lifetime",
+            subscription_period_end: null,
+            stripe_customer_id: s.customer,
+          });
+        } else {
+          // Subscription (monthly/annual). Full detail also arrives via the
+          // subscription.* events below.
+          await updateProfile(userId, {
+            is_premium: true,
+            subscription_status: "active",
+            stripe_customer_id: s.customer,
+          });
+        }
         break;
       }
 
-      // Subscription created or changed (renewals, plan changes, resubscribes).
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const sub = event.data.object;
-        const userId = sub.metadata && sub.metadata.userId;
+        const userId =
+          (sub.metadata && sub.metadata.userId) ||
+          (await userIdForCustomer(sub.customer));
+        // Don't let a subscription event clobber a lifetime buyer.
+        if ((await statusFor(userId)) === "lifetime") break;
         const active = sub.status === "active" || sub.status === "trialing";
-        const patch = {
+        await updateProfile(userId, {
           is_premium: active,
           subscription_status: sub.status,
           subscription_period_end: periodEndISO(sub),
           stripe_customer_id: sub.customer,
-        };
-        if (userId) await updateProfile(userId, patch);
-        else await updateByCustomer(sub.customer, patch);
+        });
         break;
       }
 
-      // Subscription fully ended → turn Premium off.
       case "customer.subscription.deleted": {
         const sub = event.data.object;
-        const userId = sub.metadata && sub.metadata.userId;
-        const patch = { is_premium: false, subscription_status: "canceled" };
-        if (userId) await updateProfile(userId, patch);
-        else await updateByCustomer(sub.customer, patch);
+        const userId =
+          (sub.metadata && sub.metadata.userId) ||
+          (await userIdForCustomer(sub.customer));
+        await revoke(userId, { is_premium: false, subscription_status: "canceled" });
         break;
       }
 
-      // A renewal payment failed → mark past_due (Stripe will retry; if it keeps
-      // failing you'll get a subscription.deleted event later).
       case "invoice.payment_failed": {
         const inv = event.data.object;
-        await updateByCustomer(inv.customer, { subscription_status: "past_due" });
+        const userId = await userIdForCustomer(inv.customer);
+        await revoke(userId, { subscription_status: "past_due" });
         break;
       }
 
       default:
-        break; // ignore everything else
+        break;
     }
 
     return res.status(200).json({ received: true });

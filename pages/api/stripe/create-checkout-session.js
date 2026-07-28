@@ -1,12 +1,19 @@
 // POST /api/stripe/create-checkout-session
-// Starts a Stripe Checkout session for the Premium subscription and returns the
-// URL the browser should redirect to. The webhook (not this route) is what
-// actually grants Premium once payment succeeds.
+// Starts a Stripe Checkout session for the chosen plan and returns the URL to
+// redirect to. The webhook (not this route) is what actually grants Premium.
 import { stripe } from "../../../lib/stripe";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://main-quest-beta.vercel.app";
+
+// Each plan maps to a Stripe Price id (from env) and a Checkout mode.
+// monthly + annual are recurring subscriptions; lifetime is a one-time payment.
+const PLANS = {
+  monthly:  { price: process.env.STRIPE_PRICE_MONTHLY,  mode: "subscription" },
+  annual:   { price: process.env.STRIPE_PRICE_ANNUAL,   mode: "subscription" },
+  lifetime: { price: process.env.STRIPE_PRICE_LIFETIME, mode: "payment" },
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -14,13 +21,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
   try {
-    const { userId, email } = req.body || {};
+    const { userId, email, plan } = req.body || {};
     if (!userId) return res.status(400).json({ error: "Missing userId" });
-    if (!process.env.STRIPE_PRICE_ID)
-      return res.status(500).json({ error: "STRIPE_PRICE_ID is not set" });
 
-    // Reuse this user's existing Stripe customer if we've seen them before, so a
-    // person never ends up with duplicate customer records.
+    const key = PLANS[plan] ? plan : "monthly"; // default to monthly if unknown
+    const chosen = PLANS[key];
+    if (!chosen.price)
+      return res
+        .status(500)
+        .json({ error: `Price for the "${key}" plan is not configured` });
+
+    // Reuse this user's existing Stripe customer if we've seen them before.
     let customerId = null;
     const { data: profileRow } = await supabaseAdmin
       .from("profiles")
@@ -31,19 +42,20 @@ export default async function handler(req, res) {
       customerId = profileRow.stripe_customer_id;
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
-      // Attach to an existing customer, or let Stripe create one from the email.
+      mode: chosen.mode,
+      line_items: [{ price: chosen.price, quantity: 1 }],
       ...(customerId
         ? { customer: customerId }
         : email
         ? { customer_email: email }
         : {}),
-      // These let the webhook know WHICH user this payment belongs to.
       client_reference_id: userId,
-      metadata: { userId },
-      subscription_data: { metadata: { userId } },
-      allow_promotion_codes: true,
+      metadata: { userId, plan: key },
+      // Only subscriptions carry subscription_data.
+      ...(chosen.mode === "subscription"
+        ? { subscription_data: { metadata: { userId, plan: key } } }
+        : {}),
+      allow_promotion_codes: true, // lets users enter a launch coupon at checkout
       success_url: `${SITE_URL}/?checkout=success`,
       cancel_url: `${SITE_URL}/?checkout=cancel`,
     });

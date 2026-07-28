@@ -3252,10 +3252,10 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
       .catch(()=>{ if(alive) setPremium({isPremium:false}); });
     return()=>{ alive=false; };
   },[user?.id]);
-  const goPremium=async()=>{
+  const goPremium=async(plan)=>{
     setBillingBusy(true);
     try{
-      const r=await fetch("/api/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id,email:user.email})});
+      const r=await fetch("/api/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id,email:user.email,plan})});
       const d=await r.json();
       if(d.url){ window.location.href=d.url; } else { alert(d.error||"Couldn't start checkout."); setBillingBusy(false); }
     }catch(e){ alert("Couldn't start checkout — please try again."); setBillingBusy(false); }
@@ -3312,17 +3312,32 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
           : premium.isPremium?
             <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.14),rgba(232,97,58,.08))",border:"1px solid rgba(201,168,76,.4)",borderRadius:12,marginBottom:18}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5}}>Premium</span>
-                <span style={{background:premium.status==="past_due"?"rgba(232,97,58,.16)":"rgba(126,207,179,.14)",border:`1px solid ${premium.status==="past_due"?"rgba(232,97,58,.4)":"rgba(126,207,179,.35)"}`,color:premium.status==="past_due"?"#e8613a":"#7ecfb3",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>{(premium.status||"active").toUpperCase()}</span>
+                <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5}}>{premium.status==="lifetime"?"Lifetime":"Premium"}</span>
+                <span style={{background:premium.status==="past_due"?"rgba(232,97,58,.16)":"rgba(126,207,179,.14)",border:`1px solid ${premium.status==="past_due"?"rgba(232,97,58,.4)":"rgba(126,207,179,.35)"}`,color:premium.status==="past_due"?"#e8613a":"#7ecfb3",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>{(premium.status||"active").toUpperCase().replace("_"," ")}</span>
               </div>
-              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>Thanks for supporting Main Quest.{premium.periodEnd?` Renews ${new Date(premium.periodEnd).toLocaleDateString()}.`:""}</div>
-              <button onClick={managePlan} disabled={billingBusy} style={{width:"100%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:700,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:billingBusy?.6:1}}>{billingBusy?"Opening…":"Manage Subscription"}</button>
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:premium.status==="lifetime"?0:12,lineHeight:1.5}}>Thanks for supporting Main Quest.{premium.status==="lifetime"?" You have lifetime access — no renewals, ever.":premium.periodEnd?` Renews ${new Date(premium.periodEnd).toLocaleDateString()}.`:""}</div>
+              {premium.status!=="lifetime"&&<button onClick={managePlan} disabled={billingBusy} style={{width:"100%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:700,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:billingBusy?.6:1}}>{billingBusy?"Opening…":"Manage Subscription"}</button>}
             </div>
           :
             <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.06))",border:"1px solid rgba(201,168,76,.3)",borderRadius:12,marginBottom:18}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:6}}>Upgrade to Premium</div>
-              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>Support Main Quest and unlock premium perks.</div>
-              <button onClick={goPremium} disabled={billingBusy} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:800,padding:12,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase",opacity:billingBusy?.6:1}}>{billingBusy?"Starting…":"Upgrade to Premium"}</button>
+              <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:4}}>Upgrade to Premium</div>
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>Support Main Quest and unlock premium features. Choose a plan:</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {[
+                  {id:"monthly",name:"Monthly",price:"$4.99",per:"/mo",badge:null},
+                  {id:"annual",name:"Annual",price:"$49.99",per:"/yr",badge:"Save 16%"},
+                  {id:"lifetime",name:"Lifetime",price:"$119.99",per:"once",badge:"Best value"},
+                ].map(pl=>
+                  <button key={pl.id} onClick={()=>goPremium(pl.id)} disabled={billingBusy} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,width:"100%",textAlign:"left",background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.22)",borderRadius:10,padding:"11px 13px",cursor:billingBusy?"default":"pointer",opacity:billingBusy?.6:1,transition:"all .15s"}}>
+                    <span style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <span style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:13,color:"#f4edd8"}}>{pl.name}</span>
+                      {pl.badge&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:8.5,padding:"1px 7px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3}}>{pl.badge}</span>}
+                    </span>
+                    <span style={{fontSize:14,fontWeight:800,color:"#f0d080",whiteSpace:"nowrap"}}>{pl.price}<span style={{fontSize:10,fontWeight:600,color:"rgba(244,237,216,.4)",marginLeft:2}}>{pl.per}</span></span>
+                  </button>
+                )}
+              </div>
+              <div style={{fontSize:10.5,color:"rgba(244,237,216,.38)",marginTop:10,textAlign:"center"}}>{billingBusy?"Starting checkout…":"Have a launch code? Enter it at checkout."}</div>
             </div>
           }
           {/* Email Alerts */}
