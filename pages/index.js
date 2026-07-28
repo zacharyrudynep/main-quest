@@ -3241,6 +3241,33 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+  // ── Premium subscription ──
+  const [premium,setPremium]=useState(null);      // null = still loading
+  const [billingBusy,setBillingBusy]=useState(false);
+  useEffect(()=>{
+    if(!user?.id){ setPremium({isPremium:false}); return; }
+    let alive=true;
+    fetch(`/api/stripe/status?userId=${encodeURIComponent(user.id)}`)
+      .then(r=>r.json()).then(d=>{ if(alive) setPremium(d); })
+      .catch(()=>{ if(alive) setPremium({isPremium:false}); });
+    return()=>{ alive=false; };
+  },[user?.id]);
+  const goPremium=async()=>{
+    setBillingBusy(true);
+    try{
+      const r=await fetch("/api/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id,email:user.email})});
+      const d=await r.json();
+      if(d.url){ window.location.href=d.url; } else { alert(d.error||"Couldn't start checkout."); setBillingBusy(false); }
+    }catch(e){ alert("Couldn't start checkout — please try again."); setBillingBusy(false); }
+  };
+  const managePlan=async()=>{
+    setBillingBusy(true);
+    try{
+      const r=await fetch("/api/stripe/create-portal-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id})});
+      const d=await r.json();
+      if(d.url){ window.location.href=d.url; } else { alert(d.error||"Couldn't open billing portal."); setBillingBusy(false); }
+    }catch(e){ alert("Couldn't open billing portal — please try again."); setBillingBusy(false); }
+  };
   const initials=p.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
@@ -3278,6 +3305,26 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
         </div>}
         {tab==="template"&&<EmailTemplateTab profile={p} upd={upd}/>}
         {tab==="account"&&<div>
+          {/* Membership / Premium */}
+          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Membership</div>
+          {premium===null?
+            <div style={{fontSize:12,color:"rgba(244,237,216,.4)",padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:18}}>Checking your subscription…</div>
+          : premium.isPremium?
+            <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.14),rgba(232,97,58,.08))",border:"1px solid rgba(201,168,76,.4)",borderRadius:12,marginBottom:18}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5}}>Premium</span>
+                <span style={{background:premium.status==="past_due"?"rgba(232,97,58,.16)":"rgba(126,207,179,.14)",border:`1px solid ${premium.status==="past_due"?"rgba(232,97,58,.4)":"rgba(126,207,179,.35)"}`,color:premium.status==="past_due"?"#e8613a":"#7ecfb3",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>{(premium.status||"active").toUpperCase()}</span>
+              </div>
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>Thanks for supporting Main Quest.{premium.periodEnd?` Renews ${new Date(premium.periodEnd).toLocaleDateString()}.`:""}</div>
+              <button onClick={managePlan} disabled={billingBusy} style={{width:"100%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:700,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:billingBusy?.6:1}}>{billingBusy?"Opening…":"Manage Subscription"}</button>
+            </div>
+          :
+            <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.06))",border:"1px solid rgba(201,168,76,.3)",borderRadius:12,marginBottom:18}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:6}}>Upgrade to Premium</div>
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>Support Main Quest and unlock premium perks.</div>
+              <button onClick={goPremium} disabled={billingBusy} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:800,padding:12,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase",opacity:billingBusy?.6:1}}>{billingBusy?"Starting…":"Upgrade to Premium"}</button>
+            </div>
+          }
           {/* Email Alerts */}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Email Alerts</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
