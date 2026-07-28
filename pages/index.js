@@ -364,7 +364,7 @@ const COMPANIES_DATA = {
     ],
     "Massachusetts": [
       { name: "Camlann Games", url: "https://camlanngames.com/", email: null, contact: "https://camlanngames.com/contact/" },
-      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: "jobs@cdprojektred.com", contact: null },
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs", email: "jobs@cdprojektred.com", contact: null, registerInterest: true, registerInterestLink: "https://www.cdprojektred.com/en/jobs" },
       { name: "Crate Entertainment", url: "https://www.crateentertainment.com/nojobs/", email: "jobs@crateentertainment.com", contact: "https://www.crateentertainment.com/contact/", emailApply:true },
       { name: "Cryptyd Games", url: "https://cryptydgames.com/join-us/", email: "a.alaa@cryptydgames.com", contact: "https://cryptydgames.com/contact-us/" },
       { name: "Decoy Games", url: "https://www.decoygames.com/", email: "general@decoygames.com", contact: null },
@@ -655,7 +655,7 @@ const COMPANIES_DATA = {
       { name: "Brace Yourself Games", url: "https://braceyourselfgames.com/careers/", email: null, contact: "https://braceyourselfgames.com/contact/" },
       { name: "Brass Token", url: "https://brasstoken.com/#connect", email: "info@brasstoken.com", contact: null, emailApply:true },
       { name: "Buffalo Buffalo", url: "https://www.buffalobuffalo.ca/careers", email: "contact@buffalobuffalo.ca", contact: null },
-      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs?studio=canada", email: "jobs@cdprojektred.com", contact: null },
+      { name: "CD Projekt Red", url: "https://www.cdprojektred.com/en/jobs?studio=canada", email: "jobs@cdprojektred.com", contact: null, registerInterest: true, registerInterestLink: "https://www.cdprojektred.com/en/jobs" },
       { name: "Conquer Experience", url: "https://conquerexperience.com/careers/", email: "careers@conquerexperience.com", contact: "https://conquerexperience.com/contact/", emailApply:true },
       { name: "Dapper Labs", url: "https://www.dapperlabs.com/careers", email: "careers@dapperlabs.com", contact: null, emailApply:true },
       { name: "Demonware", url: "https://careers.demonware.net/search-results/", email: null, contact: null },
@@ -956,6 +956,17 @@ const EMAIL_APPLY_JOBS = {
   ]},
 };
 
+// Promote the "Remote" bucket to its own TOP-LEVEL region (it used to live as a
+// state under the US/Canada). All remote jobs are collected here, and remote-first
+// companies show up under this single Remote tab.
+COMPANIES_DATA["Remote"] = COMPANIES_DATA["Remote"] || { "Remote": [] };
+for (const c of ["United States","Canada"]) {
+  if (COMPANIES_DATA[c] && COMPANIES_DATA[c]["Remote"]) {
+    COMPANIES_DATA["Remote"]["Remote"] = COMPANIES_DATA["Remote"]["Remote"].concat(COMPANIES_DATA[c]["Remote"]);
+    delete COMPANIES_DATA[c]["Remote"];
+  }
+}
+if (COMPANIES_DATA["Remote"] && COMPANIES_DATA["Remote"]["Remote"].length === 0) delete COMPANIES_DATA["Remote"];
 
 const JOB_CATS = ["Game Designer","Level Designer","Narrative Designer","Software Engineer","Graphics Engineer","AI Programmer","Gameplay Programmer","Backend Engineer","DevOps Engineer","Mobile Developer","3D Artist","2D Artist","Concept Artist","Technical Artist","Character Artist","Environment Artist","Animator","VFX Artist","UI/UX Designer","Sound Designer","Composer","Audio Engineer","Producer","Project Manager","Scrum Master","QA Tester","QA Lead","Build Engineer","Community Manager","Marketing Specialist","PR Manager","Data Analyst","Data Scientist","Product Manager","IT Support","System Administrator","HR Manager","Recruiter","Finance Analyst"];
 
@@ -1457,8 +1468,8 @@ const CITY_COUNTRY = {
   "łódź":"Poland",
 };
 // Order the top-level tabs are rendered in, and their short badge label.
-const REGION_ORDER = ["United States","Canada","Europe","Asia","South America","Latin America","Oceania","Africa","Other Locations"];
-const REGION_BADGE = {"United States":"US","Canada":"CA","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA","Other Locations":"??"};
+const REGION_ORDER = ["United States","Canada","Remote","Europe","Asia","South America","Latin America","Oceania","Africa"];
+const REGION_BADGE = {"United States":"US","Canada":"CA","Remote":"RM","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA"};
 // Is this top-level key a continent (vs. United States / Canada)?
 const isContinent = (k)=>k!=="United States"&&k!=="Canada";
 // Backwards-compatible foreign-token test, now derived from the geography maps.
@@ -1593,8 +1604,14 @@ const normLoc=(s)=>String(s==null?"":s).toLowerCase().replace(/\s+/g," ").trim()
 function jobPlace(job){
   const raw=(job.location||"").trim();
   if(!raw) return "UNKNOWN";
+  const nloc=normLoc(raw);
+  // Company-specific overrides (from the location docs).
+  const co=(job.company||"").toLowerCase();
+  if(co.includes("epic games") && (/^\s*(multiple|several|\d+)\s+locations?\s*$/.test(nloc) || nloc==="multiple locations")){
+    return {top:"United States",sub:"California"};       // Epic's "multiple locations" postings → California
+  }
   // 0. Exact whole-string overrides (from the location doc) win over everything.
-  const exact=EXACT_PLACE[normLoc(raw)];
+  const exact=EXACT_PLACE[nloc];
   if(exact) return (typeof exact==="string")?exact:{top:exact.top,sub:exact.sub};
   // "2 locations", "5 locations", "multiple locations" → an open/remote posting.
   if(/^\s*(multiple|several|\d+)\s+locations?\s*$/i.test(raw)) return "REMOTE";
@@ -1638,12 +1655,10 @@ function jobPlace(job){
   }
   // 5. Says US/Canada but no state pinned → home-region fallback.
   if(/\b(usa|u\.s\.a|u\.s|united states|america|canada|north america)\b/i.test(lower)) return "UNKNOWN";
-  // 6. A real place we simply don't have mapped yet. Rather than hide the job, give
-  //    it its own section under "Other Locations" so nothing is silently lost and
-  //    the open-positions count stays honest. We bucket by the LAST comma segment
-  //    (usually the country/region), so "Someplace, Freedonia" groups under Freedonia.
-  const other=otherRegionName(raw,parts);
-  return other?{top:OTHER_REGION,sub:other}:"UNKNOWN";
+  // 6. A place we don't have mapped. Rather than create a separate "Other Locations"
+  //    tab, treat it as Remote so it still surfaces and the open-count stays honest.
+  //    (If a real city keeps landing here, add it to the maps above.)
+  return "REMOTE";
 }
 // Name of the catch-all top-level region for places we haven't mapped.
 const OTHER_REGION="Other Locations";
@@ -3080,15 +3095,26 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const [tab,setTab]=useState("profile");
   const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false});
   const [saved,setSaved]=useState(false);
+  const [saveErr,setSaveErr]=useState("");
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
   const toggleOt=(v)=>setP(prev=>({...prev,openTo:prev.openTo.includes(v)?prev.openTo.filter(x=>x!==v):[...prev.openTo,v]}));
   const save = async () => {
+    // Merge onto the existing profile so fields we don't edit here (e.g. tosVersion)
+    // are preserved rather than wiped out on save.
+    const merged = { ...(user.profile||{}), ...p };
     if (user?.id) {
-      // Store the entire profile as JSON so every field persists (incl. resume, template, links)
-      const { error } = await supabase.from("profiles").upsert({ id: user.id, name: p.name, data: p }, { onConflict: "id" });
-      if (error) { console.error("Profile save error:", error.message); }
+      const { error } = await supabase.from("profiles").upsert({ id: user.id, name: p.name, data: merged }, { onConflict: "id" });
+      if (error) {
+        // Surface the failure instead of showing a false "Saved!". The most common
+        // cause is a Supabase RLS policy that allows INSERT but not UPDATE.
+        console.error("Profile save error:", error.message);
+        setSaveErr(error.message || "Save failed — please try again.");
+        setTimeout(() => setSaveErr(""), 5000);
+        return;
+      }
     }
-    onUpdate({ ...user, name: p.name, profile: p });
+    onUpdate({ ...user, name: p.name, profile: merged });
+    setSaveErr("");
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -3169,7 +3195,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
       </div>
       {/* Footer */}
       <div style={{padding:"12px 18px",borderTop:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
-        <button onClick={save} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:"pointer",fontSize:12,fontWeight:800,padding:12,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase",transition:"all .2s"}}>{saved?"✓ Saved!":"Save Changes"}</button>
+        {saveErr&&<div style={{fontSize:11,color:"#e88060",background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",borderRadius:8,padding:"7px 10px",marginBottom:8,textAlign:"center"}}>Couldn't save: {saveErr}</div>}
+        <button onClick={save} style={{width:"100%",background:saveErr?"rgba(232,97,58,.85)":G,border:"none",color:"#0a0608",cursor:"pointer",fontSize:12,fontWeight:800,padding:12,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase",transition:"all .2s"}}>{saved?"✓ Saved!":saveErr?"Retry Save":"Save Changes"}</button>
       </div>
     </div>
   </div>;
@@ -3917,6 +3944,9 @@ export default function App() {
     // Live ATS jobs take priority. gen only ever contains real volunteer-override jobs now.
     if(Array.isArray(live)&&live.length>0) all=[...live,...(gen||[])];
     else all=gen||[]; // volunteer overrides (if any), else empty — never fake jobs
+    // CD Projekt Red's "spontaneous application" is an open/register-interest posting,
+    // not a real role — it's surfaced via their Register Interest button instead.
+    if(/cd projekt/i.test(name)) all=all.filter(j=>!/spontaneous/i.test(j.title||""));
     if(!stateName) return all;
     // Only show jobs actually located in this sub-region. `stateName` is a US state
     // or CA province for the domestic tabs, and a country for the continent tabs.
@@ -3925,7 +3955,8 @@ export default function App() {
     const homeState=companyHomeState[name];
     return all.filter(j=>{
       const js=jobStateName(j);
-      if(js==="REMOTE"||js==="UNKNOWN") return stateName===homeState; // can't pin → home region
+      if(js==="REMOTE") return stateName==="Remote";        // remote jobs live in the Remote tab only
+      if(js==="UNKNOWN") return stateName===homeState;       // unpinnable domestic → home region
       return js===stateName;                                 // a tracked region → that one only
     });
   };
@@ -4183,7 +4214,8 @@ export default function App() {
       const placements=new Map(); // "top\u241fsub" -> {top,sub}
       for(const j of live){
         const p=jobPlace(j);
-        if(typeof p==="string") continue;           // REMOTE / UNKNOWN / FOREIGN
+        if(p==="REMOTE"){ placements.set("Remote\u241fRemote",{top:"Remote",sub:"Remote"}); continue; }
+        if(typeof p==="string") continue;           // UNKNOWN / (legacy) FOREIGN
         placements.set(p.top+"\u241f"+p.sub,p);
       }
       for(const {top,sub} of placements.values()){
@@ -4358,7 +4390,12 @@ export default function App() {
             <SearchBox value={filters.search} onSearch={onSearch}/>
             {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
-          {filterOpen&&<div style={{background:"rgba(16,10,22,.7)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:mobile?12:16,marginTop:8,display:"grid",gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(190px,1fr))",gap:4}}>
+        </div>
+        {/* Main area: job tree on the left, filters as a sidebar on the right, so
+            opening filters no longer pushes the job posts down. On mobile it stacks
+            (filters above jobs). */}
+        <div style={{display:"flex",flexDirection:mobile?"column":"row",gap:16,alignItems:"flex-start"}}>
+          {filterOpen&&<div style={{order:mobile?0:2,width:mobile?"100%":320,flexShrink:0,background:"rgba(16,10,22,.7)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:mobile?12:16,display:"flex",flexDirection:"column",gap:4,...(mobile?{}:{position:"sticky",top:12,maxHeight:"calc(100vh - 24px)",overflowY:"auto"})}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
             <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
@@ -4397,7 +4434,7 @@ export default function App() {
               </div>
             </FSection>
           </div>}
-        </div>
+          <div style={{order:1,flex:1,minWidth:0,width:mobile?"100%":"auto",display:"flex",flexDirection:"column"}}>
         {/* Sort bar */}
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",padding:mobile?"7px 10px":"8px 12px",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:12}}>
           <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8,marginRight:2}}>Sort:</span>
@@ -4565,6 +4602,8 @@ export default function App() {
                 </div>}
               </div>;
             })}
+        </div>
+          </div>
         </div>
       </>}
 
