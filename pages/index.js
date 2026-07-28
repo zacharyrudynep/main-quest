@@ -2095,6 +2095,109 @@ const GLOBE_HOTSPOTS = [
   [44.65,-63.6, 0.20], // Halifax / Nova Scotia
   [52.1,-106.6, 0.16], // Saskatoon / Saskatchewan
 ];
+// Curated WORLD hotspots so the heatmap glows across the other continents too.
+// Weights are hand-tuned to "fib" the map — brighter over the busier game-industry
+// hubs. [latitude, longitude, weight].
+const WORLD_HOTSPOTS = [
+  // ── Oceania (called out: New South Wales, Victoria) ──
+  [-33.87,151.21, 0.60], // Sydney / New South Wales
+  [-37.81,144.96, 0.55], // Melbourne / Victoria
+  [-27.47,153.03, 0.30], // Brisbane / Queensland
+  [-31.95,115.86, 0.24], // Perth / Western Australia
+  [-34.93,138.60, 0.24], // Adelaide / South Australia
+  [-36.85,174.76, 0.28], // Auckland / New Zealand
+  [-41.29,174.78, 0.32], // Wellington / New Zealand (Weta, PikPok)
+  // ── United Kingdom & Ireland ──
+  [51.51,-0.13,  0.60], // London
+  [51.24,-0.57,  0.34], // Guildford (game hub)
+  [52.29,-1.53,  0.30], // Leamington Spa ("Silicon Spa")
+  [53.48,-2.24,  0.26], // Manchester
+  [55.95,-3.19,  0.26], // Edinburgh
+  [55.86,-4.25,  0.28], // Glasgow / Dundee cluster
+  [53.35,-6.26,  0.30], // Dublin
+  // ── Nordics ──
+  [59.33,18.06,  0.52], // Stockholm (EA DICE, King, Paradox, Mojang)
+  [55.60,13.00,  0.30], // Malmö
+  [58.39,13.85,  0.26], // Skövde
+  [60.17,24.94,  0.46], // Helsinki (Supercell, Remedy, Rovio)
+  [55.68,12.57,  0.30], // Copenhagen
+  [59.91,10.75,  0.24], // Oslo
+  [64.13,-21.90, 0.18], // Reykjavik
+  // ── Western / Central Europe ──
+  [48.86,2.35,   0.42], // Paris
+  [45.76,4.84,   0.26], // Lyon
+  [43.61,3.88,   0.26], // Montpellier
+  [52.52,13.40,  0.42], // Berlin
+  [48.14,11.58,  0.30], // Munich
+  [50.94,6.96,   0.26], // Cologne
+  [52.37,4.90,   0.34], // Amsterdam
+  [50.85,4.35,   0.24], // Brussels
+  [47.37,8.54,   0.24], // Zurich
+  [48.21,16.37,  0.26], // Vienna
+  [41.39,2.17,   0.34], // Barcelona
+  [40.42,-3.70,  0.28], // Madrid
+  [38.72,-9.14,  0.26], // Lisbon
+  [45.46,9.19,   0.26], // Milan
+  [41.90,12.50,  0.24], // Rome
+  // ── Eastern Europe / CIS ──
+  [52.23,21.01,  0.48], // Warsaw (CD Projekt & co.)
+  [50.06,19.94,  0.36], // Kraków
+  [51.11,17.03,  0.28], // Wrocław
+  [44.43,26.10,  0.42], // Bucharest (Ubisoft)
+  [46.77,23.60,  0.28], // Cluj-Napoca
+  [50.45,30.52,  0.34], // Kyiv
+  [49.84,24.03,  0.30], // Lviv
+  [50.09,14.42,  0.30], // Prague
+  [47.50,19.04,  0.28], // Budapest
+  [44.79,20.45,  0.24], // Belgrade
+  [54.69,25.28,  0.22], // Vilnius
+  [55.75,37.62,  0.30], // Moscow
+  // ── Middle East / Africa ──
+  [32.08,34.78,  0.34], // Tel Aviv
+  [41.01,28.98,  0.28], // Istanbul
+  [25.20,55.27,  0.24], // Dubai
+  [30.04,31.24,  0.20], // Cairo
+  [-33.92,18.42, 0.24], // Cape Town
+  [-26.20,28.05, 0.20], // Johannesburg
+  [6.52,3.38,    0.18], // Lagos
+  [-1.29,36.82,  0.18], // Nairobi
+  // ── East Asia ──
+  [35.68,139.69, 0.60], // Tokyo
+  [34.69,135.50, 0.34], // Osaka
+  [35.01,135.77, 0.28], // Kyoto
+  [37.57,126.98, 0.55], // Seoul
+  [37.40,127.11, 0.30], // Pangyo / Seongnam (Korean game valley)
+  [31.23,121.47, 0.50], // Shanghai
+  [22.54,114.06, 0.50], // Shenzhen (Tencent)
+  [39.90,116.41, 0.44], // Beijing
+  [23.13,113.26, 0.34], // Guangzhou
+  [30.57,104.07, 0.30], // Chengdu
+  [30.27,120.15, 0.30], // Hangzhou (NetEase)
+  [25.03,121.57, 0.30], // Taipei
+  [22.32,114.17, 0.28], // Hong Kong
+  // ── South & Southeast Asia ──
+  [1.35,103.82,  0.40], // Singapore
+  [10.82,106.63, 0.32], // Ho Chi Minh City
+  [21.03,105.85, 0.24], // Hanoi
+  [13.76,100.50, 0.24], // Bangkok
+  [14.60,120.98, 0.30], // Manila
+  [-6.21,106.85, 0.24], // Jakarta
+  [3.14,101.69,  0.22], // Kuala Lumpur
+  [12.97,77.59,  0.34], // Bangalore
+  [17.39,78.49,  0.28], // Hyderabad
+  [18.52,73.86,  0.26], // Pune
+  [19.08,72.88,  0.26], // Mumbai
+  // ── Latin America ──
+  [-23.55,-46.63,0.34], // São Paulo
+  [-22.91,-43.17,0.24], // Rio de Janeiro
+  [-30.03,-51.23,0.22], // Porto Alegre
+  [-34.60,-58.38,0.30], // Buenos Aires
+  [-34.90,-56.16,0.20], // Montevideo
+  [-33.45,-70.67,0.22], // Santiago
+  [4.71,-74.07,  0.22], // Bogotá
+  [19.43,-99.13, 0.30], // Mexico City
+  [20.67,-103.35,0.24], // Guadalajara
+];
 // A rough world coastline as lat/lon dot clusters (low-res, stylized — enough to read as Earth).
 // Natural Earth boundary data (public domain), simplified for canvas rendering.
 // Format: array of polylines, each polyline a list of [lon,lat] points.
@@ -2197,7 +2300,27 @@ function getGlobeLights(){
       placed++;
     }
   }
-  // Sprinkle dots across every US state and Canadian province so the whole map
+  // World hotspots (other continents). Curated weights — busier hubs glow brighter.
+  // Satellite counts are kept modest so the extra global coverage doesn't bog down
+  // the rotating globe (cores carry the glow; satellites add a little spread).
+  for(const [lat,lon,w0] of WORLD_HOTSPOTS){
+    const w=Math.max(0.16,Math.min(1.0,w0));
+    out.push([lat,lon,w,1.05]);                  // bright core
+    const n=Math.round(3+w*13);                  // more satellites for busier hubs
+    const ring=0.5+w*2.6;
+    let placed=0,tries=0;
+    while(placed<n&&tries<n*6){
+      tries++;
+      const ang=rnd()*Math.PI*2;
+      const r=Math.pow(rnd(),0.6)*ring;
+      const nlat=lat+Math.sin(ang)*r;
+      const nlon=lon+Math.cos(ang)*r/Math.max(0.35,Math.cos(lat*Math.PI/180));
+      if(!pointOnLand(nlon,nlat))continue;        // keep the glow on land
+      const fall=1-r/(ring+0.001);
+      out.push([nlat,nlon,Math.max(0.05,w*(0.20+0.55*fall*rnd())),0.6+rnd()*0.45]);
+      placed++;
+    }
+  }
   // reads as active — more dots where there are more companies, a faint ambient
   // sprinkle everywhere else. Kept strictly inside US + Canada polygons.
   for(const st of geoAll){
