@@ -2455,6 +2455,35 @@ function GlobeHeatmap({size=180,showStates=true}){
   </div>;
 }
 
+// ── PRICING / PLAN COMPARISON CARD ────────────────────────────────────────────
+// Free vs Premium at a glance. Used on the sign-in screen and as a dismissible
+// banner on the board so guests can see what a subscription unlocks.
+function PricingInfo({compact,onDismiss}){
+  const GG="linear-gradient(135deg,#c9a84c,#f0d080)";
+  const free=["Browse every listing","Apply to jobs","Track your applications","Job alerts for up to 5 companies"];
+  const prem=["Everything in Free","Job Match Score","Email autofill for applications","Targeted alerts by role, location, company & seniority"];
+  const Card=({title,price,items,gold})=><div style={{flex:1,minWidth:0,background:gold?"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.05))":"rgba(201,168,76,.03)",border:`1px solid ${gold?"rgba(201,168,76,.4)":"rgba(201,168,76,.14)"}`,borderRadius:12,padding:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
+      <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:14,...(gold?{background:GG,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}:{color:"#f4edd8"}),letterSpacing:.5}}>{title}</span>
+      {gold&&<span style={{background:"rgba(201,168,76,.16)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:8,padding:"1px 7px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5}}>PRO</span>}
+    </div>
+    <div style={{fontSize:11,color:gold?"#f0d080":"rgba(244,237,216,.5)",marginBottom:10,minHeight:15,fontWeight:gold?700:400}}>{price}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:6}}>{items.map((it,i)=>
+      <div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,fontSize:11.5,color:"rgba(244,237,216,.72)",lineHeight:1.35}}>
+        <span style={{color:gold?"#f0d080":"#7ecfb3",flexShrink:0,marginTop:1}}>✦</span>{it}
+      </div>)}</div>
+  </div>;
+  return <div style={{position:"relative",background:"rgba(16,10,22,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:14,padding:14}}>
+    {onDismiss&&<button onClick={onDismiss} title="Dismiss" style={{position:"absolute",top:6,right:9,background:"none",border:"none",color:"rgba(244,237,216,.35)",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>}
+    <div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(201,168,76,.75)",textTransform:"uppercase",letterSpacing:1.2,textAlign:"center",marginBottom:12}}>Choose Your Path</div>
+    <div style={{display:"flex",flexDirection:compact?"column":"row",gap:10}}>
+      <Card title="Free" price="$0 — forever" items={free}/>
+      <Card title="Premium" gold price="$4.99/mo · $49.99/yr · $119.99 lifetime" items={prem}/>
+    </div>
+  </div>;
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
 function Auth({onLogin,onGuest}) {
   const mobile = useIsMobile();
   const [mode,setMode]=useState("login");
@@ -2611,6 +2640,7 @@ function Auth({onLogin,onGuest}) {
           {/* Continue as Guest */}
           <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",marginTop:4,background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.06)";e.currentTarget.style.color="#f0d080";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(244,237,216,.6)";}}>Continue as Guest →</button>
           <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.3)",margin:"8px 0 0",lineHeight:1.4}}>Browse all postings without an account. Sign in any time to unlock match scores, tracking, and alerts.</p>
+          <div style={{marginTop:16}}><PricingInfo compact/></div>
         </div>
       </div>
     </div>
@@ -3049,7 +3079,6 @@ function EmailTemplateTab({profile,upd}){
     ...(profile.github?[["github","GitHub URL"]]:[]),
     ...(profile.artstation?[["artstation","ArtStation URL"]]:[]),
     ...(profile.behance?[["behance","Behance URL"]]:[]),
-    ...(profile.otherWebsite?[["otherWebsite","Other Website URL"]]:[]),
   ];
   const hasResume=!!(profile.resumeText||profile.resumeFileName);
 
@@ -3216,7 +3245,7 @@ function GuestPanel({onClose,onSignIn}) {
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
-  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false});
+  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
   const [saved,setSaved]=useState(false);
   const [saveErr,setSaveErr]=useState("");
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
@@ -3300,8 +3329,24 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
         {tab==="resume"&&<ResumeSection profile={p} updateField={upd}/>}
         {tab==="links"&&<div>
           <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Add your professional links. Each is checked to make sure it matches the right site before it's saved.</p>
-          {[["linkedin","LinkedIn",<I.Globe s={12} c="currentColor"/>,"https://linkedin.com/in/yourname"],["portfolio","Portfolio",<I.Globe s={12} c="currentColor"/>,"https://yourportfolio.com"],["github","GitHub",<I.Link s={12} c="currentColor"/>,"https://github.com/yourhandle"],["artstation","ArtStation",<I.Globe s={12} c="currentColor"/>,"https://artstation.com/yourname"],["behance","Behance",<I.Globe s={12} c="currentColor"/>,"https://behance.net/yourname"],["otherWebsite","Other Website",<I.Link s={12} c="currentColor"/>,"https://yourwebsite.com"]].map(([k,label,icon,ph])=>
+          {[["linkedin","LinkedIn",<I.Globe s={12} c="currentColor"/>,"https://linkedin.com/in/yourname"],["portfolio","Portfolio",<I.Globe s={12} c="currentColor"/>,"https://yourportfolio.com"],["github","GitHub",<I.Link s={12} c="currentColor"/>,"https://github.com/yourhandle"],["artstation","ArtStation",<I.Globe s={12} c="currentColor"/>,"https://artstation.com/yourname"],["behance","Behance",<I.Globe s={12} c="currentColor"/>,"https://behance.net/yourname"]].map(([k,label,icon,ph])=>
             <LinkField key={k} fieldKey={k} label={label} icon={icon} placeholder={ph} value={p[k]||""} onChange={v=>upd(k,v)}/>)}
+          {/* Custom websites — add as many as you like for sites not listed above. */}
+          {(p.customLinks||[]).map((cl)=>
+            <div key={cl.id} style={{marginBottom:14,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10}}>
+              <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+                <div style={{flex:"1 1 110px",minWidth:0}}>
+                  <label style={{fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"block"}}>Label</label>
+                  <input value={cl.label} onChange={e=>upd("customLinks",(p.customLinks||[]).map(c=>c.id===cl.id?{...c,label:e.target.value}:c))} placeholder="e.g. Twitch" style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"}}/>
+                </div>
+                <div style={{flex:"2 1 190px",minWidth:0}}>
+                  <label style={{fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"block"}}>URL</label>
+                  <input value={cl.url} onChange={e=>upd("customLinks",(p.customLinks||[]).map(c=>c.id===cl.id?{...c,url:e.target.value}:c))} placeholder="https://..." style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"}}/>
+                </div>
+                <button onClick={()=>upd("customLinks",(p.customLinks||[]).filter(c=>c.id!==cl.id))} title="Remove this link" style={{flexShrink:0,background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:8,width:38,height:38,fontSize:17,lineHeight:1}}>×</button>
+              </div>
+            </div>)}
+          <button onClick={()=>upd("customLinks",[...(p.customLinks||[]),{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:"",url:""}])} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginTop:2}}><span style={{fontSize:17,lineHeight:1}}>+</span> Add another website</button>
         </div>}
         {tab==="template"&&<EmailTemplateTab profile={p} upd={upd}/>}
         {tab==="account"&&<div>
@@ -3340,6 +3385,49 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
               <div style={{fontSize:10.5,color:"rgba(244,237,216,.38)",marginTop:10,textAlign:"center"}}>{billingBusy?"Starting checkout…":"Have a launch code? Enter it at checkout."}</div>
             </div>
           }
+          {/* Specific Job Alerts — PREMIUM feature */}
+          {(()=>{
+            const isPrem=!!(premium&&premium.isPremium);
+            const A=p.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true};
+            const setA=(k,v)=>upd("jobAlerts",{...A,[k]:v});
+            const SENIORITY=["Intern","Junior","Mid-level","Senior","Lead","Principal","Director","Manager"];
+            const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
+            const lbl={fontSize:10,color:"rgba(201,168,76,.55)",textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:"'Cinzel',serif"};
+            return <div style={{marginBottom:18}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <span style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Specific Job Alerts</span>
+                <span style={{display:"flex",alignItems:"center",gap:3,background:"linear-gradient(135deg,rgba(201,168,76,.18),rgba(232,97,58,.1))",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:8,padding:"2px 8px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5}}>✦ PREMIUM</span>
+              </div>
+              <div style={{position:"relative"}}>
+                <div style={{opacity:isPrem?1:.3,pointerEvents:isPrem?"auto":"none",filter:isPrem?"none":"grayscale(.3)"}}>
+                  <p style={{fontSize:11,color:"rgba(244,237,216,.45)",margin:"0 0 12px",lineHeight:1.5}}>Get pinged when a new posting matches what you're after. Pick any mix of criteria below.</p>
+                  <div style={lbl}>Roles</div>
+                  <div style={{marginBottom:14,maxHeight:190,overflowY:"auto",border:"1px solid rgba(201,168,76,.1)",borderRadius:8,padding:"6px 8px"}}><CheckGroup opts={JOB_CATS} sel={A.roles} onChange={v=>setA("roles",v)}/></div>
+                  <div style={lbl}>Seniority</div>
+                  <div style={{marginBottom:14}}><CheckGroup opts={SENIORITY} sel={A.seniority} onChange={v=>setA("seniority",v)}/></div>
+                  <div style={lbl}>Companies</div>
+                  <input value={A.companies} onChange={e=>setA("companies",e.target.value)} placeholder="e.g. Riot Games, Bungie (comma-separated)" style={{...inp,marginBottom:14}}/>
+                  <div style={lbl}>Locations</div>
+                  <input value={A.locations} onChange={e=>setA("locations",e.target.value)} placeholder="e.g. New York, Remote, California" style={{...inp,marginBottom:14}}/>
+                  <div onClick={()=>isPrem&&setA("matchAll",!A.matchAll)} style={{display:"flex",alignItems:"flex-start",gap:9,cursor:"pointer",padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:9,marginBottom:10}}>
+                    <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${A.matchAll?"#c9a84c":"rgba(201,168,76,.25)"}`,background:A.matchAll?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{A.matchAll&&<I.Check s={10} c="#0a0608"/>}</div>
+                    <div><div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8"}}>Match all criteria</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)",marginTop:2,lineHeight:1.4}}>Only alert me when every filled-in criterion is true — e.g. a Game Designer role in New York, not either one alone. Off = alert me if any match.</div></div>
+                  </div>
+                  <div onClick={()=>isPrem&&setA("emailEnabled",A.emailEnabled===false?true:false)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:9,cursor:"pointer",padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:9}}>
+                    <div><div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8"}}>Email me these alerts</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)",marginTop:2}}>On-site badges stay on either way.</div></div>
+                    <div style={{width:38,height:22,borderRadius:20,background:A.emailEnabled!==false?"#c9a84c":"rgba(244,237,216,.15)",position:"relative",transition:"all .2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:A.emailEnabled!==false?18:2,width:18,height:18,borderRadius:"50%",background:A.emailEnabled!==false?"#0a0608":"rgba(244,237,216,.6)",transition:"all .2s"}}/></div>
+                  </div>
+                </div>
+                {!isPrem&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,background:"rgba(16,10,22,.9)",border:"1px solid rgba(201,168,76,.35)",borderRadius:12,padding:"18px 22px",maxWidth:250,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
+                    <I.Lock s={24} c="#c9a84c"/>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
+                    <div style={{fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.45}}>Upgrade to set targeted job alerts by role, location, company &amp; seniority.</div>
+                  </div>
+                </div>}
+              </div>
+            </div>;
+          })()}
           {/* Email Alerts */}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Email Alerts</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
@@ -3974,6 +4062,7 @@ export default function App() {
   useEffect(()=>{ try{ sessionStorage.setItem("mq_expanded",JSON.stringify(expanded)); }catch{} },[expanded]);
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
+  const [pricingDismissed,setPricingDismissed]=useState(false);
   const [guest,setGuest]=useState(false);
   const [showLoginPopup,setShowLoginPopup]=useState(false);
   const requestLogin=useCallback(()=>setShowLoginPopup(true),[]);
@@ -4553,6 +4642,8 @@ export default function App() {
 
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
+        {/* Pricing banner for guests (dismissible) */}
+        {guest&&!pricingDismissed&&<div style={{marginBottom:14}}><PricingInfo onDismiss={()=>setPricingDismissed(true)}/></div>}
         {/* Mobile globe — centered at top */}
         {mobile&&<div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
           <GlobeHeatmap size={185} showStates={false}/>
