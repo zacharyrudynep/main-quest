@@ -2455,11 +2455,90 @@ function GlobeHeatmap({size=180,showStates=true}){
   </div>;
 }
 
+// ── JOB ALERTS: matching + inbox ──────────────────────────────────────────────
+// Does a user's alert config have any criteria set?
+function alertHasCriteria(A){
+  if(!A) return false;
+  return (A.roles&&A.roles.length>0)||(A.seniority&&A.seniority.length>0)||!!(A.companies&&A.companies.trim())||!!(A.locations&&A.locations.trim());
+}
+// Does a job match the alert config? Honors the matchAll (AND) vs any (OR) toggle.
+function jobMatchesAlert(job, A){
+  if(!A) return false;
+  const title=(job.title||"").toLowerCase();
+  const comp=(job.company||"").toLowerCase();
+  const loc=(job.location||"").toLowerCase();
+  const results=[];
+  if(A.roles&&A.roles.length) results.push(A.roles.some(r=>title.includes(String(r).toLowerCase())));
+  if(A.seniority&&A.seniority.length) results.push(A.seniority.some(s=>{const t=String(s).toLowerCase();return title.includes(t)||title.includes(t.split("-")[0]);}));
+  const compList=(A.companies||"").split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+  if(compList.length) results.push(compList.some(c=>comp.includes(c)));
+  const locList=(A.locations||"").split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+  if(locList.length) results.push(locList.some(l=>loc.includes(l)||(l==="remote"&&(job.isRemote||/remote/i.test(loc)))));
+  if(results.length===0) return false;
+  return A.matchAll ? results.every(Boolean) : results.some(Boolean);
+}
+
+// ── INBOX PANEL (slide-over) ──────────────────────────────────────────────────
+function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear}){
+  const timeAgo=(ts)=>{const d=Date.now()-ts;const h=Math.floor(d/3600000);if(h<1)return"just now";if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";};
+  const unread=items.filter(n=>!n.read).length;
+  return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.55)",backdropFilter:"blur(2px)",display:"flex",justifyContent:"flex-end"}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:"min(400px,100%)",height:"100%",background:"#0c0810",borderLeft:"1px solid rgba(201,168,76,.2)",display:"flex",flexDirection:"column",boxShadow:"-20px 0 60px rgba(0,0,0,.5)"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:9}}>
+          <I.Bell s={18} c="#c9a84c"/>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:"#f0d080",letterSpacing:.5}}>Inbox</span>
+          {unread>0&&<span style={{background:"#e8613a",color:"#fff",borderRadius:20,fontSize:10,padding:"1px 7px",fontWeight:800}}>{unread}</span>}
+        </div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:22,lineHeight:1}}>×</button>
+      </div>
+      {items.length>0&&<div style={{display:"flex",justifyContent:"flex-end",gap:14,padding:"8px 18px",borderBottom:"1px solid rgba(201,168,76,.08)",flexShrink:0}}>
+        {unread>0&&<button onClick={onMarkAllRead} style={{background:"none",border:"none",color:"#c9a84c",cursor:"pointer",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600}}>Mark all read</button>}
+        <button onClick={onClear} style={{background:"none",border:"none",color:"rgba(232,97,58,.7)",cursor:"pointer",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600}}>Clear all</button>
+      </div>}
+      <div style={{flex:1,overflowY:"auto",padding:"10px 14px"}}>
+        {items.length===0?
+          <div style={{textAlign:"center",color:"rgba(244,237,216,.35)",fontSize:12,padding:"56px 22px",lineHeight:1.6}}><div style={{marginBottom:12,opacity:.5,display:"flex",justifyContent:"center"}}><I.Bell s={30} c="rgba(244,237,216,.3)"/></div>No alerts yet. Set up <strong style={{color:"rgba(244,237,216,.55)"}}>Specific Job Alerts</strong> in your account (a Premium feature) and we'll ping you here when matching roles are posted.</div>
+        :
+          items.map(n=>
+            <div key={n.id} onClick={()=>onMarkRead(n.id)} style={{display:"flex",gap:10,padding:"11px 12px",marginBottom:6,borderRadius:10,cursor:"pointer",background:n.read?"transparent":"rgba(201,168,76,.06)",border:`1px solid ${n.read?"rgba(201,168,76,.08)":"rgba(201,168,76,.2)"}`}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:n.read?"transparent":"#e8613a",flexShrink:0,marginTop:5}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8",marginBottom:2}}>{n.title}</div>
+                <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>{n.company}{n.location?` · ${n.location}`:""}</div>
+                <div style={{fontSize:10,color:"rgba(244,237,216,.3)",marginTop:3}}>{timeAgo(n.ts)}</div>
+              </div>
+            </div>)}
+      </div>
+    </div>
+  </div>;
+}
+
 // ── PRICING / PLAN COMPARISON CARD ────────────────────────────────────────────
 // Free vs Premium at a glance. Used on the sign-in screen and as a dismissible
 // banner on the board so guests can see what a subscription unlocks.
 function PricingInfo({compact,onDismiss}){
   const GG="linear-gradient(135deg,#c9a84c,#f0d080)";
+  // Compact = a short price strip for the landing/sign-in screen (the feature list
+  // already lives elsewhere there), kept small so the page fits without scrolling.
+  if(compact){
+    return <div style={{background:"rgba(16,10,22,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:12,padding:"10px 12px"}}>
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:9.5,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:1,textAlign:"center",marginBottom:8}}>Free vs Premium</div>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1,textAlign:"center",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.14)",borderRadius:9,padding:"8px 6px"}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:12,color:"#f4edd8"}}>Free</div>
+          <div style={{fontSize:14,fontWeight:800,color:"#f0d080",margin:"2px 0"}}>$0</div>
+          <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.3}}>Browse, apply &amp; track</div>
+        </div>
+        <div style={{flex:1,textAlign:"center",background:"linear-gradient(135deg,rgba(201,168,76,.12),rgba(232,97,58,.06))",border:"1px solid rgba(201,168,76,.4)",borderRadius:9,padding:"8px 6px"}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:12,background:GG,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Premium</div>
+          <div style={{fontSize:14,fontWeight:800,color:"#f0d080",margin:"2px 0"}}>$4.99<span style={{fontSize:9,fontWeight:600,color:"rgba(244,237,216,.4)"}}>/mo</span></div>
+          <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.3}}>+ match score, alerts &amp; autofill</div>
+        </div>
+      </div>
+      <div style={{fontSize:9,color:"rgba(244,237,216,.32)",textAlign:"center",marginTop:7}}>Premium also: $49.99/yr · $119.99 lifetime</div>
+    </div>;
+  }
   const free=["Browse every listing","Apply to jobs","Track your applications","Job alerts for up to 5 companies"];
   const prem=["Everything in Free","Job Match Score","Email autofill for applications","Targeted alerts by role, location, company & seniority"];
   const Card=({title,price,items,gold})=><div style={{flex:1,minWidth:0,background:gold?"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.05))":"rgba(201,168,76,.03)",border:`1px solid ${gold?"rgba(201,168,76,.4)":"rgba(201,168,76,.14)"}`,borderRadius:12,padding:14}}>
@@ -2476,7 +2555,7 @@ function PricingInfo({compact,onDismiss}){
   return <div style={{position:"relative",background:"rgba(16,10,22,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:14,padding:14}}>
     {onDismiss&&<button onClick={onDismiss} title="Dismiss" style={{position:"absolute",top:6,right:9,background:"none",border:"none",color:"rgba(244,237,216,.35)",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>}
     <div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(201,168,76,.75)",textTransform:"uppercase",letterSpacing:1.2,textAlign:"center",marginBottom:12}}>Choose Your Path</div>
-    <div style={{display:"flex",flexDirection:compact?"column":"row",gap:10}}>
+    <div style={{display:"flex",flexDirection:"row",gap:10}}>
       <Card title="Free" price="$0 — forever" items={free}/>
       <Card title="Premium" gold price="$4.99/mo · $49.99/yr · $119.99 lifetime" items={prem}/>
     </div>
@@ -4277,6 +4356,19 @@ export default function App() {
   },[tab]);
   const logout = async () => { await supabase.auth.signOut(); setUser(null); setShowAcct(false); };
   const updateUser=u=>setUser(u);
+  // Inbox / job-alert notifications (in-website only for now).
+  const [showInbox,setShowInbox]=useState(false);
+  const inbox=(user&&user.profile&&user.profile.inbox)||[];
+  const inboxUnread=inbox.filter(n=>!n.read).length;
+  // Merge a patch into the user's profile in state AND persist to Supabase.
+  const patchProfile=async(patch)=>{
+    let merged=null;
+    setUser(u=>{ if(!u)return u; merged={...(u.profile||{}),...patch}; return {...u,profile:merged}; });
+    try{ if(user&&user.id&&merged) await supabase.from("profiles").upsert({id:user.id,name:user.name,data:merged},{onConflict:"id"}); }catch(e){}
+  };
+  const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
+  const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
+  const clearInbox=()=>patchProfile({inbox:[]});
 
   // Restore session on mount so refreshing the page doesn't log the user out.
   const [authChecked,setAuthChecked]=useState(false);
@@ -4404,6 +4496,32 @@ export default function App() {
     return out;
   },[liveJobs]);
   const totalJobs=useMemo(()=>allJobs.filter(matches).length,[allJobs,filters,user]);
+  // Once-a-day job-alert scan (in-website badges only for now). When a premium
+  // user has alert criteria set, compare live jobs against them and drop new
+  // matches into the inbox. Throttled to once per 24h via lastAlertScan. Email
+  // delivery (Resend) will hook in here later.
+  useEffect(()=>{
+    if(!user||!user.id||!introDone) return;
+    const A=user.profile&&user.profile.jobAlerts;
+    if(!alertHasCriteria(A)) return;
+    const last=(user.profile&&user.profile.lastAlertScan)||0;
+    if(Date.now()-last < 24*3600*1000) return;      // once a day
+    const existing=(user.profile&&user.profile.inbox)||[];
+    const keys=new Set(existing.map(n=>n.jobKey));
+    const matched=allJobs.filter(j=>jobMatchesAlert(j,A)).sort((a,b)=>(b.updated||0)-(a.updated||0));
+    const fresh=[];
+    for(const j of matched){
+      const jobKey=`${j.company}|${j.title}|${j.location||""}`;
+      if(keys.has(jobKey)) continue;
+      keys.add(jobKey);
+      fresh.push({id:jobKey,jobKey,title:j.title,company:j.company,location:j.location||"",ts:Date.now(),read:false});
+      if(fresh.length>=25) break;                   // cap per scan
+    }
+    // Always stamp the scan time so we respect the once-a-day limit even if nothing new.
+    if(fresh.length>0) patchProfile({inbox:[...fresh,...existing].slice(0,100),lastAlertScan:Date.now()});
+    else patchProfile({lastAlertScan:Date.now()});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[user&&user.id,introDone,allJobs.length]);
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
   const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically
@@ -4630,13 +4748,20 @@ export default function App() {
             <button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>
         </nav>
       </div>
-      {/* RIGHT: Profile avatar */}
+      {/* RIGHT: Inbox + Profile */}
+      <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+      {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
+        <I.Bell s={16} c="#c9a84c"/>
+        {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}
+      </button>}
       <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 12px 4px 4px",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <div style={{width:28,height:28,borderRadius:"50%",background:user?G:"rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:user?"#0a0608":"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{user?(user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"):<I.Person s={15} c="rgba(244,237,216,.5)"/>}</div>
         {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user?user.name:"Guest"}</span>}
       </button>
+      </div>
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
+    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox}/>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
