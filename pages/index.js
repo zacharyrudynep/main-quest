@@ -2455,33 +2455,133 @@ function GlobeHeatmap({size=180,showStates=true}){
   </div>;
 }
 
-// ── JOB ALERTS: matching + inbox ──────────────────────────────────────────────
-// Does a user's alert config have any criteria set?
-function alertHasCriteria(A){
-  if(!A) return false;
-  return (A.roles&&A.roles.length>0)||(A.seniority&&A.seniority.length>0)||!!(A.companies&&A.companies.trim())||!!(A.locations&&A.locations.trim());
+// ── JOB ALERTS: model + matching ──────────────────────────────────────────────
+// jobAlerts is an array of blocks: {id, roles[], seniority[], locations[], companies[], matchAll}.
+// Older single-object configs are migrated on read so nothing breaks.
+function asAlertArray(ja){
+  if(Array.isArray(ja)) return ja;
+  if(ja&&typeof ja==="object"){
+    const roles=ja.roles||[], seniority=ja.seniority||[];
+    const locations=typeof ja.locations==="string"?ja.locations.split(",").map(s=>s.trim()).filter(Boolean):(ja.locations||[]);
+    const companies=typeof ja.companies==="string"?ja.companies.split(",").map(s=>s.trim()).filter(Boolean):(ja.companies||[]);
+    if(roles.length||seniority.length||locations.length||companies.length)
+      return [{id:"legacy",roles,seniority,locations,companies,matchAll:!!ja.matchAll}];
+  }
+  return [];
 }
-// Does a job match the alert config? Honors the matchAll (AND) vs any (OR) toggle.
-function jobMatchesAlert(job, A){
-  if(!A) return false;
+function alertHasCriteria(alerts){ return asAlertArray(alerts).length>0; }
+function jobMatchesOneAlert(job,a){
   const title=(job.title||"").toLowerCase();
   const comp=(job.company||"").toLowerCase();
   const loc=(job.location||"").toLowerCase();
   const results=[];
-  if(A.roles&&A.roles.length) results.push(A.roles.some(r=>title.includes(String(r).toLowerCase())));
-  if(A.seniority&&A.seniority.length) results.push(A.seniority.some(s=>{const t=String(s).toLowerCase();return title.includes(t)||title.includes(t.split("-")[0]);}));
-  const compList=(A.companies||"").split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
-  if(compList.length) results.push(compList.some(c=>comp.includes(c)));
-  const locList=(A.locations||"").split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
-  if(locList.length) results.push(locList.some(l=>loc.includes(l)||(l==="remote"&&(job.isRemote||/remote/i.test(loc)))));
+  if(a.roles&&a.roles.length) results.push(a.roles.some(r=>title.includes(String(r).toLowerCase())));
+  if(a.seniority&&a.seniority.length) results.push(a.seniority.some(s=>{const t=String(s).toLowerCase();return title.includes(t)||title.includes(t.split("-")[0]);}));
+  if(a.companies&&a.companies.length) results.push(a.companies.some(c=>comp.includes(String(c).toLowerCase())));
+  if(a.locations&&a.locations.length) results.push(a.locations.some(l=>{const ll=String(l).toLowerCase();return loc.includes(ll)||(ll==="remote"&&(job.isRemote||/remote/i.test(loc)));}));
   if(results.length===0) return false;
-  return A.matchAll ? results.every(Boolean) : results.some(Boolean);
+  return a.matchAll ? results.every(Boolean) : results.some(Boolean);
+}
+function jobMatchesAnyAlert(job,alerts){ return asAlertArray(alerts).some(a=>jobMatchesOneAlert(job,a)); }
+
+// Autocomplete input that turns picks into removable chips (for location & company).
+function AutoInput({options,selected,onAdd,onRemove,placeholder}){
+  const [q,setQ]=useState("");
+  const ql=q.trim().toLowerCase();
+  const matches=ql?options.filter(o=>o.toLowerCase().includes(ql)&&!selected.includes(o)).slice(0,8):[];
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
+  const add=(v)=>{const t=String(v).trim();if(t&&!selected.includes(t))onAdd(t);setQ("");};
+  return <div style={{position:"relative"}}>
+    <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();add(q);}}} placeholder={placeholder} style={inp}/>
+    {matches.length>0&&<div style={{position:"absolute",left:0,right:0,top:"100%",marginTop:4,background:"#140d14",border:"1px solid rgba(201,168,76,.3)",borderRadius:8,zIndex:5,maxHeight:180,overflowY:"auto",boxShadow:"0 12px 34px rgba(0,0,0,.5)"}}>
+      {matches.map(m=><div key={m} onClick={()=>add(m)} style={{padding:"8px 11px",fontSize:12,color:"rgba(244,237,216,.8)",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background=""}>{m}</div>)}
+    </div>}
+    {selected.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+      {selected.map(s=><span key={s} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",borderRadius:20,fontSize:11,padding:"3px 6px 3px 10px"}}>{s}<span onClick={()=>onRemove(s)} style={{cursor:"pointer",fontSize:14,lineHeight:1,color:"rgba(244,237,216,.6)"}}>×</span></span>)}
+    </div>}
+  </div>;
+}
+
+// Multi-alert manager: a step-by-step wizard + saved alert blocks. Premium-gated.
+function JobAlertManager({alerts,onSave,isPremium,companyOptions,locationOptions}){
+  const [wiz,setWiz]=useState(null);
+  const senOpts=["Intern","Junior","Mid-level","Senior","Lead","Principal","Director","Manager"];
+  const STEPS=["Role","Seniority","Location","Company","Review"];
+  const start=()=>setWiz({step:0,editId:null,draft:{roles:[],seniority:[],locations:[],companies:[],matchAll:false}});
+  const edit=(a)=>setWiz({step:0,editId:a.id,draft:{roles:[...(a.roles||[])],seniority:[...(a.seniority||[])],locations:[...(a.locations||[])],companies:[...(a.companies||[])],matchAll:!!a.matchAll}});
+  const setD=(patch)=>setWiz(w=>({...w,draft:{...w.draft,...patch}}));
+  const commit=()=>{const d=wiz.draft;const clean={roles:d.roles,seniority:d.seniority,locations:d.locations,companies:d.companies,matchAll:d.matchAll};onSave(wiz.editId?alerts.map(a=>a.id===wiz.editId?{...clean,id:wiz.editId}:a):[...alerts,{...clean,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)}]);setWiz(null);};
+  const summarize=(a)=>{const parts=[];if(a.roles&&a.roles.length)parts.push("Roles: "+a.roles.join(", "));if(a.seniority&&a.seniority.length)parts.push("Seniority: "+a.seniority.join(", "));if(a.locations&&a.locations.length)parts.push("Locations: "+a.locations.join(", "));if(a.companies&&a.companies.length)parts.push("Companies: "+a.companies.join(", "));return parts;};
+  const lbl={fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.6,marginBottom:8,fontFamily:"'Cinzel',serif"};
+  const content = wiz ? (()=>{ const d=wiz.draft; const empty=summarize(d).length===0;
+    return <div style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.2)",borderRadius:12,padding:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080"}}>{wiz.editId?"Edit alert":"New alert"} — {STEPS[wiz.step]}</div>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.4)"}}>Step {wiz.step+1} of {STEPS.length}</div>
+      </div>
+      {wiz.step===0&&<div><div style={lbl}>Which roles?</div><div style={{maxHeight:220,overflowY:"auto",border:"1px solid rgba(201,168,76,.1)",borderRadius:8,padding:"6px 8px"}}><CheckGroup opts={JOB_CATS} sel={d.roles} onChange={v=>setD({roles:v})}/></div></div>}
+      {wiz.step===1&&<div><div style={lbl}>Which seniority levels?</div><CheckGroup opts={senOpts} sel={d.seniority} onChange={v=>setD({seniority:v})}/></div>}
+      {wiz.step===2&&<div><div style={lbl}>Which locations?</div><AutoInput options={locationOptions} selected={d.locations} onAdd={v=>setD({locations:[...d.locations,v]})} onRemove={v=>setD({locations:d.locations.filter(x=>x!==v)})} placeholder="Type a city, state, country or 'Remote'…"/></div>}
+      {wiz.step===3&&<div><div style={lbl}>Which companies?</div><AutoInput options={companyOptions} selected={d.companies} onAdd={v=>setD({companies:[...d.companies,v]})} onRemove={v=>setD({companies:d.companies.filter(x=>x!==v)})} placeholder="Type a studio name…"/></div>}
+      {wiz.step===4&&<div>
+        <div style={lbl}>Review</div>
+        <div style={{fontSize:12,color:"rgba(244,237,216,.7)",lineHeight:1.6,marginBottom:12}}>{empty?<span style={{color:"rgba(244,237,216,.4)",fontStyle:"italic"}}>No criteria picked — go back and choose at least one.</span>:summarize(d).map((s,i)=><div key={i}>• {s}</div>)}</div>
+        <div onClick={()=>setD({matchAll:!d.matchAll})} style={{display:"flex",alignItems:"flex-start",gap:9,cursor:"pointer",padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:9}}>
+          <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${d.matchAll?"#c9a84c":"rgba(201,168,76,.25)"}`,background:d.matchAll?"#c9a84c":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{d.matchAll&&<I.Check s={10} c="#0a0608"/>}</div>
+          <div><div style={{fontSize:12,fontWeight:600,color:"#f4edd8"}}>Match all criteria</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2,lineHeight:1.4}}>On = only alert when every criterion is true. Off = alert if any match.</div></div>
+        </div>
+      </div>}
+      <div style={{display:"flex",justifyContent:"space-between",gap:8,marginTop:14}}>
+        <button onClick={wiz.step===0?()=>setWiz(null):()=>setWiz(w=>({...w,step:w.step-1}))} style={{background:"rgba(244,237,216,.05)",border:"1px solid rgba(201,168,76,.15)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:8,padding:"9px 16px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600}}>{wiz.step===0?"Cancel":"‹ Previous"}</button>
+        {wiz.step<4?
+          <button onClick={()=>setWiz(w=>({...w,step:w.step+1}))} style={{background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",cursor:"pointer",borderRadius:8,padding:"9px 16px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700}}>Next ›</button>
+          :<button onClick={commit} disabled={empty} style={{background:empty?"rgba(201,168,76,.2)":"linear-gradient(135deg,#c9a84c,#f0d080)",border:"none",color:"#0a0608",cursor:empty?"default":"pointer",borderRadius:8,padding:"9px 20px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5,opacity:empty?.5:1}}>Save alert</button>}
+      </div>
+    </div>;
+  })() : (
+    <div>
+      {alerts.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+        {alerts.map(a=><div key={a.id} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,padding:"11px 12px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <div style={{flex:1,minWidth:0}}>{summarize(a).map((s,i)=><div key={i} style={{fontSize:11.5,color:"rgba(244,237,216,.7)",lineHeight:1.5}}>{s}</div>)}</div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              <button onClick={()=>edit(a)} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:"4px 9px",fontSize:10,fontFamily:"'Cinzel',serif",fontWeight:600}}>Edit</button>
+              <button onClick={()=>onSave(alerts.filter(x=>x.id!==a.id))} title="Delete" style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,width:26,fontSize:13,lineHeight:1}}>×</button>
+            </div>
+          </div>
+          <div onClick={()=>onSave(alerts.map(x=>x.id===a.id?{...x,matchAll:!x.matchAll}:x))} style={{display:"flex",alignItems:"center",gap:7,marginTop:9,cursor:"pointer"}}>
+            <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${a.matchAll?"#c9a84c":"rgba(201,168,76,.25)"}`,background:a.matchAll?"#c9a84c":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{a.matchAll&&<I.Check s={9} c="#0a0608"/>}</div>
+            <span style={{fontSize:10.5,color:"rgba(244,237,216,.5)"}}>Must match all criteria</span>
+          </div>
+        </div>)}
+      </div>}
+      <button onClick={start} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Create job alert</button>
+    </div>
+  );
+  return <div style={{marginBottom:16}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <span style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Specific Job Alerts</span>
+      <span style={{display:"flex",alignItems:"center",gap:3,background:"linear-gradient(135deg,rgba(201,168,76,.18),rgba(232,97,58,.1))",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:8,padding:"2px 8px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5}}>✦ PREMIUM</span>
+    </div>
+    <div style={{position:"relative"}}>
+      <div style={{opacity:isPremium?1:.3,pointerEvents:isPremium?"auto":"none",filter:isPremium?"none":"grayscale(.3)"}}>{content}</div>
+      {!isPremium&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,background:"rgba(16,10,22,.92)",border:"1px solid rgba(201,168,76,.35)",borderRadius:12,padding:"18px 22px",maxWidth:250,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
+          <I.Lock s={24} c="#c9a84c"/>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
+          <div style={{fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.45}}>Upgrade to create targeted job alerts by role, location, company &amp; seniority.</div>
+        </div>
+      </div>}
+    </div>
+  </div>;
 }
 
 // ── INBOX PANEL (slide-over) ──────────────────────────────────────────────────
-function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear}){
+function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,profile,onPatch,isPremium,companyOptions,locationOptions}){
   const timeAgo=(ts)=>{const d=Date.now()-ts;const h=Math.floor(d/3600000);if(h<1)return"just now";if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";};
   const unread=items.filter(n=>!n.read).length;
+  const P=profile||{};
+  const notifyCompanies=P.notifyCompanies||[];
   return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.55)",backdropFilter:"blur(2px)",display:"flex",justifyContent:"flex-end"}}>
     <div onClick={e=>e.stopPropagation()} style={{width:"min(400px,100%)",height:"100%",background:"#0c0810",borderLeft:"1px solid rgba(201,168,76,.2)",display:"flex",flexDirection:"column",boxShadow:"-20px 0 60px rgba(0,0,0,.5)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0}}>
@@ -2492,13 +2592,42 @@ function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear}){
         </div>
         <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:22,lineHeight:1}}>×</button>
       </div>
-      {items.length>0&&<div style={{display:"flex",justifyContent:"flex-end",gap:14,padding:"8px 18px",borderBottom:"1px solid rgba(201,168,76,.08)",flexShrink:0}}>
-        {unread>0&&<button onClick={onMarkAllRead} style={{background:"none",border:"none",color:"#c9a84c",cursor:"pointer",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600}}>Mark all read</button>}
-        <button onClick={onClear} style={{background:"none",border:"none",color:"rgba(232,97,58,.7)",cursor:"pointer",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600}}>Clear all</button>
-      </div>}
-      <div style={{flex:1,overflowY:"auto",padding:"10px 14px"}}>
+      <div style={{flex:1,overflowY:"auto",padding:"14px 16px"}}>
+        {/* Specific job alerts (premium) — moved here from the account tab */}
+        <JobAlertManager alerts={asAlertArray(P.jobAlerts)} onSave={next=>onPatch&&onPatch({jobAlerts:next})} isPremium={isPremium} companyOptions={companyOptions||[]} locationOptions={locationOptions||[]}/>
+        {/* Bell / company notification settings — moved here from the account tab */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:10}}>Notification Settings</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,marginBottom:8}}>
+            <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Alert me for all new postings</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>{P.alertAll?"Every company.":"Only companies you follow below."}</div></div>
+            <button onClick={()=>onPatch&&onPatch({alertAll:!P.alertAll})} style={{width:42,height:24,background:P.alertAll?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.alertAll?"translateX(18px)":"none"}}/></button>
+          </div>
+          {!P.alertAll&&<div style={{marginBottom:8}}>
+            {notifyCompanies.length===0?
+              <div style={{fontSize:10.5,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"9px 11px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,textAlign:"center"}}>No companies followed yet. Tap the bell on any studio on the board to follow it.</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {notifyCompanies.map(cn=>
+                  <div key={cn} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"8px 11px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8}}>
+                    <span style={{fontSize:12,color:"#f4edd8"}}>{cn}</span>
+                    <span onClick={()=>onPatch&&onPatch({notifyCompanies:notifyCompanies.filter(x=>x!==cn)})} title="Unfollow" style={{cursor:"pointer",display:"flex",flexShrink:0}}><I.Bell s={14} c="#c9a84c" fill="#c9a84c"/></span>
+                  </div>)}
+              </div>}
+          </div>}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
+            <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>In-app badges</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Show new-posting badges while browsing</div></div>
+            <button onClick={()=>onPatch&&onPatch({notifications:P.notifications===false?true:false})} style={{width:42,height:24,background:P.notifications!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.notifications!==false?"translateX(18px)":"none"}}/></button>
+          </div>
+        </div>
+        {/* Notifications feed */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Notifications</div>
+          {items.length>0&&<div style={{display:"flex",gap:12}}>
+            {unread>0&&<button onClick={onMarkAllRead} style={{background:"none",border:"none",color:"#c9a84c",cursor:"pointer",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600}}>Mark all read</button>}
+            <button onClick={onClear} style={{background:"none",border:"none",color:"rgba(232,97,58,.7)",cursor:"pointer",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600}}>Clear all</button>
+          </div>}
+        </div>
         {items.length===0?
-          <div style={{textAlign:"center",color:"rgba(244,237,216,.35)",fontSize:12,padding:"56px 22px",lineHeight:1.6}}><div style={{marginBottom:12,opacity:.5,display:"flex",justifyContent:"center"}}><I.Bell s={30} c="rgba(244,237,216,.3)"/></div>No alerts yet. Set up <strong style={{color:"rgba(244,237,216,.55)"}}>Specific Job Alerts</strong> in your account (a Premium feature) and we'll ping you here when matching roles are posted.</div>
+          <div style={{textAlign:"center",color:"rgba(244,237,216,.35)",fontSize:11.5,padding:"28px 18px",lineHeight:1.6,background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.12)",borderRadius:10}}>No alerts yet. Create a job alert above and we'll ping you here when matching roles are posted.</div>
         :
           items.map(n=>
             <div key={n.id} onClick={()=>onMarkRead(n.id)} style={{display:"flex",gap:10,padding:"11px 12px",marginBottom:6,borderRadius:10,cursor:"pointer",background:n.read?"transparent":"rgba(201,168,76,.06)",border:`1px solid ${n.read?"rgba(201,168,76,.08)":"rgba(201,168,76,.2)"}`}}>
@@ -3464,77 +3593,6 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
               <div style={{fontSize:10.5,color:"rgba(244,237,216,.38)",marginTop:10,textAlign:"center"}}>{billingBusy?"Starting checkout…":"Have a launch code? Enter it at checkout."}</div>
             </div>
           }
-          {/* Specific Job Alerts — PREMIUM feature */}
-          {(()=>{
-            const isPrem=!!(premium&&premium.isPremium);
-            const A=p.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true};
-            const setA=(k,v)=>upd("jobAlerts",{...A,[k]:v});
-            const SENIORITY=["Intern","Junior","Mid-level","Senior","Lead","Principal","Director","Manager"];
-            const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
-            const lbl={fontSize:10,color:"rgba(201,168,76,.55)",textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:"'Cinzel',serif"};
-            return <div style={{marginBottom:18}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <span style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Specific Job Alerts</span>
-                <span style={{display:"flex",alignItems:"center",gap:3,background:"linear-gradient(135deg,rgba(201,168,76,.18),rgba(232,97,58,.1))",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:8,padding:"2px 8px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5}}>✦ PREMIUM</span>
-              </div>
-              <div style={{position:"relative"}}>
-                <div style={{opacity:isPrem?1:.3,pointerEvents:isPrem?"auto":"none",filter:isPrem?"none":"grayscale(.3)"}}>
-                  <p style={{fontSize:11,color:"rgba(244,237,216,.45)",margin:"0 0 12px",lineHeight:1.5}}>Get pinged when a new posting matches what you're after. Pick any mix of criteria below.</p>
-                  <div style={lbl}>Roles</div>
-                  <div style={{marginBottom:14,maxHeight:190,overflowY:"auto",border:"1px solid rgba(201,168,76,.1)",borderRadius:8,padding:"6px 8px"}}><CheckGroup opts={JOB_CATS} sel={A.roles} onChange={v=>setA("roles",v)}/></div>
-                  <div style={lbl}>Seniority</div>
-                  <div style={{marginBottom:14}}><CheckGroup opts={SENIORITY} sel={A.seniority} onChange={v=>setA("seniority",v)}/></div>
-                  <div style={lbl}>Companies</div>
-                  <input value={A.companies} onChange={e=>setA("companies",e.target.value)} placeholder="e.g. Riot Games, Bungie (comma-separated)" style={{...inp,marginBottom:14}}/>
-                  <div style={lbl}>Locations</div>
-                  <input value={A.locations} onChange={e=>setA("locations",e.target.value)} placeholder="e.g. New York, Remote, California" style={{...inp,marginBottom:14}}/>
-                  <div onClick={()=>isPrem&&setA("matchAll",!A.matchAll)} style={{display:"flex",alignItems:"flex-start",gap:9,cursor:"pointer",padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:9,marginBottom:10}}>
-                    <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${A.matchAll?"#c9a84c":"rgba(201,168,76,.25)"}`,background:A.matchAll?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{A.matchAll&&<I.Check s={10} c="#0a0608"/>}</div>
-                    <div><div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8"}}>Match all criteria</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)",marginTop:2,lineHeight:1.4}}>Only alert me when every filled-in criterion is true — e.g. a Game Designer role in New York, not either one alone. Off = alert me if any match.</div></div>
-                  </div>
-                  <div onClick={()=>isPrem&&setA("emailEnabled",A.emailEnabled===false?true:false)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:9,cursor:"pointer",padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:9}}>
-                    <div><div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8"}}>Email me these alerts</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)",marginTop:2}}>On-site badges stay on either way.</div></div>
-                    <div style={{width:38,height:22,borderRadius:20,background:A.emailEnabled!==false?"#c9a84c":"rgba(244,237,216,.15)",position:"relative",transition:"all .2s",flexShrink:0}}><div style={{position:"absolute",top:2,left:A.emailEnabled!==false?18:2,width:18,height:18,borderRadius:"50%",background:A.emailEnabled!==false?"#0a0608":"rgba(244,237,216,.6)",transition:"all .2s"}}/></div>
-                  </div>
-                </div>
-                {!isPrem&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,background:"rgba(16,10,22,.9)",border:"1px solid rgba(201,168,76,.35)",borderRadius:12,padding:"18px 22px",maxWidth:250,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
-                    <I.Lock s={24} c="#c9a84c"/>
-                    <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
-                    <div style={{fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.45}}>Upgrade to set targeted job alerts by role, location, company &amp; seniority.</div>
-                  </div>
-                </div>}
-              </div>
-            </div>;
-          })()}
-          {/* Email Alerts */}
-          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Email Alerts</div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
-            <div><div style={{fontSize:13,fontWeight:500,color:"#f4edd8",marginBottom:2}}>Alert me for all new postings</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>{p.alertAll?"You'll be alerted about every company.":"Only the companies you've turned on below."}</div></div>
-            <button onClick={()=>upd("alertAll",!p.alertAll)} style={{width:42,height:24,background:p.alertAll?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
-              <div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:p.alertAll?"translateX(18px)":"none"}}/>
-            </button>
-          </div>
-          {/* Per-company notification list — hidden when "alert all" is on */}
-          {!p.alertAll&&<div style={{marginBottom:10}}>
-            <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>Companies you're getting alerts for. Click the bell to remove one. (Turn on notifications from any company on the job board using its bell icon.)</div>
-            {(p.notifyCompanies||[]).length===0?
-              <div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"10px 12px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,textAlign:"center"}}>No companies yet. Click the bell icon next to a company on the job board to add it here.</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {(p.notifyCompanies||[]).map(cn=>
-                  <div key={cn} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"9px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8}}>
-                    <span style={{fontSize:12,color:"#f4edd8"}}>{cn}</span>
-                    <span onClick={()=>upd("notifyCompanies",(p.notifyCompanies||[]).filter(x=>x!==cn))} title="Turn off notifications for this company" style={{cursor:"pointer",display:"flex",flexShrink:0}}><I.Bell s={14} c="#c9a84c" fill="#c9a84c"/></span>
-                  </div>)}
-              </div>}
-          </div>}
-          {/* In-app notifications toggle */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:14,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:10}}>
-            <div><div style={{fontSize:13,fontWeight:500,color:"#f4edd8",marginBottom:2}}>In-app Notifications</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>Show new-posting badges while browsing</div></div>
-            <button onClick={()=>upd("notifications",!p.notifications)} style={{width:42,height:24,background:p.notifications?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
-              <div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:p.notifications?"translateX(18px)":"none"}}/>
-            </button>
-          </div>
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",margin:"18px 0 8px"}}>Account Details</div>
           {[["Email",user.email],["Applications Tracked",Object.keys(user.applied||{}).length]].map(([l,v])=>
             <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500}}>{v}</span></div>)}
@@ -4209,8 +4267,14 @@ export default function App() {
     };
     const fetchGroup=async(members)=>{
       const [,{platform,slug}]=members[0];
+      // Per-request timeout so a single slow/hung ATS endpoint can't stall the
+      // whole load. Still respects the global abort (navigation/unmount).
+      const ctrl=new AbortController();
+      const onAbort=()=>ctrl.abort();
+      signal.addEventListener("abort",onAbort);
+      const timer=setTimeout(()=>ctrl.abort(),9000);
       try{
-        const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal});
+        const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal:ctrl.signal});
         if(!res.ok)return members.map(([nm])=>[nm,null]);
         const data=await res.json();
         const rawJobs=data.jobs||[];
@@ -4220,6 +4284,7 @@ export default function App() {
         for(const rj of rawJobs){ buckets[pickStudio(rj,members)].push(rj); }
         return members.map(([nm])=>normFor(nm,platform,buckets[nm]));
       }catch{return members.map(([nm])=>[nm,null]);}
+      finally{ clearTimeout(timer); signal.removeEventListener("abort",onAbort); }
     };
 
     if(isIntro){
@@ -4227,7 +4292,7 @@ export default function App() {
       // ref. We reveal the board only once everything is in, so it is fully populated
       // the moment the loader disappears (the safety cap can flush partial results).
       introCollectedRef.current={};
-      const CONC=10;
+      const CONC=16;
       let done=0;
       for(let i=0;i<groupList.length;i+=CONC){
         if(signal.aborted)return;
@@ -4277,15 +4342,14 @@ export default function App() {
       introStartedRef.current=true;
       introStartRef.current=Date.now();
       fetchLiveJobs(true);
-      // Safety net: never trap the user on the loader. If some ATS calls are slow,
-      // reveal the board after a hard cap with whatever has been collected so far
-      // (rather than an empty board). With the edge cache in front of the ATS proxy
-      // a warm load finishes in well under a second, so this only fires on a cold
-      // cache with a slow upstream.
+      // Safety net of last resort. The normal path above waits for EVERY listing
+      // to finish (each request is time-boxed to 9s), so the board only reveals
+      // once fully populated. This cap only fires in a pathological case (a very
+      // cold cache with many slow endpoints) so the user is never trapped forever.
       const cap=setTimeout(()=>{
         setLiveJobs(prev=>Object.keys(prev).length?prev:{...introCollectedRef.current});
         setIntroDone(true);
-      },14000);
+      },40000);
       return()=>{ clearTimeout(cap); abortRef.current?.abort(); };
     }
     return()=>{ abortRef.current?.abort(); };
@@ -4369,6 +4433,15 @@ export default function App() {
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
   const clearInbox=()=>patchProfile({inbox:[]});
+  // Premium status at the app level (the inbox needs it to gate job alerts, and the
+  // scan below only runs for premium users). AccountPanel fetches its own copy too.
+  const [appPremium,setAppPremium]=useState(false);
+  useEffect(()=>{
+    if(!user||!user.id){setAppPremium(false);return;}
+    let alive=true;
+    fetch(`/api/stripe/status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(d=>{if(alive)setAppPremium(!!(d&&d.isPremium));}).catch(()=>{if(alive)setAppPremium(false);});
+    return()=>{alive=false;};
+  },[user&&user.id]);
 
   // Restore session on mount so refreshing the page doesn't log the user out.
   const [authChecked,setAuthChecked]=useState(false);
@@ -4501,14 +4574,14 @@ export default function App() {
   // matches into the inbox. Throttled to once per 24h via lastAlertScan. Email
   // delivery (Resend) will hook in here later.
   useEffect(()=>{
-    if(!user||!user.id||!introDone) return;
-    const A=user.profile&&user.profile.jobAlerts;
-    if(!alertHasCriteria(A)) return;
+    if(!user||!user.id||!introDone||!appPremium) return;
+    const alerts=user.profile&&user.profile.jobAlerts;
+    if(!alertHasCriteria(alerts)) return;
     const last=(user.profile&&user.profile.lastAlertScan)||0;
     if(Date.now()-last < 24*3600*1000) return;      // once a day
     const existing=(user.profile&&user.profile.inbox)||[];
     const keys=new Set(existing.map(n=>n.jobKey));
-    const matched=allJobs.filter(j=>jobMatchesAlert(j,A)).sort((a,b)=>(b.updated||0)-(a.updated||0));
+    const matched=allJobs.filter(j=>jobMatchesAnyAlert(j,alerts)).sort((a,b)=>(b.updated||0)-(a.updated||0));
     const fresh=[];
     for(const j of matched){
       const jobKey=`${j.company}|${j.title}|${j.location||""}`;
@@ -4521,7 +4594,7 @@ export default function App() {
     if(fresh.length>0) patchProfile({inbox:[...fresh,...existing].slice(0,100),lastAlertScan:Date.now()});
     else patchProfile({lastAlertScan:Date.now()});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user&&user.id,introDone,allJobs.length]);
+  },[user&&user.id,introDone,appPremium,allJobs.length]);
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
   const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically
@@ -4640,6 +4713,16 @@ export default function App() {
     });
   },[displayTree]);
   const allStates=useMemo(()=>[...new Set(Object.values(displayTree).flatMap(s=>Object.keys(s)))].sort(),[displayTree]);
+  // Autocomplete option lists for the job-alert wizard.
+  const companyOptions=useMemo(()=>[...new Set(allJobs.map(j=>j.company).filter(Boolean))].sort(),[allJobs]);
+  const locationOptions=useMemo(()=>{
+    const s=new Set(["Remote"]);
+    for(const c of allCountries) s.add(c);
+    for(const st of allStates) s.add(st);
+    for(const k of Object.keys(CITY_COUNTRY)) s.add(titleCasePlace(k));
+    for(const k of Object.keys(DOMESTIC_CITY_STATE)) s.add(titleCasePlace(k));
+    return [...s].sort();
+  },[allCountries,allStates]);
   // Precompute country/state totals once per data change (not per expand toggle).
   const treeCounts=useMemo(()=>{
     const cc={},sc={};
@@ -4761,7 +4844,7 @@ export default function App() {
       </div>
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
-    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox}/>}
+    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
