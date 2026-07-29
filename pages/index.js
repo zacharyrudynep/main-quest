@@ -3693,7 +3693,7 @@ const SearchBox = memo(function SearchBox({value,onSearch}){
 // ── FILTER + SORT HELPERS ─────────────────────────────────────────────────────
 function CheckGroup({opts,sel,onChange}) {
   const toggle=v=>onChange(sel.includes(v)?sel.filter(x=>x!==v):[...sel,v]);
-  return <div style={{display:"flex",flexDirection:"column",gap:3,maxHeight:180,overflowY:"auto"}}>{opts.map(o=><label key={o} onClick={()=>toggle(o)} style={{display:"flex",alignItems:"center",gap:7,padding:"4px 5px",borderRadius:6,cursor:"pointer",userSelect:"none"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+  return <div style={{display:"flex",flexDirection:"column",gap:3}}>{opts.map(o=><label key={o} onClick={()=>toggle(o)} style={{display:"flex",alignItems:"center",gap:7,padding:"4px 5px",borderRadius:6,cursor:"pointer",userSelect:"none"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
     <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${sel.includes(o)?"#c9a84c":"rgba(201,168,76,.25)"}`,background:sel.includes(o)?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>{sel.includes(o)&&<I.Check s={9} c="#0a0608"/>}</div>
     <span style={{fontSize:12,color:"rgba(244,237,216,.65)"}}>{o}</span>
   </label>)}</div>;
