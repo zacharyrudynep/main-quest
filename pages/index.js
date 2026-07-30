@@ -4758,7 +4758,15 @@ export default function App() {
     const {country,state}=found;
     setFilters(CLEAR);
     setExpanded(prev=>({...prev,[`c-${country}`]:true,[`s-${country}-${state}`]:true,[`co-${country}-${state}-${n.company}`]:true}));
-    setTimeout(()=>{ const el=document.getElementById(`mqco-${country}-${state}-${n.company}`); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },400);
+    setTimeout(()=>{
+      const jobKey=`${n.company}|${n.title}|${n.location||""}`;
+      const el=document.getElementById(`mqjob-${jobKey}`)||document.getElementById(`mqco-${country}-${state}-${n.company}`);
+      if(el){
+        el.scrollIntoView({behavior:"smooth",block:"center"});
+        el.classList.add("mq-pulse");
+        setTimeout(()=>el.classList.remove("mq-pulse"),2400);
+      }
+    },450);
   };
   // Precompute country/state totals once per data change (not per expand toggle).
   const treeCounts=useMemo(()=>{
@@ -4836,7 +4844,7 @@ export default function App() {
     {/* Desktop background globe — large, bottom-left, behind everything */}
     {!mobile&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
     {/* Styles */}
-    <style>{`@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
+    <style>{`@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
     <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.16,background:"radial-gradient(circle,#c9a84c,transparent)",top:-200,left:-100,animation:"ob1 20s ease-in-out infinite"}}/>
@@ -4919,7 +4927,7 @@ export default function App() {
         <div style={{display:"flex",flexDirection:mobile?"column":"row",gap:16,alignItems:"flex-start"}}>
           {filterOpen&&<div style={mobile?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"min(calc(50% + 566px), calc(100vw - 336px))",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
-            <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}><CheckGroup opts={filters.countries.length>0?allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s))):allStates} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/></FSection>
+            <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}>{filters.countries.length===0?<div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"4px 2px",lineHeight:1.45}}>Select a region above to choose specific states, provinces, or countries.</div>:<CheckGroup opts={allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s)))} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/>}</FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
             <FSection title="Experience Level" count={filters.experience?.length||0} onClear={()=>setFilters(f=>({...f,experience:[]}))}><CheckGroup opts={["Entry Level","Mid Level","Senior","Lead","Principal","Director"]} sel={filters.experience||[]} onChange={v=>setFilters(f=>({...f,experience:v}))}/></FSection>
             <FSection title="Industry Tier" count={filters.tiers?.length||0} onClear={()=>setFilters(f=>({...f,tiers:[]}))}><CheckGroup opts={["AAA","AA","Indie","Publishers","Outsourcing"]} sel={filters.tiers||[]} onChange={v=>setFilters(f=>({...f,tiers:v}))}/></FSection>
@@ -5099,7 +5107,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/>;
+                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
