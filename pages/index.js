@@ -60,7 +60,7 @@ const COMPANIES_DATA = {
       { name: "Bigpoint", url: "https://www.bigpoint.net/careers/", email: "career@bigpoint.net", contact: "https://www.bigpoint.net/contact-2/" },
       { name: "BKOM Studios", url: "https://jobs.bkom.com/jobs/Careers", email: null, contact: "https://bkom.com/contact-us/" },
       { name: "Bladework Games", url: "https://bladeworkgames.com/#careers", email: null, contact: "https://bladeworkgames.com/#contact" },
-      { name: "Blind Squirrel Games", url: "https://blindsquirrelentertainment.com/careers", email: "careers@blindsquirrelgames.com", contact: null },
+      { name: "Blind Squirrel Games", url: "https://blindsquirrelentertainment.com/careers", email: "careers@blindsquirrelgames.com", contact: null, registerInterest:true, registerInterestLink: "https://ats.rippling.com/en-US/blind-squirrel-games/jobs/8f652c14-6e37-45a4-b242-67e942d24ef1" },
       { name: "Blizzard Entertainment", url: "https://careers.blizzard.com/global/en", email: null, contact: null },
       { name: "Bluembo", url: "https://www.bluembo.com/careers/", email: "job@bluembo.com", contact: "https://www.bluembo.com/contact-us/", emailApply:true },
       { name: "Bonfire Studios", url: "https://www.bonfirestudios.com/work-with-us/", email: null, contact: null },
@@ -460,6 +460,7 @@ const COMPANIES_DATA = {
       { name: "Schell Games", url: "https://schellgames.com/careers#apply", email: "info@schellgames.com", contact: "https://schellgames.com/contact" },
     ],
     "Remote": [
+      { name: "Space Rock Games", url: "https://www.spacerockgames.com/careers", email: null, contact: null, registerInterest:true, registerInterestLink: "https://www.spacerockgames.com/careers" },
       { name: "Cire Games", url: "https://ciregames.com/Careers/", email: null, contact: "https://ciregames.com/Contacts/" },
       { name: "DragonJar Studios", url: "https://dragonjarstudios.com/careers", email: null, contact: null },
       { name: "Drop Fake", url: "https://www.dropfake.com/#careers", email: "careers@dropfake.com", contact: null, emailApply:true },
@@ -487,7 +488,7 @@ const COMPANIES_DATA = {
       { name: "Astro Beam", url: "https://www.astrobeam.com/jobs", email: "jobs@astrobeam.com", contact: "https://www.astrobeam.com/home#contact-us" },
       { name: "Atomic Theory", url: "https://www.rocketscience.gg/careers/", email: null, contact: "https://www.atomictheory.gg/contact/" },
       { name: "BioWare", url: "https://www.bioware.com/careers/#current-openings", email: null, contact: null },
-      { name: "Blind Squirrel Games", url: "https://blindsquirrelentertainment.com/careers", email: "careers@blindsquirrelgames.com", contact: null },
+      { name: "Blind Squirrel Games", url: "https://blindsquirrelentertainment.com/careers", email: "careers@blindsquirrelgames.com", contact: null, registerInterest:true, registerInterestLink: "https://ats.rippling.com/en-US/blind-squirrel-games/jobs/8f652c14-6e37-45a4-b242-67e942d24ef1" },
       { name: "Boss Fight Entertainment", url: "https://www.bossfightentertainment.com/careers", email: "info@bossfightentertainment.com", contact: null },
       { name: "C Prompt Games", url: "https://www.cpromptgames.com/careers", email: null, contact: "https://www.cpromptgames.com/contact-us" },
       { name: "Cards and Tankards", url: "https://cardsandtankards.com/careers", email: "support@divergent-realities.com", contact: null, emailApply:true },
@@ -869,6 +870,79 @@ const COMPANIES_DATA = {
     ],
   },
 
+
+  "Australia": {
+    "Australian Capital Territory": [
+      { name: "Uppercut Games", url: "https://au.seek.com/Uppercut-Games-jobs/at-this-company", email: null, contact: "https://www.uppercut-games.com/contact-us" },
+    ],
+    "New South Wales": [
+      { name: "Blowfish Studios", url: "https://www.blowfishstudios.com/careers", email: null, contact: "https://www.blowfishstudios.com/contact", registerInterest:true, registerInterestLink: "https://www.blowfishstudios.com/open-application" },
+      { name: "Chaos Theory", url: "https://www.chaostheorygames.com/jobs", email: "hello@chaostheory.games", contact: null },
+      { name: "Featherweight Games", url: "https://www.featherweightgames.com/jobs", email: "jobs@featherweightgames.com", contact: "https://www.featherweightgames.com/#new-page-section", registerInterest:true, registerInterestLink: "jobs@featherweightgames.com" },
+      { name: "Mode", url: "https://www.mode-games.com/jobs", email: null, contact: "https://www.mode-games.com/contact" },
+      { name: "Noble Steed Games", url: "https://noblesteedgames.com/careers/", email: "hello@noblesteed.games", contact: "https://noblesteedgames.com/careers/#contact-form-header" },
+      { name: "SMG Studios", url: "https://www.smgstudio.com/", email: null, contact: null },
+      { name: "Sweatychair", url: "https://www.sweatychair.com/careers", email: "chicka@sweatychair.com", contact: null },
+      { name: "Weta FX", url: "https://careers.wetafx.co.nz/", email: "recruitment@wetafx.co.nz", contact: "https://careers.wetafx.co.nz/contact", registerInterest:true, registerInterestLink: "https://careers.wetafx.co.nz/jobs/1553" },
+    ],
+    "Queensland": [
+      { name: "5 Lives Studios", url: "https://www.5livesstudios.com/careers", email: "jobs@5livesstudios.com", contact: "https://www.5livesstudios.com/contact", registerInterest:true, registerInterestLink: "jobs@5livesstudios.com" },
+      { name: "EarthWork Games", url: "https://www.earthworkgames.com/jobs/", email: "info@earthworkgames.com", contact: "https://www.earthworkgames.com/contact/", registerInterest:true, registerInterestLink: "info@earthworkgames.com" },
+      { name: "Flow Studio", url: "https://www.flowgamestudio.com/opportunities", email: "resume and portfolio", contact: "https://www.earthworkgames.com/contact/", registerInterest:true, registerInterestLink: "resume and portfolio" },
+      { name: "Halfbrick Studios", url: "https://www.halfbrick.com/careers", email: null, contact: "https://www.halfbrick.com/contact#form-anchor" },
+      { name: "Tantalus Media", url: "https://www.tantalus.com.au/jobs.html", email: "tantalus@tantalus.com.au", contact: "https://www.tantalus.com.au/contact.html" },
+    ],
+    "South Australia": [
+      { name: "Foxie Ventures", url: "https://www.foxieventures.com/jobs/", email: "jobs@foxiegames.com", contact: "yes", registerInterest:true, registerInterestLink: "jobs@foxiegames.com" },
+    ],
+    "Victoria": [
+      { name: "Alderon Games", url: "https://alderongames.com/work-with-us#openings", email: null, contact: null },
+      { name: "Art of Play", url: "https://artofplaygames.com/careers.html", email: "info@artofplaygames.com", contact: "https://artofplaygames.com/index.html" },
+      { name: "Big Ant Studios", url: "https://bigant.com/careers/#start-your-journey", email: "yes", contact: null },
+      { name: "Firemokeys", url: "https://jobs.ea.com/en_US/careers/Home/Melbourne?listFilterMode=1", email: null, contact: null },
+      { name: "Glinda Games", url: "https://www.glindagames.com/jobs", email: null, contact: "https://www.glindagames.com/contact-us" },
+      { name: "Grand Voyage Games", url: "https://www.grandvoyagegame.com/join-the-team", email: "grandvoyagegame@gmail.com", contact: null },
+      { name: "Grease Monkey Games", url: "https://www.greasemonkeygames.com/careers", email: null, contact: null },
+      { name: "Hipster Whale", url: "https://employmenthero.com/jobs/organisations/hipster-whale/", email: null, contact: null, registerInterest:true, registerInterestLink: "https://employmenthero.com/jobs/position/hipster-whale-expression-of-interest/?_gl=1*gh2h6y*_up*MQ..*_ga*MTUxNzY3NTA4My4xNzg1MTA5NDQ1*_ga_ML8PXVWRJC*czE3ODUxMDk0NDUkbzEkZzEkdDE3ODUxMDk0NjUkajQwJGwxJGg0MjY3MTMwNDE" },
+      { name: "League of Geeks", url: "https://www.leagueofgeeks.com/careers", email: "your perspective, experience and set of skills, send a cover letter, an up-to-date CV and folio with examples of your work", contact: null, registerInterest:true, registerInterestLink: "your perspective, experience and set of skills, send a cover letter, an up-to-date CV and folio with examples of your work" },
+      { name: "Massive Monster", url: "https://massivemonster.com/jobs", email: null, contact: "https://massivemonster.com/contact" },
+      { name: "Mighty Games Group", url: "https://www.mightygamesgroup.com/jobs/", email: null, contact: "https://www.mightygamesgroup.com/contact/" },
+      { name: "PlaySide Studios", url: "https://playsidestudios.com/careers", email: null, contact: "https://playsidestudios.com/contact" },
+      { name: "Studio Drydock", url: "https://jobs.studiodrydock.com/", email: "info@studiodrydock.com", contact: null },
+      { name: "Summerfall Studios", url: "https://www.summerfallstudios.com/careers", email: null, contact: "https://www.summerfallstudios.com/contact" },
+      { name: "Tin Man Games", url: "https://tinmangames.com.au/join-the-team/", email: null, contact: "https://tinmangames.com.au/contact/", registerInterest:true, registerInterestLink: "contact" },
+      { name: "Tripledot Studios", url: "https://www.tripledot.com/careers", email: null, contact: "https://www.clipwiregames.com/contact/" },
+      { name: "Wicked Workshop", url: "https://www.wickedworkshop.com.au/careers/current-opportunities", email: "talentAU@keywordsstudios.com", contact: "https://www.wickedworkshop.com.au/contact", registerInterest:true, registerInterestLink: "https://jobs.smartrecruiters.com/oneclick-ui/company/KeywordsStudios/publication/af1a0747-6863-409a-ae81-7ce5716b9c0b?dcr_ci=KeywordsStudios" },
+    ],
+    "Western Australia": [
+      { name: "Altitude Games", url: "https://altitude-games.com/jobs/", email: "resume, cover letter, and any online links to your projects or demos", contact: "https://altitude-games.com/contact/" },
+      { name: "Black Lab Games", url: "https://blacklab.games/jobs", email: null, contact: null },
+    ],
+  },
+  "New Zealand": {
+    "Auckland": [
+      { name: "DOTDOT", url: "https://dotdot.studio/jobs/", email: "yes", contact: "https://dotdot.studio/contact/" },
+      { name: "Flightless", url: "https://www.flightless.co.nz/community-manager", email: "resume, cv, portfolio & make it out to John O\u2019Reilly", contact: "https://www.flightless.co.nz/contact" },
+      { name: "Grinding Gear Games", url: "https://www.grindinggear.com/?page=careers", email: "please email your resume, portfolio/code samples and a cover letter with your name and the role you are applying for in the subject line", contact: "https://www.grindinggear.com/?page=contact" },
+      { name: "Maple Game", url: "https://www.maple-game.co.nz/joinus.html", email: "please kindly send CV with subject \"CV-yourname\"", contact: null },
+      { name: "Outerdawn", url: "https://www.outerdawn.com/careers", email: "yes", contact: "https://www.outerdawn.com/contact" },
+      { name: "Rocketwerkz", url: "https://careers.rocketwerkz.com/", email: null, contact: "https://www.rocketwerkz.com/contact/", registerInterest:true, registerInterestLink: "https://careers.rocketwerkz.com/o/expressions-of-interest-auckland" },
+    ],
+    "Canterbury": [
+      { name: "Black Salt Games", url: "https://www.blacksaltgames.com/#footer", email: null, contact: "https://www.blacksaltgames.com/contact/" },
+      { name: "CerebralFix", url: "https://cerebralfix.com/careers/open-positions/", email: "website@cerebralfix.com", contact: "https://cerebralfix.com/contact-us/" },
+      { name: "Digital Confectioners", url: "https://www.digitalconfectioners.com/careers/", email: "resume and portfolio", contact: "https://www.digitalconfectioners.com/contact/" },
+      { name: "XR Games", url: "https://www.xrgames.io/join", email: null, contact: null },
+    ],
+    "Greater Wellington": [
+      { name: "Dinosaur Polo Club", url: "https://dinopoloclub.com/careers/", email: "careers@dinopoloclub.com", contact: "https://dinopoloclub.com/contact/" },
+      { name: "PikPok", url: "https://apply.workable.com/pikpok/#jobs", email: "http://jobs.workablemail.com", contact: "https://pikpok.com/contact/?_gl=1*hsufj9*_ga*MTQ2NDk1OTI0NS4xNzg1NDI3MzMz*_ga_N5HRR2CN4H*czE3ODU0MjczMzMkbzEkZzAkdDE3ODU0MjczMzMkajYwJGwwJGgw", registerInterest:true, registerInterestLink: "http://jobs.workablemail.com" },
+      { name: "Weta Workshop", url: "https://www.wetaworkshop.com/about-us/careers", email: null, contact: null, registerInterest:true, registerInterestLink: "https://www.wetaworkshop.com/about-us/careers/expressions-of-interest" },
+    ],
+    "Otago": [
+      { name: "DEEP FIELD GAMES", url: "https://www.xrgames.io/join", email: "Please clearly specify the position you're applying for in the email subject, Include a brief cover letter (the email body itself is fine), Attach your CV / resume document, Include a link to any past works or portfolios (if applicable)", contact: "https://www.deepfield.games/contact.html", registerInterest:true, registerInterestLink: "email & If you are a voice actor, send it to henry@deepfield.games instead." },
+    ],
+  },
 };
 
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
