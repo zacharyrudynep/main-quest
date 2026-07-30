@@ -87,7 +87,7 @@ export default function Join() {
         throw new Error(error.message);
       } else {
         uid = data.user.id;
-        await supabase.from("profiles").insert({ id: uid, name: pend.name, data: { tosVersion: TOS_VERSION } });
+        try { await supabase.from("profiles").insert({ id: uid, name: pend.name, data: { tosVersion: TOS_VERSION } }); } catch (e) {}
       }
       // Verify payment + grant Premium.
       await fetch("/api/stripe/finalize", {
@@ -96,7 +96,8 @@ export default function Join() {
         body: JSON.stringify({ sessionId, userId: uid }),
       });
       sessionStorage.removeItem("mq_pending_signup");
-      router.replace("/");
+      // Full-page load so the board mounts fresh and picks up the new session — auto-logged-in.
+      window.location.href = "/";
     } catch (e) {
       setErr("We couldn't finish setting up your account: " + e.message + ". Your payment went through — please contact support.");
       setFinishing(false);
@@ -147,28 +148,41 @@ export default function Join() {
 
   return (
     <>
-      <Head><title>Main Quest — Create Your Account</title></Head>
+      <Head>
+        <title>Main Quest — Create Your Account</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
+      </Head>
       <style>{`
-        .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
-        @media(max-width:860px){.qgrid{grid-template-columns:1fr;}}
-        .qcard{position:relative;isolation:isolate;background:#0e0a12;border:1px solid rgba(201,168,76,.18);border-radius:16px;padding:22px 20px;cursor:pointer;transition:transform .2s,border-color .2s;display:flex;flex-direction:column;}
-        .qcard:hover{transform:translateY(-4px);}
-        .qcard::before{content:"";position:absolute;inset:-2px;border-radius:18px;background:conic-gradient(from 0deg,#c9a84c,#f0d080,#e8613a,#8b2020,#c9a84c);opacity:0;z-index:-1;filter:blur(9px);transition:opacity .35s;}
-        .qcard:hover::before{opacity:.9;animation:qspin 3s linear infinite;}
-        .qcard.qsel{border-color:rgba(201,168,76,.65);}
-        .qcard.qsel::before{opacity:1;animation:qspin 3s linear infinite;}
-        @keyframes qspin{to{transform:rotate(1turn);}}
+        .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start;}
+        @media(max-width:860px){.qgrid{grid-template-columns:1fr;gap:24px;}}
+        .qcard{position:relative;background:#0e0a12;border:1px solid rgba(201,168,76,.18);border-radius:16px;padding:24px 20px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .3s;display:flex;flex-direction:column;}
+        .qcard:hover{transform:translateY(-5px);}
+        @property --qa{syntax:"<angle>";inherits:false;initial-value:0deg;}
+        .qcard::before{content:"";position:absolute;inset:0;border-radius:16px;padding:2px;background:conic-gradient(from var(--qa),transparent 0deg,#c9a84c 55deg,#f0d080 110deg,transparent 185deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;opacity:0;transition:opacity .3s;pointer-events:none;}
+        .qcard:hover::before{opacity:1;animation:qspin 2.4s linear infinite;}
+        @keyframes qspin{to{--qa:360deg;}}
+        .qprem{background:linear-gradient(165deg,rgba(201,168,76,.09),rgba(16,10,22,.9));border-color:rgba(201,168,76,.34);}
+        .qlife{background:linear-gradient(165deg,rgba(201,168,76,.16),rgba(139,32,32,.12));border-color:rgba(201,168,76,.5);box-shadow:0 0 30px rgba(201,168,76,.15);}
+        .qcard.qsel{border-color:#c9a84c;box-shadow:inset 0 0 46px rgba(201,168,76,.18),0 0 26px rgba(201,168,76,.3);}
+        .qcard.qsel::before{opacity:0!important;animation:none!important;}
         .qbtn{width:100%;border:none;border-radius:11px;padding:15px;font-size:14px;font-weight:800;font-family:'Cinzel',serif;letter-spacing:.5px;transition:all .25s;}
+        .qbadge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;z-index:2;}
       `}</style>
 
       <div style={{ minHeight: "100vh", background: "radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.16), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
         <div style={{ maxWidth: 1040, margin: "0 auto" }}>
 
-          {/* Header */}
-          <div style={{ textAlign: "center", marginBottom: 26 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 30, fontWeight: 800, letterSpacing: 3, background: "linear-gradient(135deg,#c9a84c,#f0d080)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>MAIN QUEST</div>
-            <div style={{ fontSize: 12, color: "rgba(201,168,76,.7)", letterSpacing: 3, textTransform: "uppercase", marginTop: 6 }}>Begin Your Journey</div>
+          {/* Header — matches the site's title logo */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 8 }}>
+            <div style={{ filter: "drop-shadow(0 0 18px rgba(201,168,76,.6))", display: "flex" }}><SwordShield s={40} c="#c9a84c" /></div>
+            <div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: "rgba(201,168,76,.55)", letterSpacing: 5, lineHeight: 1, marginBottom: 4 }}>— YOUR CAREER —</div>
+              <div style={{ fontFamily: "'Cinzel Decorative',serif", fontSize: 34, fontWeight: 700, background: "linear-gradient(135deg,#c9a84c,#e8613a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1.1 }}>Main Quest</div>
+            </div>
           </div>
+          <div style={{ textAlign: "center", fontSize: 12, color: "rgba(201,168,76,.7)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 26 }}>Begin Your Journey</div>
 
           {finishing ? (
             <div style={{ textAlign: "center", padding: "80px 20px" }}>
@@ -199,9 +213,9 @@ export default function Join() {
               <div style={{ textAlign: "center", fontSize: 12, color: "rgba(244,237,216,.45)", marginBottom: 20 }}>Select a plan to finish creating your account.</div>
 
               <div className="qgrid">
-                {/* FREE */}
+                {/* BASIC (free) */}
                 <div className={"qcard" + (selected === "free" ? " qsel" : "")} onClick={() => setSelected("free")}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(244,237,216,.6)", textAlign: "center" }}>Free</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(244,237,216,.6)", textAlign: "center" }}>Basic</div>
                   <div style={{ textAlign: "center", margin: "8px 0 4px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f4edd8" }}>FREE</span></div>
                   <div style={{ textAlign: "center", fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>Free forever</div>
                   <FeatureList items={FEATURES.free} />
@@ -209,7 +223,8 @@ export default function Join() {
                 </div>
 
                 {/* PREMIUM */}
-                <div className={"qcard" + (selected === "premium" ? " qsel" : "")} onClick={() => setSelected("premium")}>
+                <div className={"qcard qprem" + (selected === "premium" ? " qsel" : "")} onClick={() => setSelected("premium")}>
+                  <div className="qbadge" style={{ background: "linear-gradient(135deg,#c9a84c,#f0d080)", color: "#0a0608" }}>Most Popular</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                     <span style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", background: "linear-gradient(135deg,#c9a84c,#f0d080)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800 }}>Premium</span>
                   </div>
@@ -231,7 +246,8 @@ export default function Join() {
                 </div>
 
                 {/* LIFETIME */}
-                <div className={"qcard" + (selected === "lifetime" ? " qsel" : "")} onClick={() => setSelected("lifetime")}>
+                <div className={"qcard qlife" + (selected === "lifetime" ? " qsel" : "")} onClick={() => setSelected("lifetime")}>
+                  <div className="qbadge" style={{ background: "linear-gradient(135deg,#f0d080,#e8613a)", color: "#0a0608", boxShadow: "0 4px 16px rgba(232,97,58,.45)" }}>Best Value</div>
                   <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "#e8a070", textAlign: "center", fontWeight: 800 }}>Lifetime</div>
                   <div style={{ textAlign: "center", margin: "8px 0 2px" }}>
                     <span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${LIFETIME}</span>
@@ -270,6 +286,15 @@ export default function Join() {
         </div>
       </div>
     </>
+  );
+}
+
+function SwordShield({ s = 34, c = "#c9a84c" }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+      <g transform="rotate(34 12 11)"><path d="M12 2.2 L13.25 5.2 V12 H10.75 V5.2 Z" /><path d="M12 5.7 V11.4" stroke={c} strokeWidth="0.7" opacity="0.65" /><path d="M9.4 13.2 H14.6" /><path d="M12 13.2 V18" /><circle cx="12" cy="19.3" r="1.1" /></g>
+      <g transform="rotate(-34 12 11)"><path d="M12 2.2 L13.25 5.2 V12 H10.75 V5.2 Z" /><path d="M12 5.7 V11.4" stroke={c} strokeWidth="0.7" opacity="0.65" /><path d="M9.4 13.2 H14.6" /><path d="M12 13.2 V18" /><circle cx="12" cy="19.3" r="1.1" /></g>
+    </svg>
   );
 }
 
