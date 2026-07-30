@@ -5,6 +5,8 @@ import { ATS_STUDIOS } from "../lib/studios";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
+// Journey Mode is hidden for now (code kept intact). Flip to true to bring it back.
+const SHOW_JOURNEY_MODE = false;
 
 // ── RESPONSIVE HOOK ────────────────────────────────────────────────────────────
 function useIsMobile(bp=640) {
@@ -647,6 +649,7 @@ const COMPANIES_DATA = {
       { name: "Theory Studios", url: "https://www.theorystudios.com/", email: "hi@theorystudios.com", contact: null },
     ],
     "British Columbia": [
+      { name: "Weta FX", url: "https://careers.wetafx.co.nz/", email: "recruitment@wetafx.co.nz", contact: "https://careers.wetafx.co.nz/contact", registerInterest:true, registerInterestLink: "https://careers.wetafx.co.nz/jobs/1553" },
       { name: "2k Sports Lab", url: "https://sportslab.2k.com/", email: null, contact: null },
       { name: "2TG Entertainment", url: "https://www.2tg.io/", email: null, contact: null },
       { name: "81 Monkeys", url: "https://www.81monkeys.com/jobs", email: "Jobs@81Monkeys.com", contact: null },
@@ -896,6 +899,8 @@ const COMPANIES_DATA = {
       { name: "Foxie Ventures", url: "https://www.foxieventures.com/jobs/", email: "jobs@foxiegames.com", contact: "yes", registerInterest:true, registerInterestLink: "jobs@foxiegames.com" },
     ],
     "Victoria": [
+      { name: "SMG Studios", url: "https://www.smgstudio.com/", email: null, contact: null },
+      { name: "Tantalus Media", url: "https://www.tantalus.com.au/jobs.html", email: "tantalus@tantalus.com.au", contact: "https://www.tantalus.com.au/contact.html" },
       { name: "Alderon Games", url: "https://alderongames.com/work-with-us#openings", email: null, contact: null },
       { name: "Art of Play", url: "https://artofplaygames.com/careers.html", email: "info@artofplaygames.com", contact: "https://artofplaygames.com/index.html" },
       { name: "Big Ant Studios", url: "https://bigant.com/careers/#start-your-journey", email: "yes", contact: null },
@@ -4750,8 +4755,8 @@ export default function App() {
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
           {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
-            {/* Journey Mode — special glowing tab */}
-            <button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>
+            {/* Journey Mode — special glowing tab (hidden while SHOW_JOURNEY_MODE is false) */}
+            {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}
         </nav>
       </div>
       {/* RIGHT: Inbox + Profile */}
@@ -5081,9 +5086,10 @@ export default function App() {
         Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.
       </div>
       <div style={{display:"flex",gap:16,alignItems:"center",flexShrink:0}}>
+        <a href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</a>
         <a href="/privacy" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Privacy Policy</a>
         <a href="/terms" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Terms of Service</a>
-        <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest</span>
+        <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest. All rights reserved.</span>
       </div>
     </footer>
     {/* Terms update notice — shows if the user agreed to an older version */}
