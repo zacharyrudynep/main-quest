@@ -2605,8 +2605,8 @@ function Auth({onLogin,onGuest}) {
         {/* Mobile close button */}
         {mobile&&<button onClick={()=>setMobileFormOpen(false)} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:20,lineHeight:1,zIndex:5}}>✕</button>}
         <div style={{display:"flex",position:"relative",background:"rgba(0,0,0,.25)"}}>
-          {["login","signup"].map((m,i)=><button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,background:"none",border:"none",cursor:"pointer",color:mode===m?"#f4edd8":"rgba(244,237,216,.35)",fontSize:11,fontWeight:600,padding:"14px",fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase"}}>{i===0?"Sign In":"Create Account"}</button>)}
-          <div style={{position:"absolute",bottom:0,left:0,width:"50%",height:2,background:G,borderRadius:2,transition:"transform .25s",transform:`translateX(${mode==="login"?"0%":"100%"})`}}/>
+          <div style={{flex:1,textAlign:"center",color:"#f4edd8",fontSize:11,fontWeight:600,padding:"14px",fontFamily:"'Cinzel',serif",letterSpacing:1,textTransform:"uppercase"}}>Sign In</div>
+          <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:2,background:G,borderRadius:2}}/>
         </div>
         <div style={{padding:"24px 24px 28px",display:"flex",flexDirection:"column",gap:14}}>
           <div>
@@ -2641,13 +2641,11 @@ function Auth({onLogin,onGuest}) {
             <div style={{flex:1,height:1,background:"rgba(201,168,76,.12)"}}/>
           </div>
           <p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>
-            {mode==="login"?"Don't have an account? ":"Already have an account? "}
-            <button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button>
+            Don't have an account? <a href="/join" style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,textDecoration:"none"}}>Create one →</a>
           </p>
           {/* Continue as Guest */}
           <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",marginTop:4,background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.06)";e.currentTarget.style.color="#f0d080";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(244,237,216,.6)";}}>Continue as Guest →</button>
           <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.3)",margin:"8px 0 0",lineHeight:1.4}}>Browse all postings without an account. Sign in any time to unlock match scores, tracking, and alerts.</p>
-          <div style={{marginTop:16}}><PricingInfo compact/></div>
         </div>
       </div>
     </div>
@@ -4004,6 +4002,8 @@ export default function App() {
   const requestLogin=useCallback(()=>setShowLoginPopup(true),[]);
   const [jobSort,setJobSort]=useState("default");
   const [expSortDir,setExpSortDir]=useState("asc"); // asc = low→high, desc = high→low
+  const [hideLocationTabs,setHideLocationTabs]=useState(false); // flat job list, no region/state tabs
+  const [flatLimit,setFlatLimit]=useState(200);                 // how many flat rows are rendered
   const [liveJobs,setLiveJobs]=useState({});
   const [liveStatus,setLiveStatus]=useState("idle");
   const [loadProgress,setLoadProgress]=useState(0);      // 0..100 for the intro loader
@@ -4501,6 +4501,25 @@ export default function App() {
     return {tree,newRegs};
   },[liveJobs]);
   const displayTree=displayTreeData.tree;
+  // Flat job list for "hide location tabs" mode: flatten the tree, honoring the
+  // region/state filters + search + all other filters + the active sort.
+  const flatJobs=useMemo(()=>{
+    if(!hideLocationTabs) return [];
+    const out=[];
+    for(const [country,states] of Object.entries(displayTree)){
+      if(filters.countries.length>0 && !filters.countries.includes(country)) continue;
+      for(const [state,companies] of Object.entries(states)){
+        if(filters.states.length>0 && !filters.states.includes(state)) continue;
+        for(const [name,co] of Object.entries(companies)){
+          const nameHit=filters.search && name.toLowerCase().includes(filters.search.toLowerCase());
+          for(const j of getDisplayJobs(name,co.jobs,state)){
+            if(nameHit?matchesExceptSearch(j):matches(j)) out.push(j);
+          }
+        }
+      }
+    }
+    return sortJobs(out);
+  },[hideLocationTabs,displayTree,filters,jobSort,expSortDir,user]);
   // Filter options come from the LIVE tree so continents and their countries show
   // up as soon as jobs are found there (not just the static US/CA seed data).
   const allCountries=useMemo(()=>{
@@ -4680,7 +4699,6 @@ export default function App() {
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
         {/* Pricing banner for guests (dismissible) */}
-        {guest&&!pricingDismissed&&<div style={{marginBottom:14}}><PricingInfo onDismiss={()=>setPricingDismissed(true)}/></div>}
         {/* Mobile globe — centered at top */}
         {mobile&&<div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
           <GlobeHeatmap size={185} showStates={false}/>
@@ -4755,11 +4773,21 @@ export default function App() {
           {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest")}{sortChip("oldest","Oldest")}
           <button onClick={()=>{if(jobSort!=="experience")setJobSort("experience");else setExpSortDir(d=>d==="asc"?"desc":"asc");}} style={{background:jobSort==="experience"?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort==="experience"?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort==="experience"?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s",display:"inline-flex",alignItems:"center",gap:4}}>Experience Level{jobSort==="experience"&&<span style={{fontSize:9}}>{expSortDir==="asc"?"▲":"▼"}</span>}</button>
           <div style={{flex:1}}/>
-          <button onClick={()=>setExpanded({})} title="Collapse all companies, states and countries" style={{background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:5}}><I.Chevron s={10} c="currentColor" dir="up"/>Close all tabs</button>
+          <button onClick={()=>{setHideLocationTabs(v=>!v);setFlatLimit(200);}} title="Toggle a flat job list with no region/state tabs" style={{background:hideLocationTabs?"rgba(201,168,76,.16)":"rgba(201,168,76,.05)",border:`1px solid ${hideLocationTabs?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,color:hideLocationTabs?"#f0d080":"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:6,transition:"all .15s"}}><span style={{width:22,height:12,borderRadius:8,background:hideLocationTabs?"#c9a84c":"rgba(244,237,216,.15)",position:"relative",flexShrink:0,transition:"background .15s"}}><span style={{position:"absolute",top:2,left:hideLocationTabs?12:2,width:8,height:8,borderRadius:"50%",background:hideLocationTabs?"#0a0608":"rgba(244,237,216,.6)",transition:"left .15s"}}/></span>Hide location tabs</button>
+          {!hideLocationTabs&&<button onClick={()=>setExpanded({})} title="Collapse all companies, states and countries" style={{background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:5}}><I.Chevron s={10} c="currentColor" dir="up"/>Close all tabs</button>}
         </div>
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {Object.entries(displayTree)
+          {hideLocationTabs?(
+            flatJobs.length===0?
+              <div style={{textAlign:"center",padding:"48px 20px",color:"rgba(244,237,216,.4)",fontSize:13}}>No jobs match your current filters.</div>
+            :<>
+              <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
+              {flatJobs.slice(0,flatLimit).map(j=>
+                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/></div>)}
+              {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
+            </>
+          ):Object.entries(displayTree)
             .sort((a,b)=>{
               // United States and Canada first, then continents in REGION_ORDER;
               // anything unlisted falls to the end, alphabetically.
