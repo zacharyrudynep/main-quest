@@ -2569,17 +2569,18 @@ function Auth({onLogin,onGuest}) {
       {/* Features */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
-          [<I.Globe s={17} c="#f0d080"/>,"Job Board","760+ studios across the US and Canada, filtered by state, role, and experience."],
-          [<I.Target s={17} c="#f0d080"/>,"Job Match Score","See how well each posting fits your skills and experience, 0–10."],
-          [<I.Scroll s={17} c="#f0d080"/>,"Resume Upload","Upload your resume to auto-fill your profile in seconds."],
-          [<I.Clipboard s={17} c="#f0d080"/>,"App Tracker","Track every application with dates and one-click access."],
-          [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to."],
-          [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most."],
-        ].map(([ic,title,desc])=>
-          <div key={title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
+          [<I.Globe s={17} c="#f0d080"/>,"Job Board","760+ studios across the US and Canada, filtered by state, role, and experience.",false],
+          [<I.Target s={17} c="#f0d080"/>,"Job Match Score","See how well each posting fits your skills and experience, 0–10.",true],
+          [<I.Scroll s={17} c="#f0d080"/>,"Resume Upload","Upload your resume to auto-fill your profile in seconds.",false],
+          [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to.",true],
+          [<I.Clipboard s={17} c="#f0d080"/>,"App Tracker","Track every application with dates and one-click access.",false],
+          [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most.",false],
+        ].map(([ic,title,desc,premium])=>
+          <div key={title} style={{position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:premium?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${premium?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10}}>
+            {premium&&<span style={{position:"absolute",top:6,right:6,background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>Premium</span>}
             <span style={{flexShrink:0,marginTop:1,display:"flex"}}>{ic}</span>
             <div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3}}>{title}</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3,paddingRight:premium?48:0}}>{title}</div>
               <div style={{fontSize:11,color:"rgba(244,237,216,.48)",lineHeight:1.45}}>{desc}</div>
             </div>
           </div>
@@ -2587,7 +2588,7 @@ function Auth({onLogin,onGuest}) {
       </div>
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["760+","Studios"],["Live","Job Feeds"],["2","Countries"],["Free","Always"]].map(([n,l],i)=>(
+        {[["760+","Studios"],["Live","Job Feeds"],["2","Countries"],["1000s","Open Roles"]].map(([n,l],i)=>(
           <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
             <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
