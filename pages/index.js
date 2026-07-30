@@ -2577,67 +2577,82 @@ function JobAlertManager({alerts,onSave,isPremium,companyOptions,locationOptions
 }
 
 // ── INBOX PANEL (slide-over) ──────────────────────────────────────────────────
-function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,profile,onPatch,isPremium,companyOptions,locationOptions}){
+function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,profile,onPatch,isPremium,companyOptions,locationOptions}){
+  const [view,setView]=useState("inbox"); // "inbox" = matched-job feed; "notifications" = alert settings
   const timeAgo=(ts)=>{const d=Date.now()-ts;const h=Math.floor(d/3600000);if(h<1)return"just now";if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";};
   const unread=items.filter(n=>!n.read).length;
   const P=profile||{};
   const notifyCompanies=P.notifyCompanies||[];
+  const Tab=({id,label,badge})=><button onClick={()=>setView(id)} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:view===id?"rgba(201,168,76,.1)":"transparent",border:"none",borderBottom:`2px solid ${view===id?"#c9a84c":"transparent"}`,color:view===id?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",fontSize:12,fontWeight:700,padding:"11px 8px",fontFamily:"'Cinzel',serif",letterSpacing:.5,transition:"all .15s"}}>{label}{badge>0&&<span style={{background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,padding:"1px 6px",fontWeight:800}}>{badge>9?"9+":badge}</span>}</button>;
   return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.55)",backdropFilter:"blur(2px)",display:"flex",justifyContent:"flex-end"}}>
     <div onClick={e=>e.stopPropagation()} style={{width:"min(400px,100%)",height:"100%",background:"#0c0810",borderLeft:"1px solid rgba(201,168,76,.2)",display:"flex",flexDirection:"column",boxShadow:"-20px 0 60px rgba(0,0,0,.5)"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px 12px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:9}}>
           <I.Bell s={18} c="#c9a84c"/>
           <span style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:"#f0d080",letterSpacing:.5}}>Inbox</span>
-          {unread>0&&<span style={{background:"#e8613a",color:"#fff",borderRadius:20,fontSize:10,padding:"1px 7px",fontWeight:800}}>{unread}</span>}
         </div>
         <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:22,lineHeight:1}}>×</button>
       </div>
+      {/* Tab toggle: Inbox (matched jobs) | Notifications (manage alerts) */}
+      <div style={{display:"flex",borderBottom:"1px solid rgba(201,168,76,.12)",flexShrink:0}}>
+        <Tab id="inbox" label="Inbox" badge={unread}/>
+        <Tab id="notifications" label="Notifications" badge={0}/>
+      </div>
+      {/* Body */}
       <div style={{flex:1,overflowY:"auto",padding:"14px 16px"}}>
-        {/* Specific job alerts (premium) — moved here from the account tab */}
-        <JobAlertManager alerts={asAlertArray(P.jobAlerts)} onSave={next=>onPatch&&onPatch({jobAlerts:next})} isPremium={isPremium} companyOptions={companyOptions||[]} locationOptions={locationOptions||[]}/>
-        {/* Bell / company notification settings — moved here from the account tab */}
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:10}}>Notification Settings</div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,marginBottom:8}}>
-            <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Alert me for all new postings</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>{P.alertAll?"Every company.":"Only companies you follow below."}</div></div>
-            <button onClick={()=>onPatch&&onPatch({alertAll:!P.alertAll})} style={{width:42,height:24,background:P.alertAll?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.alertAll?"translateX(18px)":"none"}}/></button>
-          </div>
-          {!P.alertAll&&<div style={{marginBottom:8}}>
-            {notifyCompanies.length===0?
-              <div style={{fontSize:10.5,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"9px 11px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,textAlign:"center"}}>No companies followed yet. Tap the bell on any studio on the board to follow it.</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {notifyCompanies.map(cn=>
-                  <div key={cn} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"8px 11px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8}}>
-                    <span style={{fontSize:12,color:"#f4edd8"}}>{cn}</span>
-                    <span onClick={()=>onPatch&&onPatch({notifyCompanies:notifyCompanies.filter(x=>x!==cn)})} title="Unfollow" style={{cursor:"pointer",display:"flex",flexShrink:0}}><I.Bell s={14} c="#c9a84c" fill="#c9a84c"/></span>
-                  </div>)}
+        {view==="inbox"?
+          <>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Job Matches</div>
+              {items.length>0&&<div style={{display:"flex",gap:12}}>
+                {unread>0&&<button onClick={onMarkAllRead} style={{background:"none",border:"none",color:"#c9a84c",cursor:"pointer",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600}}>Mark all read</button>}
+                <button onClick={onClear} style={{background:"none",border:"none",color:"rgba(232,97,58,.7)",cursor:"pointer",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600}}>Clear all</button>
               </div>}
-          </div>}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
-            <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>In-app badges</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Show new-posting badges while browsing</div></div>
-            <button onClick={()=>onPatch&&onPatch({notifications:P.notifications===false?true:false})} style={{width:42,height:24,background:P.notifications!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.notifications!==false?"translateX(18px)":"none"}}/></button>
-          </div>
-        </div>
-        {/* Notifications feed */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Notifications</div>
-          {items.length>0&&<div style={{display:"flex",gap:12}}>
-            {unread>0&&<button onClick={onMarkAllRead} style={{background:"none",border:"none",color:"#c9a84c",cursor:"pointer",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600}}>Mark all read</button>}
-            <button onClick={onClear} style={{background:"none",border:"none",color:"rgba(232,97,58,.7)",cursor:"pointer",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600}}>Clear all</button>
-          </div>}
-        </div>
-        {items.length===0?
-          <div style={{textAlign:"center",color:"rgba(244,237,216,.35)",fontSize:11.5,padding:"28px 18px",lineHeight:1.6,background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.12)",borderRadius:10}}>No alerts yet. Create a job alert above and we'll ping you here when matching roles are posted.</div>
+            </div>
+            {items.length===0?
+              <div style={{textAlign:"center",color:"rgba(244,237,216,.35)",fontSize:11.5,padding:"46px 20px",lineHeight:1.6}}><div style={{marginBottom:12,opacity:.5,display:"flex",justifyContent:"center"}}><I.Bell s={30} c="rgba(244,237,216,.3)"/></div>No job matches yet. Set up alerts under <strong style={{color:"rgba(244,237,216,.55)"}}>Notifications</strong> and we'll drop matching roles here — tap one to jump to it on the board.</div>
+            :
+              items.map(n=>
+                <div key={n.id} onClick={()=>onOpenJob&&onOpenJob(n)} title="Open this job on the board" style={{display:"flex",gap:10,padding:"11px 12px",marginBottom:6,borderRadius:10,cursor:"pointer",background:n.read?"transparent":"rgba(201,168,76,.06)",border:`1px solid ${n.read?"rgba(201,168,76,.08)":"rgba(201,168,76,.2)"}`,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background=n.read?"transparent":"rgba(201,168,76,.06)"}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:n.read?"transparent":"#e8613a",flexShrink:0,marginTop:5}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8",marginBottom:2}}>{n.title}</div>
+                    <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>{n.company}{n.location?` · ${n.location}`:""}</div>
+                    <div style={{fontSize:10,color:"rgba(244,237,216,.3)",marginTop:3}}>{timeAgo(n.ts)}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",color:"rgba(201,168,76,.4)",flexShrink:0}}><I.Chevron s={12} c="currentColor" dir="right"/></div>
+                </div>)}
+          </>
         :
-          items.map(n=>
-            <div key={n.id} onClick={()=>onMarkRead(n.id)} style={{display:"flex",gap:10,padding:"11px 12px",marginBottom:6,borderRadius:10,cursor:"pointer",background:n.read?"transparent":"rgba(201,168,76,.06)",border:`1px solid ${n.read?"rgba(201,168,76,.08)":"rgba(201,168,76,.2)"}`}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:n.read?"transparent":"#e8613a",flexShrink:0,marginTop:5}}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8",marginBottom:2}}>{n.title}</div>
-                <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>{n.company}{n.location?` · ${n.location}`:""}</div>
-                <div style={{fontSize:10,color:"rgba(244,237,216,.3)",marginTop:3}}>{timeAgo(n.ts)}</div>
+          <>
+            {/* Specific job alerts (premium) */}
+            <JobAlertManager alerts={asAlertArray(P.jobAlerts)} onSave={next=>onPatch&&onPatch({jobAlerts:next})} isPremium={isPremium} companyOptions={companyOptions||[]} locationOptions={locationOptions||[]}/>
+            {/* Bell / company notification settings */}
+            <div style={{marginBottom:8}}>
+              <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:10}}>Notification Settings</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,marginBottom:8}}>
+                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Alert me for all new postings</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>{P.alertAll?"Every company.":"Only companies you follow below."}</div></div>
+                <button onClick={()=>onPatch&&onPatch({alertAll:!P.alertAll})} style={{width:42,height:24,background:P.alertAll?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.alertAll?"translateX(18px)":"none"}}/></button>
               </div>
-            </div>)}
+              {!P.alertAll&&<div style={{marginBottom:8}}>
+                {notifyCompanies.length===0?
+                  <div style={{fontSize:10.5,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"9px 11px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,textAlign:"center"}}>No companies followed yet. Tap the bell on any studio on the board to follow it.</div>
+                  :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {notifyCompanies.map(cn=>
+                      <div key={cn} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"8px 11px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)",borderRadius:8}}>
+                        <span style={{fontSize:12,color:"#f4edd8"}}>{cn}</span>
+                        <span onClick={()=>onPatch&&onPatch({notifyCompanies:notifyCompanies.filter(x=>x!==cn)})} title="Unfollow" style={{cursor:"pointer",display:"flex",flexShrink:0}}><I.Bell s={14} c="#c9a84c" fill="#c9a84c"/></span>
+                      </div>)}
+                  </div>}
+              </div>}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
+                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>In-app badges</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Show new-posting badges while browsing</div></div>
+                <button onClick={()=>onPatch&&onPatch({notifications:P.notifications===false?true:false})} style={{width:42,height:24,background:P.notifications!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.notifications!==false?"translateX(18px)":"none"}}/></button>
+              </div>
+            </div>
+          </>
+        }
       </div>
     </div>
   </div>;
@@ -4723,6 +4738,28 @@ export default function App() {
     for(const k of Object.keys(DOMESTIC_CITY_STATE)) s.add(titleCasePlace(k));
     return [...s].sort();
   },[allCountries,allStates]);
+  // Click a job notification → jump to it on the board: expand its region/state/company and scroll to it.
+  const openJobFromInbox=(n)=>{
+    markInboxRead(n.id);
+    let found=null, exact=false;
+    for(const [country,states] of Object.entries(displayTree)){
+      for(const [state,companies] of Object.entries(states)){
+        const co=companies[n.company];
+        if(!co) continue;
+        const dj=getDisplayJobs(n.company,co.jobs,state);
+        if(dj.some(j=>j.title===n.title)){ found={country,state}; exact=true; break; }
+        if(!found) found={country,state};
+      }
+      if(exact) break;
+    }
+    setShowInbox(false);
+    setTab("jobs");
+    if(!found){ setFilters({...CLEAR,search:n.company}); return; } // company not currently on the board → surface via search
+    const {country,state}=found;
+    setFilters(CLEAR);
+    setExpanded(prev=>({...prev,[`c-${country}`]:true,[`s-${country}-${state}`]:true,[`co-${country}-${state}-${n.company}`]:true}));
+    setTimeout(()=>{ const el=document.getElementById(`mqco-${country}-${state}-${n.company}`); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },400);
+  };
   // Precompute country/state totals once per data change (not per expand toggle).
   const treeCounts=useMemo(()=>{
     const cc={},sc={};
@@ -4844,7 +4881,7 @@ export default function App() {
       </div>
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
-    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
+    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
@@ -5023,7 +5060,7 @@ export default function App() {
                               const fJobs=cached.fJobs||[];
                               const hasNew=fJobs.some(j=>j.isNew);
                               const noJobs=fJobs.length===0;
-                              return <div key={name} style={{background:"rgba(201,168,76,.02)",border:"1px solid rgba(201,168,76,.06)",borderRadius:8,overflow:"hidden",opacity:noJobs?.7:1,transition:"opacity .2s"}} onMouseEnter={e=>{if(noJobs)e.currentTarget.style.opacity="1";}} onMouseLeave={e=>{if(noJobs)e.currentTarget.style.opacity=".7";}}>
+                              return <div key={name} id={`mqco-${country}-${state}-${name}`} style={{background:"rgba(201,168,76,.02)",border:"1px solid rgba(201,168,76,.06)",borderRadius:8,overflow:"hidden",opacity:noJobs?.7:1,transition:"opacity .2s"}} onMouseEnter={e=>{if(noJobs)e.currentTarget.style.opacity="1";}} onMouseLeave={e=>{if(noJobs)e.currentTarget.style.opacity=".7";}}>
                                 <button onClick={()=>toggle(coKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:mobile?"8px 10px":"9px 11px",fontSize:mobile?11:12,color:"#f4edd8",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                                   <span style={{display:"inline-flex",color:"rgba(201,168,76,.35)"}}><I.Chevron s={9} c="currentColor" dir={expanded[coKey]?"down":"right"}/></span>
                                   <span style={{width:6,height:6,borderRadius:"50%",background:noJobs?"rgba(244,237,216,.2)":"#c9a84c",flexShrink:0}}/>
