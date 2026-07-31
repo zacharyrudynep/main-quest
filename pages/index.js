@@ -1331,6 +1331,8 @@ const REGION_ORDER = ["United States","Canada","Remote","Europe","Asia","South A
 const REGION_BADGE = {"United States":"US","Canada":"CA","Remote":"RM","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA"};
 // Is this top-level key a continent (vs. United States / Canada)?
 const isContinent = (k)=>k!=="United States"&&k!=="Canada";
+// Country options for the profile — US/Canada first, then every country the app knows.
+const COUNTRY_OPTIONS = ["United States","Canada",...Object.keys(COUNTRY_CONTINENT).filter(c=>c!=="United States"&&c!=="Canada").sort()];
 // Backwards-compatible foreign-token test, now derived from the geography maps.
 const FOREIGN_CITIES = new Set(Object.keys(CITY_COUNTRY));
 const isForeignToken=(p)=>{ const s=p.toLowerCase().trim(); return FOREIGN_COUNTRIES.has(s)||FOREIGN_CITIES.has(s)||!!COUNTRY_ALIAS[s]; };
@@ -3402,7 +3404,7 @@ function GuestPanel({onClose,onSignIn}) {
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
-  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
+  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",country:user.profile?.country||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
   const [saved,setSaved]=useState(false);
   const [saveErr,setSaveErr]=useState("");
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
@@ -3477,7 +3479,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
       <div style={{flex:1,overflowY:"auto",padding:"16px 18px",minHeight:0}}>
         {tab==="profile"&&<div>
           <div style={{width:56,height:56,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",margin:"0 auto 16px"}}>{initials}</div>
-          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}><div style={fld}><label style={lbl}>Display Name</label><input style={inp} value={p.name} onChange={e=>upd("name",e.target.value)} placeholder="Your name"/></div><div style={fld}><label style={lbl}>Location</label><input style={inp} value={p.location} onChange={e=>upd("location",e.target.value)} placeholder="City, State"/></div></div>
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}><div style={fld}><label style={lbl}>Display Name</label><input style={inp} value={p.name} onChange={e=>upd("name",e.target.value)} placeholder="Your name"/></div><div style={fld}><label style={lbl}>City / State / Region</label><input style={inp} value={p.location} onChange={e=>upd("location",e.target.value)} placeholder="e.g. Austin, TX"/></div></div>
+          <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}><div style={fld}><label style={lbl}>Country</label><select style={{...inp,cursor:"pointer"}} value={p.country||""} onChange={e=>upd("country",e.target.value)}><option value="" style={{background:"#140d14"}}>Select country…</option>{COUNTRY_OPTIONS.map(c=><option key={c} value={c} style={{background:"#140d14"}}>{c}</option>)}</select></div></div>
           <div style={fld}><label style={lbl}>Target Role</label><RoleBubbleInput value={p.role} onChange={v=>upd("role",v)} placeholder="e.g. Game Designer — press Enter to add"/></div>
           <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={p.experience||""} onChange={e=>upd("experience",e.target.value)}><option value="">Select</option><option value="Entry Level">Entry Level (0-2 yrs)</option><option value="Mid Level">Mid Level (2-5 yrs)</option><option value="Senior">Senior (5-8 yrs)</option><option value="Lead">Lead (8-12 yrs)</option><option value="Principal">Principal (12+ yrs)</option><option value="Director">Director (15+ yrs)</option></select></div>
           <div style={fld}><label style={lbl}>Bio</label><textarea style={{...inp,minHeight:70,resize:"vertical"}} value={p.bio} onChange={e=>upd("bio",e.target.value)} placeholder="Short professional summary..."/></div>
@@ -3617,7 +3620,7 @@ const _scoreCache=new Map(); // jobId+profileKey -> result
 // A short signature of the profile so we know when to invalidate caches.
 function _profileKey(p){
   if(!p)return "";
-  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${p.experience||""}|${(p.location||"").length}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
+  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${p.experience||""}|${(p.location||"").length}|${p.country||""}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
 }
 
 // A curated vocabulary of real skills / tools / tech so "missing keywords" reflects
@@ -3657,6 +3660,29 @@ const _SKILL_KW=new Set([
 const _EXP_RANK={"director":6,"principal":5,"lead":4,"manager":4,"senior":3,"mid level":2,"mid-level":2,"mid":2,"junior":1,"entry level":1,"entry":1};
 function _expRank(s){ if(!s)return null; const t=String(s).toLowerCase(); for(const k of Object.keys(_EXP_RANK)) if(t.includes(k)) return _EXP_RANK[k]; return null; }
 
+// Best-effort detection of the user's country from their free-text location.
+function _detectCountry(loc){
+  if(!loc) return null;
+  const t=String(loc).toLowerCase();
+  if(/\b(u\.?s\.?a?|united states|america)\b/.test(t)) return "United States";
+  const m=t.match(/,\s*([a-z]{2})\b/); // trailing ", NY" style abbreviation
+  if(m){ const ab=m[1].toUpperCase(); if(US_STATES_GEO[ab]) return "United States"; if(CA_PROVINCES_GEO[ab]) return "Canada"; }
+  for(const pc in US_STATES_GEO){ if(t.includes(US_STATES_GEO[pc].name.toLowerCase())) return "United States"; }
+  for(const pc in CA_PROVINCES_GEO){ if(t.includes(CA_PROVINCES_GEO[pc].name.toLowerCase())) return "Canada"; }
+  if(/\bcanada\b/.test(t)) return "Canada";
+  for(const c of Object.keys(COUNTRY_CONTINENT)){ if(t.includes(c.toLowerCase())) return c; }
+  return null;
+}
+// The job's country (via the same placement resolver the tree uses).
+function _jobCountry(job){
+  if(job.isRemote) return "REMOTE";
+  const p=jobPlace(job);
+  if(p==="REMOTE") return "REMOTE";
+  if(typeof p==="string") return null; // unknown
+  return isContinent(p.top) ? p.sub : p.top; // continent→country, else US/Canada
+}
+const _isInternship=(job)=>/\b(intern|internship|co-?op)\b/i.test(`${job.title||""} ${job.experience||""}`);
+
 function computeMatchScore(job,profile){
   if(!profile)return null;
   const pKey=_profileKey(profile);
@@ -3691,7 +3717,7 @@ function computeMatchScore(job,profile){
   const allJobKws=new Set([...titleKws,...reqKws,...prefKws]);
   if(allJobKws.size<3)return null; // not enough job data to score reliably
 
-  const factors=[]; const notes=[]; let missingSkills=[];
+  const factors=[]; const notes=[]; let missingSkills=[]; let matchedSkills=[]; let seniorityMult=1; let locationMult=1;
 
   // 1) Skills — 40%: required (×1.0) + preferred (×0.5) coverage by the profile.
   const denom=reqKws.length*1+prefKws.length*0.5;
@@ -3700,18 +3726,23 @@ function computeMatchScore(job,profile){
   if(denom>0){
     const skillsPct=Math.round(((reqMatched.length*1+prefMatched.length*0.5)/denom)*100);
     factors.push({name:"Skills",pct:skillsPct,weight:40});
-    missingSkills=[...new Set([...reqKws,...prefKws])].filter(k=>!profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,10);
+    const allSkillKws=[...new Set([...reqKws,...prefKws])];
+    missingSkills=allSkillKws.filter(k=>!profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,12);
+    matchedSkills=allSkillKws.filter(k=>profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,12);
     if(skillsPct<60&&missingSkills.length) notes.push(`You're missing several skills this role lists. If you have any, add them to Key Skills — e.g. ${missingSkills.slice(0,3).join(", ")}.`);
   }
 
-  // 2) Experience — 25%: seniority modifier (exact 1.0, one below .85, two below .65, else .40).
+  // 2) Experience — 25%: seniority modifier. Being under-leveled is penalized hard —
+  // one level below is a slight ding, two+ levels below drops the score dramatically.
   const pRank=_expRank(profile.experience), jRank=_expRank(job.experience);
   if(pRank&&jRank){
-    const diff=jRank-pRank;
-    const expPct=diff<=0?100:diff===1?85:diff===2?65:40;
+    const diff=jRank-pRank; // >0 means the job wants a higher level than the user
+    const expPct=diff<=0?100:diff===1?85:diff===2?55:diff===3?35:20;
+    // Multiplier applied to the WHOLE score so a big level gap can't be masked by strong skills.
+    seniorityMult=diff<=1?1:diff===2?0.6:diff===3?0.45:0.35;
     factors.push({name:"Experience",pct:expPct,weight:25});
-    if(diff===1) notes.push(`This is a ${job.experience} role; you're listed as ${profile.experience} — one level below, so a small modifier applies.`);
-    else if(diff>=2) notes.push(`This is a ${job.experience} role; you're listed as ${profile.experience} — a couple levels below. Emphasize senior-scope work in your history.`);
+    if(diff===1) notes.push(`This is a ${job.experience} role and you're listed as ${profile.experience} — one level below, so only a slight ding.`);
+    else if(diff>=2) notes.push(`This is a ${job.experience} role but you're listed as ${profile.experience} — ${diff} levels below. That gap heavily lowers your overall match; roles closer to your level will score much higher.`);
   }
 
   // 3) Role — 15%: target role + past roles vs the job title.
@@ -3724,30 +3755,48 @@ function computeMatchScore(job,profile){
     if(rolePct<50) notes.push(`This posting's title doesn't closely match your target role. If it's a fit, add a matching title to Target Role.`);
   }
 
-  // 4) Location — 10%: remote = full; else compare location, softened by "Open to Relocation".
+  // 4) Location — 10%: remote = full. On-site in a different country is penalized hard
+  // (employers hire locally to avoid visa sponsorship); internships harder still, since
+  // companies rarely relocate interns. "Open to Relocation" softens the non-visa cases.
   const openTo=(profile.openTo||[]).map(x=>String(x).toLowerCase());
   const willRelocate=openTo.includes("relocation");
+  const isIntern=_isInternship(job);
   if(job.isRemote){ factors.push({name:"Location",pct:100,weight:10}); }
   else {
     const uT=new Set((profile.location||"").toLowerCase().split(/[^a-z]+/).filter(w=>w.length>2));
     const jT=(job.location||"").toLowerCase().split(/[^a-z]+/).filter(w=>w.length>2);
+    const uCountry=(profile.country&&profile.country.trim())||_detectCountry(profile.location), jCountry=_jobCountry(job);
+    const diffCountry=uCountry&&jCountry&&jCountry!=="REMOTE"&&uCountry!==jCountry;
     if(uT.size&&jT.length){
       const shared=jT.some(w=>uT.has(w));
-      const locPct=shared?100:willRelocate?75:(job.isHybrid?35:30);
+      let locPct;
+      if(shared){ locPct=100; }
+      else if(isIntern){
+        locPct=diffCountry?6:15;
+        locationMult=diffCountry?0.4:0.55; // interns rarely relocated → tanks the whole match
+        notes.push(`This internship is ${diffCountry?"in another country":"in a different area"} from your location. Companies rarely relocate or sponsor interns, so selection is unlikely — this heavily lowers the match.`);
+      } else if(diffCountry&&!job.isHybrid){
+        locPct=willRelocate?42:16;
+        locationMult=willRelocate?0.8:0.55; // on-site abroad → visa/local-first hiring
+        notes.push(`This on-site role is in ${job.location||"another country"}. Employers usually hire locally to avoid visa sponsorship${willRelocate?"":" — and you haven't marked yourself open to relocation"}.`);
+      } else {
+        locPct=willRelocate?75:(job.isHybrid?35:30);
+        if(!willRelocate) notes.push(`This ${job.isHybrid?"hybrid":"on-site"} role is in ${job.location||"a different area"}. Turning on "Open to Relocation" in your profile would raise this.`);
+      }
       factors.push({name:"Location",pct:locPct,weight:10});
-      if(!shared&&!willRelocate) notes.push(`This ${job.isHybrid?"hybrid":"on-site"} role is in ${job.location||"a different area"}. Turning on "Open to Relocation" in your profile would raise this.`);
     } else if(willRelocate){ factors.push({name:"Location",pct:75,weight:10}); }
   }
 
   // Combine, redistributing weight across only the factors we could actually score.
   const totalW=factors.reduce((a,f)=>a+f.weight,0)||1;
-  const weighted=factors.reduce((a,f)=>a+(f.pct/100)*(f.weight/totalW),0); // 0..1
+  let weighted=factors.reduce((a,f)=>a+(f.pct/100)*(f.weight/totalW),0); // 0..1
+  weighted*=seniorityMult*locationMult; // big seniority or location gaps dramatically lower the whole score
   let score10=Math.round(Math.min(10,Math.max(0,weighted*10))*10)/10;
   if(score10<0.5&&factors.length) score10=0.5; // gentle floor so a real match isn't a demoralizing 0
 
   const rating=score10>=9?"Excellent Match":score10>=7.5?"Strong Match":score10>=6?"Moderate Match":score10>=4?"Weak Match":"Poor Match";
 
-  const result={score:score10,rating,factors,missingSkills,notes,reqMatched:reqMatched.length,reqTotal:reqKws.length};
+  const result={score:score10,rating,factors,missingSkills,matchedSkills,notes,reqMatched:reqMatched.length,reqTotal:reqKws.length};
   _scoreCache.set(cacheKey,result);
   return result;
 }
@@ -3785,10 +3834,15 @@ function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
             <div style={{height:6,borderRadius:4,background:"rgba(244,237,216,.1)",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.max(2,f.pct)}%`,background:fc,borderRadius:4,transition:"width .3s"}}/></div>
           </div>;})}
         </div>
-        {match.missingSkills.length>0&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:6}}>Missing Keywords</div>
-          <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>In this posting but not your profile. Add any you actually have:</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{match.missingSkills.map(s=><span key={s} style={{background:"rgba(224,134,58,.12)",border:"1px solid rgba(224,134,58,.3)",color:"#e0a070",borderRadius:14,fontSize:11,padding:"3px 10px"}}>{s}</span>)}</div>
+        {(match.matchedSkills.length>0||match.missingSkills.length>0)&&<div style={{display:"flex",gap:10,marginBottom:16}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:9,color:"rgba(126,207,179,.9)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:7}}>✓ Matching</div>
+            {match.matchedSkills.length?<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{match.matchedSkills.map(s=><span key={s} style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",borderRadius:12,fontSize:10,padding:"2px 8px"}}>{s}</span>)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.3)"}}>None yet</div>}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:9,color:"rgba(224,110,90,.95)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:7}}>Missing</div>
+            {match.missingSkills.length?<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{match.missingSkills.map(s=><span key={s} style={{background:"rgba(224,90,58,.1)",border:"1px solid rgba(224,90,58,.3)",color:"#e0705a",borderRadius:12,fontSize:10,padding:"2px 8px",textDecoration:"line-through"}}>{s}</span>)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.3)"}}>None</div>}
+          </div>
         </div>}
         {match.notes.length>0&&<div style={{marginBottom:14}}>
           <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:8}}>How to Improve</div>
@@ -3955,9 +4009,15 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
               <div style={{height:4,borderRadius:3,background:"rgba(244,237,216,.1)",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.max(2,f.pct)}%`,background:fc,borderRadius:3}}/></div>
             </div>;})}
           </div>
-          {match.missingSkills.length>0&&<div style={{marginBottom:9}}>
-            <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:5}}>Missing keywords</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{match.missingSkills.slice(0,6).map(s=><span key={s} style={{background:"rgba(224,134,58,.12)",border:"1px solid rgba(224,134,58,.3)",color:"#e0a070",borderRadius:12,fontSize:9.5,padding:"1px 7px"}}>{s}</span>)}</div>
+          {(match.matchedSkills.length>0||match.missingSkills.length>0)&&<div style={{display:"flex",gap:8,marginBottom:9}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:8.5,color:"rgba(126,207,179,.9)",textTransform:"uppercase",letterSpacing:.5,fontFamily:"'Cinzel',serif",marginBottom:4}}>✓ Matching</div>
+              {match.matchedSkills.length?<div style={{display:"flex",flexWrap:"wrap",gap:3}}>{match.matchedSkills.slice(0,6).map(s=><span key={s} style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",borderRadius:10,fontSize:9,padding:"1px 6px"}}>{s}</span>)}</div>:<div style={{fontSize:9,color:"rgba(244,237,216,.3)"}}>None yet</div>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:8.5,color:"rgba(224,110,90,.95)",textTransform:"uppercase",letterSpacing:.5,fontFamily:"'Cinzel',serif",marginBottom:4}}>Missing</div>
+              {match.missingSkills.length?<div style={{display:"flex",flexWrap:"wrap",gap:3}}>{match.missingSkills.slice(0,6).map(s=><span key={s} style={{background:"rgba(224,90,58,.1)",border:"1px solid rgba(224,90,58,.3)",color:"#e0705a",borderRadius:10,fontSize:9,padding:"1px 6px",textDecoration:"line-through"}}>{s}</span>)}</div>:<div style={{fontSize:9,color:"rgba(244,237,216,.3)"}}>None</div>}
+            </div>
           </div>}
           {match.notes.length>0&&<div style={{marginBottom:9}}>
             <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:5}}>How to improve</div>
@@ -4749,11 +4809,15 @@ export default function App() {
       tree[country][state]=tree[country][state]||{};
       return tree[country][state];
     };
-    // Seed with existing companies in their home states.
+    // Seed with existing companies in their home states. World countries (Australia,
+    // New Zealand, …) nest under their continent (Oceania → Australia → companies),
+    // matching where live foreign jobs land; US/Canada/Remote stay top-level.
     for(const [country,states] of Object.entries(ALL_JOBS_DATA))
       for(const [state,companies] of Object.entries(states))
         for(const [name,co] of Object.entries(companies)){
-          const node=ensure(country,state); if(node) node[name]=co;
+          const cont=COUNTRY_CONTINENT[country];
+          const node = cont ? ensure(cont,country) : ensure(country,state);
+          if(node) node[name]=co;
         }
     // For each company with live jobs, add it to any region those jobs are in —
     // US states, CA provinces, and now foreign countries under their continent.
