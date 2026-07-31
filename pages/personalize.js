@@ -17,9 +17,10 @@ export default function Personalize() {
   const [openTo, setOpenTo] = useState([]);
   const [country, setCountry] = useState("");
 
-  const skip = () => { window.location.href = "/"; };
+  const skip = () => { try { sessionStorage.setItem("mq_session", "1"); } catch (e) {} window.location.href = "/"; };
   const finish = () => {
     try { sessionStorage.setItem("mq_personalization", JSON.stringify({ roles, openTo, country })); } catch (e) {}
+    try { sessionStorage.setItem("mq_session", "1"); } catch (e) {} // keep the new user signed in for this session
     // Full-page load so the board mounts fresh, restores the session (auto-login), and applies the starter filter.
     window.location.href = "/";
   };

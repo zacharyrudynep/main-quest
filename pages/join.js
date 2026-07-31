@@ -96,6 +96,7 @@ export default function Join() {
         body: JSON.stringify({ sessionId, userId: uid }),
       });
       sessionStorage.removeItem("mq_pending_signup");
+      try { sessionStorage.setItem("mq_session", "1"); } catch (e) {} // keep the new user signed in
       // Full-page load so the board mounts fresh and picks up the new session — auto-logged-in.
       window.location.href = "/personalize";
     } catch (e) {
@@ -120,6 +121,7 @@ export default function Join() {
         const { data, error } = await supabase.auth.signUp({ email, password: pass });
         if (error) { setErr(error.message); setBusy(false); return; }
         await supabase.from("profiles").insert({ id: data.user.id, name, data: { tosVersion: TOS_VERSION } });
+        try { sessionStorage.setItem("mq_session", "1"); } catch (e) {} // keep the new user signed in
         router.push("/personalize");
         return;
       }
