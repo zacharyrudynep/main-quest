@@ -3718,6 +3718,55 @@ function computeMatchScore(job,profile){
   _scoreCache.set(cacheKey,result);
   return result;
 }
+// Right-side panel showing the full "why this score" breakdown for one job (Premium).
+function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
+  const match=computeMatchScore(job,profile);
+  const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#c9a84c";
+  return <div style={{position:"fixed",top:96,left:"min(calc(50% + 566px), calc(100vw - 336px))",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><I.Target s={16} c="#c9a84c"/><span style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#f0d080",letterSpacing:.5}}>Match Breakdown</span></div>
+      <button onClick={onClose} title="Close" style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:20,lineHeight:1}}>×</button>
+    </div>
+    <div style={{marginBottom:14,paddingBottom:12,borderBottom:"1px solid rgba(201,168,76,.12)"}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#f4edd8",lineHeight:1.3}}>{job.title}</div>
+      <div style={{fontSize:11,color:"rgba(244,237,216,.5)",marginTop:2}}>{job.company}{job.location?` · ${job.location}`:""}</div>
+    </div>
+    {!isPremium ?
+      <div style={{textAlign:"center",padding:"24px 10px"}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><I.Lock s={26} c="#c9a84c"/></div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080",marginBottom:6}}>Premium Feature</div>
+        <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown — which skills and keywords you're missing, and how to improve for this role.</div>
+      </div>
+    : !match ?
+      <div style={{fontSize:12,color:"rgba(244,237,216,.55)",lineHeight:1.6,padding:"10px 0"}}>Add more to your profile — Key Skills, Experience Level, and Work History — to see how you match this role.</div>
+    :
+      <>
+        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:16}}>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:scoreColor}}>{match.rating}</span>
+          <span><span style={{fontSize:26,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif"}}>{match.score.toFixed(1)}</span><span style={{fontSize:12,color:"rgba(244,237,216,.4)"}}> / 10</span></span>
+        </div>
+        <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:9}}>Factors</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+          {match.factors.map(f=>{const fc=f.pct>=70?"#7ecfb3":f.pct>=45?"#c9a84c":"#e0863a";return <div key={f.name}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(244,237,216,.75)",marginBottom:3}}><span>{f.name} <span style={{opacity:.45,fontSize:9}}>· {f.weight}%</span></span><span style={{color:fc,fontWeight:700}}>{f.pct}%</span></div>
+            <div style={{height:6,borderRadius:4,background:"rgba(244,237,216,.1)",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.max(2,f.pct)}%`,background:fc,borderRadius:4,transition:"width .3s"}}/></div>
+          </div>;})}
+        </div>
+        {match.missingSkills.length>0&&<div style={{marginBottom:16}}>
+          <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:6}}>Missing Keywords</div>
+          <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>In this posting but not your profile. Add any you actually have:</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{match.missingSkills.map(s=><span key={s} style={{background:"rgba(224,134,58,.12)",border:"1px solid rgba(224,134,58,.3)",color:"#e0a070",borderRadius:14,fontSize:11,padding:"3px 10px"}}>{s}</span>)}</div>
+        </div>}
+        {match.notes.length>0&&<div style={{marginBottom:14}}>
+          <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:8}}>How to Improve</div>
+          {match.notes.map((n,i)=><div key={i} style={{display:"flex",gap:7,fontSize:11.5,color:"rgba(244,237,216,.65)",lineHeight:1.5,marginBottom:8}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
+        </div>}
+        <div style={{fontSize:10,color:"rgba(244,237,216,.35)",lineHeight:1.5,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:10}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee. A lower score doesn't mean you shouldn't apply.</div>
+      </>
+    }
+  </div>;
+}
+
 function ATSPill({ats,onClick}){
   if(!ats)return null;
   const{score,potential}=ats;
@@ -3732,7 +3781,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
@@ -3858,9 +3907,9 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied})
     {/* Match score square — shows score when profile has data, otherwise a prompt */}
     {user&&<div style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
       {/* Info icon */}
-      <span onClick={e=>{e.stopPropagation();setShowScoreInfo(v=>!v);}} title="Why this score?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
+      <span onClick={e=>{e.stopPropagation(); if(mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Why this score?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
       {showScoreInfo&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:258,maxHeight:360,overflowY:"auto",background:"rgba(20,14,10,.98)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.3)"}`,borderRadius:10,padding:"12px 13px",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none",overscrollBehavior:"contain"}}>
-        {match?<>
+        {match?(isPremium?<>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:scoreColor}}>{match.rating}</span>
             <span style={{fontSize:12,fontWeight:800,color:scoreColor}}>{match.score.toFixed(1)}/10</span>
@@ -3880,7 +3929,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied})
             {match.notes.slice(0,3).map((n,i)=><div key={i} style={{fontSize:10,color:"rgba(244,237,216,.62)",lineHeight:1.45,marginBottom:5,display:"flex",gap:5}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
           </div>}
           <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.45,borderTop:"1px solid rgba(201,168,76,.12)",paddingTop:8}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee.</div>
-        </>:<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
+        </>:<div style={{textAlign:"center",padding:"6px 4px"}}><div style={{display:"flex",justifyContent:"center",marginBottom:8}}><I.Lock s={20} c="#c9a84c"/></div><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:5}}>Premium Feature</div><div style={{fontSize:10,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown and what to improve.</div></div>):<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
       </div>}
       {match?<>
         <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
@@ -4438,6 +4487,8 @@ export default function App() {
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
+  const [breakdownJob,setBreakdownJob]=useState(null);
+  const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>cur&&(cur.id||cur.title)===(job.id||job.title)?null:job),[]);
   useEffect(()=>{
     if(!user||!user.id){setAppPremium(false);return;}
     let alive=true;
@@ -4896,6 +4947,7 @@ export default function App() {
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
+    {breakdownJob&&!mobile&&tab==="jobs"&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
@@ -4918,11 +4970,11 @@ export default function App() {
         {/* Filter bar */}
         <div style={{marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
-            <SearchBox value={filters.search} onSearch={onSearch}/>
             <button onClick={()=>setFilterOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:7,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",cursor:"pointer",fontSize:11,padding:"8px 14px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,flexShrink:0}}>
               <I.Cog s={13} c="currentColor"/>Filters{activeCount>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{activeCount}</span>}<I.Chevron s={11} c="currentColor" dir={filterOpen?"up":"down"}/>
             </button>
+            <SearchBox value={filters.search} onSearch={onSearch}/>
+            {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
           </div>
         </div>
         {/* Main area: the job list keeps its full width at all times. On desktop the
@@ -4930,7 +4982,7 @@ export default function App() {
             screens, pinned to the right edge on narrower ones) so opening it never
             resizes or pushes the job posts. On mobile it stacks in-flow above jobs. */}
         <div style={{display:"flex",flexDirection:mobile?"column":"row",gap:16,alignItems:"flex-start"}}>
-          {filterOpen&&<div style={mobile?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"min(calc(50% + 566px), calc(100vw - 336px))",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+          {filterOpen&&<div style={mobile?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
             <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}>{filters.countries.length===0?<div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"4px 2px",lineHeight:1.45}}>Select a region above to choose specific states, provinces, or countries.</div>:<CheckGroup opts={allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s)))} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/>}</FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
@@ -4987,7 +5039,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/></div>)}
+                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -5122,7 +5174,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/></div>;
+                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
