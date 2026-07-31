@@ -97,7 +97,7 @@ export default function Join() {
       });
       sessionStorage.removeItem("mq_pending_signup");
       // Full-page load so the board mounts fresh and picks up the new session — auto-logged-in.
-      window.location.href = "/";
+      window.location.href = "/personalize";
     } catch (e) {
       setErr("We couldn't finish setting up your account: " + e.message + ". Your payment went through — please contact support.");
       setFinishing(false);
@@ -120,7 +120,7 @@ export default function Join() {
         const { data, error } = await supabase.auth.signUp({ email, password: pass });
         if (error) { setErr(error.message); setBusy(false); return; }
         await supabase.from("profiles").insert({ id: data.user.id, name, data: { tosVersion: TOS_VERSION } });
-        router.push("/");
+        router.push("/personalize");
         return;
       }
       // Paid: stash credentials for the return trip, then go to Stripe.

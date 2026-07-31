@@ -4710,6 +4710,39 @@ export default function App() {
   const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.minMatch>0?1:0);
   const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""};
 
+  // One-time onboarding: apply a new user's personalization (from /personalize) to
+  // their profile AND seed a starter board filter for their very first visit only.
+  useEffect(()=>{
+    if(!user||!user.id) return;
+    let pers=null;
+    try{ pers=JSON.parse(sessionStorage.getItem("mq_personalization")||"null"); }catch(e){}
+    if(!pers) return;
+    sessionStorage.removeItem("mq_personalization"); // apply once, then revert to normal
+    const patch={};
+    if(Array.isArray(pers.roles)&&pers.roles.length) patch.role=pers.roles.join(", ");
+    if(Array.isArray(pers.openTo)&&pers.openTo.length) patch.openTo=pers.openTo;
+    if(pers.country) patch.country=pers.country;
+    if(Object.keys(patch).length) patchProfile(patch);
+    // Build the starter filter from their picks.
+    const sf={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""};
+    if(pers.country){
+      if(pers.country==="United States"||pers.country==="Canada") sf.countries=[pers.country];
+      else { const cont=COUNTRY_CONTINENT[pers.country]; if(cont) sf.countries=[cont]; }
+    }
+    if(Array.isArray(pers.roles)&&pers.roles.length) sf.titles=[...pers.roles];
+    if(Array.isArray(pers.openTo)&&pers.openTo.length){
+      const remote=[], types=[];
+      if(pers.openTo.includes("Remote")) remote.push("Remote OK");
+      if(pers.openTo.includes("Hybrid")) remote.push("Hybrid");
+      if(pers.openTo.includes("On-site")) remote.push("On-site Only");
+      if(pers.openTo.includes("Full-time")) types.push("Full-time");
+      if(pers.openTo.includes("Contract")) types.push("Contract");
+      sf.remote=remote; sf.types=types;
+    }
+    if(sf.countries.length||sf.titles.length||sf.remote.length||sf.types.length) setFilters(sf);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[user&&user.id]);
+
   // All jobs flat list for stats — memoized so it doesn't rebuild on every render
   // (e.g. each keystroke). Rebuilds only when live jobs change.
   // Every open position on the site, counted once per company. Companies listed in
