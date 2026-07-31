@@ -4664,9 +4664,12 @@ export default function App() {
     const f=filters;
     if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
-    if(f.remote.includes("Remote OK")&&!job.isRemote)return false;
-    if(f.remote.includes("Hybrid")&&!job.isHybrid)return false;
-    if(f.remote.includes("On-site Only")&&(job.isRemote||job.isHybrid))return false;
+    if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
+      const okR=f.remote.includes("Remote OK")&&job.isRemote;
+      const okH=f.remote.includes("Hybrid")&&job.isHybrid;
+      const okO=f.remote.includes("On-site Only")&&!job.isRemote&&!job.isHybrid;
+      if(!(okR||okH||okO))return false;
+    }
     if(f.types.length>0&&!f.types.includes(job.type))return false;
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
@@ -4681,9 +4684,12 @@ export default function App() {
     const f=filters;
     if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
-    if(f.remote.includes("Remote OK")&&!job.isRemote)return false;
-    if(f.remote.includes("Hybrid")&&!job.isHybrid)return false;
-    if(f.remote.includes("On-site Only")&&(job.isRemote||job.isHybrid))return false;
+    if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
+      const okR=f.remote.includes("Remote OK")&&job.isRemote;
+      const okH=f.remote.includes("Hybrid")&&job.isHybrid;
+      const okO=f.remote.includes("On-site Only")&&!job.isRemote&&!job.isHybrid;
+      if(!(okR||okH||okO))return false;
+    }
     if(f.types.length>0&&!f.types.includes(job.type))return false;
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
