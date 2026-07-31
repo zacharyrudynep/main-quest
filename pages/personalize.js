@@ -1,6 +1,5 @@
 import Head from "next/head";
 import { useState } from "react";
-import { useRouter } from "next/router";
 
 const ROLES = ["Game Designer","Systems Designer","Level Designer","UI/UX Designer","Narrative Designer","Combat Designer","Quest Designer","Economy Designer","Technical Designer","Software Engineer","Gameplay Programmer","Engine Programmer","Graphics Engineer","AI Programmer","Network Programmer","Backend Engineer","DevOps Engineer","Mobile Developer","Tools Programmer","Build Engineer","Concept Artist","3D Artist","2D Artist","Character Artist","Environment Artist","Technical Artist","VFX Artist","Animator","Rigging Artist","Audio Designer","Sound Designer","SFX Artist","Composer","Audio Engineer","Music Composer","Producer","Project Manager","Scrum Master","Product Manager","QA Tester","QA Analyst","QA Lead","Community Manager","Marketing Specialist","PR Manager","HR Manager","Recruiter","Finance Analyst","Business Analyst","Data Analyst","Data Scientist","IT Support","System Administrator"];
 const OPEN_TO = ["Full-time","Contract","Remote","Hybrid","On-site","Relocation"];
@@ -13,16 +12,16 @@ const STEPS = [
 ];
 
 export default function Personalize() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [roles, setRoles] = useState([]);
   const [openTo, setOpenTo] = useState([]);
   const [country, setCountry] = useState("");
 
-  const skip = () => router.push("/");
+  const skip = () => { window.location.href = "/"; };
   const finish = () => {
     try { sessionStorage.setItem("mq_personalization", JSON.stringify({ roles, openTo, country })); } catch (e) {}
-    router.push("/");
+    // Full-page load so the board mounts fresh, restores the session (auto-login), and applies the starter filter.
+    window.location.href = "/";
   };
   const toggleOpen = (o) => setOpenTo(v => v.includes(o) ? v.filter(x => x !== o) : [...v, o]);
 
