@@ -3052,6 +3052,33 @@ function AutoTextarea({value,onChange,placeholder,style,minHeight=70,maxHeight=2
 }
 
 // ── RESUME SECTION ────────────────────────────────────────────────────────────
+// Structured work history: add/remove editable experience blocks.
+function WorkHistoryManager({blocks,onChange}){
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
+  const list=blocks||[];
+  const add=()=>onChange([...list,{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),company:"",role:"",timeframe:"",details:""}]);
+  const upd=(id,k,v)=>onChange(list.map(b=>b.id===id?{...b,[k]:v}:b));
+  const remove=(id)=>onChange(list.filter(b=>b.id!==id));
+  return <div style={{display:"flex",flexDirection:"column",gap:10}}>
+    {list.map((b,i)=>
+      <div key={b.id} style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.14)",borderRadius:10,padding:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <span style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Experience {i+1}</span>
+          <button onClick={()=>remove(b.id)} title="Remove" style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,width:24,height:24,fontSize:14,lineHeight:1}}>×</button>
+        </div>
+        <input value={b.company||""} onChange={e=>upd(b.id,"company",e.target.value)} placeholder="Company / Studio" style={{...inp,marginBottom:8}}/>
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <input value={b.role||""} onChange={e=>upd(b.id,"role",e.target.value)} placeholder="Role / project" style={{...inp,flex:2,minWidth:0}}/>
+          <input value={b.timeframe||""} onChange={e=>upd(b.id,"timeframe",e.target.value)} placeholder="2022–2024" style={{...inp,flex:1,minWidth:0}}/>
+        </div>
+        <textarea value={b.details||""} onChange={e=>upd(b.id,"details",e.target.value)} placeholder="What you worked on, shipped, or achieved…" style={{...inp,minHeight:64,resize:"vertical",lineHeight:1.5}}/>
+      </div>
+    )}
+    <button onClick={add} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Add work experience</button>
+  </div>;
+}
+
+// ── RESUME SECTION ────────────────────────────────────────────────────────────
 function ResumeSection({profile,updateField}) {
   const mobile = useIsMobile();
   const [ps,setPs]=useState("idle");
@@ -3137,13 +3164,13 @@ const upload=async(e)=>{
       {ps==="error"&&<><I.X s={26} c="#e07060"/><div style={{fontSize:12,color:"#e07060",fontFamily:"'Cinzel',serif"}}>{msg}</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>Try Again</div></>}
     </div>
     )}
-    <div style={fld}><label style={lbl}>Key Skills</label><AutoTextarea style={inp} minHeight={70} maxHeight={200} value={profile.skills||""} onChange={e=>updateField("skills",e.target.value)} placeholder="e.g. Unreal Engine 5, C++, Blueprint scripting, multiplayer..."/></div>
+    <div style={fld}><label style={lbl}>Key Skills</label><RoleBubbleInput value={profile.skills||""} onChange={v=>updateField("skills",v)} placeholder="e.g. Unreal Engine 5 — press Enter to add"/></div>
     <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
       <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={profile.experience||""} onChange={e=>updateField("experience",e.target.value)}><option value="">Select</option><option value="Entry Level">Entry Level (0-2 yrs)</option><option value="Mid Level">Mid Level (2-5 yrs)</option><option value="Senior">Senior (5-8 yrs)</option><option value="Lead">Lead (8-12 yrs)</option><option value="Principal">Principal (12+ yrs)</option><option value="Director">Director (15+ yrs)</option></select></div>
       <div style={fld}><label style={lbl}>Target Salary</label><input style={inp} value={profile.targetSalary||""} onChange={e=>updateField("targetSalary",e.target.value)} placeholder="e.g. $90k–$120k"/></div>
     </div>
     <div style={fld}><label style={lbl}>Education</label><input style={inp} value={profile.education||""} onChange={e=>updateField("education",e.target.value)} placeholder="e.g. BS Computer Science, DigiPen, 2022"/></div>
-    <div style={fld}><label style={lbl}>Work History Summary</label><AutoTextarea style={inp} minHeight={80} maxHeight={260} value={profile.workHistory||""} onChange={e=>updateField("workHistory",e.target.value)} placeholder="e.g. Junior Programmer at Studio X (2022–2024): shipped 2 mobile titles..."/></div>
+    <div style={fld}><label style={lbl}>Work History</label><WorkHistoryManager blocks={profile.workBlocks||[]} onChange={v=>updateField("workBlocks",v)}/></div>
     <div style={fld}><label style={lbl}>Key Achievements</label><AutoTextarea style={inp} minHeight={70} maxHeight={220} value={profile.achievements||""} onChange={e=>updateField("achievements",e.target.value)} placeholder="e.g. Reduced load times 40%, shipped game with 50k downloads..."/></div>
   </div>;
 }
@@ -3330,7 +3357,7 @@ function GuestPanel({onClose,onSignIn}) {
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
-  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
+  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",timeframe:"",details:user.profile.workHistory}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
   const [saved,setSaved]=useState(false);
   const [saveErr,setSaveErr]=useState("");
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
@@ -3545,7 +3572,7 @@ const _scoreCache=new Map(); // jobId+profileKey -> result
 // A short signature of the profile so we know when to invalidate caches.
 function _profileKey(p){
   if(!p)return "";
-  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}`;
+  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${p.experience||""}|${(p.location||"").length}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
 }
 
 function computeMatchScore(job,profile){
@@ -3555,7 +3582,8 @@ function computeMatchScore(job,profile){
   // (Re)build the profile token sets only when the profile actually changes.
   if(_profileCache.key!==pKey){
     const skillsText=(profile.skills||"").toLowerCase();
-    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",profile.achievements||"",profile.education||""].join(" ").toLowerCase();
+    const workBlocksText=(profile.workBlocks||[]).map(b=>[b.company,b.role,b.timeframe,b.details].filter(Boolean).join(" ")).join(" ");
+    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",workBlocksText,profile.achievements||"",profile.education||""].join(" ").toLowerCase();
     if(!corpus.trim()||corpus.replace(/\s/g,"").length<25){
       _profileCache={key:pKey,profileSet:null,skillSet:null,corpus:"",yexp:""};
     } else {
@@ -3639,7 +3667,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied})
   const match=computeMatchScore(job,user?.profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#888";
   // Does the user have enough profile data to score? (skills/resume/role/experience)
-  const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()||(user.profile.education||"").trim()));
+  const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()||(user.profile.workBlocks||[]).length||(user.profile.education||"").trim()));
   const [showScoreInfo,setShowScoreInfo]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
