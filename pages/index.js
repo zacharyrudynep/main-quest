@@ -3052,29 +3052,69 @@ function AutoTextarea({value,onChange,placeholder,style,minHeight=70,maxHeight=2
 }
 
 // ── RESUME SECTION ────────────────────────────────────────────────────────────
-// Structured work history: add/remove editable experience blocks.
+// Structured work history via a step-by-step wizard (one field at a time),
+// saving each entry as an editable card. Mirrors the job-alert flow.
 function WorkHistoryManager({blocks,onChange}){
-  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"9px 11px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
+  const [wiz,setWiz]=useState(null); // {step, editId, draft}
   const list=blocks||[];
-  const add=()=>onChange([...list,{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),company:"",role:"",timeframe:"",details:""}]);
-  const upd=(id,k,v)=>onChange(list.map(b=>b.id===id?{...b,[k]:v}:b));
+  const STEPS=[
+    {key:"company",label:"Company",ph:"Company / Studio name",area:false},
+    {key:"role",label:"Your Role",ph:"e.g. Gameplay Programmer",area:false},
+    {key:"project",label:"Project",ph:"Project or game name (optional)",area:false},
+    {key:"timeframe",label:"Timeframe",ph:"e.g. 2022–2024",area:false},
+    {key:"description",label:"Description",ph:"What you worked on and did…",area:true},
+    {key:"achievements",label:"Key Achievements",ph:"What you shipped or achieved (optional)…",area:true},
+  ];
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"11px 12px",fontSize:13,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
+  const start=()=>setWiz({step:0,editId:null,draft:{company:"",role:"",project:"",timeframe:"",description:"",achievements:""}});
+  const edit=(b)=>setWiz({step:0,editId:b.id,draft:{company:b.company||"",role:b.role||"",project:b.project||"",timeframe:b.timeframe||"",description:b.description||b.details||"",achievements:b.achievements||""}});
+  const setD=(k,v)=>setWiz(w=>({...w,draft:{...w.draft,[k]:v}}));
+  const commit=()=>{const d=wiz.draft;onChange(wiz.editId?list.map(b=>b.id===wiz.editId?{...d,id:wiz.editId}:b):[...list,{...d,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)}]);setWiz(null);};
   const remove=(id)=>onChange(list.filter(b=>b.id!==id));
-  return <div style={{display:"flex",flexDirection:"column",gap:10}}>
-    {list.map((b,i)=>
-      <div key={b.id} style={{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.14)",borderRadius:10,padding:12}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <span style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Experience {i+1}</span>
-          <button onClick={()=>remove(b.id)} title="Remove" style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,width:24,height:24,fontSize:14,lineHeight:1}}>×</button>
-        </div>
-        <input value={b.company||""} onChange={e=>upd(b.id,"company",e.target.value)} placeholder="Company / Studio" style={{...inp,marginBottom:8}}/>
-        <div style={{display:"flex",gap:8,marginBottom:8}}>
-          <input value={b.role||""} onChange={e=>upd(b.id,"role",e.target.value)} placeholder="Role / project" style={{...inp,flex:2,minWidth:0}}/>
-          <input value={b.timeframe||""} onChange={e=>upd(b.id,"timeframe",e.target.value)} placeholder="2022–2024" style={{...inp,flex:1,minWidth:0}}/>
-        </div>
-        <textarea value={b.details||""} onChange={e=>upd(b.id,"details",e.target.value)} placeholder="What you worked on, shipped, or achieved…" style={{...inp,minHeight:64,resize:"vertical",lineHeight:1.5}}/>
+
+  if(wiz){
+    const s=STEPS[wiz.step]; const d=wiz.draft; const val=d[s.key]||"";
+    const last=wiz.step===STEPS.length-1;
+    const canSave=!!(d.company||"").trim();
+    return <div style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.2)",borderRadius:12,padding:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080"}}>{wiz.editId?"Edit experience":"New experience"} — {s.label}</div>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.4)"}}>Step {wiz.step+1} of {STEPS.length}</div>
       </div>
-    )}
-    <button onClick={add} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Add work experience</button>
+      <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.6,marginBottom:8,fontFamily:"'Cinzel',serif"}}>{s.label}</div>
+      {s.area
+        ? <textarea autoFocus value={val} onChange={e=>setD(s.key,e.target.value)} placeholder={s.ph} style={{...inp,minHeight:90,resize:"vertical",lineHeight:1.5}}/>
+        : <input autoFocus value={val} onChange={e=>setD(s.key,e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!last){e.preventDefault();setWiz(w=>({...w,step:w.step+1}));}}} placeholder={s.ph} style={inp}/>}
+      <div style={{display:"flex",justifyContent:"space-between",gap:8,marginTop:14}}>
+        <button onClick={wiz.step===0?()=>setWiz(null):()=>setWiz(w=>({...w,step:w.step-1}))} style={{background:"rgba(244,237,216,.05)",border:"1px solid rgba(201,168,76,.15)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:8,padding:"9px 16px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600}}>{wiz.step===0?"Cancel":"‹ Previous"}</button>
+        {last
+          ? <button onClick={commit} disabled={!canSave} style={{background:canSave?"linear-gradient(135deg,#c9a84c,#f0d080)":"rgba(201,168,76,.2)",border:"none",color:"#0a0608",cursor:canSave?"pointer":"default",borderRadius:8,padding:"9px 20px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5,opacity:canSave?1:.5}}>Save experience</button>
+          : <button onClick={()=>setWiz(w=>({...w,step:w.step+1}))} style={{background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",cursor:"pointer",borderRadius:8,padding:"9px 16px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700}}>Next ›</button>}
+      </div>
+      {last&&!canSave&&<div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginTop:8,textAlign:"right"}}>A company name is required to save.</div>}
+    </div>;
+  }
+
+  return <div style={{display:"flex",flexDirection:"column",gap:10}}>
+    {list.map(b=>{
+      const desc=b.description||b.details||"";
+      const sub=[b.role,b.project,b.timeframe].filter(Boolean).join(" · ");
+      return <div key={b.id} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,padding:"12px 13px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#f4edd8"}}>{b.company||"—"}</div>
+            {sub&&<div style={{fontSize:11,color:"rgba(244,237,216,.5)",marginTop:2}}>{sub}</div>}
+          </div>
+          <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <button onClick={()=>edit(b)} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:"4px 9px",fontSize:10,fontFamily:"'Cinzel',serif",fontWeight:600}}>Edit</button>
+            <button onClick={()=>remove(b.id)} title="Delete" style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,width:26,fontSize:13,lineHeight:1}}>×</button>
+          </div>
+        </div>
+        {desc&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",marginTop:8,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{desc}</div>}
+        {b.achievements&&<div style={{display:"flex",gap:6,fontSize:11,color:"rgba(126,207,179,.75)",marginTop:6,lineHeight:1.5}}><span style={{color:"#7ecfb3",flexShrink:0}}>✦</span><span style={{whiteSpace:"pre-wrap"}}>{b.achievements}</span></div>}
+      </div>;
+    })}
+    <button onClick={start} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Add work experience</button>
   </div>;
 }
 
@@ -3171,7 +3211,6 @@ const upload=async(e)=>{
     </div>
     <div style={fld}><label style={lbl}>Education</label><input style={inp} value={profile.education||""} onChange={e=>updateField("education",e.target.value)} placeholder="e.g. BS Computer Science, DigiPen, 2022"/></div>
     <div style={fld}><label style={lbl}>Work History</label><WorkHistoryManager blocks={profile.workBlocks||[]} onChange={v=>updateField("workBlocks",v)}/></div>
-    <div style={fld}><label style={lbl}>Key Achievements</label><AutoTextarea style={inp} minHeight={70} maxHeight={220} value={profile.achievements||""} onChange={e=>updateField("achievements",e.target.value)} placeholder="e.g. Reduced load times 40%, shipped game with 50k downloads..."/></div>
   </div>;
 }
 
@@ -3357,7 +3396,7 @@ function GuestPanel({onClose,onSignIn}) {
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
-  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",timeframe:"",details:user.profile.workHistory}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
+  const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
   const [saved,setSaved]=useState(false);
   const [saveErr,setSaveErr]=useState("");
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
@@ -3582,7 +3621,7 @@ function computeMatchScore(job,profile){
   // (Re)build the profile token sets only when the profile actually changes.
   if(_profileCache.key!==pKey){
     const skillsText=(profile.skills||"").toLowerCase();
-    const workBlocksText=(profile.workBlocks||[]).map(b=>[b.company,b.role,b.timeframe,b.details].filter(Boolean).join(" ")).join(" ");
+    const workBlocksText=(profile.workBlocks||[]).map(b=>[b.company,b.role,b.project,b.timeframe,b.description,b.details,b.achievements].filter(Boolean).join(" ")).join(" ");
     const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",workBlocksText,profile.achievements||"",profile.education||""].join(" ").toLowerCase();
     if(!corpus.trim()||corpus.replace(/\s/g,"").length<25){
       _profileCache={key:pKey,profileSet:null,skillSet:null,corpus:"",yexp:""};
