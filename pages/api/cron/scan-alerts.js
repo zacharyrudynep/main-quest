@@ -18,13 +18,18 @@ export default async function handler(req, res){
   const started = Date.now();
 
   try{
-    // 1) Premium users who have set up alerts.
+    // 1) Users who have followed companies (any tier) OR a premium alert wizard.
     const { data: profiles, error } = await supabaseAdmin
-      .from("profiles").select("id,name,data,is_premium").eq("is_premium", true);
+      .from("profiles").select("id,name,data,is_premium");
     if(error) throw error;
-    const candidates = (profiles || []).filter(p => alertHasCriteria(p.data && p.data.jobAlerts));
+    const candidates = (profiles || []).filter(p => {
+      const d = p.data || {};
+      const hasFollows = Array.isArray(d.notifyCompanies) && d.notifyCompanies.length > 0;
+      const hasWizard = p.is_premium && alertHasCriteria(d.jobAlerts);
+      return hasFollows || hasWizard;
+    });
     if(candidates.length === 0){
-      return res.status(200).json({ ok: true, users: 0, note: "no premium users with alerts" });
+      return res.status(200).json({ ok: true, users: 0, note: "no users with follows or alerts" });
     }
 
     // 2) Fetch all current jobs once (shared across users).
@@ -33,41 +38,50 @@ export default async function handler(req, res){
     let emailedUsers = 0, totalNew = 0;
     for(const p of candidates){
       const d = p.data || {};
-      if(d.emailJobAlerts === false) continue; // user turned email off (badges still work)
+      const emailOn = d.emailJobAlerts !== false;   // email delivery toggle (default on)
+      const inAppOn = d.notifications !== false;     // inbox delivery toggle (default on)
+      if(!emailOn && !inAppOn) continue;             // both channels off — nothing to deliver
 
       const alerts = asAlertArray(d.jobAlerts);
+      const wizardOn = p.is_premium && alertHasCriteria(alerts);
+      const followed = (d.notifyCompanies || []).map(c => String(c).toLowerCase());
       const emailedKeys = new Set(d.emailedKeys || []);
       const inbox = d.inbox || [];
       const inboxKeys = new Set(inbox.map(n => n.jobKey));
 
-      // New = matches we haven't emailed this user before.
-      const fresh = [];
+      // Every current posting that matches a followed company or the premium wizard.
+      const allMatches = [];
       for(const j of jobs){
-        if(!jobMatchesAnyAlert(j, alerts)) continue;
+        const followHit = followed.length && followed.includes((j.company || "").toLowerCase());
+        const wizardHit = wizardOn && jobMatchesAnyAlert(j, alerts);
+        if(!(followHit || wizardHit)) continue;
         const jobKey = `${j.company}|${j.title}|${j.location || ""}`;
-        if(emailedKeys.has(jobKey)) continue;
-        emailedKeys.add(jobKey);
-        fresh.push({ jobKey, title: j.title, company: j.company, location: j.location || "", url: j.url || base });
-        if(fresh.length >= 40) break;
+        allMatches.push({ jobKey, title: j.title, company: j.company, location: j.location || "", url: j.url || base });
       }
-      if(fresh.length === 0) continue;
+      if(allMatches.length === 0) continue;
 
-      // 3) Look up the user's email address and send.
-      let email = null;
-      try{
-        const u = await supabaseAdmin.auth.admin.getUserById(p.id);
-        email = (u && u.data && u.data.user && u.data.user.email) || null;
-      }catch(e){ /* no email → skip send, still record so we don't retry forever */ }
-      if(email){
-        try{ await sendJobAlertEmail(email, p.name || "", fresh.slice(0, 25)); emailedUsers++; }
-        catch(e){ /* send failed (quota, bad address) → continue; keys still recorded */ }
+      // Email: only postings not emailed to this user before (capped), if the toggle is on.
+      if(emailOn){
+        const toEmail = allMatches.filter(m => !emailedKeys.has(m.jobKey)).slice(0, 25);
+        if(toEmail.length){
+          toEmail.forEach(m => emailedKeys.add(m.jobKey));
+          let email = null;
+          try{ const u = await supabaseAdmin.auth.admin.getUserById(p.id); email = (u && u.data && u.data.user && u.data.user.email) || null; }
+          catch(e){ /* no email → skip send */ }
+          if(email){
+            try{ await sendJobAlertEmail(email, p.name || "", toEmail); emailedUsers++; }
+            catch(e){ /* send failed → keys still recorded, continue */ }
+          }
+        }
       }
-      totalNew += fresh.length;
 
-      // 4) Persist: record emailed keys + add matches to the on-site inbox (deduped).
-      const newInboxItems = fresh
-        .filter(f => !inboxKeys.has(f.jobKey))
-        .map(f => ({ id: f.jobKey, jobKey: f.jobKey, title: f.title, company: f.company, location: f.location, ts: Date.now(), read: false }));
+      // Inbox: only postings not already in the inbox, if the toggle is on.
+      const newInboxItems = inAppOn
+        ? allMatches.filter(m => !inboxKeys.has(m.jobKey))
+            .map(m => ({ id: m.jobKey, jobKey: m.jobKey, title: m.title, company: m.company, location: m.location, ts: Date.now(), read: false }))
+        : [];
+      totalNew += allMatches.length;
+
       const nextData = {
         ...d,
         emailedKeys: [...emailedKeys].slice(-800),

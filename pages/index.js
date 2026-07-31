@@ -2492,11 +2492,8 @@ function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,pr
             {/* Bell / company notification settings */}
             <div style={{marginBottom:8}}>
               <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:10}}>Notification Settings</div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,marginBottom:8}}>
-                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Alert me for all new postings</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>{P.alertAll?"Every company.":"Only companies you follow below."}</div></div>
-                <button onClick={()=>onPatch&&onPatch({alertAll:!P.alertAll})} style={{width:42,height:24,background:P.alertAll?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.alertAll?"translateX(18px)":"none"}}/></button>
-              </div>
-              {!P.alertAll&&<div style={{marginBottom:8}}>
+              <div style={{fontSize:11,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.5}}>Followed companies — you'll be alerted when they post new roles. Tap the bell on any studio on the board to follow it.</div>
+              <div style={{marginBottom:8}}>
                 {notifyCompanies.length===0?
                   <div style={{fontSize:10.5,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"9px 11px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,textAlign:"center"}}>No companies followed yet. Tap the bell on any studio on the board to follow it.</div>
                   :<div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -2506,13 +2503,13 @@ function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,pr
                         <span onClick={()=>onPatch&&onPatch({notifyCompanies:notifyCompanies.filter(x=>x!==cn)})} title="Unfollow" style={{cursor:"pointer",display:"flex",flexShrink:0}}><I.Bell s={14} c="#c9a84c" fill="#c9a84c"/></span>
                       </div>)}
                   </div>}
-              </div>}
+              </div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
-                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>In-app badges</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Show new-posting badges while browsing</div></div>
+                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>In-app notifications</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>New postings from followed companies and your alerts appear in your inbox</div></div>
                 <button onClick={()=>onPatch&&onPatch({notifications:P.notifications===false?true:false})} style={{width:42,height:24,background:P.notifications!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.notifications!==false?"translateX(18px)":"none"}}/></button>
               </div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,marginTop:8}}>
-                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Email me job matches</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Daily email when new roles match your alerts</div></div>
+                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Email me job matches</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Daily email with new postings from followed companies and your alerts</div></div>
                 <button onClick={()=>onPatch&&onPatch({emailJobAlerts:P.emailJobAlerts===false?true:false})} style={{width:42,height:24,background:P.emailJobAlerts!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.emailJobAlerts!==false?"translateX(18px)":"none"}}/></button>
               </div>
             </div>
@@ -3173,7 +3170,9 @@ const upload=async(e)=>{
       setPs("parsing");setMsg("Parsing resume…");
       // Heuristic (non-AI) field extraction
       const parsed=parseResumeText(text);
-      Object.entries(parsed).forEach(([k,v])=>{if(v&&typeof v==="string"&&v.trim())updateField(k,v.trim());});
+      Object.entries(parsed).forEach(([k,v])=>{if(k!=="skills"&&v&&typeof v==="string"&&v.trim())updateField(k,v.trim());});
+      // Key Skills come ONLY from the resume — detect known skills in the actual text.
+      updateField("skills",_skillsFromResume(text));
       // Always store the full text so the user has it
       updateField("resumeText",text.replace(/\s+/g," ").trim().slice(0,8000));
       updateField("resumeFileName",file.name);
@@ -3212,7 +3211,13 @@ const upload=async(e)=>{
       {ps==="error"&&<><I.X s={26} c="#e07060"/><div style={{fontSize:12,color:"#e07060",fontFamily:"'Cinzel',serif"}}>{msg}</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>Try Again</div></>}
     </div>
     )}
-    <div style={fld}><label style={lbl}>Key Skills</label><RoleBubbleInput value={profile.skills||""} onChange={v=>updateField("skills",v)} placeholder="e.g. Unreal Engine 5 — press Enter to add"/></div>
+    <div style={fld}><label style={lbl}>Key Skills <span style={{textTransform:"none",color:"rgba(244,237,216,.4)",fontWeight:400,letterSpacing:0}}>· detected from your resume</span></label>
+      {(()=>{const sk=(profile.skills||"").split(",").map(s=>s.trim()).filter(Boolean);
+        return sk.length
+          ? <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sk.map((s,i)=><span key={i} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.28)",color:"#f0d080",borderRadius:14,fontSize:11,padding:"3px 11px",textTransform:"capitalize"}}>{s}</span>)}</div>
+          : <div style={{fontSize:11.5,color:"rgba(244,237,216,.42)",fontStyle:"italic",padding:"10px 12px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,lineHeight:1.5}}>Upload your resume above to detect your skills. These come straight from your resume, so your match score reflects what employers actually see.</div>;
+      })()}
+    </div>
     <div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
       <div style={fld}><label style={lbl}>Experience Level</label><select style={inp} value={profile.experience||""} onChange={e=>updateField("experience",e.target.value)}><option value="">Select</option><option value="Entry Level">Entry Level (0-2 yrs)</option><option value="Mid Level">Mid Level (2-5 yrs)</option><option value="Senior">Senior (5-8 yrs)</option><option value="Lead">Lead (8-12 yrs)</option><option value="Principal">Principal (12+ yrs)</option><option value="Director">Director (15+ yrs)</option></select></div>
       <div style={fld}><label style={lbl}>Target Salary</label><input style={inp} value={profile.targetSalary||""} onChange={e=>updateField("targetSalary",e.target.value)} placeholder="e.g. $90k–$120k"/></div>
@@ -3620,7 +3625,7 @@ const _scoreCache=new Map(); // jobId+profileKey -> result
 // A short signature of the profile so we know when to invalidate caches.
 function _profileKey(p){
   if(!p)return "";
-  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${p.experience||""}|${(p.location||"").length}|${p.country||""}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
+  return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${(p.resumeText||"").length}|${p.experience||""}|${(p.location||"").length}|${p.country||""}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
 }
 
 // A curated vocabulary of real skills / tools / tech so "missing keywords" reflects
@@ -3657,6 +3662,11 @@ const _SKILL_KW=new Set([
 ]);
 
 // Map an experience-level label to a rank (for the seniority modifier).
+// Extract known skills (from the curated vocabulary) found anywhere in resume text.
+function _skillsFromResume(text){
+  const found=new Set(_matchTokenize(String(text||"").toLowerCase()).filter(k=>_SKILL_KW.has(k)));
+  return [...found].slice(0,40).join(", ");
+}
 const _EXP_RANK={"director":6,"principal":5,"lead":4,"manager":4,"senior":3,"mid level":2,"mid-level":2,"mid":2,"junior":1,"entry level":1,"entry":1};
 function _expRank(s){ if(!s)return null; const t=String(s).toLowerCase(); for(const k of Object.keys(_EXP_RANK)) if(t.includes(k)) return _EXP_RANK[k]; return null; }
 
@@ -3691,7 +3701,7 @@ function computeMatchScore(job,profile){
   if(_profileCache.key!==pKey){
     const skillsText=(profile.skills||"").toLowerCase();
     const workBlocksText=(profile.workBlocks||[]).map(b=>[b.company,b.role,b.project,b.timeframe,b.description,b.details,b.achievements].filter(Boolean).join(" ")).join(" ");
-    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",workBlocksText,profile.achievements||"",profile.education||""].join(" ").toLowerCase();
+    const corpus=[profile.skills||"",profile.role||"",profile.bio||"",profile.workHistory||"",workBlocksText,profile.achievements||"",profile.education||"",profile.resumeText||""].join(" ").toLowerCase();
     if(!corpus.trim()||corpus.replace(/\s/g,"").length<25){
       _profileCache={key:pKey,profileSet:null,skillSet:null,corpus:"",yexp:""};
     } else {
@@ -4724,14 +4734,22 @@ export default function App() {
   // matches into the inbox. Throttled to once per 24h via lastAlertScan. Email
   // delivery (Resend) will hook in here later.
   useEffect(()=>{
-    if(!user||!user.id||!introDone||!appPremium) return;
-    const alerts=user.profile&&user.profile.jobAlerts;
-    if(!alertHasCriteria(alerts)) return;
-    const last=(user.profile&&user.profile.lastAlertScan)||0;
+    if(!user||!user.id||!introDone) return;
+    const prof=user.profile||{};
+    if(prof.notifications===false) return;          // in-app inbox notifications turned off
+    const alerts=prof.jobAlerts;
+    const followed=(prof.notifyCompanies||[]).map(c=>String(c).toLowerCase());
+    const wizardOn=appPremium&&alertHasCriteria(alerts); // the premium alert wizard
+    if(!wizardOn&&followed.length===0) return;      // nothing set up to notify on
+    const last=prof.lastAlertScan||0;
     if(Date.now()-last < 24*3600*1000) return;      // once a day
-    const existing=(user.profile&&user.profile.inbox)||[];
+    const existing=prof.inbox||[];
     const keys=new Set(existing.map(n=>n.jobKey));
-    const matched=allJobs.filter(j=>jobMatchesAnyAlert(j,alerts)).sort((a,b)=>(b.updated||0)-(a.updated||0));
+    const matched=allJobs.filter(j=>{
+      const followHit=followed.length&&followed.includes((j.company||"").toLowerCase())&&j.isNew; // new postings from followed companies
+      const wizardHit=wizardOn&&jobMatchesAnyAlert(j,alerts);
+      return followHit||wizardHit;
+    }).sort((a,b)=>(b.updated||0)-(a.updated||0));
     const fresh=[];
     for(const j of matched){
       const jobKey=`${j.company}|${j.title}|${j.location||""}`;
@@ -4744,7 +4762,7 @@ export default function App() {
     if(fresh.length>0) patchProfile({inbox:[...fresh,...existing].slice(0,100),lastAlertScan:Date.now()});
     else patchProfile({lastAlertScan:Date.now()});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user&&user.id,introDone,appPremium,allJobs.length]);
+  },[user&&user.id,introDone,appPremium,allJobs.length,user&&user.profile&&(user.profile.notifyCompanies||[]).length,user&&user.profile&&user.profile.notifications]);
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
   const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically
