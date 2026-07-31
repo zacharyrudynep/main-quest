@@ -3620,6 +3620,39 @@ function _profileKey(p){
   return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${p.experience||""}|${(p.location||"").length}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
 }
 
+// A curated vocabulary of real skills / tools / tech so "missing keywords" reflects
+// genuine skill gaps, not generic words like "degree", "level", "editor", "games".
+const _SKILL_KW=new Set([
+  // engines
+  "unreal","unity","godot","cryengine","frostbite","lumberyard","gamemaker","cocos","phaser","construct","source",
+  // languages
+  "c++","c#","python","java","javascript","typescript","lua","rust","kotlin","swift","hlsl","glsl","sql","php","ruby","scala","assembly","cuda","bash","powershell",
+  // graphics / rendering
+  "shader","shaders","rendering","opengl","vulkan","directx","metal","raytracing","lighting","materials","postprocessing","vfx","particles","rasterization","pbr",
+  // gameplay / systems
+  "gameplay","multiplayer","networking","netcode","replication","physics","collision","pathfinding","navmesh","simulation","procedural","blueprint","blueprints","kinematics","ragdoll",
+  // ai / data
+  "ai","tensorflow","pytorch","reinforcement","behavior","goap",
+  // animation / art tools
+  "animation","rigging","skinning","blendshapes","maya","blender","houdini","zbrush","substance","photoshop","aseprite","spine","modeling","texturing","sculpting","retopology","uv",
+  // audio
+  "wwise","fmod","audio","mixing",
+  // tools / pipeline / devops
+  "perforce","git","svn","jira","jenkins","teamcity","docker","kubernetes","terraform","pipeline","automation","devops","gitlab","bitbucket",
+  // backend / data
+  "backend","frontend","fullstack","api","rest","graphql","microservices","aws","azure","gcp","redis","postgres","postgresql","mysql","mongodb","websockets","grpc","kafka","dynamodb","serverless","nginx",
+  // web / frameworks
+  "react","node","nodejs","angular","vue","django","flask","spring","dotnet","unity3d",
+  // disciplines / process
+  "agile","scrum","kanban","playtesting","profiling","optimization","optimisation","localization","monetization","monetisation","analytics","telemetry","usability","prototyping","wireframing","liveops",
+  // platforms
+  "playstation","xbox","nintendo","switch","ios","android","steam","webgl","html5","wasm",
+  // concepts / math
+  "algorithms","multithreading","concurrency","quaternions","trigonometry","shaders",
+  // design
+  "combat","progression","balancing","economy","narrative","systems",
+]);
+
 // Map an experience-level label to a rank (for the seniority modifier).
 const _EXP_RANK={"director":6,"principal":5,"lead":4,"manager":4,"senior":3,"mid level":2,"mid-level":2,"mid":2,"junior":1,"entry level":1,"entry":1};
 function _expRank(s){ if(!s)return null; const t=String(s).toLowerCase(); for(const k of Object.keys(_EXP_RANK)) if(t.includes(k)) return _EXP_RANK[k]; return null; }
@@ -3667,7 +3700,7 @@ function computeMatchScore(job,profile){
   if(denom>0){
     const skillsPct=Math.round(((reqMatched.length*1+prefMatched.length*0.5)/denom)*100);
     factors.push({name:"Skills",pct:skillsPct,weight:40});
-    missingSkills=reqKws.filter(k=>!profileSet.has(k)&&k.length>3).slice(0,8);
+    missingSkills=[...new Set([...reqKws,...prefKws])].filter(k=>!profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,10);
     if(skillsPct<60&&missingSkills.length) notes.push(`You're missing several skills this role lists. If you have any, add them to Key Skills — e.g. ${missingSkills.slice(0,3).join(", ")}.`);
   }
 
@@ -3791,6 +3824,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   // Does the user have enough profile data to score? (skills/resume/role/experience)
   const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()||(user.profile.workBlocks||[]).length||(user.profile.education||"").trim()));
   const [showScoreInfo,setShowScoreInfo]=useState(false);
+  const [showDisclaimer,setShowDisclaimer]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
   const onApply=()=>{
@@ -3905,9 +3939,10 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <div className="gtip" style={{position:"absolute",top:"100%",right:0,marginTop:6,width:160,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 10px",fontSize:10,lineHeight:1.4,color:"rgba(244,237,216,.85)",zIndex:100,opacity:0,transition:"opacity .15s",pointerEvents:"none",fontFamily:"system-ui,sans-serif",textAlign:"center"}}>Sign up or log in to access your match score</div>
     </div>}
     {/* Match score square — shows score when profile has data, otherwise a prompt */}
-    {user&&<div style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
-      {/* Info icon */}
-      <span onClick={e=>{e.stopPropagation(); if(mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Why this score?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
+    {user&&<div onClick={e=>{e.stopPropagation(); if(mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Click for the full match breakdown" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer"}}>
+      {/* Info icon — hover for the disclaimer */}
+      <span onMouseEnter={()=>setShowDisclaimer(true)} onMouseLeave={()=>setShowDisclaimer(false)} onClick={e=>{e.stopPropagation();setShowDisclaimer(v=>!v);}} title="What is this?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"help",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
+      {showDisclaimer&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:206,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:101,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess comparing the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
       {showScoreInfo&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:258,maxHeight:360,overflowY:"auto",background:"rgba(20,14,10,.98)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.3)"}`,borderRadius:10,padding:"12px 13px",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none",overscrollBehavior:"contain"}}>
         {match?(isPremium?<>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
@@ -3949,17 +3984,19 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
 // debounced value is pushed up via onSearch, keeping search smooth.
 const SearchBox = memo(function SearchBox({value,onSearch}){
   const [local,setLocal]=useState(value||"");
-  const tRef=useRef();
   // Sync down if the search is cleared/changed externally (e.g. "Clear All").
   useEffect(()=>{ setLocal(value||""); },[value]);
-  useEffect(()=>()=>clearTimeout(tRef.current),[]);
-  const push=useCallback((v)=>{ clearTimeout(tRef.current); tRef.current=setTimeout(()=>onSearch(v),200); },[onSearch]);
-  const onChange=e=>{ const v=e.target.value; setLocal(v); push(v); };
-  const clear=()=>{ setLocal(""); clearTimeout(tRef.current); onSearch(""); };
-  return <div style={{flex:1,minWidth:180,position:"relative"}}>
-    <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:12,opacity:.4,pointerEvents:"none"}}><I.Compass s={12} c="currentColor"/></span>
-    <input value={local} onChange={onChange} placeholder="Search company or title…" style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 32px 8px 32px",fontSize:12,fontFamily:"inherit"}}/>
-    {local&&<span onClick={clear} title="Clear search" style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(232,97,58,.7)",cursor:"pointer",lineHeight:1,userSelect:"none"}}>✕</span>}
+  const run=()=>onSearch(local.trim());
+  const clear=()=>{ setLocal(""); onSearch(""); };
+  return <div style={{flex:1,minWidth:180,display:"flex",gap:6,alignItems:"stretch"}}>
+    <div style={{flex:1,position:"relative"}}>
+      <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:12,opacity:.4,pointerEvents:"none"}}><I.Compass s={12} c="currentColor"/></span>
+      <input value={local} onChange={e=>setLocal(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();run();}}} placeholder="Search company or title — press Enter" style={{width:"100%",boxSizing:"border-box",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"8px 32px 8px 32px",fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+      {local&&<span onClick={clear} title="Clear search" style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(232,97,58,.7)",cursor:"pointer",lineHeight:1,userSelect:"none"}}>✕</span>}
+    </div>
+    <button onClick={run} title="Search" style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:8,padding:"0 13px"}}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.2-4.2"/></svg>
+    </button>
   </div>;
 });
 
