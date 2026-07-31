@@ -4511,7 +4511,10 @@ export default function App() {
       return()=>{ clearTimeout(cap); abortRef.current?.abort(); };
     }
     return()=>{ abortRef.current?.abort(); };
-  },[user,guest]);
+  // Key on the user's id (login/logout), NOT the whole user object — otherwise a
+  // profile update (e.g. onboarding personalization) would abort the in-flight load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[user&&user.id,guest]);
 
   const getDisplayJobs=(name,gen,stateName)=>{
     const live=liveJobs[name];
