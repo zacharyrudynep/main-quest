@@ -3056,13 +3056,14 @@ function AutoTextarea({value,onChange,placeholder,style,minHeight=70,maxHeight=2
 // saving each entry as an editable card. Mirrors the job-alert flow.
 function WorkHistoryManager({blocks,onChange}){
   const [wiz,setWiz]=useState(null); // {step, editId, draft}
+  const [open,setOpen]=useState({}); // which saved cards are expanded
   const list=blocks||[];
   const STEPS=[
     {key:"company",label:"Company",ph:"Company / Studio name",area:false},
     {key:"role",label:"Your Role",ph:"e.g. Gameplay Programmer",area:false},
     {key:"project",label:"Project",ph:"Project or game name (optional)",area:false},
     {key:"timeframe",label:"Timeframe",ph:"e.g. 2022–2024",area:false},
-    {key:"description",label:"Description",ph:"What you worked on and did…",area:true},
+    {key:"description",label:"Description",ph:"Describe the project or game — what was it about?",area:true},
     {key:"achievements",label:"Key Achievements",ph:"What you shipped or achieved (optional)…",area:true},
   ];
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"11px 12px",fontSize:13,fontFamily:"inherit",width:"100%",boxSizing:"border-box",outline:"none"};
@@ -3099,19 +3100,24 @@ function WorkHistoryManager({blocks,onChange}){
     {list.map(b=>{
       const desc=b.description||b.details||"";
       const sub=[b.role,b.project,b.timeframe].filter(Boolean).join(" · ");
+      const hasMore=!!(desc||b.achievements);
+      const isOpen=!!open[b.id];
       return <div key={b.id} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,padding:"12px 13px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:700,color:"#f4edd8"}}>{b.company||"—"}</div>
             {sub&&<div style={{fontSize:11,color:"rgba(244,237,216,.5)",marginTop:2}}>{sub}</div>}
           </div>
-          <div style={{display:"flex",gap:6,flexShrink:0}}>
+          <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
+            {hasMore&&<button onClick={()=>setOpen(o=>({...o,[b.id]:!o[b.id]}))} title={isOpen?"Collapse":"Expand"} style={{background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:7,width:26,height:24,display:"flex",alignItems:"center",justifyContent:"center"}}><I.Chevron s={11} c="currentColor" dir={isOpen?"up":"down"}/></button>}
             <button onClick={()=>edit(b)} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:"4px 9px",fontSize:10,fontFamily:"'Cinzel',serif",fontWeight:600}}>Edit</button>
-            <button onClick={()=>remove(b.id)} title="Delete" style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,width:26,fontSize:13,lineHeight:1}}>×</button>
+            <button onClick={()=>remove(b.id)} title="Delete" style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",borderRadius:7,width:26,height:24,fontSize:13,lineHeight:1}}>×</button>
           </div>
         </div>
-        {desc&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",marginTop:8,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{desc}</div>}
-        {b.achievements&&<div style={{display:"flex",gap:6,fontSize:11,color:"rgba(126,207,179,.75)",marginTop:6,lineHeight:1.5}}><span style={{color:"#7ecfb3",flexShrink:0}}>✦</span><span style={{whiteSpace:"pre-wrap"}}>{b.achievements}</span></div>}
+        {isOpen&&<>
+          {desc&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",marginTop:10,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{desc}</div>}
+          {b.achievements&&<div style={{display:"flex",gap:6,fontSize:11,color:"rgba(126,207,179,.75)",marginTop:8,lineHeight:1.5}}><span style={{color:"#7ecfb3",flexShrink:0}}>✦</span><span style={{whiteSpace:"pre-wrap"}}>{b.achievements}</span></div>}
+        </>}
       </div>;
     })}
     <button onClick={start} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Add work experience</button>
@@ -3614,6 +3620,10 @@ function _profileKey(p){
   return `${(p.skills||"").length}|${(p.education||"").length}|${(p.role||"").length}|${(p.workHistory||"").length}|${(p.achievements||"").length}|${(p.bio||"").length}|${p.yearsExp||""}|${p.experience||""}|${(p.location||"").length}|${(p.openTo||[]).join(",")}|${JSON.stringify(p.workBlocks||[]).length}`;
 }
 
+// Map an experience-level label to a rank (for the seniority modifier).
+const _EXP_RANK={"director":6,"principal":5,"lead":4,"manager":4,"senior":3,"mid level":2,"mid-level":2,"mid":2,"junior":1,"entry level":1,"entry":1};
+function _expRank(s){ if(!s)return null; const t=String(s).toLowerCase(); for(const k of Object.keys(_EXP_RANK)) if(t.includes(k)) return _EXP_RANK[k]; return null; }
+
 function computeMatchScore(job,profile){
   if(!profile)return null;
   const pKey=_profileKey(profile);
@@ -3640,47 +3650,71 @@ function computeMatchScore(job,profile){
   const profileSet=_profileCache.profileSet;
   const skillSet=_profileCache.skillSet;
 
-  // Job keyword set (from title, requirements, responsibilities, summary)
+  // Job keyword sets: title, "required" (requirements bullets), "preferred" (responsibilities + body).
   const titleKws=new Set(tokenize((job.title||"").toLowerCase()));
-  const reqText=[...(job.requirements||[]),...(job.responsibilities||[])].join(" ").toLowerCase();
-  const reqKws=new Set(tokenize(reqText));
-  const bodyKws=new Set(tokenize([job.summary||"",job.fullDescription||""].join(" ").toLowerCase()));
-  // Combined unique job keywords
-  const allJobKws=new Set([...titleKws,...reqKws,...bodyKws]);
+  const reqKws=[...new Set(tokenize((job.requirements||[]).join(" ").toLowerCase()))];
+  const reqSet=new Set(reqKws);
+  const prefKws=[...new Set(tokenize([...(job.responsibilities||[]),job.summary||"",job.fullDescription||""].join(" ").toLowerCase()))].filter(k=>!reqSet.has(k));
+  const allJobKws=new Set([...titleKws,...reqKws,...prefKws]);
   if(allJobKws.size<3)return null; // not enough job data to score reliably
 
-  // ── Weighted scoring ──
-  // 1. Requirements/responsibilities overlap (most important) — 50%
-  const reqArr=[...reqKws];
-  const reqMatched=reqArr.filter(k=>profileSet.has(k));
-  const reqScore=reqArr.length?reqMatched.length/reqArr.length:0;
-  // 2. Title keyword overlap (role alignment) — 25%
-  const titleArr=[...titleKws];
-  const titleMatched=titleArr.filter(k=>profileSet.has(k));
-  const titleScore=titleArr.length?titleMatched.length/titleArr.length:0;
-  // 3. Skills section directly hitting the job — 15%
-  const skillHits=[...allJobKws].filter(k=>skillSet.has(k)).length;
-  const skillScore=Math.min(1,skillHits/8);
-  // 4. Experience level alignment — 10%
-  let expScore=0.5;
-  const yexp=_profileCache.yexp;
-  const jexp=(job.experience||"").toLowerCase();
-  if(yexp&&jexp){
-    const yNum=yexp.includes("10")?10:yexp.includes("7")?8:yexp.includes("4")?5:yexp.includes("2")?3:yexp.includes("1")?1.5:0.5;
-    if(jexp.includes("entry")||jexp.includes("junior"))expScore=yNum<=3?1:yNum<=5?0.7:0.4;
-    else if(jexp.includes("senior"))expScore=yNum>=5?1:yNum>=3?0.6:0.3;
-    else if(jexp.includes("lead")||jexp.includes("principal")||jexp.includes("director"))expScore=yNum>=7?1:yNum>=4?0.6:0.25;
-    else expScore=yNum>=2?0.85:0.55; // mid
+  const factors=[]; const notes=[]; let missingSkills=[];
+
+  // 1) Skills — 40%: required (×1.0) + preferred (×0.5) coverage by the profile.
+  const denom=reqKws.length*1+prefKws.length*0.5;
+  const reqMatched=reqKws.filter(k=>profileSet.has(k));
+  const prefMatched=prefKws.filter(k=>profileSet.has(k));
+  if(denom>0){
+    const skillsPct=Math.round(((reqMatched.length*1+prefMatched.length*0.5)/denom)*100);
+    factors.push({name:"Skills",pct:skillsPct,weight:40});
+    missingSkills=reqKws.filter(k=>!profileSet.has(k)&&k.length>3).slice(0,8);
+    if(skillsPct<60&&missingSkills.length) notes.push(`You're missing several skills this role lists. If you have any, add them to Key Skills — e.g. ${missingSkills.slice(0,3).join(", ")}.`);
   }
 
-  const weighted=reqScore*0.50+titleScore*0.25+skillScore*0.15+expScore*0.10;
-  // Convert to a 0-10 scale with a gentle curve so scores aren't all clustered low
-  let score10=Math.round(Math.min(10,Math.max(0.5,weighted*13))*10)/10;
+  // 2) Experience — 25%: seniority modifier (exact 1.0, one below .85, two below .65, else .40).
+  const pRank=_expRank(profile.experience), jRank=_expRank(job.experience);
+  if(pRank&&jRank){
+    const diff=jRank-pRank;
+    const expPct=diff<=0?100:diff===1?85:diff===2?65:40;
+    factors.push({name:"Experience",pct:expPct,weight:25});
+    if(diff===1) notes.push(`This is a ${job.experience} role; you're listed as ${profile.experience} — one level below, so a small modifier applies.`);
+    else if(diff>=2) notes.push(`This is a ${job.experience} role; you're listed as ${profile.experience} — a couple levels below. Emphasize senior-scope work in your history.`);
+  }
 
-  // Missing requirement keywords the user might want to add (longer, meaningful words)
-  const missing=reqArr.filter(k=>!profileSet.has(k)&&k.length>4).slice(0,5);
+  // 3) Role — 15%: target role + past roles vs the job title.
+  const titleArr=[...titleKws];
+  const roleTokens=new Set(tokenize([(profile.role||""),...(profile.workBlocks||[]).map(b=>b.role||"")].join(" ").toLowerCase()));
+  if(titleArr.length&&roleTokens.size){
+    const hit=titleArr.filter(k=>roleTokens.has(k)).length;
+    const rolePct=Math.round(Math.min(1,(hit/titleArr.length)*1.3)*100);
+    factors.push({name:"Role",pct:rolePct,weight:15});
+    if(rolePct<50) notes.push(`This posting's title doesn't closely match your target role. If it's a fit, add a matching title to Target Role.`);
+  }
 
-  const result={score:score10,reqMatched:reqMatched.length,reqTotal:reqArr.length,missing};
+  // 4) Location — 10%: remote = full; else compare location, softened by "Open to Relocation".
+  const openTo=(profile.openTo||[]).map(x=>String(x).toLowerCase());
+  const willRelocate=openTo.includes("relocation");
+  if(job.isRemote){ factors.push({name:"Location",pct:100,weight:10}); }
+  else {
+    const uT=new Set((profile.location||"").toLowerCase().split(/[^a-z]+/).filter(w=>w.length>2));
+    const jT=(job.location||"").toLowerCase().split(/[^a-z]+/).filter(w=>w.length>2);
+    if(uT.size&&jT.length){
+      const shared=jT.some(w=>uT.has(w));
+      const locPct=shared?100:willRelocate?75:(job.isHybrid?35:30);
+      factors.push({name:"Location",pct:locPct,weight:10});
+      if(!shared&&!willRelocate) notes.push(`This ${job.isHybrid?"hybrid":"on-site"} role is in ${job.location||"a different area"}. Turning on "Open to Relocation" in your profile would raise this.`);
+    } else if(willRelocate){ factors.push({name:"Location",pct:75,weight:10}); }
+  }
+
+  // Combine, redistributing weight across only the factors we could actually score.
+  const totalW=factors.reduce((a,f)=>a+f.weight,0)||1;
+  const weighted=factors.reduce((a,f)=>a+(f.pct/100)*(f.weight/totalW),0); // 0..1
+  let score10=Math.round(Math.min(10,Math.max(0,weighted*10))*10)/10;
+  if(score10<0.5&&factors.length) score10=0.5; // gentle floor so a real match isn't a demoralizing 0
+
+  const rating=score10>=9?"Excellent Match":score10>=7.5?"Strong Match":score10>=6?"Moderate Match":score10>=4?"Weak Match":"Poor Match";
+
+  const result={score:score10,rating,factors,missingSkills,notes,reqMatched:reqMatched.length,reqTotal:reqKws.length};
   _scoreCache.set(cacheKey,result);
   return result;
 }
@@ -3824,8 +3858,30 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied})
     {/* Match score square — shows score when profile has data, otherwise a prompt */}
     {user&&<div style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start"}}>
       {/* Info icon */}
-      <span onMouseEnter={()=>setShowScoreInfo(true)} onMouseLeave={()=>setShowScoreInfo(false)} onClick={e=>{e.stopPropagation();setShowScoreInfo(v=>!v);}} style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
-      {showScoreInfo&&<div style={{position:"absolute",top:"100%",right:0,marginTop:6,width:210,background:"rgba(20,14,10,.98)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.3)"}`,borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess that compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
+      <span onClick={e=>{e.stopPropagation();setShowScoreInfo(v=>!v);}} title="Why this score?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
+      {showScoreInfo&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:258,maxHeight:360,overflowY:"auto",background:"rgba(20,14,10,.98)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.3)"}`,borderRadius:10,padding:"12px 13px",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none",overscrollBehavior:"contain"}}>
+        {match?<>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:scoreColor}}>{match.rating}</span>
+            <span style={{fontSize:12,fontWeight:800,color:scoreColor}}>{match.score.toFixed(1)}/10</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:(match.missingSkills.length||match.notes.length)?10:6}}>
+            {match.factors.map(f=>{const fc=f.pct>=70?"#7ecfb3":f.pct>=45?"#c9a84c":"#e0863a";return <div key={f.name}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"rgba(244,237,216,.7)",marginBottom:2}}><span>{f.name} <span style={{opacity:.45}}>· {f.weight}%</span></span><span style={{color:fc,fontWeight:700}}>{f.pct}%</span></div>
+              <div style={{height:4,borderRadius:3,background:"rgba(244,237,216,.1)",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.max(2,f.pct)}%`,background:fc,borderRadius:3}}/></div>
+            </div>;})}
+          </div>
+          {match.missingSkills.length>0&&<div style={{marginBottom:9}}>
+            <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:5}}>Missing keywords</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{match.missingSkills.slice(0,6).map(s=><span key={s} style={{background:"rgba(224,134,58,.12)",border:"1px solid rgba(224,134,58,.3)",color:"#e0a070",borderRadius:12,fontSize:9.5,padding:"1px 7px"}}>{s}</span>)}</div>
+          </div>}
+          {match.notes.length>0&&<div style={{marginBottom:9}}>
+            <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.6,fontFamily:"'Cinzel',serif",marginBottom:5}}>How to improve</div>
+            {match.notes.slice(0,3).map((n,i)=><div key={i} style={{fontSize:10,color:"rgba(244,237,216,.62)",lineHeight:1.45,marginBottom:5,display:"flex",gap:5}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
+          </div>}
+          <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.45,borderTop:"1px solid rgba(201,168,76,.12)",paddingTop:8}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee.</div>
+        </>:<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
+      </div>}
       {match?<>
         <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
         <div style={{fontSize:8,color:scoreColor,opacity:.7,fontFamily:"'Cinzel',serif",letterSpacing:.3}}>/ 10</div>
