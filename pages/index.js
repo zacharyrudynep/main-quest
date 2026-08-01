@@ -4700,12 +4700,18 @@ export default function App() {
 
   const sortJobs=jobs=>jobs.slice().sort((a,b)=>{
     if(jobSort==="match"){
-      const sa=computeMatchScore(a,user?.profile)?.score??-1;
-      const sb=computeMatchScore(b,user?.profile)?.score??-1;
-      return sb-sa;
+      const sa=computeMatchScore(a,user?.profile)?.score, sb=computeMatchScore(b,user?.profile)?.score;
+      const va=Number.isFinite(sa)?sa:-1, vb=Number.isFinite(sb)?sb:-1;
+      return vb-va;
     }
-    if(jobSort==="newest")return new Date(b.posted)-new Date(a.posted);
-    if(jobSort==="oldest")return new Date(a.posted)-new Date(b.posted);
+    if(jobSort==="newest"||jobSort==="oldest"){
+      const ta=a.posted?new Date(a.posted).getTime():NaN, tb=b.posted?new Date(b.posted).getTime():NaN;
+      const na=!Number.isFinite(ta), nb=!Number.isFinite(tb);
+      if(na&&nb)return 0;
+      if(na)return 1;  // jobs without a valid date always sort to the end
+      if(nb)return -1;
+      return jobSort==="newest"?tb-ta:ta-tb;
+    }
     if(jobSort==="experience"){
       const order={"Entry Level":0,"Mid Level":1,"Senior":2,"Lead":3,"Principal":4,"Director":5};
       const diff=(order[a.experience]??99)-(order[b.experience]??99);
