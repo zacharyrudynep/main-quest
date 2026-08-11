@@ -3944,6 +3944,8 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
     <div style={{flex:1,minWidth:0}}>
+    {/* Company */}
+    {job.company&&<div style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:4,textTransform:"uppercase"}}>{job.company}</div>}
     {/* Title row */}
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
       {job.isNew&&<I.Alert s={18}/>}
