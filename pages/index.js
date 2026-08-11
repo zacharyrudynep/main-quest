@@ -4734,27 +4734,33 @@ export default function App() {
     return true;
   };
 
-  const sortJobs=jobs=>jobs.slice().sort((a,b)=>{
+  const sortJobs=jobs=>{
+    const arr=jobs.slice();
     if(jobSort==="match"){
-      const sa=computeMatchScore(a,user?.profile)?.score, sb=computeMatchScore(b,user?.profile)?.score;
-      const va=Number.isFinite(sa)?sa:-1, vb=Number.isFinite(sb)?sb:-1;
-      return vb-va;
+      // Precompute each job's score ONCE so the comparator is a pure lookup. Calling
+      // computeMatchScore inside the comparator made it inconsistent mid-sort, which
+      // left a block of jobs stuck at the top regardless of their score.
+      const sc=new Map();
+      for(const j of arr){ const s=computeMatchScore(j,user?.profile)?.score; sc.set(j,Number.isFinite(s)?s:-1); }
+      return arr.sort((a,b)=>sc.get(b)-sc.get(a));
     }
     if(jobSort==="newest"||jobSort==="oldest"){
-      const ta=a.posted?new Date(a.posted).getTime():NaN, tb=b.posted?new Date(b.posted).getTime():NaN;
-      const na=!Number.isFinite(ta), nb=!Number.isFinite(tb);
-      if(na&&nb)return 0;
-      if(na)return 1;  // jobs without a valid date always sort to the end
-      if(nb)return -1;
-      return jobSort==="newest"?tb-ta:ta-tb;
+      const tm=new Map();
+      for(const j of arr){ const t=j.posted?new Date(j.posted).getTime():NaN; tm.set(j,Number.isFinite(t)?t:null); }
+      return arr.sort((a,b)=>{
+        const va=tm.get(a),vb=tm.get(b);
+        if(va===null&&vb===null)return 0;
+        if(va===null)return 1;  // undated jobs always sort to the end
+        if(vb===null)return -1;
+        return jobSort==="newest"?vb-va:va-vb;
+      });
     }
     if(jobSort==="experience"){
       const order={"Entry Level":0,"Mid Level":1,"Senior":2,"Lead":3,"Principal":4,"Director":5};
-      const diff=(order[a.experience]??99)-(order[b.experience]??99);
-      return expSortDir==="desc"?-diff:diff;
+      return arr.sort((a,b)=>{const diff=(order[a.experience]??99)-(order[b.experience]??99);return expSortDir==="desc"?-diff:diff;});
     }
-    return 0;
-  });
+    return arr; // default: natural (board) order
+  };
 
   const allTitles=JOB_CATS.slice().sort();
   const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||(filters.tiers?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.minMatch>0||!!filters.search;
@@ -4962,7 +4968,7 @@ export default function App() {
   // region/state filters + search + all other filters + the active sort.
   const flatJobs=useMemo(()=>{
     if(!hideLocationTabs) return [];
-    const out=[];
+    const out=[]; const seen=new Set();
     for(const [country,states] of Object.entries(displayTree)){
       if(filters.countries.length>0 && !filters.countries.includes(country)) continue;
       for(const [state,companies] of Object.entries(states)){
@@ -4970,7 +4976,11 @@ export default function App() {
         for(const [name,co] of Object.entries(companies)){
           const nameHit=filters.search && name.toLowerCase().includes(filters.search.toLowerCase());
           for(const j of getDisplayJobs(name,co.jobs,state)){
-            if(nameHit?matchesExceptSearch(j):matches(j)) out.push(j);
+            if(nameHit?matchesExceptSearch(j):matches(j)){
+              const k=`${j.company}|${j.title}|${j.location||""}`; // dedup identical postings across regions
+              if(seen.has(k)) continue; seen.add(k);
+              out.push(j);
+            }
           }
         }
       }
