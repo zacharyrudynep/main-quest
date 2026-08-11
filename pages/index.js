@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
+import { encodeJob } from "../lib/shareJob";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
@@ -949,6 +950,16 @@ const COMPANIES_DATA = {
     ],
   },
 };
+
+// Company → careers-page URL, flattened from COMPANIES_DATA (for the "Company site" fallback button).
+const COMPANY_URL = (() => {
+  const m = {};
+  for (const states of Object.values(COMPANIES_DATA))
+    for (const arr of Object.values(states))
+      if (Array.isArray(arr)) for (const co of arr)
+        if (co && co.name && co.url && !m[co.name]) m[co.name] = co.url;
+  return m;
+})();
 
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
 // Companies where the ONLY way to apply is by email. Each posting routes to a
@@ -3889,6 +3900,8 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   // Does the user have enough profile data to score? (skills/resume/role/experience)
   const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()||(user.profile.workBlocks||[]).length||(user.profile.education||"").trim()));
   const [showScoreInfo,setShowScoreInfo]=useState(false);
+  const [showShare,setShowShare]=useState(false);
+  const [copied,setCopied]=useState(false);
   const [showDisclaimer,setShowDisclaimer]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
@@ -3952,6 +3965,25 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
       {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
       {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
+      <span style={{position:"relative",marginLeft:"auto",flexShrink:0}}>
+        <button onClick={e=>{e.stopPropagation();setShowShare(v=>!v);}} title="Share this job" style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:showShare?"rgba(201,168,76,.15)":"rgba(201,168,76,.06)",border:`1px solid ${showShare?"rgba(201,168,76,.4)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+        </button>
+        {showShare&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:184,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",borderRadius:10,padding:6,zIndex:120,boxShadow:"0 10px 28px rgba(0,0,0,.55)",fontFamily:"system-ui,sans-serif"}}>
+          {[["Copy link","copy"],["Email","email"],["Share on X","x"],["Share on LinkedIn","linkedin"]].concat(typeof navigator!=="undefined"&&navigator.share?[["More…","native"]]:[]).map(([label,kind])=>(
+            <button key={kind} onClick={()=>{
+              const u=(typeof window!=="undefined"?window.location.origin:"")+"/j/"+encodeJob(job);
+              const text=`${job.title} at ${job.company}${job.location?" · "+job.location:""} — via Main Quest`;
+              if(kind==="copy"){ try{navigator.clipboard.writeText(u);}catch(e){} setCopied(true); setTimeout(()=>setCopied(false),1800); return; }
+              if(kind==="email"){ window.location.href=`mailto:?subject=${encodeURIComponent(job.title+" at "+job.company)}&body=${encodeURIComponent(text+"\n\n"+u)}`; }
+              else if(kind==="x"){ window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(u)}`,"_blank"); }
+              else if(kind==="linkedin"){ window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(u)}`,"_blank"); }
+              else if(kind==="native"){ try{navigator.share({title:job.title+" at "+job.company,text,url:u});}catch(e){} }
+              setShowShare(false);
+            }} style={{display:"block",width:"100%",textAlign:"left",background:"none",border:"none",color:kind==="copy"&&copied?"#7ecfb3":"rgba(244,237,216,.85)",cursor:"pointer",fontSize:12,padding:"8px 10px",borderRadius:6,fontFamily:"inherit"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="none"}>{kind==="copy"&&copied?"✓ Copied!":label}</button>
+          ))}
+        </div>}
+      </span>
     </div>
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
@@ -3993,6 +4025,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {/* Action buttons */}
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
+      {COMPANY_URL[job.company]&&<a href={COMPANY_URL[job.company]} target="_blank" rel="noreferrer" title="Open the company's careers page (in case the posting link is broken)" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:mobile?"9px 14px":"8px 15px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><I.Globe s={12} c="#c9a84c"/>Company site</a>}
     </div>
     </div>
     {/* Match score square */}
