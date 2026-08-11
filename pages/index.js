@@ -951,15 +951,19 @@ const COMPANIES_DATA = {
   },
 };
 
-// Company → careers-page URL, flattened from COMPANIES_DATA (for the "Company site" fallback button).
-const COMPANY_URL = (() => {
+// Company → its full entry from COMPANIES_DATA (url, email, contact, registerInterest…),
+// for the site / contact / email / register-interest buttons on each posting.
+const COMPANY_META = (() => {
   const m = {};
   for (const states of Object.values(COMPANIES_DATA))
     for (const arr of Object.values(states))
       if (Array.isArray(arr)) for (const co of arr)
-        if (co && co.name && co.url && !m[co.name]) m[co.name] = co.url;
+        if (co && co.name && !m[co.name]) m[co.name] = co;
   return m;
 })();
+// Titles that are evergreen talent-pool signups, not real roles — hidden from the board.
+const _EVERGREEN_RE = /talent community|talent network|talent pool|talent connect|general application|spontaneous application|open application|general interest|future opportunit|join our talent/i;
+const _isEvergreen = (job) => _EVERGREEN_RE.test(job && job.title || "");
 
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
 // Companies where the ONLY way to apply is by email. Each posting routes to a
@@ -3905,6 +3909,11 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const [showDisclaimer,setShowDisclaimer]=useState(false);
   const EXP_COLOR={"Entry Level":{bg:"rgba(78,240,197,.1)",br:"rgba(78,240,197,.25)",c:"#4ef0c5"},"Mid Level":{bg:"rgba(124,111,255,.1)",br:"rgba(124,111,255,.25)",c:"#a99fff"},"Senior":{bg:"rgba(255,111,176,.1)",br:"rgba(255,111,176,.25)",c:"#ff6fb0"},"Lead":{bg:"rgba(255,180,50,.1)",br:"rgba(255,180,50,.25)",c:"#ffb432"},"Principal":{bg:"rgba(255,140,80,.1)",br:"rgba(255,140,80,.25)",c:"#ff9a50"},"Director":{bg:"rgba(220,80,255,.1)",br:"rgba(220,80,255,.25)",c:"#dc50ff"}};
   const ec=EXP_COLOR[job.experience]||{bg:"rgba(244,237,216,.06)",br:"rgba(244,237,216,.12)",c:"rgba(244,237,216,.5)"};
+  const cmeta=COMPANY_META[job.company]||{};
+  const cContact=cmeta.contact?String(cmeta.contact).trim():"";
+  const cEmail=cmeta.email&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(cmeta.email).trim())?String(cmeta.email).trim():"";
+  const riHref=riLinkToHref(cmeta.registerInterestLink,job.company);
+  const secBtn={textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 13px",fontSize:10.5,fontWeight:600,fontFamily:"'Cinzel',serif",letterSpacing:.3};
   const onApply=()=>{
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
@@ -3957,8 +3966,11 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
     <div style={{flex:1,minWidth:0}}>
-    {/* Company */}
-    {job.company&&<div style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:4,textTransform:"uppercase"}}>{job.company}</div>}
+    {/* Company + site */}
+    {job.company&&<div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4,flexWrap:"wrap"}}>
+      <span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase"}}>{job.company}</span>
+      {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
+    </div>}
     {/* Title row */}
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
       {job.isNew&&<I.Alert s={18}/>}
@@ -4025,7 +4037,10 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {/* Action buttons */}
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
-      {COMPANY_URL[job.company]&&<a href={COMPANY_URL[job.company]} target="_blank" rel="noreferrer" title="Open the company's careers page (in case the posting link is broken)" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",cursor:"pointer",borderRadius:7,padding:mobile?"9px 14px":"8px 15px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><I.Globe s={12} c="#c9a84c"/>Company site</a>}
+      {(cContact||cEmail||riHref)&&<div style={{flex:1,minWidth:6}}/>}
+      {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
+      {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
+      {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Register your interest with this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Register Interest</a>}
     </div>
     </div>
     {/* Match score square */}
@@ -4698,6 +4713,7 @@ export default function App() {
 
   const matches=job=>{
     const f=filters;
+    if(_isEvergreen(job))return false; // talent-community / general-application signups aren't real roles
     if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
@@ -4718,6 +4734,7 @@ export default function App() {
   // matched the search, so we show all its jobs that pass the other filters).
   const matchesExceptSearch=job=>{
     const f=filters;
+    if(_isEvergreen(job))return false;
     if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
