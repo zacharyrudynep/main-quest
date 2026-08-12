@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
 import { encodeJob } from "../lib/shareJob";
-import { track } from "../lib/track";
+import { track } from "../lib/track.js";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
