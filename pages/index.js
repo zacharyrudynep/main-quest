@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
 import { encodeJob } from "../lib/shareJob";
+import { track } from "../lib/track";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
@@ -3917,6 +3918,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const riHref=riLinkToHref(cmeta.registerInterestLink,job.company);
   const secBtn={textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 13px",fontSize:10.5,fontWeight:600,fontFamily:"'Cinzel',serif",letterSpacing:.3};
   const onApply=()=>{
+    track("job_apply_click",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
       const prof=user?.profile||{};
@@ -3988,6 +3990,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
             <button key={kind} onClick={()=>{
               const u=(typeof window!=="undefined"?window.location.origin:"")+"/j/"+encodeJob(job);
               const text=`${job.title} at ${job.company}${job.location?" · "+job.location:""} — via Main Quest`;
+              track("job_share",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company,meta:{via:kind}});
               if(kind==="copy"){ try{navigator.clipboard.writeText(u);}catch(e){} setCopied(true); setTimeout(()=>setCopied(false),1800); return; }
               if(kind==="email"){ window.location.href=`mailto:?subject=${encodeURIComponent(job.title+" at "+job.company)}&body=${encodeURIComponent(text+"\n\n"+u)}`; }
               else if(kind==="x"){ window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(u)}`,"_blank"); }
