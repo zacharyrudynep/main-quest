@@ -3,12 +3,29 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["users", "Users"]];
+const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["users", "Users"], ["revenue", "Premium & Revenue"]];
 
 export default function Admin() {
   const [status, setStatus] = useState("loading");
   const [s, setS] = useState(null);
   const [tab, setTab] = useState("overview");
+  const [rev, setRev] = useState(null);
+  const [revStatus, setRevStatus] = useState("idle"); // idle | loading | ready | error
+
+  useEffect(() => {
+    if (tab !== "revenue" || revStatus !== "idle") return;
+    setRevStatus("loading");
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/revenue", { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { setRevStatus("error"); return; }
+        setRev(await r.json());
+        setRevStatus("ready");
+      } catch (e) { setRevStatus("error"); }
+    })();
+  }, [tab, revStatus]);
 
   useEffect(() => {
     (async () => {
@@ -55,7 +72,7 @@ export default function Admin() {
               {tab === "overview" && (
                 <>
                   <Kpis items={[
-                    ["Total Users", s.totalUsers], ["Premium", s.premiumUsers, `${s.premiumPct}%`, "#7ecfb3"],
+                    ["Total Users", s.totalUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
                     ["Applications", s.totalApplications], ["Saves", s.totalSaves, null, "#e8a070"],
                     ["Job Views", s.totalViews, null, "#e8a070"], ["Apply Clicks", s.totalClicks, null, "#e8a070"], ["Shares", s.totalShares, null, "#e8a070"],
                   ]} />
@@ -94,10 +111,33 @@ export default function Admin() {
               {tab === "users" && (
                 <>
                   <Kpis items={[
-                    ["Total Users", s.totalUsers], ["Free", s.freeUsers], ["Premium", s.premiumUsers, `${s.premiumPct}%`, "#7ecfb3"],
+                    ["Total Users", s.totalUsers], ["Free", s.freeUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
                     ["Resumes Uploaded", s.resumesUploaded], ["Complete Profiles", s.completeProfiles],
                   ]} />
                   <Panel title="Signups (last 30 days)"><LineChart data={s.signupSeries} color="#c9a84c" /></Panel>
+                </>
+              )}
+
+              {tab === "revenue" && (
+                <>
+                  {revStatus === "loading" && <Note>Loading revenue from Stripe…</Note>}
+                  {revStatus === "error" && <Note>Couldn't load Stripe data. Make sure the <code>stripe</code> package is installed and <code>STRIPE_SECRET_KEY</code> is set.</Note>}
+                  {revStatus === "ready" && rev && !rev.configured && <Note>Stripe isn't configured — set <code>STRIPE_SECRET_KEY</code> to see revenue here.</Note>}
+                  {revStatus === "ready" && rev && rev.configured && (
+                    <>
+                      <Kpis items={[
+                        ["MRR", `$${rev.mrr.toLocaleString()}`], ["ARR", `$${rev.arr.toLocaleString()}`],
+                        ["Active Subs", rev.activeSubs, null, "#7ecfb3"], ["Total Revenue", `$${rev.totalRevenue.toLocaleString()}`],
+                        ["Revenue (30d)", `$${rev.revenue30.toLocaleString()}`], ["Lifetime Sales", rev.lifetimeCount],
+                        ["Churn (30d)", `${rev.churnPct}%`, `${rev.canceledSubs30} cancelled`, "#e8a070"],
+                      ]} money />
+                      <Panel title="Revenue (last 30 days)"><LineChart data={rev.revenueSeries} color="#7ecfb3" money /></Panel>
+                      <TwoCol>
+                        <Panel title="Plan mix"><BarList rows={rev.planCounts} empty="No active subscriptions." plain /></Panel>
+                        <Panel title="Subscriptions (last 30 days)"><Events e={{ "new": rev.newSubs30, "cancelled": rev.canceledSubs30 }} /></Panel>
+                      </TwoCol>
+                    </>
+                  )}
                 </>
               )}
 
@@ -125,7 +165,7 @@ function Kpis({ items }) {
         <div key={i} style={{ background: "rgba(16,10,22,.6)", border: "1px solid rgba(201,168,76,.16)", borderRadius: 12, padding: "16px 18px" }}>
           <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.5)", textTransform: "uppercase", letterSpacing: .6, fontFamily: "'Cinzel',serif", marginBottom: 8 }}>{label}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: accent || "#c9a84c", fontFamily: "'Cinzel',serif", lineHeight: 1 }}>{(value ?? 0).toLocaleString()}</div>
-          {sub && <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginTop: 6 }}>{sub} of users</div>}
+          {sub && <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginTop: 6 }}>{sub}</div>}
         </div>
       ))}
     </div>
