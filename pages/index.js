@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
 import { encodeJob } from "../lib/shareJob";
-import { track } from "../lib/track.js";
+import { track } from "../lib/track";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
@@ -2616,8 +2616,10 @@ function Auth({onLogin,onGuest}) {
         const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
         const applied = {};
         (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at }; });
+        const saved = {};
+        try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", data.user.id); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
         const profData = (profile && profile.data) ? profile.data : (profile || {});
-        onLogin({ id: data.user.id, email, name: profile?.name || profData.name || email, applied, profile: profData });
+        onLogin({ id: data.user.id, email, name: profile?.name || profData.name || email, applied, saved, profile: profData });
       }
     } catch (e) {
       setErr("Something went wrong. Please try again.");
@@ -3897,7 +3899,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium,onToggleSave}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
@@ -3916,6 +3918,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const cContact=cmeta.contact?String(cmeta.contact).trim():"";
   const cEmail=cmeta.email&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(cmeta.email).trim())?String(cmeta.email).trim():"";
   const riHref=riLinkToHref(cmeta.registerInterestLink,job.company);
+  const isSaved=!!user?.saved?.[job.id];
   const secBtn={textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 13px",fontSize:10.5,fontWeight:600,fontFamily:"'Cinzel',serif",letterSpacing:.3};
   const onApply=()=>{
     track("job_apply_click",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});
@@ -3981,8 +3984,12 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
       {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
       {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
-      <span style={{position:"relative",marginLeft:"auto",flexShrink:0}}>
-        <button onClick={e=>{e.stopPropagation();setShowShare(v=>!v);}} title="Share this job" style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:showShare?"rgba(201,168,76,.15)":"rgba(201,168,76,.06)",border:`1px solid ${showShare?"rgba(201,168,76,.4)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
+      <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
+        <button onClick={e=>{e.stopPropagation(); if(!user){onRequestLogin&&onRequestLogin();return;} onToggleSave&&onToggleSave(job);}} title={isSaved?"Remove from saved":"Save this job"} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:isSaved?"rgba(201,168,76,.16)":"rgba(201,168,76,.06)",border:`1px solid ${isSaved?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill={isSaved?"#c9a84c":"none"} stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <span style={{position:"relative",display:"flex"}}>
+          <button onClick={e=>{e.stopPropagation();setShowShare(v=>!v);}} title="Share this job" style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:showShare?"rgba(201,168,76,.15)":"rgba(201,168,76,.06)",border:`1px solid ${showShare?"rgba(201,168,76,.4)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
         </button>
         {showShare&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:184,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",borderRadius:10,padding:6,zIndex:120,boxShadow:"0 10px 28px rgba(0,0,0,.55)",fontFamily:"system-ui,sans-serif"}}>
@@ -4000,7 +4007,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
             }} style={{display:"block",width:"100%",textAlign:"left",background:"none",border:"none",color:kind==="copy"&&copied?"#7ecfb3":"rgba(244,237,216,.85)",cursor:"pointer",fontSize:12,padding:"8px 10px",borderRadius:6,fontFamily:"inherit"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="none"}>{kind==="copy"&&copied?"✓ Copied!":label}</button>
           ))}
         </div>}
-      </span>
+      </span></span>
     </div>
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
@@ -4677,14 +4684,18 @@ export default function App() {
         if(session?.user&&!stay){ try{await supabase.auth.signOut();}catch{} if(active)setAuthChecked(true); return; }
         if(session?.user&&active){
           const uid=session.user.id, em=session.user.email;
-          let profile=null, applied={};
+          let profile=null, applied={}, saved={};
           try{ const { data }=await supabase.from("profiles").select("*").eq("id",uid).single(); profile=data; }catch{}
           try{
             const { data:apps }=await supabase.from("applications").select("*").eq("user_id",uid);
             (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at }; });
           }catch{}
+          try{
+            const { data:sv }=await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id",uid);
+            (sv||[]).forEach(s=>{ saved[s.job_id]={ date:s.saved_at }; });
+          }catch{}
           const profData=(profile&&profile.data)?profile.data:(profile||{});
-          if(active)setUser({ id:uid, email:em, name:profile?.name||profData.name||em, applied, profile:profData });
+          if(active)setUser({ id:uid, email:em, name:profile?.name||profData.name||em, applied, saved, profile:profData });
         }
       }catch{}
       if(active)setAuthChecked(true);
@@ -4714,6 +4725,20 @@ export default function App() {
     if (!user?.id) return;
     await supabase.from("applications").delete().eq("user_id", user.id).eq("job_id", jobId);
   };
+
+  // Save / unsave a job (bookmark). Mirrors applications; stored in the saved_jobs table.
+  const toggleSaved = useCallback(async (job) => {
+    const jobId = job.id;
+    const isSaved = !!user?.saved?.[jobId];
+    setUser(prev => { const ns = { ...(prev.saved || {}) }; if (isSaved) delete ns[jobId]; else ns[jobId] = { date: new Date().toISOString() }; return { ...prev, saved: ns }; });
+    if (!user?.id) return;
+    if (isSaved) {
+      await supabase.from("saved_jobs").delete().eq("user_id", user.id).eq("job_id", jobId);
+    } else {
+      await supabase.from("saved_jobs").upsert({ user_id: user.id, job_id: jobId, job_title: job.title, company: job.company, job_url: job.url, location: job.location || null, salary: job.salary || null, saved_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+      track("job_save", { jobKey: `${job.company}|${job.title}|${job.location || ""}`, company: job.company });
+    }
+  }, [user?.id, user?.saved]);
 
   const toggle=k=>setExpanded(e=>({...e,[k]:!e[k]}));
 
@@ -5091,6 +5116,7 @@ export default function App() {
     return cache;
   },[displayTree,liveJobs,filters,user,jobSort,expSortDir]);
   const appliedJobs=useMemo(()=>allJobs.filter(j=>user?.applied?.[j.id]),[allJobs,user]);
+  const savedJobs=useMemo(()=>allJobs.filter(j=>user?.saved?.[j.id]),[allJobs,user]);
 
   if(!user&&!guest){
     if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}><I.Sword s={16} c="#c9a84c"/>Loading…</div></div>;
@@ -5163,7 +5189,7 @@ export default function App() {
       {/* CENTER: nav tabs */}
       <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":1,order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
-          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>]].map(([id,cnt])=>
+          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
             {/* Journey Mode — special glowing tab (hidden while SHOW_JOURNEY_MODE is false) */}
             {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}
@@ -5275,7 +5301,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium}/></div>)}
+                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -5410,7 +5436,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium}/></div>;
+                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
@@ -5440,6 +5466,18 @@ export default function App() {
           </div>
         </div>
       </>}
+
+      {tab==="saved"&&<div>
+        <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18,flexWrap:"wrap"}}>
+          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,display:"flex",alignItems:"center",gap:8}}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Saved Jobs</h2>
+        </div>
+        {savedJobs.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,.5)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No saved jobs yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>Tap the bookmark icon on any posting to save it here.</p>
+        </div>:<div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {savedJobs.map(j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved}/>)}
+        </div>}
+      </div>}
 
       {tab==="applied"&&<div>
         <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18,flexWrap:"wrap"}}>
