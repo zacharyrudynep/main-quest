@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["users", "Users"], ["revenue", "Premium & Revenue"]];
+const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["revenue", "Premium & Revenue"]];
 
 export default function Admin() {
   const [status, setStatus] = useState("loading");
@@ -108,6 +108,23 @@ export default function Admin() {
                 </>
               )}
 
+              {tab === "applications" && (
+                <>
+                  <Kpis items={[
+                    ["Applications", s.totalApplications],
+                    ["Response Rate", `${s.responseRate}%`, null, "#7ecfb3"],
+                    ["Interview Rate", `${s.interviewRate}%`, null, "#7ecfb3"],
+                    ["Offer Rate", `${s.offerRate}%`, null, "#7ecfb3"],
+                  ]} />
+                  <TwoCol>
+                    <Panel title="Application status distribution"><BarList rows={s.statusDist} empty="No applications yet." plain /></Panel>
+                    <Panel title="Applications (last 30 days)"><LineChart data={s.appSeries} color="#7ecfb3" /></Panel>
+                  </TwoCol>
+                  <Panel title="Premium vs Free — outcome rates"><TierCompare a={s.outcomeByTier.premium} b={s.outcomeByTier.free} /></Panel>
+                  <div style={{ marginTop: 16 }}><Panel title="Most-applied companies"><BarList rows={s.topAppliedCompanies} empty="No applications yet." plain /></Panel></div>
+                </>
+              )}
+
               {tab === "users" && (
                 <>
                   <Kpis items={[
@@ -176,6 +193,31 @@ function Panel({ title, children, accent }) {
     <div style={{ background: "rgba(16,10,22,.5)", border: `1px solid ${accent ? "rgba(232,97,58,.3)" : "rgba(201,168,76,.14)"}`, borderRadius: 14, padding: "16px 18px", marginBottom: accent ? 16 : 0 }}>
       <div style={{ fontSize: 12, color: accent ? "#e8a070" : "#f0d080", fontFamily: "'Cinzel',serif", fontWeight: 700, letterSpacing: .4, marginBottom: 14 }}>{title}</div>
       {children}
+    </div>
+  );
+}
+function TierCompare({ a, b }) {
+  const metric = (label, pRate, fRate) => (
+    <div style={{ marginBottom: 13 }}>
+      <div style={{ fontSize: 11, color: "rgba(244,237,216,.6)", marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginBottom: 3 }}><span style={{ color: "#7ecfb3" }}>Premium</span><b style={{ color: "#7ecfb3" }}>{pRate}%</b></div>
+          <div style={{ height: 5, borderRadius: 3, background: "rgba(244,237,216,.08)", overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.min(100, pRate)}%`, background: "#7ecfb3", borderRadius: 3 }} /></div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginBottom: 3 }}><span style={{ color: "rgba(244,237,216,.6)" }}>Free</span><b style={{ color: "#c9a84c" }}>{fRate}%</b></div>
+          <div style={{ height: 5, borderRadius: 3, background: "rgba(244,237,216,.08)", overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.min(100, fRate)}%`, background: "#c9a84c", borderRadius: 3 }} /></div>
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div>
+      <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", marginBottom: 14 }}>Premium: {a.total} apps · Free: {b.total} apps</div>
+      {metric("Response rate", a.responseRate, b.responseRate)}
+      {metric("Interview rate", a.interviewRate, b.interviewRate)}
+      {metric("Offer rate", a.offerRate, b.offerRate)}
     </div>
   );
 }

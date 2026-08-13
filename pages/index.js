@@ -1352,6 +1352,9 @@ const REGION_BADGE = {"United States":"US","Canada":"CA","Remote":"RM","Europe":
 const isContinent = (k)=>k!=="United States"&&k!=="Canada";
 // Country options for the profile — US/Canada first, then every country the app knows.
 const COUNTRY_OPTIONS = ["United States","Canada",...Object.keys(COUNTRY_CONTINENT).filter(c=>c!=="United States"&&c!=="Canada").sort()];
+// Application pipeline statuses the user can set on each tracked application.
+const APP_STATUSES=[["applied","Applied","#c9a84c"],["response","Response","#7ecfb3"],["interview","Interview","#7ecfb3"],["offer","Offer","#7ecfb3"],["rejected","Rejected","#e0705a"],["no_response","No Response","rgba(244,237,216,.5)"]];
+const APP_STATUS_MAP=Object.fromEntries(APP_STATUSES.map(([v,l,c])=>[v,{label:l,color:c}]));
 // Backwards-compatible foreign-token test, now derived from the geography maps.
 const FOREIGN_CITIES = new Set(Object.keys(CITY_COUNTRY));
 const isForeignToken=(p)=>{ const s=p.toLowerCase().trim(); return FOREIGN_COUNTRIES.has(s)||FOREIGN_CITIES.has(s)||!!COUNTRY_ALIAS[s]; };
@@ -1909,7 +1912,7 @@ function LoginPopup({onClose,onLogin}) {
         if(error){setErr("Invalid email or password.");setLoading(false);return;}
         const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
         const {data:apps}=await supabase.from("applications").select("*").eq("user_id",data.user.id);
-        const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at};});
+        const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied"};});
         const profData=(profile&&profile.data)?profile.data:(profile||{});
         onLogin({id:data.user.id,email,name:profile?.name||profData.name||email,applied,profile:profData});
       }
@@ -2615,7 +2618,7 @@ function Auth({onLogin,onGuest}) {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
         const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
         const applied = {};
-        (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at }; });
+        (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied" }; });
         const saved = {};
         try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", data.user.id); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
         const profData = (profile && profile.data) ? profile.data : (profile || {});
@@ -4689,7 +4692,7 @@ export default function App() {
           try{ const { data }=await supabase.from("profiles").select("*").eq("id",uid).single(); profile=data; }catch{}
           try{
             const { data:apps }=await supabase.from("applications").select("*").eq("user_id",uid);
-            (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at }; });
+            (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at, status:a.status||"applied" }; });
           }catch{}
           try{
             const { data:sv }=await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id",uid);
@@ -4725,6 +4728,13 @@ export default function App() {
     setUser(prev => { const na = { ...prev.applied }; delete na[jobId]; return { ...prev, applied: na }; });
     if (!user?.id) return;
     await supabase.from("applications").delete().eq("user_id", user.id).eq("job_id", jobId);
+  };
+  // Update an application's status (Applied → Response → Interview → Offer / Rejected).
+  const setAppStatus = async (jobId, status) => {
+    setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { ...(prev.applied?.[jobId] || {}), status } } }));
+    if (!user?.id) return;
+    await supabase.from("applications").update({ status, status_updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("job_id", jobId);
+    track("application_status", { company: (user.applied?.[jobId]?.company) || null, meta: { status } });
   };
 
   // Save / unsave a job (bookmark). Mirrors applications; stored in the saved_jobs table.
@@ -5513,11 +5523,12 @@ export default function App() {
           }).map(job=>{
             const entry=user.applied[job.id];
             const appliedDate=entry?.date?new Date(entry.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"Unknown";
+            const st=entry?.status||"applied"; const si=APP_STATUS_MAP[st]||{label:"Applied",color:"#c9a84c"};
             return <div key={job.id} style={{background:"rgba(16,10,22,.6)",border:"1px solid rgba(201,168,76,.14)",borderRadius:12,padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
               <div style={{display:"flex",gap:12,alignItems:"flex-start",flexDirection:mobile?"column":"row"}}>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
-                    <span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>
+                    <span style={{background:`${si.color}22`,border:`1px solid ${si.color}66`,color:si.color,borderRadius:20,fontSize:10,padding:"2px 10px",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{si.label}</span>
                     <span style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",fontFamily:"'Cinzel',serif"}}>{job.company}</span>
                     <span style={{fontSize:10,color:"rgba(244,237,216,.4)",background:"rgba(201,168,76,.06)",padding:"2px 9px",borderRadius:20}}>{job.state}</span>
                   </div>
@@ -5531,6 +5542,9 @@ export default function App() {
                     <div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:2}}>Applied</div>
                     <div style={{fontSize:11,color:"#f4edd8",fontWeight:600,whiteSpace:"nowrap"}}>{appliedDate}</div>
                   </div>
+                  <select value={st} onChange={e=>setAppStatus(job.id,e.target.value)} title="Update application status" style={{background:"rgba(201,168,76,.06)",border:`1px solid ${si.color}66`,color:si.color,borderRadius:9,padding:"6px 10px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600,cursor:"pointer",outline:"none"}}>
+                    {APP_STATUSES.map(([v,l])=><option key={v} value={v} style={{background:"#140d14",color:"#f4edd8"}}>{l}</option>)}
+                  </select>
                   <button onClick={()=>removeApplied(job.id)} title="Remove" style={{background:"rgba(192,50,26,.08)",border:"1px solid rgba(192,50,26,.2)",color:"rgba(232,120,90,.7)",cursor:"pointer",width:26,height:26,borderRadius:8,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(192,50,26,.2)";e.currentTarget.style.color="#e87060";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(192,50,26,.08)";e.currentTarget.style.color="rgba(232,120,90,.7)";}}><I.X s={11} c="currentColor"/></button>
                 </div>
               </div>

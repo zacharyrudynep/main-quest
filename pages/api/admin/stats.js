@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 const top = (o, n = 10) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n).map(([label, count]) => ({ label, count }));
+const rate = (num, den) => den ? Math.round((num / den) * 1000) / 10 : 0;
 
 // Owner-only dashboard data, all computed natively from your own Supabase data.
 export default async function handler(req, res) {
@@ -31,9 +32,11 @@ export default async function handler(req, res) {
 
     // ── Profiles: premium, resumes, completion ──
     let premiumUsers = 0, resumesUploaded = 0, completeProfiles = 0;
+    const premMap = {};
     try {
-      const { data: profs } = await supabaseAdmin.from("profiles").select("data,is_premium").limit(100000);
+      const { data: profs } = await supabaseAdmin.from("profiles").select("id,data,is_premium").limit(100000);
       for (const p of profs || []) {
+        premMap[p.id] = !!p.is_premium;
         if (p.is_premium) premiumUsers++;
         const d = p.data || {};
         if (d.resumeFileName || d.resumeText) resumesUploaded++;
@@ -43,13 +46,21 @@ export default async function handler(req, res) {
 
     // ── Applications ──
     let totalApplications = 0;
-    const appsByDay = {}, appsByCompany = {};
+    const appsByDay = {}, appsByCompany = {}, statusCounts = {};
+    const outcome = { premium: { total: 0, response: 0, interview: 0, offer: 0 }, free: { total: 0, response: 0, interview: 0, offer: 0 } };
     try {
-      const { data: apps } = await supabaseAdmin.from("applications").select("applied_at,company").limit(100000);
+      const { data: apps } = await supabaseAdmin.from("applications").select("applied_at,company,status,user_id").limit(100000);
       totalApplications = (apps || []).length;
       for (const a of apps || []) {
         const d = (a.applied_at || "").slice(0, 10); if (d) appsByDay[d] = (appsByDay[d] || 0) + 1;
         if (a.company) appsByCompany[a.company] = (appsByCompany[a.company] || 0) + 1;
+        const st = a.status || "applied";
+        statusCounts[st] = (statusCounts[st] || 0) + 1;
+        const b = premMap[a.user_id] ? outcome.premium : outcome.free;
+        b.total++;
+        if (st === "response" || st === "interview" || st === "offer") b.response++;
+        if (st === "interview" || st === "offer") b.interview++;
+        if (st === "offer") b.offer++;
       }
     } catch (e) {}
 
@@ -106,6 +117,15 @@ export default async function handler(req, res) {
       topSaved: top(savesByJob),
       topShared: top(shares),
       topAppliedCompanies: top(appsByCompany),
+      // Application outcomes
+      statusDist: [["applied","Applied"],["response","Response"],["interview","Interview"],["offer","Offer"],["rejected","Rejected"],["no_response","No Response"]].map(([v,l])=>({label:l,count:statusCounts[v]||0})),
+      responseRate: rate(outcome.premium.response + outcome.free.response, totalApplications),
+      interviewRate: rate(outcome.premium.interview + outcome.free.interview, totalApplications),
+      offerRate: rate(outcome.premium.offer + outcome.free.offer, totalApplications),
+      outcomeByTier: {
+        premium: { total: outcome.premium.total, responseRate: rate(outcome.premium.response, outcome.premium.total), interviewRate: rate(outcome.premium.interview, outcome.premium.total), offerRate: rate(outcome.premium.offer, outcome.premium.total) },
+        free: { total: outcome.free.total, responseRate: rate(outcome.free.response, outcome.free.total), interviewRate: rate(outcome.free.interview, outcome.free.total), offerRate: rate(outcome.free.offer, outcome.free.total) },
+      },
       shareMethods: top(shareMethods),
       topSearches: top(searches),
       zeroResultSearches: top(zeros),
