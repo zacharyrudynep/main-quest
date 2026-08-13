@@ -3197,6 +3197,7 @@ const upload=async(e)=>{
       // Always store the full text so the user has it
       updateField("resumeText",text.replace(/\s+/g," ").trim().slice(0,8000));
       updateField("resumeFileName",file.name);
+      track("resume_upload",{});
       setPs("done");setMsg("Resume text extracted! Review and edit the fields below.");
     }catch(err){setPs("error");setMsg(err.message||"Could not parse. Try a different file or paste text manually.");}
     if(fileRef.current)fileRef.current.value="";
@@ -4026,7 +4027,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <p style={{fontSize:12,color:"rgba(244,237,216,.7)",lineHeight:1.5,margin:"2px 0 0"}}>{job.emailSpecifics}</p></div>
     </div>}
     {/* Expand */}
-    <button onClick={()=>setExpanded(e=>!e)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.55)",fontSize:11,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:5,padding:"3px 0",marginBottom:7,letterSpacing:.3}}>
+    <button onClick={()=>setExpanded(e=>{if(!e)track("job_view",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});return !e;})} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.55)",fontSize:11,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:5,padding:"3px 0",marginBottom:7,letterSpacing:.3}}>
       <span>{expanded?"Hide details":"View description & requirements"}</span>
       <span style={{display:"inline-block",transition:"transform .2s",transform:expanded?"rotate(180deg)":"none",fontSize:13}}>▾</span>
     </button>
@@ -4662,7 +4663,7 @@ export default function App() {
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
   const [breakdownJob,setBreakdownJob]=useState(null);
-  const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>cur&&(cur.id||cur.title)===(job.id||job.title)?null:job),[]);
+  const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>{const same=cur&&(cur.id||cur.title)===(job.id||job.title);if(!same)track("match_view",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});return same?null:job;}),[]);
   useEffect(()=>{
     if(!user||!user.id){setAppPremium(false);return;}
     let alive=true;
@@ -5117,6 +5118,17 @@ export default function App() {
   },[displayTree,liveJobs,filters,user,jobSort,expSortDir]);
   const appliedJobs=useMemo(()=>allJobs.filter(j=>user?.applied?.[j.id]),[allJobs,user]);
   const savedJobs=useMemo(()=>allJobs.filter(j=>user?.saved?.[j.id]),[allJobs,user]);
+
+  // Track each committed search with how many jobs matched — powers "top searches"
+  // and, critically, "searches that returned nothing" (what jobs to go add).
+  useEffect(()=>{
+    const q=(filters.search||"").trim();
+    if(!q) return;
+    const ql=q.toLowerCase();
+    const results=allJobs.filter(j=>(j.title||"").toLowerCase().includes(ql)||(j.company||"").toLowerCase().includes(ql)).length;
+    track("search",{meta:{q:q.slice(0,80),results}});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[filters.search]);
 
   if(!user&&!guest){
     if(!authChecked)return <div style={{minHeight:"100vh",background:"#080608",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}><I.Sword s={16} c="#c9a84c"/>Loading…</div></div>;
