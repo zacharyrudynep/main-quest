@@ -3,14 +3,31 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["revenue", "Premium & Revenue"]];
+const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"]];
 
 export default function Admin() {
   const [status, setStatus] = useState("loading");
   const [s, setS] = useState(null);
   const [tab, setTab] = useState("overview");
   const [rev, setRev] = useState(null);
-  const [revStatus, setRevStatus] = useState("idle"); // idle | loading | ready | error
+  const [revStatus, setRevStatus] = useState("idle");
+  const [eng, setEng] = useState(null);
+  const [engStatus, setEngStatus] = useState("idle");
+
+  useEffect(() => {
+    if (tab !== "engagement" || engStatus !== "idle") return;
+    setEngStatus("loading");
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/engagement", { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { setEngStatus("error"); return; }
+        setEng(await r.json());
+        setEngStatus("ready");
+      } catch (e) { setEngStatus("error"); }
+    })();
+  }, [tab, engStatus]); // idle | loading | ready | error
 
   useEffect(() => {
     if (tab !== "revenue" || revStatus !== "idle") return;
@@ -135,6 +152,30 @@ export default function Admin() {
                 </>
               )}
 
+              {tab === "engagement" && (
+                <>
+                  {engStatus === "loading" && <Note>Computing engagement…</Note>}
+                  {engStatus === "error" && <Note>Couldn't load engagement data.</Note>}
+                  {engStatus === "ready" && eng && (
+                    <>
+                      <Kpis items={[
+                        ["DAU (today)", eng.dau], ["Avg DAU", eng.avgDau], ["WAU", eng.wau], ["MAU", eng.mau],
+                        ["Stickiness", `${eng.stickiness}%`, "DAU / MAU", "#7ecfb3"],
+                        ["Sessions / Visitor", eng.sessionsPerVisitor], ["Avg Session", `${eng.avgSessionMin}m`],
+                      ]} />
+                      <Panel title="Daily active visitors (last 30 days)"><LineChart data={eng.dauSeries} color="#7ecfb3" /></Panel>
+                      <TwoCol>
+                        <Panel title="New vs returning (last 30 days)">
+                          <NRChart data={eng.newReturning} />
+                          <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11 }}><span style={{ color: "#c9a84c" }}>■ New</span><span style={{ color: "#7ecfb3" }}>■ Returning</span></div>
+                        </Panel>
+                        <Panel title="Retention — % active N days after first visit"><BarList rows={eng.retention} empty="Not enough history yet." plain /></Panel>
+                      </TwoCol>
+                    </>
+                  )}
+                </>
+              )}
+
               {tab === "revenue" && (
                 <>
                   {revStatus === "loading" && <Note>Loading revenue from Stripe…</Note>}
@@ -219,6 +260,28 @@ function TierCompare({ a, b }) {
       {metric("Interview rate", a.interviewRate, b.interviewRate)}
       {metric("Offer rate", a.offerRate, b.offerRate)}
     </div>
+  );
+}
+function NRChart({ data }) {
+  const W = 460, H = 150, pad = 6;
+  const max = Math.max(1, ...data.map(d => d.new + d.returning));
+  const bw = (W - pad * 2) / (data.length || 1);
+  const scale = (H - pad * 2 - 14);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+      {data.map((d, i) => {
+        const x = pad + i * bw;
+        const rh = (d.returning / max) * scale;
+        const nh = (d.new / max) * scale;
+        return (
+          <g key={i}>
+            <rect x={x + 0.5} y={H - pad - rh} width={Math.max(0.5, bw - 1)} height={rh} fill="#7ecfb3" opacity="0.85" />
+            <rect x={x + 0.5} y={H - pad - rh - nh} width={Math.max(0.5, bw - 1)} height={nh} fill="#c9a84c" opacity="0.85" />
+          </g>
+        );
+      })}
+      <text x={pad} y={12} fill="rgba(244,237,216,.4)" fontSize="10">max {max}/day</text>
+    </svg>
   );
 }
 function Events({ e }) {

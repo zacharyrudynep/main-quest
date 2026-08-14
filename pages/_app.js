@@ -1,9 +1,10 @@
-import "@/styles/globals.css";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from "react";
+import { trackVisitOncePerDay } from "../lib/track";
 
 export default function App({ Component, pageProps }) {
-useEffect(() => {
+  useEffect(() => {
+    trackVisitOncePerDay();
     // PostHog is optional — it only loads if NEXT_PUBLIC_POSTHOG_KEY is set.
     // Loaded from PostHog's CDN (official snippet), so no npm dependency is required.
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
@@ -15,6 +16,7 @@ useEffect(() => {
     /* eslint-enable */
     try { window.posthog.init(key, { api_host: host, capture_pageview: true, person_profiles: "identified_only" }); } catch (e) {}
   }, []);
+
   return (
     <>
       <Component {...pageProps} />

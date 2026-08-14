@@ -12,6 +12,7 @@ export default async function handler(req, res) {
       type,
       job_key: b.jobKey ? String(b.jobKey).slice(0, 300) : null,
       company: b.company ? String(b.company).slice(0, 160) : null,
+      visitor: b.visitor ? String(b.visitor).slice(0, 64) : null,
       meta: b.meta && typeof b.meta === "object" ? b.meta : null,
     });
     res.status(200).json({ ok: true });
