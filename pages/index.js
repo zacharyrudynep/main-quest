@@ -28,7 +28,6 @@ const COMPANIES_DATA = {
       { name: "E-Line Media", url: "https://www.elinemedia.com/careers", email: "contactus@elinemedia.com", contact: null },
       { name: "Rainbow Studios", url: "https://www.rainbowstudios.com/careers/", email: null, contact: "https://www.rainbowstudios.com/contact-us/" },
       { name: "Razor Edge Games", url: "https://razoredgegames.com/job/", email: null, contact: "https://razoredgegames.com/contact-us/" },
-      { name: "Wolfpack Game Design", url: "https://www.wolfpackgamedesign.com/join-us", email: "community@wolfpackgamedesign.com", contact: null, volunteer:true },
     ],
     "Arkansas": [
       { name: "Causeway Studios", url: "https://www.causewaystudios.com/", email: "hello@causewaystudios.com", contact: null, emailApply:true },
@@ -464,6 +463,7 @@ const COMPANIES_DATA = {
       { name: "Schell Games", url: "https://schellgames.com/careers#apply", email: "info@schellgames.com", contact: "https://schellgames.com/contact" },
     ],
     "Remote": [
+      { name: "Wolfpack Game Design", url: "https://www.wolfpackgamedesign.com/join-us", email: "community@wolfpackgamedesign.com", contact: null, volunteer:true },
       { name: "Space Rock Games", url: "https://www.spacerockgames.com/careers", email: null, contact: null, registerInterest:true, registerInterestLink: "https://www.spacerockgames.com/careers" },
       { name: "Cire Games", url: "https://ciregames.com/Careers/", email: null, contact: "https://ciregames.com/Contacts/" },
       { name: "DragonJar Studios", url: "https://dragonjarstudios.com/careers", email: null, contact: null },
@@ -1912,7 +1912,7 @@ function LoginPopup({onClose,onLogin}) {
         if(error){setErr("Invalid email or password.");setLoading(false);return;}
         const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
         const {data:apps}=await supabase.from("applications").select("*").eq("user_id",data.user.id);
-        const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied"};});
+        const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied",title:a.job_title,company:a.company,url:a.job_url,salary:a.salary};});
         const profData=(profile&&profile.data)?profile.data:(profile||{});
         onLogin({id:data.user.id,email,name:profile?.name||profData.name||email,applied,profile:profData});
       }
@@ -2618,7 +2618,7 @@ function Auth({onLogin,onGuest}) {
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
         const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
         const applied = {};
-        (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied" }; });
+        (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied", title: a.job_title, company: a.company, url: a.job_url, salary: a.salary }; });
         const saved = {};
         try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", data.user.id); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
         const profData = (profile && profile.data) ? profile.data : (profile || {});
@@ -2886,7 +2886,7 @@ function AIApplyModal({job,user,onClose,onApplied}) {
           <div style={{fontFamily:"'Cinzel',serif",fontSize:15,fontWeight:700,color:"#f4edd8"}}>Did you submit your application?</div>
           <p style={{...txt12,margin:0}}>Mark as applied to track it in your Job Applications log.</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{onApplied(job.id);onClose();}} style={{background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",cursor:"pointer",borderRadius:10,padding:"10px 20px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,display:"flex",alignItems:"center",gap:6}}><I.Check s={12} c="#0a0608"/>Yes, I Applied!</button>
+            <button onClick={()=>{onApplied(job);onClose();}} style={{background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",cursor:"pointer",borderRadius:10,padding:"10px 20px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,display:"flex",alignItems:"center",gap:6}}><I.Check s={12} c="#0a0608"/>Yes, I Applied!</button>
             <button onClick={onClose} style={{background:"rgba(244,237,216,.04)",border:"1px solid rgba(244,237,216,.1)",color:"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:10,padding:"10px 20px",fontSize:12,fontFamily:"'Cinzel',serif"}}>Not yet</button>
           </div>
         </div>}
@@ -2980,7 +2980,7 @@ function AIEmailModal({job,user,onClose,onApplied}) {
           <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#f4edd8"}}>Email client opened!</div>
           <p style={{fontSize:12,color:"rgba(244,237,216,.55)",margin:0}}>Review the draft, attach your resume, and hit Send. Did you submit?</p>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{onApplied(job.id);onClose();}} style={{background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",cursor:"pointer",borderRadius:10,padding:"10px 20px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,display:"flex",alignItems:"center",gap:6}}><I.Check s={12} c="#0a0608"/>Yes, Sent It!</button>
+            <button onClick={()=>{onApplied(job);onClose();}} style={{background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.35)",color:"#7ecfb3",cursor:"pointer",borderRadius:10,padding:"10px 20px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,display:"flex",alignItems:"center",gap:6}}><I.Check s={12} c="#0a0608"/>Yes, Sent It!</button>
             <button onClick={onClose} style={{background:"rgba(244,237,216,.04)",border:"1px solid rgba(244,237,216,.1)",color:"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:10,padding:"10px 20px",fontSize:12,fontFamily:"'Cinzel',serif"}}>Not yet</button>
           </div>
         </div>}
@@ -3624,7 +3624,7 @@ function NoOpenCard({company,companyName,user,onApplied}) {
     <div style={{background:"rgba(201,168,76,.03)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:10,padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}}>
      <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
       <I.Scroll s={18} c="rgba(201,168,76,.45)"/>
-      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":company.registerInterest?(company.registerInterest==="email"?"No open roles right now — they invite you to email your resume.":"No open roles right now — they invite you to register your interest."):"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>{company.registerInterest&&riHref?(riIsMail?"Use Register Interest to email them directly.":"Use Register Interest to open their registration page."):company.registerInterest?"No registration link on file yet — try their careers page.":"Visit their careers page or send a general application email."}</p></div>
+      <div style={{flex:1}}><p style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",margin:"0 0 2px",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{company.volunteer&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"1px 8px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>}<span>{company.volunteer?"Volunteer opportunities — reach out to get involved.":company.registerInterest?(company.registerInterest==="email"?"No open roles right now — they invite you to email your resume.":"No open roles right now — they invite you to submit an open application."):"No current listings — they may still be hiring."}</span></p><p style={{fontSize:11,color:"rgba(244,237,216,.4)",margin:0}}>{company.registerInterest&&riHref?(riIsMail?"Use Open Application to email them directly.":"Use Open Application to open their registration page."):company.registerInterest?"No registration link on file yet — try their careers page.":"Visit their careers page or send a general application email."}</p></div>
       <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
         {company.url&&<a href={company.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Careers",<I.Arrow s={10} c="#f0d080"/>,(()=>{}))}</a>}
         {company.contact&&<a href={company.contact} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>{btn("Contact Page",<I.Link s={10} c="#8fd0e8"/>,(()=>{}),{background:"rgba(96,160,232,.1)",border:"1px solid rgba(96,160,232,.3)",color:"#8fd0e8"})}</a>}
@@ -3633,7 +3633,7 @@ function NoOpenCard({company,companyName,user,onApplied}) {
      </div>
      {company.registerInterest&&riHref&&<div style={{display:"flex",justifyContent:"flex-start"}}>
        <a href={riHref} {...(riIsMail?{}:{target:"_blank",rel:"noreferrer"})} title={riIsMail?`Email ${riHref.replace(/^mailto:/,"").split("?")[0]}`:`Open ${riHref}`} style={{textDecoration:"none"}}>
-         {btn("Register Interest",riIsMail?<I.Send s={10} c="#f0d080"/>:<I.Arrow s={10} c="#f0d080"/>,(()=>{}),{background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.45)"})}
+         {btn("Open Application",riIsMail?<I.Send s={10} c="#f0d080"/>:<I.Arrow s={10} c="#f0d080"/>,(()=>{}),{background:"rgba(201,168,76,.14)",border:"1px solid rgba(201,168,76,.45)"})}
        </a>
      </div>}
     </div>
@@ -3971,23 +3971,21 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     }
     setTimeout(()=>setPrompt(true),2500);
   };
-  const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job.id);};
+  const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job);};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
-  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
+  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:(cContact||cEmail||riHref)?"13px 15px 44px":"13px 15px",transition:"all .2s",cursor:"default",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
+    {(cContact||cEmail||riHref)&&<div style={{position:"absolute",bottom:12,right:15,zIndex:4,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
+        {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
+        {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Submit an open application to this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Open Application</a>}
+      </div>}
     <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
     <div style={{flex:1,minWidth:0}}>
     {/* Company + site */}
     {job.company&&<div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4,flexWrap:"wrap"}}>
       <span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase"}}>{job.company}</span>
       {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
-    </div>}
-    {/* Title row */}
-        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
-      {job.isNew&&<I.Alert s={18}/>}
-      <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
-      {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
-      {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
       <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
         <button onClick={e=>{e.stopPropagation(); if(!user){onRequestLogin&&onRequestLogin();return;} onToggleSave&&onToggleSave(job);}} title={isSaved?"Remove from saved":"Save this job"} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:isSaved?"rgba(201,168,76,.16)":"rgba(201,168,76,.06)",border:`1px solid ${isSaved?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={isSaved?"#c9a84c":"none"} stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -4012,6 +4010,13 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
           ))}
         </div>}
       </span></span>
+    </div>}
+    {/* Title row */}
+        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
+      {job.isNew&&<I.Alert s={18}/>}
+      <span style={{fontSize:14,fontWeight:600,color:"#f4edd8"}}>{job.title}</span>
+      {job.isVolunteer?<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700}}>Volunteer</span>:<span style={{background:ec.bg,border:`1px solid ${ec.br}`,color:ec.c,borderRadius:20,fontSize:10,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,flexShrink:0}}>{job.experience}</span>}
+      {isApplied&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:10,padding:"2px 9px",fontWeight:600}}><I.Check s={10} c="#7ecfb3"/> Applied</span>}
     </div>
     {/* Meta chips */}
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:7}}>
@@ -4053,11 +4058,6 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {/* Action buttons */}
     <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
-      {(cContact||cEmail||riHref)&&<div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-        {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
-        {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
-        {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Register your interest with this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Register Interest</a>}
-      </div>}
     </div>
     </div>
     {/* Match score square */}
@@ -4417,6 +4417,12 @@ export default function App() {
   const mobile = useIsMobile();
   const [user,setUser]=useState(null);
   const [tab,setTab]=useState("jobs");
+  const [showTop,setShowTop]=useState(false);
+  useEffect(()=>{
+    const onScroll=()=>setShowTop(window.scrollY>600);
+    window.addEventListener("scroll",onScroll,{passive:true});
+    return ()=>window.removeEventListener("scroll",onScroll);
+  },[]);
   const [expanded,setExpanded]=useState(()=>{
     try{ const s=sessionStorage.getItem("mq_expanded"); return s?JSON.parse(s):{}; }catch{ return {}; }
   });
@@ -4692,7 +4698,7 @@ export default function App() {
           try{ const { data }=await supabase.from("profiles").select("*").eq("id",uid).single(); profile=data; }catch{}
           try{
             const { data:apps }=await supabase.from("applications").select("*").eq("user_id",uid);
-            (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at, status:a.status||"applied" }; });
+            (apps||[]).forEach(a=>{ applied[a.job_id]={ date:a.applied_at, status:a.status||"applied", title:a.job_title, company:a.company, url:a.job_url, salary:a.salary }; });
           }catch{}
           try{
             const { data:sv }=await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id",uid);
@@ -4707,11 +4713,15 @@ export default function App() {
     return ()=>{active=false;};
   },[]);
 
-  const markApplied = useCallback(async (jobId) => {
-    setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { date: new Date().toISOString() } } }));
-    const job = Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(j => j.id === jobId);
-    if (!user?.id || !job) return;
-    await supabase.from("applications").upsert({ user_id: user.id, job_id: jobId, job_title: job.title, company: job.company, job_url: job.url, salary: job.salary, applied_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+  const markApplied = useCallback(async (jobArg) => {
+    const jobObj = (jobArg && typeof jobArg === "object") ? jobArg : null;
+    const jobId = jobObj ? jobObj.id : jobArg;
+    setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { date: new Date().toISOString(), status: prev.applied?.[jobId]?.status || "applied", title: jobObj?.title, company: jobObj?.company, url: jobObj?.url || jobObj?.applyUrl, location: jobObj?.location, salary: jobObj?.salary } } }));
+    if (!user?.id) return;
+    const j = jobObj || Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(x => x.id === jobId);
+    if (!j) return;
+    await supabase.from("applications").upsert({ user_id: user.id, job_id: jobId, job_title: j.title, company: j.company, job_url: j.url || j.applyUrl, salary: j.salary || null, applied_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+    track("job_apply_confirmed", { jobKey: `${j.company}|${j.title}`, company: j.company });
   }, [user?.id]);
 
   // Toggle per-company job-post notifications (stored in profile.notifyCompanies)
@@ -5126,7 +5136,15 @@ export default function App() {
     }
     return cache;
   },[displayTree,liveJobs,filters,user,jobSort,expSortDir]);
-  const appliedJobs=useMemo(()=>allJobs.filter(j=>user?.applied?.[j.id]),[allJobs,user]);
+  const appliedJobs=useMemo(()=>{
+    const out=[];
+    for(const [jid,entry] of Object.entries(user?.applied||{})){
+      const live=allJobs.find(j=>j.id===jid);
+      if(live) out.push(live);
+      else out.push({id:jid,title:entry?.title||"Application",company:entry?.company||"",url:entry?.url||"",applyUrl:entry?.url||"",location:entry?.location||"",salary:entry?.salary||"",isRemote:false,isHybrid:false,isEmailApply:false,experience:"",type:"",responsibilities:[],requirements:[]});
+    }
+    return out;
+  },[allJobs,user]);
   const savedJobs=useMemo(()=>allJobs.filter(j=>user?.saved?.[j.id]),[allJobs,user]);
 
   // Track each committed search with how many jobs matched — powers "top searches"
@@ -5232,6 +5250,7 @@ export default function App() {
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&tab==="jobs"&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
+    {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
