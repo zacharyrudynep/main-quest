@@ -1,4 +1,5 @@
-import { Analytics } from "@vercel/analytics/react";
+import "@/styles/globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { useEffect } from "react";
 import { trackVisitOncePerDay } from "../lib/track";
 
@@ -16,7 +17,6 @@ export default function App({ Component, pageProps }) {
     /* eslint-enable */
     try { window.posthog.init(key, { api_host: host, capture_pageview: true, person_profiles: "identified_only" }); } catch (e) {}
   }, []);
-
   return (
     <>
       <Component {...pageProps} />
