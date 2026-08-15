@@ -3974,12 +3974,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job);};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
-  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:(cContact||cEmail||riHref)?"13px 15px 44px":"13px 15px",transition:"all .2s",cursor:"default",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
-    {(cContact||cEmail||riHref)&&<div style={{position:"absolute",bottom:12,right:15,zIndex:4,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-        {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
-        {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
-        {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Submit an open application to this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Open Application</a>}
-      </div>}
+  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
     <div style={{flex:1,minWidth:0}}>
     {/* Company + site */}
@@ -4058,6 +4053,11 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {/* Action buttons */}
     <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
+      {(cContact||cEmail||riHref)&&<div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
+        {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
+        {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Submit an open application to this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Open Application</a>}
+      </div>}
     </div>
     </div>
     {/* Match score square */}
@@ -4834,7 +4834,7 @@ export default function App() {
   const allTitles=JOB_CATS.slice().sort();
   const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||(filters.tiers?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.minMatch>0||!!filters.search;
   const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.minMatch>0?1:0);
-  const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:false,emailApplyOnly:false,minMatch:0,dateFrom:""};
+  const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""};
 
   // One-time onboarding: apply a new user's personalization (from /personalize) to
   // their profile AND seed a starter board filter for their very first visit only.
