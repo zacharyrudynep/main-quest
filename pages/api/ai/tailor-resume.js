@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"; // override via env if you switch models
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite"; // override via env if you switch models
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 // The honesty guardrail: only truthfully resurface real experience — never invent.
