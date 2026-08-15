@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
 import { encodeJob } from "../lib/shareJob";
 import { track } from "../lib/track";
+import { downloadResumeDocx } from "../lib/resumeDocx";
 import dynamic from "next/dynamic";
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
@@ -3836,6 +3837,57 @@ function computeMatchScore(job,profile){
   return result;
 }
 // Right-side panel showing the full "why this score" breakdown for one job (Premium).
+// Premium AI resume-tailoring — shared by the desktop panel and mobile popup.
+function TailorResume({job,profile,missingSkills}){
+  const [open,setOpen]=useState(false);
+  const [sel,setSel]=useState(()=>new Set());
+  const [busy,setBusy]=useState(false);
+  const [md,setMd]=useState(null);
+  const [err,setErr]=useState("");
+  if(!profile||!profile.resumeText) return (
+    <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(201,168,76,.15)",fontSize:10.5,color:"rgba(244,237,216,.4)",lineHeight:1.5}}>Upload a resume in your profile to unlock AI tailoring for this role.</div>
+  );
+  const base=computeMatchScore(job,profile);
+  const after=md?computeMatchScore(job,{...profile,resumeText:md}):null;
+  const kws=(missingSkills||[]).slice(0,12);
+  const run=async()=>{
+    setBusy(true);setErr("");setMd(null);
+    try{
+      const {data}=await supabase.auth.getSession();
+      const token=data&&data.session&&data.session.access_token;
+      if(!token){setErr("Please sign in.");setBusy(false);return;}
+      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
+      setMd(j.resume);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length}});
+    }catch(e){setErr("Something went wrong. Try again.");}
+    setBusy(false);
+  };
+  const dl=()=>{const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");downloadResumeDocx(md,`${safe(job.company)}_${safe(job.title)}_resume.docx`.slice(0,90));};
+  const chip=(k)=>{const on=sel.has(k);return <button key={k} onClick={()=>setSel(s=>{const n=new Set(s);on?n.delete(k):n.add(k);return n;})} style={{background:on?"rgba(126,207,179,.16)":"rgba(224,90,58,.08)",border:`1px solid ${on?"rgba(126,207,179,.5)":"rgba(224,90,58,.3)"}`,color:on?"#7ecfb3":"#e0705a",borderRadius:12,fontSize:10,padding:"3px 9px",cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{k}</button>;};
+  const primaryBtn={width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"9px 12px",fontSize:11.5,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.4,cursor:"pointer"};
+  return <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(201,168,76,.15)"}}>
+    {!open&&!md&&<button onClick={()=>setOpen(true)} style={primaryBtn}>✦ Tailor my resume for this role</button>}
+    {open&&!md&&<div>
+      <div style={{fontSize:10.5,color:"#f0d080",fontFamily:"'Cinzel',serif",marginBottom:8,lineHeight:1.5}}>Pick keywords to weave in — the AI only uses ones your real experience can honestly support:</div>
+      {kws.length?<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{kws.map(chip)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginBottom:12}}>No missing keywords — your resume already covers this role well.</div>}
+      {err&&<div style={{color:"#e0705a",fontSize:10.5,marginBottom:8}}>{err}</div>}
+      <button onClick={run} disabled={busy||sel.size===0} style={{...primaryBtn,opacity:(busy||sel.size===0)?.5:1,cursor:(busy||sel.size===0)?"default":"pointer"}}>{busy?"Tailoring your resume…":`Tailor with AI${sel.size?` (${sel.size})`:""}`}</button>
+      {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
+    </div>}
+    {md&&<div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:12,padding:"10px 0",background:"rgba(126,207,179,.06)",borderRadius:9}}>
+        <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"rgba(244,237,216,.5)",textTransform:"uppercase",letterSpacing:.5}}>Before</div><div style={{fontSize:20,fontWeight:800,fontFamily:"'Cinzel',serif",color:"rgba(244,237,216,.6)"}}>{base?base.score:"—"}</div></div>
+        <div style={{fontSize:16,color:"#7ecfb3"}}>→</div>
+        <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.5}}>After</div><div style={{fontSize:22,fontWeight:800,fontFamily:"'Cinzel',serif",color:"#7ecfb3"}}>{after?after.score:"—"}</div></div>
+      </div>
+      <button onClick={dl} style={primaryBtn}>⤓ Download tailored resume (.docx)</button>
+      <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry</button>
+      <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",marginTop:9,lineHeight:1.5}}>Not saved anywhere — download to keep it. Always review before applying; the AI only rephrases your real experience, but you know your background best.</div>
+    </div>}
+  </div>;
+}
+
 function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
   const match=computeMatchScore(job,profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#c9a84c";
@@ -3884,6 +3936,7 @@ function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
           {match.notes.map((n,i)=><div key={i} style={{display:"flex",gap:7,fontSize:11.5,color:"rgba(244,237,216,.65)",lineHeight:1.5,marginBottom:8}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
         </div>}
         <div style={{fontSize:10,color:"rgba(244,237,216,.35)",lineHeight:1.5,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:10}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee. A lower score doesn't mean you shouldn't apply.</div>
+        {isPremium&&<TailorResume job={job} profile={profile} missingSkills={match.missingSkills}/>}
       </>
     }
   </div>;
@@ -4102,6 +4155,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
             {match.notes.slice(0,3).map((n,i)=><div key={i} style={{fontSize:10,color:"rgba(244,237,216,.62)",lineHeight:1.45,marginBottom:5,display:"flex",gap:5}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
           </div>}
           <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.45,borderTop:"1px solid rgba(201,168,76,.12)",paddingTop:8}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee.</div>
+          <TailorResume job={job} profile={user&&user.profile} missingSkills={match.missingSkills}/>
         </>:<div style={{textAlign:"center",padding:"6px 4px"}}><div style={{display:"flex",justifyContent:"center",marginBottom:8}}><I.Lock s={20} c="#c9a84c"/></div><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:5}}>Premium Feature</div><div style={{fontSize:10,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown and what to improve.</div></div>):<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
       </div>}
       {match?<>
