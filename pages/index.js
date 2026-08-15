@@ -800,7 +800,7 @@ const COMPANIES_DATA = {
       { name: "Amber", url: "https://jobs.jobvite.com/amberstudiocareers/search?l=Montreal", email: null, contact: "https://amberstudio.com/contact" },
       { name: "Artifact 5", url: "https://artifact5.com/#jobs", email: "Info@Artifact5.com", contact: null },
       { name: "Avalanche Studio", url: "https://avalanchestudios.com/careers", email: null, contact: "https://avalanchestudios.com/connect" },
-      { name: "Beenox", url: "https://beenox.com/carrieres/", email: null, contact: "https://beenox.com/contact/" },
+      { name: "Beenox", url: "https://beenox.com/carrieres/", email: "recrutement@beenox.com", contact: "https://beenox.com/contact/" },
       { name: "Behaviour Interactive", url: "https://www.bhvr.com/montreal/", email: null, contact: "https://www.bhvr.com/contact-us-2/" },
       { name: "Bethesda Montreal", url: "https://bethesdagamestudios.com/#careers", email: "info@bethsoft.com", contact: "https://bethesdagamestudios.com/#contact" },
       { name: "BKOM Studios", url: "https://jobs.bkom.com/jobs/Careers", email: null, contact: "https://bkom.com/contact-us/" },
@@ -4441,6 +4441,15 @@ export default function App() {
   const [liveStatus,setLiveStatus]=useState("idle");
   const [loadProgress,setLoadProgress]=useState(0);      // 0..100 for the intro loader
   const [introDone,setIntroDone]=useState(false);        // has the first full load finished?
+  // Cosmetic randomized loader numbers — the real load still ends the instant it's ready.
+  const [displayPct,setDisplayPct]=useState(()=>Math.floor(Math.random()*7)+3);
+  useEffect(()=>{
+    if(introDone) return;
+    let alive=true;
+    const tick=()=>{ if(!alive) return; setDisplayPct(p=>p>=97?p:Math.min(97,p+Math.floor(Math.random()*12)+2)); setTimeout(tick,150+Math.random()*190); };
+    const id=setTimeout(tick,150+Math.random()*190);
+    return ()=>{alive=false;clearTimeout(id);};
+  },[introDone]);
   const abortRef=useRef(null);
   const introCollectedRef=useRef({}); // intro results accumulate here; revealed once loading completes
   const introStartRef=useRef(0);      // when the intro fetch began, for adaptive reveal timing
@@ -4720,7 +4729,13 @@ export default function App() {
     if (!user?.id) return;
     const j = jobObj || Object.values(ALL_JOBS_DATA).flatMap(s => Object.values(s).flatMap(c => Object.values(c).flatMap(co => co.jobs))).find(x => x.id === jobId);
     if (!j) return;
-    await supabase.from("applications").upsert({ user_id: user.id, job_id: jobId, job_title: j.title, company: j.company, job_url: j.url || j.applyUrl, salary: j.salary || null, applied_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+    const row = { user_id: user.id, job_id: jobId, job_title: j.title, company: j.company, job_url: j.url || j.applyUrl, salary: j.salary || null, applied_at: new Date().toISOString() };
+    const { error } = await supabase.from("applications").upsert(row, { onConflict: "user_id,job_id" });
+    if (error) {
+      // Constraint for onConflict may be missing — fall back to delete + insert so it always persists.
+      await supabase.from("applications").delete().eq("user_id", user.id).eq("job_id", jobId);
+      await supabase.from("applications").insert(row);
+    }
     track("job_apply_confirmed", { jobKey: `${j.company}|${j.title}`, company: j.company });
   }, [user?.id]);
 
@@ -5097,15 +5112,20 @@ export default function App() {
     const {country,state}=found;
     setFilters(CLEAR);
     setExpanded(prev=>({...prev,[`c-${country}`]:true,[`s-${country}-${state}`]:true,[`co-${country}-${state}-${n.company}`]:true}));
-    setTimeout(()=>{
-      const jobKey=`${n.company}|${n.title}|${n.location||""}`;
-      const el=document.getElementById(`mqjob-${jobKey}`)||document.getElementById(`mqco-${country}-${state}-${n.company}`);
+    const findAndScroll=(attempt=0)=>{
+      let el=document.getElementById(`mqjob-${n.company}|${n.title}|${n.location||""}`);
+      if(!el){ // location may differ (esp. in flat view) — match by company|title
+        const prefix=`mqjob-${n.company}|${n.title}|`;
+        for(const e of document.querySelectorAll('[id^="mqjob-"]')){ if(e.id.indexOf(prefix)===0){ el=e; break; } }
+      }
+      if(!el) el=document.getElementById(`mqco-${country}-${state}-${n.company}`);
       if(el){
         el.scrollIntoView({behavior:"smooth",block:"center"});
         el.classList.add("mq-pulse");
         setTimeout(()=>el.classList.remove("mq-pulse"),2400);
-      }
-    },450);
+      } else if(attempt<4){ setTimeout(()=>findAndScroll(attempt+1),300); } // list may still be rendering
+    };
+    setTimeout(()=>findAndScroll(0),350);
   };
   // Precompute country/state totals once per data change (not per expand toggle).
   const treeCounts=useMemo(()=>{
@@ -5166,7 +5186,7 @@ export default function App() {
   // Intro loading screen — shown once after login/guest while the job board's
   // live listings load, so the board appears fully populated and smooth.
   if(!introDone){
-    const pct=Math.max(4,loadProgress); // never show a totally empty bar
+    const pct=Math.max(4,Math.max(displayPct,loadProgress)); // randomized numbers, but never below real progress
     return <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 35%, #140d09 0%, #080608 70%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:22,padding:24,textAlign:"center"}}>
       <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <div style={{position:"absolute",width:78,height:78,borderRadius:"50%",border:"2px solid rgba(201,168,76,.15)",borderTopColor:"#c9a84c",animation:"mqspin 1s linear infinite"}}/>
