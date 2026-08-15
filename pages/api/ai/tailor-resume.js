@@ -62,24 +62,27 @@ Return the tailored resume in clean Markdown only.`;
     };
 
     // ── Call Gemini with backoff on transient throttling ──
-    let out = null, transient = false, hardErr = "";
+    let out = null, transient = false, detail = "";
     for (let attempt = 0; attempt < 3; attempt++) {
       let r;
       try {
         r = await fetch(`${ENDPOINT}?key=${encodeURIComponent(GEMINI_KEY)}`, {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
         });
-      } catch (e) { transient = true; await sleep(700 * (attempt + 1)); continue; }
-      if (r.status === 429 || r.status === 503) { transient = true; await sleep(700 * (attempt + 1) + Math.random() * 400); continue; }
+      } catch (e) { transient = true; detail = "network error"; await sleep(700 * (attempt + 1)); continue; }
       const data = await r.json().catch(() => ({}));
-      if (!r.ok) { hardErr = (data && data.error && data.error.message) || "error"; break; }
-      out = ((((data.candidates || [])[0] || {}).content || {}).parts || []).map(p => p.text || "").join("");
+      if (r.status === 429 || r.status === 503) { transient = true; detail = `busy ${r.status}`; await sleep(700 * (attempt + 1) + Math.random() * 400); continue; }
+      if (!r.ok) { detail = `${r.status} ${(data && data.error && data.error.message) || "error"}`.slice(0, 300); break; }
+      const cand = (data.candidates || [])[0];
+      const parts = cand && cand.content && cand.content.parts;
+      out = parts ? parts.map(p => p.text || "").join("") : "";
+      if (!out) detail = `empty response (finish: ${(cand && cand.finishReason) || "?"}${data.promptFeedback && data.promptFeedback.blockReason ? ", blocked: " + data.promptFeedback.blockReason : ""})`;
       break;
     }
 
     if (!out) {
       if (transient) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
-      return res.status(502).json({ error: "Couldn't generate the tailored resume. Please try again." });
+      return res.status(502).json({ error: `Couldn't generate the resume — ${detail || "unknown error"}` });
     }
     out = out.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
     return res.status(200).json({ resume: out });
