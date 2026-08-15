@@ -58,7 +58,7 @@ Return the tailored resume in clean Markdown only.`;
     const payload = {
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: taskPrompt }] }],
-      generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 4096 },
+      generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 8192 },
     };
 
     // ── Call Gemini with backoff on transient throttling ──
