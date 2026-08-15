@@ -3974,7 +3974,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job);};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
-  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
+  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
     <div style={{flex:1,minWidth:0}}>
     {/* Company + site */}
@@ -4053,12 +4053,12 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {/* Action buttons */}
     <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
-      {(cContact||cEmail||riHref)&&<div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+    </div>
+    {(cContact||cEmail||riHref)&&<div style={mobile?{marginTop:8,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}:{position:"absolute",bottom:13,right:15,zIndex:4,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
         {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
         {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
         {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Submit an open application to this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Open Application</a>}
       </div>}
-    </div>
     </div>
     {/* Match score square */}
     {guest&&<div onClick={e=>{e.stopPropagation();onRequestLogin&&onRequestLogin();}} title="Sign up or log in to access this feature" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer",overflow:"hidden"}} onMouseEnter={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=1;}} onMouseLeave={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=0;}}>
@@ -5110,7 +5110,7 @@ export default function App() {
     setTab("jobs");
     if(!found){ setFilters({...CLEAR,search:n.company}); return; } // company not currently on the board → surface via search
     const {country,state}=found;
-    setFilters(CLEAR);
+    setFilters(hideLocationTabs?{...CLEAR,search:n.company}:CLEAR); // flat view has a 200-item cap → focus the company so the job is on screen
     setExpanded(prev=>({...prev,[`c-${country}`]:true,[`s-${country}-${state}`]:true,[`co-${country}-${state}-${n.company}`]:true}));
     const findAndScroll=(attempt=0)=>{
       let el=document.getElementById(`mqjob-${n.company}|${n.title}|${n.location||""}`);
