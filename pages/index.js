@@ -3165,6 +3165,7 @@ const upload=async(e)=>{
     setPs("reading");setMsg("Reading file…");
     try{
       let text="";
+      updateField("resumeDocxB64",""); // keep only the current upload
       if(ext===".pdf"){
         setMsg("Extracting PDF text…");
         // Load PDF.js dynamically (no AI, runs entirely in the browser)
@@ -3190,6 +3191,7 @@ const upload=async(e)=>{
         const buf=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsArrayBuffer(file);});
         const result=await window.mammoth.extractRawText({arrayBuffer:buf});
         text=result.value||"";
+        if(ext===".docx"){try{updateField("resumeDocxB64",await toB64(file));}catch(e){}}
       }
       if(!text||text.trim().length<20){throw new Error("Could not read text from this file. Try a different file or fill fields manually.");}
       setPs("parsing");setMsg("Parsing resume…");
@@ -3870,6 +3872,7 @@ function TailorResume({job,profile,missingSkills,wide}){
   const [sel,setSel]=useState(()=>new Set());
   const [busy,setBusy]=useState(false);
   const [md,setMd]=useState(null);
+  const [docxB64,setDocxB64]=useState(null);
   const [err,setErr]=useState("");
   if(!profile||!profile.resumeText) return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(201,168,76,.15)",fontSize:10.5,color:"rgba(244,237,216,.4)",lineHeight:1.5}}>Upload a resume in your profile to unlock AI tailoring for this role.</div>
@@ -3878,19 +3881,24 @@ function TailorResume({job,profile,missingSkills,wide}){
   const after=md?computeMatchScore(job,{...profile,resumeText:md}):null;
   const kws=(missingSkills||[]).slice(0,12);
   const run=async()=>{
-    setBusy(true);setErr("");setMd(null);
+    setBusy(true);setErr("");setMd(null);setDocxB64(null);
     try{
       const {data}=await supabase.auth.getSession();
       const token=data&&data.session&&data.session.access_token;
       if(!token){setErr("Please sign in.");setBusy(false);return;}
-      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
+      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
-      setMd(j.resume);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length}});
+      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
     }catch(e){setErr("Something went wrong. Try again.");}
     setBusy(false);
   };
-  const dl=()=>{const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");downloadResumeDocx(md,`${safe(job.company)}_${safe(job.title)}_resume.docx`.slice(0,90));};
+  const dl=()=>{const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");const fn=`${safe(job.company)}_${safe(job.title)}_resume.docx`.slice(0,90);
+    if(docxB64){ // format-preserving docx from the server — download the real file
+      try{const bin=atob(docxB64);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);const blob=new Blob([arr],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);return;}catch(e){}
+    }
+    downloadResumeDocx(md,fn); // fallback: build a clean docx from the markdown
+  };
   const chip=(k)=>{const on=sel.has(k);return <button key={k} onClick={()=>setSel(s=>{const n=new Set(s);on?n.delete(k):n.add(k);return n;})} style={{background:on?"rgba(126,207,179,.16)":"rgba(224,90,58,.08)",border:`1px solid ${on?"rgba(126,207,179,.5)":"rgba(224,90,58,.3)"}`,color:on?"#7ecfb3":"#e0705a",borderRadius:12,fontSize:10,padding:"3px 9px",cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{k}</button>;};
   const primaryBtn={width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"9px 12px",fontSize:11.5,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.4,cursor:"pointer"};
   return <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(201,168,76,.15)"}}>
@@ -3915,7 +3923,7 @@ function TailorResume({job,profile,missingSkills,wide}){
           <div style={{flex:1,minWidth:0}}><div style={{...label,color:"#7ecfb3"}}>Tailored</div><div style={{...colBase,color:"rgba(244,237,216,.85)"}}>{toks.map((t,i)=>t.added?<span key={i} style={{background:"rgba(126,207,179,.22)",color:"#7ecfb3",borderRadius:2}}>{t.text}</span>:<span key={i}>{t.text}</span>)}</div></div>
         </div>
       </div>;})()}
-      <button onClick={dl} style={primaryBtn}>⤓ Download tailored resume (.docx)</button>
+      <button onClick={dl} style={primaryBtn}>⤓ Download {docxB64?"— keeps your original formatting":"tailored resume (.docx)"}</button>
       <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry</button>
       <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",marginTop:9,lineHeight:1.5}}>Not saved anywhere — download to keep it. Always review before applying; the AI only rephrases your real experience, but you know your background best.</div>
     </div>}

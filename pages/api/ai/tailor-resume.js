@@ -1,24 +1,28 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { tailorDocx } from "../../../lib/docxTailor";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-// Google keeps rotating Flash models and blocks older ones for new accounts, so we try
-// several current ones in order and use whichever the account accepts. Set GEMINI_MODEL
-// in Vercel to pin one explicitly and skip the probing.
 const CANDIDATES = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
-let cachedModel = null; // remember what worked on this warm instance
+let cachedModel = null;
 
 const SYSTEM = `You are a professional resume editor helping a candidate tailor their existing resume to a specific job posting.
 
 STRICT RULES — follow exactly:
-- Only rephrase, reorganize, and emphasize experience, skills, and accomplishments the candidate ALREADY demonstrates in their resume.
-- NEVER invent or imply skills, tools, job titles, employers, dates, certifications, metrics, or accomplishments that are not supported by the original resume.
-- For each requested keyword: incorporate it ONLY if the resume shows genuine, related experience it can honestly attach to. If there is no honest basis for a keyword, silently omit it. Do NOT fabricate experience to justify a keyword.
-- Preserve all real facts exactly (company names, dates, job titles, education). You may rewrite descriptions to use the job's terminology where truthful.
-- Keep a professional, concise, results-oriented tone.
+- Only rephrase, reorganize, and emphasize experience the candidate ALREADY demonstrates. NEVER invent skills, tools, titles, employers, dates, certifications, metrics, or accomplishments not supported by the original resume.
+- For each requested keyword: incorporate it ONLY where the resume shows genuine related experience. If there's no honest basis, silently omit it.
+- Preserve all real facts exactly (companies, dates, titles, education).
+OUTPUT: Return ONLY the tailored resume as clean Markdown (# name, ## sections, **bold** roles, - bullets). No preamble or commentary.`;
 
-OUTPUT FORMAT: Return ONLY the tailored resume as clean Markdown. Use "# Full Name" for the name at the top, "## Section" for section headers (e.g. Summary, Experience, Skills, Education), "**Title — Company** (dates)" lines for roles, and "- " for bullet points. No preamble, no commentary, no notes about what you changed — output the resume and nothing else.`;
+const DOCX_SYSTEM = `You are a professional resume editor. You receive a resume's paragraphs, each numbered like [1], [2]. Reword ONLY the descriptive content — the professional summary sentence and the accomplishment bullet points — to better target the job, weaving in requested keywords ONLY where the candidate's real experience honestly supports them.
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+STRICT RULES:
+- Return EXACTLY the same numbered lines, same order, same count. Every input [N] must appear once as output [N].
+- Return these UNCHANGED, verbatim: the person's name, contact line, section headers (SUMMARY, EXPERIENCE, SKILLS, EDUCATION, PROJECT EXPERIENCE, INDUSTRY CREDITS, etc.), company names, job titles, dates, education, and the technical-skills lists.
+- NEVER invent skills, tools, employers, dates, or accomplishments. Omit any keyword the resume can't honestly support.
+- Preserve the ** bold markers exactly where they are (keep bold lead-ins bold). Keep each line's length similar.
+- Output ONLY the numbered lines — no preamble, no commentary.`;
+
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function callModel(model, payload) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_KEY)}`;
@@ -31,19 +35,37 @@ async function callModel(model, payload) {
     if (r.status === 404) return { kind: "notfound", detail: `404 ${model}` };
     if (!r.ok) return { kind: "error", detail: `${r.status} ${(data.error && data.error.message) || "error"}`.slice(0, 200) };
     const cand = (data.candidates || [])[0];
-    const text = cand && cand.content && cand.content.parts ? cand.content.parts.map(p => p.text || "").join("") : "";
+    const text = cand && cand.content && cand.content.parts ? cand.content.parts.map((p) => p.text || "").join("") : "";
     if (text) return { kind: "ok", text, model };
-    return { kind: "empty", detail: `empty (finish: ${(cand && cand.finishReason) || "?"}${data.promptFeedback && data.promptFeedback.blockReason ? ", blocked: " + data.promptFeedback.blockReason : ""})` };
+    return { kind: "empty", detail: `empty (finish: ${(cand && cand.finishReason) || "?"})` };
   }
   return { kind: "busy" };
+}
+
+async function generate(systemText, userText) {
+  const payload = {
+    systemInstruction: { parts: [{ text: systemText }] },
+    contents: [{ role: "user", parts: [{ text: userText }] }],
+    generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 8192 },
+  };
+  const order = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL]
+    : cachedModel ? [cachedModel, ...CANDIDATES.filter((m) => m !== cachedModel)] : CANDIDATES;
+  let lastDetail = "";
+  for (const model of order) {
+    const g = await callModel(model, payload);
+    if (g.kind === "ok") { cachedModel = g.model; return { ok: true, text: g.text }; }
+    if (g.kind === "busy") return { busy: true };
+    lastDetail = g.detail || g.kind;
+    if (g.kind === "notfound") continue;
+    break;
+  }
+  return { error: lastDetail || "no available model" };
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
   try {
     if (!GEMINI_KEY) return res.status(500).json({ error: "AI is not configured on the server." });
-
-    // ── Auth + premium gate ──
     const authz = req.headers.authorization || "";
     const token = authz.startsWith("Bearer ") ? authz.slice(7) : "";
     if (!token) return res.status(401).json({ error: "Please sign in." });
@@ -52,56 +74,43 @@ export default async function handler(req, res) {
     const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium").eq("id", u.user.id).single();
     if (!prof || !prof.is_premium) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
 
-    // ── Input ──
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const resumeText = String(b.resumeText || "").slice(0, 24000);
-    const keywords = Array.isArray(b.keywords) ? b.keywords.slice(0, 40).map(k => String(k).slice(0, 60)) : [];
+    const resumeDocxB64 = typeof b.resumeDocxB64 === "string" ? b.resumeDocxB64 : "";
+    const keywords = Array.isArray(b.keywords) ? b.keywords.slice(0, 40).map((k) => String(k).slice(0, 60)) : [];
     const job = b.job || {};
-    if (!resumeText.trim()) return res.status(400).json({ error: "No resume text found — upload a resume in your profile first." });
+    if (!resumeText.trim() && !resumeDocxB64) return res.status(400).json({ error: "No resume found — upload a resume in your profile first." });
 
     const jobReqs = [].concat(job.requirements || [], job.responsibilities || []).filter(Boolean).map(String).slice(0, 40);
-    const taskPrompt =
-`JOB TITLE: ${job.title || ""}
-COMPANY: ${job.company || ""}
+    const jobBlock = `JOB TITLE: ${job.title || ""}\nCOMPANY: ${job.company || ""}\n\nJOB REQUIREMENTS / RESPONSIBILITIES:\n${jobReqs.length ? "- " + jobReqs.join("\n- ") : "(not provided)"}\n\nKEYWORDS TO TARGET (only where truthful):\n${keywords.length ? keywords.map((k) => "- " + k).join("\n") : "(none selected)"}`;
 
-JOB REQUIREMENTS / RESPONSIBILITIES:
-${jobReqs.length ? "- " + jobReqs.join("\n- ") : "(not provided)"}
-
-KEYWORDS THE CANDIDATE WANTS TO TARGET (only incorporate where truthful):
-${keywords.length ? keywords.map(k => "- " + k).join("\n") : "(none selected)"}
-
-CURRENT RESUME:
-"""
-${resumeText}
-"""
-
-Return the tailored resume in clean Markdown only.`;
-
-    const payload = {
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: taskPrompt }] }],
-      generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 8192 },
-    };
-
-    // ── Try models in order until the account accepts one ──
-    const order = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL]
-      : cachedModel ? [cachedModel, ...CANDIDATES.filter(m => m !== cachedModel)]
-      : CANDIDATES;
-
-    let lastDetail = "";
-    for (const model of order) {
-      const g = await callModel(model, payload);
-      if (g.kind === "ok") {
-        cachedModel = g.model;
-        const clean = g.text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
-        return res.status(200).json({ resume: clean, model: g.model });
-      }
-      if (g.kind === "busy") return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
-      lastDetail = g.detail || g.kind;
-      if (g.kind === "notfound") continue; // this model isn't available — try the next
-      break; // a real error (400/403/empty) won't be fixed by another model
+    // ── Preferred path: rewrite inside the user's real .docx, preserving its formatting ──
+    if (resumeDocxB64) {
+      let busy = false;
+      const rewriteFn = async (mds) => {
+        const numbered = mds.map((md, i) => `[${i + 1}] ${md}`).join("\n");
+        const g = await generate(DOCX_SYSTEM, `${jobBlock}\n\nRESUME PARAGRAPHS:\n${numbered}\n\nReturn the same numbered lines, reworded per the rules.`);
+        if (g.busy) { busy = true; return null; }
+        if (!g.ok) return null;
+        const map = {};
+        for (const line of g.text.split(/\r?\n/)) { const m = line.match(/^\s*\[(\d+)\]\s?([\s\S]*)$/); if (m) map[+m[1]] = m[2].trim(); }
+        if (Object.keys(map).length < Math.ceil(mds.length * 0.5)) return null; // parse failed → fallback
+        return mds.map((md, i) => (map[i + 1] !== undefined ? map[i + 1] : md));
+      };
+      try {
+        const result = await tailorDocx(resumeDocxB64, rewriteFn);
+        if (busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
+        if (result) return res.status(200).json({ resume: result.plain, docxB64: result.base64 });
+        // result null → fall through to markdown mode below
+      } catch (e) { /* invalid docx or parse issue → fall through to markdown */ }
     }
-    return res.status(502).json({ error: `Couldn't generate the resume — ${lastDetail || "no available model"}` });
+
+    // ── Fallback path: generate clean Markdown (client builds a .docx from it) ──
+    const g = await generate(SYSTEM, `${jobBlock}\n\nCURRENT RESUME:\n"""\n${resumeText}\n"""\n\nReturn the tailored resume in clean Markdown only.`);
+    if (g.busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
+    if (!g.ok) return res.status(502).json({ error: `Couldn't generate the resume — ${g.error}` });
+    const clean = g.text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    return res.status(200).json({ resume: clean });
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }
