@@ -3837,8 +3837,35 @@ function computeMatchScore(job,profile){
   return result;
 }
 // Right-side panel showing the full "why this score" breakdown for one job (Premium).
+// Strip Markdown to readable plain text (for the diff preview).
+function _stripMd(md){
+  return String(md||"")
+    .replace(/^#{1,6}\s+/gm,"")
+    .replace(/\*\*([^*]+)\*\*/g,"$1")
+    .replace(/\*([^*]+)\*/g,"$1")
+    .replace(/^\s*[-*+]\s+/gm,"• ")
+    .replace(/\n{3,}/g,"\n\n")
+    .trim();
+}
+// Word-level diff (LCS): returns tokens of the NEW text flagged as added vs the original.
+function _wordDiff(oldStr,newStr){
+  const o=String(oldStr||"").split(/(\s+)/), n=String(newStr||"").split(/(\s+)/);
+  const m=o.length,k=n.length, norm=(t)=>t.toLowerCase();
+  if(m*k>4000000){ return n.map(t=>({text:t,added:false})); } // safety for huge inputs
+  const dp=Array.from({length:m+1},()=>new Array(k+1).fill(0));
+  for(let i=m-1;i>=0;i--)for(let j=k-1;j>=0;j--)dp[i][j]=norm(o[i])===norm(n[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+  const res=[]; let i=0,j=0;
+  while(i<m&&j<k){
+    if(norm(o[i])===norm(n[j])){res.push({text:n[j],added:false});i++;j++;}
+    else if(dp[i+1][j]>=dp[i][j+1]){i++;}
+    else {res.push({text:n[j],added:true});j++;}
+  }
+  while(j<k){res.push({text:n[j],added:true});j++;}
+  return res;
+}
+
 // Premium AI resume-tailoring — shared by the desktop panel and mobile popup.
-function TailorResume({job,profile,missingSkills}){
+function TailorResume({job,profile,missingSkills,wide}){
   const [open,setOpen]=useState(false);
   const [sel,setSel]=useState(()=>new Set());
   const [busy,setBusy]=useState(false);
@@ -3881,6 +3908,13 @@ function TailorResume({job,profile,missingSkills}){
         <div style={{fontSize:16,color:"#7ecfb3"}}>→</div>
         <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.5}}>After</div><div style={{fontSize:22,fontWeight:800,fontFamily:"'Cinzel',serif",color:"#7ecfb3"}}>{after?after.score:"—"}</div></div>
       </div>
+      {(()=>{const oPlain=_stripMd(profile.resumeText);const tPlain=_stripMd(md);const toks=_wordDiff(oPlain,tPlain);const colBase={flex:1,minWidth:0,background:"rgba(0,0,0,.25)",border:"1px solid rgba(201,168,76,.14)",borderRadius:8,padding:"9px 11px",maxHeight:wide?360:230,overflowY:"auto",fontSize:10.5,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-word",fontFamily:"system-ui,sans-serif"};const label={fontSize:9,textTransform:"uppercase",letterSpacing:.5,fontFamily:"'Cinzel',serif",marginBottom:5};return <div style={{marginBottom:12}}>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.5)",marginBottom:7}}>Changes are <span style={{color:"#7ecfb3",background:"rgba(126,207,179,.22)",padding:"0 3px",borderRadius:3}}>highlighted</span> in the tailored version:</div>
+        <div style={{display:"flex",flexDirection:wide?"row":"column",gap:10}}>
+          <div style={{flex:1,minWidth:0}}><div style={{...label,color:"rgba(244,237,216,.45)"}}>Original</div><div style={{...colBase,color:"rgba(244,237,216,.6)"}}>{oPlain}</div></div>
+          <div style={{flex:1,minWidth:0}}><div style={{...label,color:"#7ecfb3"}}>Tailored</div><div style={{...colBase,color:"rgba(244,237,216,.85)"}}>{toks.map((t,i)=>t.added?<span key={i} style={{background:"rgba(126,207,179,.22)",color:"#7ecfb3",borderRadius:2}}>{t.text}</span>:<span key={i}>{t.text}</span>)}</div></div>
+        </div>
+      </div>;})()}
       <button onClick={dl} style={primaryBtn}>⤓ Download tailored resume (.docx)</button>
       <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry</button>
       <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",marginTop:9,lineHeight:1.5}}>Not saved anywhere — download to keep it. Always review before applying; the AI only rephrases your real experience, but you know your background best.</div>
@@ -3891,7 +3925,7 @@ function TailorResume({job,profile,missingSkills}){
 function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
   const match=computeMatchScore(job,profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#c9a84c";
-  return <div style={{position:"fixed",top:96,left:"min(calc(50% + 566px), calc(100vw - 336px))",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+  return <div style={{position:"fixed",top:96,right:16,left:"auto",width:"min(46vw,720px)",maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:20,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}><I.Target s={16} c="#c9a84c"/><span style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#f0d080",letterSpacing:.5}}>Match Breakdown</span></div>
       <button onClick={onClose} title="Close" style={{background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:20,lineHeight:1}}>×</button>
@@ -3936,7 +3970,7 @@ function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
           {match.notes.map((n,i)=><div key={i} style={{display:"flex",gap:7,fontSize:11.5,color:"rgba(244,237,216,.65)",lineHeight:1.5,marginBottom:8}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
         </div>}
         <div style={{fontSize:10,color:"rgba(244,237,216,.35)",lineHeight:1.5,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:10}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee. A lower score doesn't mean you shouldn't apply.</div>
-        {isPremium&&<TailorResume job={job} profile={profile} missingSkills={match.missingSkills}/>}
+        {isPremium&&<TailorResume job={job} profile={profile} missingSkills={match.missingSkills} wide={true}/>}
       </>
     }
   </div>;
@@ -4155,7 +4189,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
             {match.notes.slice(0,3).map((n,i)=><div key={i} style={{fontSize:10,color:"rgba(244,237,216,.62)",lineHeight:1.45,marginBottom:5,display:"flex",gap:5}}><span style={{color:"#c9a84c",flexShrink:0}}>›</span><span>{n}</span></div>)}
           </div>}
           <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.45,borderTop:"1px solid rgba(201,168,76,.12)",paddingTop:8}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee.</div>
-          <TailorResume job={job} profile={user&&user.profile} missingSkills={match.missingSkills}/>
+          <TailorResume job={job} profile={user&&user.profile} missingSkills={match.missingSkills} wide={false}/>
         </>:<div style={{textAlign:"center",padding:"6px 4px"}}><div style={{display:"flex",justifyContent:"center",marginBottom:8}}><I.Lock s={20} c="#c9a84c"/></div><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:5}}>Premium Feature</div><div style={{fontSize:10,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown and what to improve.</div></div>):<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
       </div>}
       {match?<>
@@ -5328,7 +5362,7 @@ export default function App() {
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
-    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:"0 auto",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
+    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&tab==="jobs")?"0 calc(min(46vw,720px) + 40px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
         {/* Pricing banner for guests (dismissible) */}
         {/* Mobile globe — centered at top */}
@@ -5358,8 +5392,8 @@ export default function App() {
             filter panel floats as a fixed drawer to the RIGHT (beside the list on wide
             screens, pinned to the right edge on narrower ones) so opening it never
             resizes or pushes the job posts. On mobile it stacks in-flow above jobs. */}
-        <div style={{display:"flex",flexDirection:mobile?"column":"row",gap:16,alignItems:"flex-start"}}>
-          {filterOpen&&<div style={mobile?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+        <div style={{display:"flex",flexDirection:(mobile||(breakdownJob&&tab==="jobs"))?"column":"row",gap:16,alignItems:"flex-start"}}>
+          {filterOpen&&<div style={(mobile||(breakdownJob&&tab==="jobs"))?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
             <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}>{filters.countries.length===0?<div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"4px 2px",lineHeight:1.45}}>Select a region above to choose specific states, provinces, or countries.</div>:<CheckGroup opts={allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s)))} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/>}</FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
