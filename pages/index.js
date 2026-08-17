@@ -3878,7 +3878,17 @@ function TailorResume({job,profile,missingSkills,wide}){
   const [md,setMd]=useState(null);
   const [docxB64,setDocxB64]=useState(null);
   const [edited,setEdited]=useState("");
+  const [initialEdit,setInitialEdit]=useState("");
   const [err,setErr]=useState("");
+  const editRef=useRef(null);
+  useEffect(()=>{
+    if(!md||!editRef.current)return;
+    const esc=(s)=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const toks=_wordDiff(_stripMd(profile.resumeText),_stripMd(md));
+    editRef.current.innerHTML=toks.map(t=>t.added?`<span style="background:rgba(126,207,179,.22);color:#7ecfb3;border-radius:2px">${esc(t.text)}</span>`:esc(t.text)).join("");
+    const init=_stripMd(md);setEdited(init);setInitialEdit(init);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[md]);
   if(!profile||!profile.resumeText) return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(201,168,76,.15)",fontSize:10.5,color:"rgba(244,237,216,.4)",lineHeight:1.5}}>Upload a resume in your profile to unlock AI tailoring for this role.</div>
   );
@@ -3894,11 +3904,11 @@ function TailorResume({job,profile,missingSkills,wide}){
       const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
-      setMd(j.resume);setEdited(j.resume||"");if(j.docxB64)setDocxB64(j.docxB64);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
+      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
     }catch(e){setErr("Something went wrong. Try again.");}
     setBusy(false);
   };
-  const unedited=(edited||"").trim()===(md||"").trim();
+  const unedited=(edited||"").trim()===(initialEdit||"").trim();
   const dl=()=>{const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");const fn=`${safe(job.company)}_${safe(job.title)}_resume.docx`.slice(0,90);
     if(docxB64&&unedited){ // untouched + we have the format-preserving file → download the real one
       try{const bin=atob(docxB64);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);const blob=new Blob([arr],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);return;}catch(e){}
@@ -3913,7 +3923,7 @@ function TailorResume({job,profile,missingSkills,wide}){
       <div style={{fontSize:10.5,color:"#f0d080",fontFamily:"'Cinzel',serif",marginBottom:8,lineHeight:1.5}}>Pick keywords to weave in — the AI only uses ones your real experience can honestly support:</div>
       {kws.length?<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{kws.map(chip)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginBottom:12}}>No missing keywords — your resume already covers this role well.</div>}
       {err&&<div style={{color:"#e0705a",fontSize:10.5,marginBottom:8}}>{err}</div>}
-      <button onClick={run} disabled={busy||sel.size===0} style={{...primaryBtn,opacity:(busy||sel.size===0)?.5:1,cursor:(busy||sel.size===0)?"default":"pointer"}}>{busy?"Tailoring your resume…":`Tailor with AI${sel.size?` (${sel.size})`:""}`}</button>
+      <button onClick={run} disabled={busy||sel.size===0} style={{...primaryBtn,opacity:(busy||sel.size===0)?.5:1,cursor:(busy||sel.size===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:`Tailor with AI${sel.size?` (${sel.size})`:""}`}</button>
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
     </div>}
     {md&&<div>
@@ -3922,16 +3932,12 @@ function TailorResume({job,profile,missingSkills,wide}){
         <div style={{fontSize:16,color:"#7ecfb3"}}>→</div>
         <div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.5}}>After</div><div style={{fontSize:22,fontWeight:800,fontFamily:"'Cinzel',serif",color:"#7ecfb3"}}>{after?after.score:"—"}</div></div>
       </div>
-      {(()=>{const oPlain=_stripMd(profile.resumeText);const tPlain=_stripMd(md);const toks=_wordDiff(oPlain,tPlain);const colBase={flex:1,minWidth:0,background:"rgba(0,0,0,.25)",border:"1px solid rgba(201,168,76,.14)",borderRadius:8,padding:"9px 11px",maxHeight:wide?360:230,overflowY:"auto",fontSize:10.5,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-word",fontFamily:"system-ui,sans-serif"};const label={fontSize:9,textTransform:"uppercase",letterSpacing:.5,fontFamily:"'Cinzel',serif",marginBottom:5};return <div style={{marginBottom:12}}>
-        <div style={{fontSize:10,color:"rgba(244,237,216,.5)",marginBottom:7}}>Changes are <span style={{color:"#7ecfb3",background:"rgba(126,207,179,.22)",padding:"0 3px",borderRadius:3}}>highlighted</span> in the tailored version:</div>
-        <div style={{display:"flex",flexDirection:wide?"row":"column",gap:10}}>
-          <div style={{flex:1,minWidth:0}}><div style={{...label,color:"rgba(244,237,216,.45)"}}>Original</div><div style={{...colBase,color:"rgba(244,237,216,.6)"}}>{oPlain}</div></div>
-          <div style={{flex:1,minWidth:0}}><div style={{...label,color:"#7ecfb3"}}>Tailored</div><div style={{...colBase,color:"rgba(244,237,216,.85)"}}>{toks.map((t,i)=>t.added?<span key={i} style={{background:"rgba(126,207,179,.22)",color:"#7ecfb3",borderRadius:2}}>{t.text}</span>:<span key={i}>{t.text}</span>)}</div></div>
-        </div>
-      </div>;})()}
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:10,color:"rgba(244,237,216,.5)",marginBottom:6}}>Edit the wording before downloading if you'd like — add, remove, or reword anything:</div>
-        <textarea value={edited} onChange={e=>setEdited(e.target.value)} spellCheck={false} style={{width:"100%",minHeight:wide?190:140,maxHeight:340,resize:"vertical",background:"rgba(0,0,0,.3)",border:"1px solid rgba(201,168,76,.2)",borderRadius:8,color:"rgba(244,237,216,.9)",fontSize:11,lineHeight:1.55,padding:"10px 12px",fontFamily:"system-ui,sans-serif",boxSizing:"border-box"}}/>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.5)",marginBottom:7}}>Additions are <span style={{color:"#7ecfb3",background:"rgba(126,207,179,.22)",padding:"0 3px",borderRadius:3}}>highlighted</span> — and you can <b style={{color:"rgba(244,237,216,.7)"}}>type directly into the tailored version</b> to tweak wording before downloading.</div>
+        <div style={{display:"flex",flexDirection:wide?"row":"column",gap:10}}>
+          <div style={{flex:1,minWidth:0}}><div style={{fontSize:9,textTransform:"uppercase",letterSpacing:.5,fontFamily:"'Cinzel',serif",marginBottom:5,color:"rgba(244,237,216,.45)"}}>Original</div><div style={{background:"rgba(0,0,0,.25)",border:"1px solid rgba(201,168,76,.14)",borderRadius:8,padding:"9px 11px",maxHeight:wide?360:230,overflowY:"auto",fontSize:10.5,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-word",color:"rgba(244,237,216,.6)"}}>{_stripMd(profile.resumeText)}</div></div>
+          <div style={{flex:1,minWidth:0}}><div style={{fontSize:9,textTransform:"uppercase",letterSpacing:.5,fontFamily:"'Cinzel',serif",marginBottom:5,color:"#7ecfb3"}}>Tailored — editable &#9998;</div><div ref={editRef} contentEditable suppressContentEditableWarning onInput={e=>setEdited(e.currentTarget.innerText)} style={{background:"rgba(0,0,0,.28)",border:"1px solid rgba(126,207,179,.3)",borderRadius:8,padding:"9px 11px",maxHeight:wide?360:230,overflowY:"auto",fontSize:10.5,lineHeight:1.5,whiteSpace:"pre-wrap",wordBreak:"break-word",color:"rgba(244,237,216,.9)",outline:"none"}}/></div>
+        </div>
       </div>
       <button onClick={dl} style={primaryBtn}>⤓ Download {docxB64&&unedited?"— keeps your original formatting":(unedited?"tailored resume (.docx)":"with your edits (.docx)")}</button>
       <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry</button>
@@ -4640,6 +4646,18 @@ export default function App() {
     };
 
     if(isIntro){
+      // Shared 15-min cache: if a recent snapshot exists, show the board instantly and skip the loader.
+      try{
+        const cr=await fetch("/api/jobs/cache",{signal});
+        const cj=await cr.json();
+        if(cj&&cj.fresh&&cj.jobs&&Object.keys(cj.jobs).length>0){
+          setLiveJobs(cj.jobs);
+          setLiveStatus("done");
+          setLoadProgress(100);
+          setIntroDone(true);
+          return;
+        }
+      }catch(e){}
       // Behind the loading screen: fetch with high concurrency and accumulate into a
       // ref. We reveal the board only once everything is in, so it is fully populated
       // the moment the loader disappears (the safety cap can flush partial results).
@@ -4659,6 +4677,8 @@ export default function App() {
       setLiveJobs({...introCollectedRef.current});
       setLiveStatus("done");
       setLoadProgress(100);
+      // Save this full snapshot so the next visitors (within 15 min) skip the loader.
+      try{ fetch("/api/jobs/cache",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobs:introCollectedRef.current})}).catch(()=>{}); }catch(e){}
       // Adaptive reveal. With the edge cache warm the whole load can finish in a
       // few hundred ms, so we don't sit on a fixed delay — we reveal as soon as the
       // data is in. The only floor is a short minimum display time so the loader
