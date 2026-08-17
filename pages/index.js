@@ -4014,7 +4014,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium,onToggleSave}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium,onToggleSave,activeBreakdown}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
@@ -4085,7 +4085,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job);};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
-  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
+  return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default",position:"relative",boxShadow:activeBreakdown?"0 0 0 2px rgba(201,168,76,.6), 0 6px 26px rgba(201,168,76,.14)":"none"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
     <div style={{display:"flex",gap:12,alignItems:"stretch"}}>
     <div style={{flex:1,minWidth:0}}>
     {/* Company + site */}
@@ -5354,7 +5354,7 @@ export default function App() {
     {/* Desktop background globe — large, bottom-left, behind everything */}
     {!mobile&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
     {/* Styles */}
-    <style>{`@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
+    <style>{`@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
     <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.16,background:"radial-gradient(circle,#c9a84c,transparent)",top:-200,left:-100,animation:"ob1 20s ease-in-out infinite"}}/>
@@ -5400,12 +5400,12 @@ export default function App() {
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
-    {breakdownJob&&!mobile&&tab==="jobs"&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
+    {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
-    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&tab==="jobs")?"0 calc(min(46vw,720px) + 40px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
+    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
         {/* Pricing banner for guests (dismissible) */}
         {/* Mobile globe — centered at top */}
@@ -5493,7 +5493,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved}/></div>)}
+                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -5628,7 +5628,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved}/></div>;
+                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
@@ -5667,7 +5667,7 @@ export default function App() {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,.5)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No saved jobs yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>Tap the bookmark icon on any posting to save it here.</p>
         </div>:<div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {savedJobs.map(j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved}/>)}
+          {savedJobs.map(j=><JobCard key={j.id} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/>)}
         </div>}
       </div>}
 
