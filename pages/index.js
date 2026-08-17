@@ -3218,7 +3218,7 @@ const upload=async(e)=>{
   const msgColor=ps==="done"?"#7ecfb3":ps==="error"?"#e07060":"rgba(244,237,216,.7)";
 
   return <div>
-    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Upload your resume (PDF, DOCX, or TXT) to auto-fill your profile fields. Everything is processed in your browser — review and edit below.</p>
+    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14}}>Upload your resume (PDF, DOCX, or TXT) to auto-fill your profile fields. Everything is processed in your browser — review and edit below. <span style={{color:"rgba(201,168,76,.75)"}}>Tip: upload a <b>.docx</b> to keep your exact formatting when you tailor it for a job with AI.</span></p>
     {/* Active resume card (shown when a resume is saved) OR the upload zone */}
     {(profile.resumeText&&ps!=="reading"&&ps!=="parsing"&&ps!=="error")?(
       <div style={{border:"1px solid rgba(126,207,179,.3)",borderRadius:12,padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(126,207,179,.05)",marginBottom:16}}>
@@ -3877,6 +3877,7 @@ function TailorResume({job,profile,missingSkills,wide}){
   const [busy,setBusy]=useState(false);
   const [md,setMd]=useState(null);
   const [docxB64,setDocxB64]=useState(null);
+  const [edited,setEdited]=useState("");
   const [err,setErr]=useState("");
   if(!profile||!profile.resumeText) return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(201,168,76,.15)",fontSize:10.5,color:"rgba(244,237,216,.4)",lineHeight:1.5}}>Upload a resume in your profile to unlock AI tailoring for this role.</div>
@@ -3893,15 +3894,16 @@ function TailorResume({job,profile,missingSkills,wide}){
       const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
-      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
+      setMd(j.resume);setEdited(j.resume||"");if(j.docxB64)setDocxB64(j.docxB64);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
     }catch(e){setErr("Something went wrong. Try again.");}
     setBusy(false);
   };
+  const unedited=(edited||"").trim()===(md||"").trim();
   const dl=()=>{const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");const fn=`${safe(job.company)}_${safe(job.title)}_resume.docx`.slice(0,90);
-    if(docxB64){ // format-preserving docx from the server — download the real file
+    if(docxB64&&unedited){ // untouched + we have the format-preserving file → download the real one
       try{const bin=atob(docxB64);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);const blob=new Blob([arr],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);return;}catch(e){}
     }
-    downloadResumeDocx(md,fn); // fallback: build a clean docx from the markdown
+    downloadResumeDocx(edited||md,fn); // edited (or fallback) → build a clean docx
   };
   const chip=(k)=>{const on=sel.has(k);return <button key={k} onClick={()=>setSel(s=>{const n=new Set(s);on?n.delete(k):n.add(k);return n;})} style={{background:on?"rgba(126,207,179,.16)":"rgba(224,90,58,.08)",border:`1px solid ${on?"rgba(126,207,179,.5)":"rgba(224,90,58,.3)"}`,color:on?"#7ecfb3":"#e0705a",borderRadius:12,fontSize:10,padding:"3px 9px",cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{k}</button>;};
   const primaryBtn={width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"9px 12px",fontSize:11.5,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.4,cursor:"pointer"};
@@ -3927,7 +3929,11 @@ function TailorResume({job,profile,missingSkills,wide}){
           <div style={{flex:1,minWidth:0}}><div style={{...label,color:"#7ecfb3"}}>Tailored</div><div style={{...colBase,color:"rgba(244,237,216,.85)"}}>{toks.map((t,i)=>t.added?<span key={i} style={{background:"rgba(126,207,179,.22)",color:"#7ecfb3",borderRadius:2}}>{t.text}</span>:<span key={i}>{t.text}</span>)}</div></div>
         </div>
       </div>;})()}
-      <button onClick={dl} style={primaryBtn}>⤓ Download {docxB64?"— keeps your original formatting":"tailored resume (.docx)"}</button>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.5)",marginBottom:6}}>Edit the wording before downloading if you'd like — add, remove, or reword anything:</div>
+        <textarea value={edited} onChange={e=>setEdited(e.target.value)} spellCheck={false} style={{width:"100%",minHeight:wide?190:140,maxHeight:340,resize:"vertical",background:"rgba(0,0,0,.3)",border:"1px solid rgba(201,168,76,.2)",borderRadius:8,color:"rgba(244,237,216,.9)",fontSize:11,lineHeight:1.55,padding:"10px 12px",fontFamily:"system-ui,sans-serif",boxSizing:"border-box"}}/>
+      </div>
+      <button onClick={dl} style={primaryBtn}>⤓ Download {docxB64&&unedited?"— keeps your original formatting":(unedited?"tailored resume (.docx)":"with your edits (.docx)")}</button>
       <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry</button>
       <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",marginTop:9,lineHeight:1.5}}>Not saved anywhere — download to keep it. Always review before applying; the AI only rephrases your real experience, but you know your background best.</div>
     </div>}
@@ -5410,7 +5416,7 @@ export default function App() {
             screens, pinned to the right edge on narrower ones) so opening it never
             resizes or pushes the job posts. On mobile it stacks in-flow above jobs. */}
         <div style={{display:"flex",flexDirection:(mobile||(breakdownJob&&tab==="jobs"))?"column":"row",gap:16,alignItems:"flex-start"}}>
-          {filterOpen&&<div style={(mobile||(breakdownJob&&tab==="jobs"))?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"flex",flexDirection:"column",gap:4,marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+          {filterOpen&&<div style={(mobile||(breakdownJob&&tab==="jobs"))?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(215px,1fr))",gap:"6px 14px",alignItems:"start",marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
             <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}>{filters.countries.length===0?<div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"4px 2px",lineHeight:1.45}}>Select a region above to choose specific states, provinces, or countries.</div>:<CheckGroup opts={allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s)))} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/>}</FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
