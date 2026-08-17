@@ -3762,7 +3762,11 @@ function computeMatchScore(job,profile){
   const reqMatched=reqKws.filter(k=>profileSet.has(k));
   const prefMatched=prefKws.filter(k=>profileSet.has(k));
   if(denom>0){
-    const skillsPct=Math.round(((reqMatched.length*1+prefMatched.length*0.5)/denom)*100);
+    // Raw coverage under-rates good candidates (nobody lists every keyword verbatim), so we
+    // curve it: partial coverage counts for meaningfully more, and adding keywords moves the
+    // needle more at the low end (where tailoring helps most).
+    const rawCov=(reqMatched.length*1+prefMatched.length*0.5)/denom; // 0..1
+    const skillsPct=Math.round(Math.min(100,Math.pow(rawCov,0.6)*120));
     factors.push({name:"Skills",pct:skillsPct,weight:40});
     const allSkillKws=[...new Set([...reqKws,...prefKws])];
     missingSkills=allSkillKws.filter(k=>!profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,12);
@@ -4538,12 +4542,17 @@ export default function App() {
   const [loadProgress,setLoadProgress]=useState(0);      // 0..100 for the intro loader
   const [introDone,setIntroDone]=useState(false);        // has the first full load finished?
   // Cosmetic randomized loader numbers — the real load still ends the instant it's ready.
-  const [displayPct,setDisplayPct]=useState(()=>Math.floor(Math.random()*7)+3);
+  const [displayPct,setDisplayPct]=useState(()=>Math.floor(Math.random()*8)+2);
   useEffect(()=>{
     if(introDone) return;
     let alive=true;
-    const tick=()=>{ if(!alive) return; setDisplayPct(p=>p>=97?p:Math.min(97,p+Math.floor(Math.random()*12)+2)); setTimeout(tick,150+Math.random()*190); };
-    const id=setTimeout(tick,150+Math.random()*190);
+    const tick=()=>{
+      if(!alive) return;
+      setDisplayPct(p=>p>=96?p:Math.min(96,p+Math.floor(Math.random()*10)+2));
+      const pause=Math.random()<0.35; // sometimes hold for ~a second, then keep inching up
+      setTimeout(tick,pause?(650+Math.random()*750):(110+Math.random()*180));
+    };
+    const id=setTimeout(tick,180+Math.random()*300);
     return ()=>{alive=false;clearTimeout(id);};
   },[introDone]);
   const abortRef=useRef(null);

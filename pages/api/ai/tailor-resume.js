@@ -50,15 +50,16 @@ async function generate(systemText, userText) {
   };
   const order = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL]
     : cachedModel ? [cachedModel, ...CANDIDATES.filter((m) => m !== cachedModel)] : CANDIDATES;
-  let lastDetail = "";
+  let lastDetail = "", anyBusy = false;
   for (const model of order) {
     const g = await callModel(model, payload);
     if (g.kind === "ok") { cachedModel = g.model; return { ok: true, text: g.text }; }
-    if (g.kind === "busy") return { busy: true };
+    if (g.kind === "busy") { anyBusy = true; continue; } // this model is rate-limited — try the next (separate limits)
     lastDetail = g.detail || g.kind;
     if (g.kind === "notfound") continue;
-    break;
+    break; // a real error (400/403) won't be fixed by another model
   }
+  if (anyBusy) return { busy: true }; // only busy if EVERY model was rate-limited
   return { error: lastDetail || "no available model" };
 }
 
