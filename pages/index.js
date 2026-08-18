@@ -1354,8 +1354,13 @@ const isContinent = (k)=>k!=="United States"&&k!=="Canada";
 // Country options for the profile — US/Canada first, then every country the app knows.
 const COUNTRY_OPTIONS = ["United States","Canada",...Object.keys(COUNTRY_CONTINENT).filter(c=>c!=="United States"&&c!=="Canada").sort()];
 // Application pipeline statuses the user can set on each tracked application.
-const APP_STATUSES=[["applied","Applied","#c9a84c"],["response","Response","#7ecfb3"],["interview","Interview","#7ecfb3"],["offer","Offer","#7ecfb3"],["rejected","Rejected","#e0705a"],["no_response","No Response","rgba(244,237,216,.5)"]];
+const APP_STATUSES=[["applied","Applied","#c9a84c"],["interview","Interview","#7ecfb3"],["offer","Offer","#f0d080"],["denied","Denied","#e0705a"]];
 const APP_STATUS_MAP=Object.fromEntries(APP_STATUSES.map(([v,l,c])=>[v,{label:l,color:c}]));
+const APP_STAGES=[["applied","Applied"],["interview","Interview"],["offer","Offers"],["denied","Denied"]];
+// Normalize any stored status (incl. legacy values) to one of the four pipeline stages.
+const STAGE_OF=(s)=>{s=s||"applied";if(s==="rejected"||s==="denied")return"denied";if(s==="interview")return"interview";if(s==="offer")return"offer";return"applied";};
+// Allowed forward moves from each stage (offer/denied are terminal).
+const STAGE_ACTIONS={applied:[["interview","Move to Interview","#7ecfb3"],["denied","Mark Denied","#e0705a"]],interview:[["offer","Mark Offer","#f0d080"],["denied","Mark Denied","#e0705a"]],offer:[],denied:[]};
 // Backwards-compatible foreign-token test, now derived from the geography maps.
 const FOREIGN_CITIES = new Set(Object.keys(CITY_COUNTRY));
 const isForeignToken=(p)=>{ const s=p.toLowerCase().trim(); return FOREIGN_COUNTRIES.has(s)||FOREIGN_CITIES.has(s)||!!COUNTRY_ALIAS[s]; };
@@ -4775,6 +4780,7 @@ export default function App() {
     });
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
+  const [appStage,setAppStage]=useState("applied");
   const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""});
   // Search updates go through the isolated SearchBox (which debounces locally),
   // so typing never re-renders the whole board — only the committed value lands here.
@@ -5695,17 +5701,20 @@ export default function App() {
       </div>}
 
       {tab==="applied"&&<div>
-        <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18,flexWrap:"wrap"}}>
-          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,display:"flex",alignItems:"center",gap:8}}><I.Scroll s={20} c="#c9a84c"/>Job Applications</h2>
-          {appliedJobs.length>0&&<div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",paddingTop:mobile?6:4,width:mobile?"100%":"auto"}}>
+        <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,display:"flex",alignItems:"center",gap:8,marginBottom:14}}><I.Scroll s={20} c="#c9a84c"/>Job Applications</h2>
+        {appliedJobs.length>0&&<>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+            {APP_STAGES.map(([v,l])=>{const n=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)===v).length;const on=appStage===v;const c=APP_STATUS_MAP[v]?APP_STATUS_MAP[v].color:"#c9a84c";return <button key={v} onClick={()=>setAppStage(v)} style={{background:on?`${c}1f`:"rgba(201,168,76,.05)",border:`1px solid ${on?c+"88":"rgba(201,168,76,.14)"}`,color:on?c:"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:9,fontSize:12,padding:"6px 14px",fontFamily:"'Cinzel',serif",fontWeight:on?700:600,letterSpacing:.3}}>{l} <span style={{opacity:.7,fontSize:10}}>({n})</span></button>;})}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",marginBottom:16}}>
             <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8}}>Sort:</span>
             {[["date-desc","Date ↓"],["date-asc","Date ↑"],["company","Company"],["title","Role"]].map(([v,l])=><button key={v} onClick={()=>setAppliedSort(v)} style={{background:appliedSort===v?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${appliedSort===v?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:appliedSort===v?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>{l}</button>)}
-          </div>}
-        </div>
+          </div>
+        </>}
         {appliedJobs.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
           <span style={{display:"flex"}}><I.Clipboard s={40} c="rgba(201,168,76,.5)"/></span><p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No applications tracked yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>When you apply and confirm, it'll appear here.</p>
-        </div>:<div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {[...appliedJobs].sort((a,b)=>{
+        </div>:appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)===appStage).length===0?<div style={{padding:"40px 0",textAlign:"center",color:"rgba(244,237,216,.4)",fontSize:13,fontFamily:"'Cinzel',serif"}}>No applications in this stage yet.</div>:<div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[...appliedJobs].filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)===appStage).sort((a,b)=>{
             const ad=user.applied[a.id]?.date?new Date(user.applied[a.id].date):new Date(0);
             const bd=user.applied[b.id]?.date?new Date(user.applied[b.id].date):new Date(0);
             if(appliedSort==="date-desc")return bd-ad;
@@ -5735,9 +5744,9 @@ export default function App() {
                     <div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:2}}>Applied</div>
                     <div style={{fontSize:11,color:"#f4edd8",fontWeight:600,whiteSpace:"nowrap"}}>{appliedDate}</div>
                   </div>
-                  <select value={st} onChange={e=>setAppStatus(job.id,e.target.value)} title="Update application status" style={{background:"rgba(201,168,76,.06)",border:`1px solid ${si.color}66`,color:si.color,borderRadius:9,padding:"6px 10px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:600,cursor:"pointer",outline:"none"}}>
-                    {APP_STATUSES.map(([v,l])=><option key={v} value={v} style={{background:"#140d14",color:"#f4edd8"}}>{l}</option>)}
-                  </select>
+                  {STAGE_ACTIONS[STAGE_OF(st)].length>0
+                    ?<div style={{display:"flex",flexDirection:"column",gap:5}}>{STAGE_ACTIONS[STAGE_OF(st)].map(([v,l,c])=><button key={v} onClick={()=>setAppStatus(job.id,v)} style={{background:`${c}18`,border:`1px solid ${c}55`,color:c,borderRadius:8,padding:"5px 11px",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{l}</button>)}</div>
+                    :<button onClick={()=>setAppStatus(job.id,"applied")} title="Reset to Applied" style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.45)",borderRadius:8,padding:"5px 10px",fontSize:10,fontFamily:"'Cinzel',serif",cursor:"pointer",whiteSpace:"nowrap"}}>↺ Reset</button>}
                   <button onClick={()=>removeApplied(job.id)} title="Remove" style={{background:"rgba(192,50,26,.08)",border:"1px solid rgba(192,50,26,.2)",color:"rgba(232,120,90,.7)",cursor:"pointer",width:26,height:26,borderRadius:8,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(192,50,26,.2)";e.currentTarget.style.color="#e87060";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(192,50,26,.08)";e.currentTarget.style.color="rgba(232,120,90,.7)";}}><I.X s={11} c="currentColor"/></button>
                 </div>
               </div>
