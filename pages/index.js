@@ -4834,6 +4834,7 @@ export default function App() {
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
   const [breakdownJob,setBreakdownJob]=useState(null);
+  useEffect(()=>{ setBreakdownJob(null); },[tab]); // switching tabs closes the breakdown; board returns to normal
   const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>{const same=cur&&(cur.id||cur.title)===(job.id||job.title);if(!same)track("match_view",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});return same?null:job;}),[]);
   useEffect(()=>{
     if(!user||!user.id){setAppPremium(false);return;}
