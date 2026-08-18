@@ -2452,13 +2452,13 @@ function JobAlertManager({alerts,onSave,isPremium,companyOptions,locationOptions
       <span style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif"}}>Specific Job Alerts</span>
       <span style={{display:"flex",alignItems:"center",gap:3,background:"linear-gradient(135deg,rgba(201,168,76,.18),rgba(232,97,58,.1))",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",borderRadius:20,fontSize:8,padding:"2px 8px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.5}}>✦ PREMIUM</span>
     </div>
-    <div style={{position:"relative"}}>
+    <div style={{position:"relative",minHeight:isPremium?undefined:150}}>
       <div style={{opacity:isPremium?1:.3,pointerEvents:isPremium?"auto":"none",filter:isPremium?"none":"grayscale(.3)"}}>{content}</div>
-      {!isPremium&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,background:"rgba(16,10,22,.92)",border:"1px solid rgba(201,168,76,.35)",borderRadius:12,padding:"18px 22px",maxWidth:250,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
-          <I.Lock s={24} c="#c9a84c"/>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
-          <div style={{fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.45}}>Upgrade to create targeted job alerts by role, location, company &amp; seniority.</div>
+      {!isPremium&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",padding:6}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,background:"rgba(16,10,22,.94)",border:"1px solid rgba(201,168,76,.35)",borderRadius:10,padding:"12px 15px",maxWidth:230,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
+          <I.Lock s={18} c="#c9a84c"/>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:11.5,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
+          <div style={{fontSize:10,color:"rgba(244,237,216,.55)",lineHeight:1.4}}>Upgrade for targeted job alerts by role, company &amp; location.</div><UpgradeLink label="Upgrade now" size={10.5} mt={2}/>
         </div>
       </div>}
     </div>
@@ -3538,7 +3538,17 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
             </div>)}
           <button onClick={()=>upd("customLinks",[...(p.customLinks||[]),{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:"",url:""}])} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginTop:2}}><span style={{fontSize:17,lineHeight:1}}>+</span> Add another website</button>
         </div>}
-        {tab==="template"&&<EmailTemplateTab profile={p} upd={upd}/>}
+        {tab==="template"&&(premium&&!premium.isPremium?<div style={{position:"relative",minHeight:320}}>
+          <div style={{opacity:.28,pointerEvents:"none",filter:"grayscale(.3)"}}><EmailTemplateTab profile={p} upd={upd}/></div>
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:70}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:7,background:"rgba(16,10,22,.95)",border:"1px solid rgba(201,168,76,.35)",borderRadius:12,padding:"20px 24px",maxWidth:290,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
+              <I.Lock s={24} c="#c9a84c"/>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Save a reusable email template that auto-fills the right details for every job you apply to.</div>
+              <UpgradeLink label="Upgrade now" mt={4}/>
+            </div>
+          </div>
+        </div>:<EmailTemplateTab profile={p} upd={upd}/>)}
         {tab==="account"&&<div>
           {/* Membership / Premium */}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Membership</div>
@@ -3886,6 +3896,64 @@ async function _ungzB64(b64){
   }catch(e){return null;}
 }
 
+// Opens the full-page upgrade modal from anywhere (top bar, premium locks) without prop-drilling.
+function openUpgrade(){ if(typeof window!=="undefined") window.dispatchEvent(new Event("mq-open-upgrade")); }
+
+// Glowy gold "Upgrade" link — shown in the top bar and under every premium lock (free tier only).
+function UpgradeLink({label,size,mt}){
+  return <button onClick={(e)=>{e.stopPropagation();openUpgrade();}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:"#f0d080",fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:size||12,letterSpacing:.4,padding:0,marginTop:mt||0,animation:"mqglow 2.4s ease-in-out infinite"}} onMouseEnter={e=>e.currentTarget.style.color="#ffe6ad"} onMouseLeave={e=>e.currentTarget.style.color="#f0d080"}>
+    <svg width={(size||12)+1} height={(size||12)+1} viewBox="0 0 24 24" fill="#f0d080"><path d="M3 7l4.5 3L12 4l4.5 6L21 7l-1.6 11H4.6L3 7zm3 13h12v1.5H6V20z"/></svg>
+    {label||"Upgrade"}
+  </button>;
+}
+
+// Full-page upgrade modal — plans, feature showcase, and Stripe checkout buttons.
+function UpgradeModal({user,onClose}){
+  const [busy,setBusy]=useState("");
+  const go=async(plan)=>{
+    if(!user||!user.id){onClose&&onClose();return;}
+    setBusy(plan);
+    try{
+      const r=await fetch("/api/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id,email:user.email,plan})});
+      const d=await r.json();
+      if(d.url){window.location.href=d.url;}else{alert(d.error||"Couldn't start checkout.");setBusy("");}
+    }catch(e){alert("Couldn't start checkout — please try again.");setBusy("");}
+  };
+  const plans=[{id:"monthly",name:"Monthly",price:"$4.99",per:"/mo",badge:null},{id:"annual",name:"Annual",price:"$49.99",per:"/yr",badge:"Save 16%"},{id:"lifetime",name:"Lifetime",price:"$119.99",per:"once",badge:"Best value"}];
+  const feats=[
+    [<I.Star s={20} c="#f0d080"/>,"Full Match Breakdown","See exactly which skills and keywords you're missing for each role — and precisely how to close the gap."],
+    [<I.Scroll s={20} c="#f0d080"/>,"AI Resume Tailoring","Rewrite your resume for any job in one click — keeping your original .docx formatting intact."],
+    [<I.Send s={20} c="#f0d080"/>,"Email Templates","Save reusable application templates that auto-fill the right details for every job you apply to."],
+    [<I.Bell s={20} c="#f0d080"/>,"Custom Job Alerts","Get notified the moment new roles matching your target companies, titles, and seniority are posted."],
+  ];
+  return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:300,background:"rgba(4,3,5,.88)",backdropFilter:"blur(10px)",overflowY:"auto",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"clamp(16px,5vh,56px) 16px"}}>
+    <div onClick={e=>e.stopPropagation()} style={{maxWidth:920,width:"100%",background:"radial-gradient(140% 90% at 50% 0%, rgba(40,26,18,.98), rgba(14,10,16,.99))",border:"1px solid rgba(201,168,76,.32)",borderRadius:20,padding:"clamp(22px,4vw,38px)",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,.75)"}}>
+      <button onClick={onClose} title="Close" style={{position:"absolute",top:16,right:16,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.6)",cursor:"pointer",fontSize:16,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      <div style={{textAlign:"center",marginBottom:26}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><svg width="34" height="34" viewBox="0 0 24 24" fill="#f0d080" style={{filter:"drop-shadow(0 0 12px rgba(240,208,128,.6))"}}><path d="M3 7l4.5 3L12 4l4.5 6L21 7l-1.6 11H4.6L3 7zm3 13h12v1.5H6V20z"/></svg></div>
+        <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:"clamp(22px,4vw,30px)",fontWeight:700,background:"linear-gradient(135deg,#f0d080,#e8613a)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:8}}>Unlock the Full Quest</div>
+        <div style={{fontSize:13,color:"rgba(244,237,216,.6)",maxWidth:520,margin:"0 auto",lineHeight:1.6}}>Go Premium to turn Main Quest into your full job-hunt command center — smarter matching, AI-tailored resumes, and alerts that reach you first.</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:12,marginBottom:28}}>
+        {plans.map(pl=><div key={pl.id} style={{background:pl.badge==="Best value"?"rgba(240,208,128,.07)":"rgba(201,168,76,.04)",border:`1px solid ${pl.badge==="Best value"?"rgba(240,208,128,.45)":"rgba(201,168,76,.16)"}`,borderRadius:14,padding:"18px 16px",display:"flex",flexDirection:"column",alignItems:"center",gap:10,position:"relative"}}>
+          {pl.badge&&<span style={{position:"absolute",top:-9,background:"linear-gradient(135deg,#c9a84c,#e8613a)",color:"#0a0608",borderRadius:20,fontSize:9,padding:"2px 10px",fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>{pl.badge}</span>}
+          <div style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:15,color:"#f4edd8"}}>{pl.name}</div>
+          <div><span style={{fontSize:28,fontWeight:800,color:"#f0d080",fontFamily:"'Cinzel',serif"}}>{pl.price}</span><span style={{fontSize:12,color:"rgba(244,237,216,.5)"}}> {pl.per}</span></div>
+          <button onClick={()=>go(pl.id)} disabled={!!busy} style={{width:"100%",background:pl.badge==="Best value"?"linear-gradient(135deg,#c9a84c,#e8613a)":"rgba(201,168,76,.1)",border:pl.badge==="Best value"?"none":"1px solid rgba(201,168,76,.35)",color:pl.badge==="Best value"?"#0a0608":"#f0d080",borderRadius:9,padding:"9px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",cursor:busy?"default":"pointer",letterSpacing:.4,opacity:busy&&busy!==pl.id?.5:1}}>{busy===pl.id?"Starting…":"Upgrade"}</button>
+        </div>)}
+      </div>
+      <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif",textAlign:"center",marginBottom:16}}>Everything you unlock</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:14}}>
+        {feats.map(([ic,t,d])=><div key={t} style={{display:"flex",gap:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:12,padding:"14px 15px"}}>
+          <div style={{flexShrink:0,width:38,height:38,borderRadius:10,background:"rgba(240,208,128,.09)",border:"1px solid rgba(240,208,128,.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>{ic}</div>
+          <div><div style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:13,color:"#f0d080",marginBottom:3}}>{t}</div><div style={{fontSize:11.5,color:"rgba(244,237,216,.6)",lineHeight:1.5}}>{d}</div></div>
+        </div>)}
+      </div>
+      <div style={{fontSize:10.5,color:"rgba(244,237,216,.35)",textAlign:"center",marginTop:22}}>Cancel anytime · Secure checkout via Stripe · Have a launch code? Enter it at checkout.</div>
+    </div>
+  </div>;
+}
+
 // Premium AI resume-tailoring — shared by the desktop panel and mobile popup.
 function TailorResume({job,profile,missingSkills,wide}){
   const [open,setOpen]=useState(false);
@@ -3978,7 +4046,7 @@ function ScoreBreakdownPanel({job,profile,isPremium,onClose}){
       <div style={{textAlign:"center",padding:"24px 10px"}}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><I.Lock s={26} c="#c9a84c"/></div>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080",marginBottom:6}}>Premium Feature</div>
-        <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown — which skills and keywords you're missing, and how to improve for this role.</div>
+        <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown — which skills and keywords you're missing, and how to improve for this role.</div><div style={{marginTop:9}}><UpgradeLink label="Upgrade now"/></div>
       </div>
     : !match ?
       <div style={{fontSize:12,color:"rgba(244,237,216,.55)",lineHeight:1.6,padding:"10px 0"}}>Add more to your profile — Key Skills, Experience Level, and Work History — to see how you match this role.</div>
@@ -4227,7 +4295,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
           </div>}
           <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.45,borderTop:"1px solid rgba(201,168,76,.12)",paddingTop:8}}>An estimate comparing your profile to this posting — one signal among many, not a guarantee.</div>
           <TailorResume job={job} profile={user&&user.profile} missingSkills={match.missingSkills} wide={false}/>
-        </>:<div style={{textAlign:"center",padding:"6px 4px"}}><div style={{display:"flex",justifyContent:"center",marginBottom:8}}><I.Lock s={20} c="#c9a84c"/></div><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:5}}>Premium Feature</div><div style={{fontSize:10,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown and what to improve.</div></div>):<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
+        </>:<div style={{textAlign:"center",padding:"6px 4px"}}><div style={{display:"flex",justifyContent:"center",marginBottom:8}}><I.Lock s={20} c="#c9a84c"/></div><div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#f0d080",marginBottom:5}}>Premium Feature</div><div style={{fontSize:10,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown and what to improve.</div><div style={{marginTop:8}}><UpgradeLink label="Upgrade now" size={11}/></div></div>):<div style={{fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)"}}>This compares the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply.</div>}
       </div>}
       {match?<>
         <div style={{fontSize:mobile?17:20,fontWeight:800,color:scoreColor,fontFamily:"'Cinzel',serif",lineHeight:1}}>{match.score.toFixed(1)}</div>
@@ -4829,6 +4897,8 @@ export default function App() {
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
   const [breakdownJob,setBreakdownJob]=useState(null);
+  const [showUpgrade,setShowUpgrade]=useState(false);
+  useEffect(()=>{ const h=()=>setShowUpgrade(true); window.addEventListener("mq-open-upgrade",h); return ()=>window.removeEventListener("mq-open-upgrade",h); },[]);
   useEffect(()=>{ setBreakdownJob(null); },[tab]); // switching tabs closes the breakdown; board returns to normal
   const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>{const same=cur&&(cur.id||cur.title)===(job.id||job.title);if(!same)track("match_view",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});return same?null:job;}),[]);
   useEffect(()=>{
@@ -5372,7 +5442,7 @@ export default function App() {
     {/* Desktop background globe — large, bottom-left, behind everything */}
     {!mobile&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
     {/* Styles */}
-    <style>{`@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
+    <style>{`@keyframes mqglow{0%,100%{text-shadow:0 0 7px rgba(240,208,128,.45)}50%{text-shadow:0 0 15px rgba(240,208,128,.9)}}@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
     <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.16,background:"radial-gradient(circle,#c9a84c,transparent)",top:-200,left:-100,animation:"ob1 20s ease-in-out infinite"}}/>
@@ -5406,6 +5476,7 @@ export default function App() {
       </div>
       {/* RIGHT: Inbox + Profile */}
       <div style={{display:"flex",alignItems:"center",gap:8,flex:mobile?"0 0 auto":"1 1 0",justifyContent:"flex-end"}}>
+      {user&&!appPremium&&<UpgradeLink label="Upgrade"/>}
       {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <I.Bell s={16} c="#c9a84c"/>
         {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}
@@ -5419,6 +5490,7 @@ export default function App() {
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
+    {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
