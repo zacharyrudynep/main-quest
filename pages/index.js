@@ -3308,14 +3308,6 @@ function EmailTemplateTab({profile,upd}){
       <p style={{fontSize:11,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>When you Apply by Email, we'll open a pre-filled draft in this provider's web compose window.</p>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{[["gmail","Gmail"],["outlook","Outlook"],["yahoo","Yahoo Mail"],["default","Default Mail App"]].map(([id,label])=><button key={id} onClick={()=>upd("emailProvider",id)} style={{background:profile.emailProvider===id?"rgba(201,168,76,.15)":"rgba(244,237,216,.04)",border:`1px solid ${profile.emailProvider===id?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:profile.emailProvider===id?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>{profile.emailProvider===id&&<I.Check s={11} c="#0a0608"/>}{label}</button>)}</div>
     </div>
-    {/* Auto-attach resume checkbox */}
-    <label onClick={()=>upd("autoAttachResume",!profile.autoAttachResume)} style={{display:"flex",alignItems:"flex-start",gap:9,cursor:"pointer",userSelect:"none",marginBottom:16,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:8,padding:"11px 13px"}}>
-      <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${profile.autoAttachResume?"#c9a84c":"rgba(201,168,76,.3)"}`,background:profile.autoAttachResume?"#c9a84c":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{profile.autoAttachResume&&<I.Check s={10} c="#0a0608"/>}</div>
-      <div>
-        <div style={{fontSize:12,color:"#f4edd8",fontWeight:600}}>Auto-attach my resume to email applications</div>
-        <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",marginTop:2}}>{hasResume?"Your saved resume will be attached when you Apply by Email.":"Upload a resume in the Resume tab to enable this."}</div>
-      </div>
-    </label>
     <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
     <div style={{marginBottom:14}}>
       <label style={lbl}>Email Template</label>
@@ -4043,7 +4035,8 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
   const isApplied=user?.applied?.[job.id];
-  const match=computeMatchScore(job,user?.profile);
+  const hasResume=!!(user&&user.profile&&(user.profile.resumeText||"").trim());
+  const match=hasResume?computeMatchScore(job,user?.profile):null;
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#888";
   // Does the user have enough profile data to score? (skills/resume/role/experience)
   const hasProfileData=!!(user&&user.profile&&((user.profile.skills||"").trim()||(user.profile.role||"").trim()||(user.profile.workHistory||"").trim()||(user.profile.workBlocks||[]).length||(user.profile.education||"").trim()));
@@ -4078,10 +4071,6 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
           if(m&&prof[m])return prof[m]; // link fields (linkedin, portfolio, etc.)
           return "";
         });
-      }
-      // If auto-attach is on and a resume exists, append a note (browsers can't auto-attach files to a draft)
-      if(prof.autoAttachResume&&(prof.resumeText||prof.resumeFileName)){
-        body+=(body?"\n\n":"")+"(Please find my resume attached.)";
       }
       // Remind the applicant of this company's specific requirements.
       if(job.emailSpecifics){
@@ -4206,7 +4195,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <div className="gtip" style={{position:"absolute",top:"100%",right:0,marginTop:6,width:160,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 10px",fontSize:10,lineHeight:1.4,color:"rgba(244,237,216,.85)",zIndex:100,opacity:0,transition:"opacity .15s",pointerEvents:"none",fontFamily:"system-ui,sans-serif",textAlign:"center"}}>Sign up or log in to access your match score</div>
     </div>}
     {/* Match score square — shows score when profile has data, otherwise a prompt */}
-    {user&&<div onClick={e=>{e.stopPropagation(); if(mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Click for the full match breakdown" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer"}}>
+    {user&&<div onClick={e=>{e.stopPropagation(); if(!match||mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Click for the full match breakdown" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer"}}>
       {/* Info icon — hover for the disclaimer */}
       <span onMouseEnter={()=>setShowDisclaimer(true)} onMouseLeave={()=>setShowDisclaimer(false)} onClick={e=>{e.stopPropagation();setShowDisclaimer(v=>!v);}} title="What is this?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"help",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
       {showDisclaimer&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:206,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:101,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess comparing the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
@@ -4246,7 +4235,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
         <div style={{fontSize:7,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.5,marginTop:1}}>Match</div>
       </>:<>
         <div style={{fontSize:mobile?17:20,fontWeight:800,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif",lineHeight:1}}>—</div>
-        <div style={{fontSize:7,color:"rgba(201,168,76,.6)",textAlign:"center",lineHeight:1.25,marginTop:2,padding:"0 1px"}}>Fill out your profile for a match score</div>
+        <div style={{fontSize:7,color:"rgba(201,168,76,.6)",textAlign:"center",lineHeight:1.25,marginTop:2,padding:"0 1px"}}>Upload a resume to see your match score</div>
       </>}
     </div>}
     </div>
@@ -5394,7 +5383,7 @@ export default function App() {
     {/* Header */}
     <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",padding:mobile?"8px 14px":"0 24px",height:mobile?"auto":66,gap:10,flexWrap:mobile?"wrap":"nowrap"}}>
       {/* LEFT: Logo + sync/refresh */}
-      <div style={{display:"flex",alignItems:"center",gap:10,flex:mobile?1:"0 0 auto",minWidth:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,flex:mobile?1:"1 1 0",minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))",display:"inline-flex",alignItems:"center"}}><I.SwordShield s={20} c="#c9a84c"/></span>
           <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
@@ -5407,7 +5396,7 @@ export default function App() {
       </div>
 
       {/* CENTER: nav tabs */}
-      <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":1,order:mobile?3:0,minWidth:0}}>
+      <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":"0 0 auto",order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
           {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{appliedJobs.length>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{appliedJobs.length}</span>}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
@@ -5416,7 +5405,7 @@ export default function App() {
         </nav>
       </div>
       {/* RIGHT: Inbox + Profile */}
-      <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,flex:mobile?"0 0 auto":"1 1 0",justifyContent:"flex-end"}}>
       {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <I.Bell s={16} c="#c9a84c"/>
         {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}
