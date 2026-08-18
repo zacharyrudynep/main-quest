@@ -3870,6 +3870,25 @@ function _wordDiff(oldStr,newStr){
   return res;
 }
 
+// gzip↔base64 helpers so the (multi-MB) job snapshot fits under Vercel's 4.5MB body limit.
+async function _gzB64(obj){
+  try{
+    if(typeof CompressionStream==="undefined")return null;
+    const stream=new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream("gzip"));
+    const buf=new Uint8Array(await new Response(stream).arrayBuffer());
+    let bin="";const CH=8192;for(let i=0;i<buf.length;i+=CH)bin+=String.fromCharCode.apply(null,buf.subarray(i,i+CH));
+    return btoa(bin);
+  }catch(e){return null;}
+}
+async function _ungzB64(b64){
+  try{
+    if(typeof DecompressionStream==="undefined")return null;
+    const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return JSON.parse(await new Response(stream).text());
+  }catch(e){return null;}
+}
+
 // Premium AI resume-tailoring — shared by the desktop panel and mobile popup.
 function TailorResume({job,profile,missingSkills,wide}){
   const [open,setOpen]=useState(false);
@@ -4650,12 +4669,15 @@ export default function App() {
       try{
         const cr=await fetch("/api/jobs/cache",{signal});
         const cj=await cr.json();
-        if(cj&&cj.fresh&&cj.jobs&&Object.keys(cj.jobs).length>0){
-          setLiveJobs(cj.jobs);
-          setLiveStatus("done");
-          setLoadProgress(100);
-          setIntroDone(true);
-          return;
+        if(cj&&cj.fresh&&cj.gz){
+          const jobs=await _ungzB64(cj.gz);
+          if(jobs&&Object.keys(jobs).length>0){
+            setLiveJobs(jobs);
+            setLiveStatus("done");
+            setLoadProgress(100);
+            setIntroDone(true);
+            return;
+          }
         }
       }catch(e){}
       // Behind the loading screen: fetch with high concurrency and accumulate into a
@@ -4677,8 +4699,8 @@ export default function App() {
       setLiveJobs({...introCollectedRef.current});
       setLiveStatus("done");
       setLoadProgress(100);
-      // Save this full snapshot so the next visitors (within 15 min) skip the loader.
-      try{ fetch("/api/jobs/cache",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobs:introCollectedRef.current})}).catch(()=>{}); }catch(e){}
+      // Save this full snapshot (compressed) so the next visitors (within 15 min) skip the loader.
+      try{ (async()=>{ const map=introCollectedRef.current; if(map&&Object.keys(map).length>=40){ const gz=await _gzB64(map); if(gz) fetch("/api/jobs/cache",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gz})}).catch(()=>{}); } })(); }catch(e){}
       // Adaptive reveal. With the edge cache warm the whole load can finish in a
       // few hundred ms, so we don't sit on a fixed delay — we reveal as soon as the
       // data is in. The only floor is a short minimum display time so the loader
