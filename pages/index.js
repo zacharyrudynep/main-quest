@@ -3458,8 +3458,10 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
     onUpdate({ ...user, name: p.name, profile: merged });
     setSaveErr("");
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
+  // Any edit to the profile flips the button back to "Save Changes"; reopening resets it too (fresh mount).
+  const didMountSave=useRef(false);
+  useEffect(()=>{ if(!didMountSave.current){didMountSave.current=true;return;} setSaved(false); },[p]);
   // ── Premium subscription ──
   const [premium,setPremium]=useState(null);      // null = still loading
   const [billingBusy,setBillingBusy]=useState(false);
@@ -3586,6 +3588,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5}}>{premium.status==="lifetime"?"Lifetime":"Premium"}</span>
                 <span style={{background:premium.status==="past_due"?"rgba(232,97,58,.16)":"rgba(126,207,179,.14)",border:`1px solid ${premium.status==="past_due"?"rgba(232,97,58,.4)":"rgba(126,207,179,.35)"}`,color:premium.status==="past_due"?"#e8613a":"#7ecfb3",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>{(premium.status||"active").toUpperCase().replace("_"," ")}</span>
+                {premium.isAdmin&&<span style={{background:"rgba(255,140,26,.18)",border:"1px solid rgba(255,140,26,.7)",color:"#ff8c1a",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.7,boxShadow:"0 0 10px rgba(255,140,26,.35)"}}>★ ADMIN</span>}
               </div>
               <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:premium.status==="lifetime"?0:12,lineHeight:1.5}}>Thanks for supporting Main Quest.{premium.status==="lifetime"?" You have lifetime access — no renewals, ever.":premium.periodEnd?` Renews ${new Date(premium.periodEnd).toLocaleDateString()}.`:""}</div>
               {premium.status!=="lifetime"&&<button onClick={managePlan} disabled={billingBusy} style={{width:"100%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:700,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:billingBusy?.6:1}}>{billingBusy?"Opening…":"Manage Subscription"}</button>}
@@ -4055,11 +4058,11 @@ function TailorResume({job,profile,missingSkills,wide}){
       <div style={{fontSize:10.5,color:"#f0d080",fontFamily:"'Cinzel',serif",marginBottom:8,lineHeight:1.5}}>Pick keywords to weave in — the AI only uses ones your real experience can honestly support:</div>
       {kws.length?<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{kws.map(chip)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginBottom:12}}>No missing keywords — your resume already covers this role well.</div>}
       {err&&<div style={{color:"#e0705a",fontSize:10.5,marginBottom:8}}>{err}</div>}
-      {remaining!==null&&<div style={{fontSize:10,color:remaining===0?"#e0705a":"rgba(244,237,216,.5)",marginBottom:8,lineHeight:1.5}}>{remaining===0?"You've used all 15 tailors this month — resets on the 1st.":"Adjusting & retrying also uses an attempt."}</div>}
-      <div style={{display:"flex",alignItems:"center",gap:9}}>
-        <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,flex:1,position:"relative",opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:<>{`Tailor with AI${sel.size?` (${sel.size})`:""}`}{remaining!==null&&remaining>0&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"inline-flex",alignItems:"center",gap:1,fontSize:9.5,fontWeight:800,opacity:.85}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#0a0608"><path d="M13 2L4 14h6l-1 8 10-12h-6l0-8z"/></svg>-1</span>}</>}</button>
-        {remaining!==null&&<span title="Tailors used this month" style={{fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap",color:(()=>{const f=Math.max(0,Math.min(1,remaining/15));const r=Math.round(126+(224-126)*(1-f)),g=Math.round(207+(112-207)*(1-f)),bl=Math.round(179+(90-179)*(1-f));return `rgb(${r},${g},${bl})`;})()}}>{15-remaining}/15</span>}
-      </div>
+      {remaining!==null&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:8,marginBottom:6}}>
+        <span style={{fontSize:10,color:remaining===0?"#e0705a":"rgba(244,237,216,.5)",lineHeight:1.4}}>{remaining===0?"You've used all 15 tailors this month — resets on the 1st.":"Adjusting & retrying also uses an attempt."}</span>
+        <span title="Tailors left this month" style={{fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap",color:(()=>{const f=Math.max(0,Math.min(1,remaining/15));const r=Math.round(126+(224-126)*(1-f)),g=Math.round(207+(112-207)*(1-f)),bl=Math.round(179+(90-179)*(1-f));return `rgb(${r},${g},${bl})`;})()}}>{remaining}/15</span>
+      </div>}
+      <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,position:"relative",opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:<>{`Tailor with AI${sel.size?` (${sel.size})`:""}`}{remaining!==null&&remaining>0&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"inline-flex",alignItems:"center",gap:1,fontSize:9.5,fontWeight:800,opacity:.85}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#0a0608"><path d="M13 2L4 14h6l-1 8 10-12h-6l0-8z"/></svg>-1</span>}</>}</button>
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
     </div>}
     {md&&<div>
