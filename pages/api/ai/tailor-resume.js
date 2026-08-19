@@ -71,18 +71,19 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: "Please sign in." });
     const { data: u, error: ue } = await supabaseAdmin.auth.getUser(token);
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in." });
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium").eq("id", u.user.id).single();
-    if (!prof || !prof.is_premium) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
+    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin").eq("id", u.user.id).single();
+    const isAdmin = !!(prof && prof.is_admin);
+    if (!prof || (!prof.is_premium && !isAdmin)) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
 
     // ── Monthly usage limit (retries included) ──
     const LIMIT = 15;
     const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const readUsed = async () => { const { data } = await supabaseAdmin.from("ai_tailor_usage").select("count").eq("user_id", u.user.id).eq("month", month).single(); return (data && data.count) || 0; };
-    if (req.method === "GET") { const used = await readUsed(); return res.status(200).json({ limit: LIMIT, used, remaining: Math.max(0, LIMIT - used) }); }
+    if (req.method === "GET") { const used = await readUsed(); return res.status(200).json({ limit: LIMIT, used, remaining: isAdmin ? null : Math.max(0, LIMIT - used), unlimited: isAdmin }); }
     if (req.method !== "POST") return res.status(405).json({ error: "GET or POST only" });
     const used = await readUsed();
-    if (used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your resume tailors this month — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
-    const bumpUsage = async () => { await supabaseAdmin.from("ai_tailor_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" }); return Math.max(0, LIMIT - (used + 1)); };
+    if (!isAdmin && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your resume tailors this month — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
+    const bumpUsage = async () => { if (isAdmin) return null; await supabaseAdmin.from("ai_tailor_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" }); return Math.max(0, LIMIT - (used + 1)); };
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const resumeText = String(b.resumeText || "").slice(0, 24000);
