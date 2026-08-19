@@ -2393,11 +2393,12 @@ function AutoInput({options,selected,onAdd,onRemove,placeholder}){
 }
 
 // Multi-alert manager: a step-by-step wizard + saved alert blocks. Premium-gated.
-function JobAlertManager({alerts,onSave,isPremium,companyOptions,locationOptions}){
+function JobAlertManager({alerts,onSave,isPremium,isAdmin,companyOptions,locationOptions}){
+  const atAlertLimit = !isAdmin && (alerts||[]).length>=10;
   const [wiz,setWiz]=useState(null);
   const senOpts=["Intern","Junior","Mid-level","Senior","Lead","Principal","Director","Manager"];
   const STEPS=["Role","Seniority","Location","Company","Review"];
-  const start=()=>setWiz({step:0,editId:null,draft:{roles:[],seniority:[],locations:[],companies:[],matchAll:false}});
+  const start=()=>{ if(atAlertLimit)return; setWiz({step:0,editId:null,draft:{roles:[],seniority:[],locations:[],companies:[],matchAll:false}}); };
   const edit=(a)=>setWiz({step:0,editId:a.id,draft:{roles:[...(a.roles||[])],seniority:[...(a.seniority||[])],locations:[...(a.locations||[])],companies:[...(a.companies||[])],matchAll:!!a.matchAll}});
   const setD=(patch)=>setWiz(w=>({...w,draft:{...w.draft,...patch}}));
   const commit=()=>{const d=wiz.draft;const clean={roles:d.roles,seniority:d.seniority,locations:d.locations,companies:d.companies,matchAll:d.matchAll};onSave(wiz.editId?alerts.map(a=>a.id===wiz.editId?{...clean,id:wiz.editId}:a):[...alerts,{...clean,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)}]);setWiz(null);};
@@ -2445,7 +2446,9 @@ function JobAlertManager({alerts,onSave,isPremium,companyOptions,locationOptions
           </div>
         </div>)}
       </div>}
-      <button onClick={start} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Create job alert</button>
+      {atAlertLimit
+        ?<div style={{textAlign:"center",padding:"11px",background:"rgba(201,168,76,.05)",border:"1px dashed rgba(201,168,76,.25)",borderRadius:10,fontSize:11,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>You've reached the maximum of 10 job alerts. Delete one to add another.</div>
+        :<button onClick={start} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5}}><span style={{fontSize:16,lineHeight:1}}>+</span> Create job alert</button>}
     </div>
   );
   return <div style={{marginBottom:16}}>
@@ -2467,7 +2470,7 @@ function JobAlertManager({alerts,onSave,isPremium,companyOptions,locationOptions
 }
 
 // ── INBOX PANEL (slide-over) ──────────────────────────────────────────────────
-function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,profile,onPatch,isPremium,companyOptions,locationOptions}){
+function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,profile,onPatch,isPremium,isAdmin,companyOptions,locationOptions}){
   const [view,setView]=useState("inbox"); // "inbox" = matched-job feed; "notifications" = alert settings
   const timeAgo=(ts)=>{const d=Date.now()-ts;const h=Math.floor(d/3600000);if(h<1)return"just now";if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";};
   const unread=items.filter(n=>!n.read).length;
@@ -2517,7 +2520,7 @@ function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,pr
         :
           <>
             {/* Specific job alerts (premium) */}
-            <JobAlertManager alerts={asAlertArray(P.jobAlerts)} onSave={next=>onPatch&&onPatch({jobAlerts:next})} isPremium={isPremium} companyOptions={companyOptions||[]} locationOptions={locationOptions||[]}/>
+            <JobAlertManager alerts={asAlertArray(P.jobAlerts)} onSave={next=>onPatch&&onPatch({jobAlerts:next})} isPremium={isPremium} isAdmin={isAdmin} companyOptions={companyOptions||[]} locationOptions={locationOptions||[]}/>
             {/* Bell / company notification settings */}
             <div style={{marginBottom:8}}>
               <div style={{fontSize:11,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:10}}>Notification Settings</div>
@@ -4952,6 +4955,9 @@ export default function App() {
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
+  const [appAdmin,setAppAdmin]=useState(false);
+  const [toast,setToast]=useState("");
+  useEffect(()=>{ if(!toast)return; const t=setTimeout(()=>setToast(""),3500); return ()=>clearTimeout(t); },[toast]);
   const [breakdownJob,setBreakdownJob]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
   useEffect(()=>{ const h=()=>setShowUpgrade(true); window.addEventListener("mq-open-upgrade",h); return ()=>window.removeEventListener("mq-open-upgrade",h); },[]);
@@ -4970,9 +4976,9 @@ export default function App() {
   useEffect(()=>{ setBreakdownJob(null); },[tab]); // switching tabs closes the breakdown; board returns to normal
   const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>{const same=cur&&(cur.id||cur.title)===(job.id||job.title);if(!same)track("match_view",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});return same?null:job;}),[]);
   useEffect(()=>{
-    if(!user||!user.id){setAppPremium(false);return;}
+    if(!user||!user.id){setAppPremium(false);setAppAdmin(false);return;}
     let alive=true;
-    fetch(`/api/stripe/status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(d=>{if(alive)setAppPremium(!!(d&&d.isPremium));}).catch(()=>{if(alive)setAppPremium(false);});
+    fetch(`/api/stripe/status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(d=>{if(alive){setAppPremium(!!(d&&d.isPremium));setAppAdmin(!!(d&&d.isAdmin));}}).catch(()=>{if(alive){setAppPremium(false);setAppAdmin(false);}});
     return()=>{alive=false;};
   },[user&&user.id]);
 
@@ -5028,6 +5034,14 @@ export default function App() {
 
   // Toggle per-company job-post notifications (stored in profile.notifyCompanies)
   const toggleNotify = async (companyName) => {
+    const cur = user?.profile?.notifyCompanies || [];
+    if(!cur.includes(companyName)){
+      const limit = appAdmin ? Infinity : (appPremium ? 20 : 5);
+      if(cur.length >= limit){
+        setToast(appPremium ? `You can follow up to 20 companies.` : `Free plan follows up to 5 companies — upgrade for 20.`);
+        return;
+      }
+    }
     setUser(prev => {
       const cur = prev?.profile?.notifyCompanies || [];
       const next = cur.includes(companyName) ? cur.filter(c => c !== companyName) : [...cur, companyName];
@@ -5556,9 +5570,10 @@ export default function App() {
       </div>
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
-    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} companyOptions={companyOptions} locationOptions={locationOptions}/>}
+    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
+    {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
