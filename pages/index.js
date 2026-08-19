@@ -4955,6 +4955,18 @@ export default function App() {
   const [breakdownJob,setBreakdownJob]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
   useEffect(()=>{ const h=()=>setShowUpgrade(true); window.addEventListener("mq-open-upgrade",h); return ()=>window.removeEventListener("mq-open-upgrade",h); },[]);
+  // Reset the board to its default look whenever the signed-in user changes (sign out / sign in),
+  // so one user never inherits how another left the tabs, filters, or breakdown — even on a shared computer.
+  const prevUidRef=useRef();
+  useEffect(()=>{
+    const uid=(user&&user.id)?user.id:null;
+    if(prevUidRef.current!==undefined && prevUidRef.current!==uid){
+      setTab("jobs"); setBreakdownJob(null); setFilters(CLEAR); setAppStage("applied");
+      setAppliedSort("date-desc"); setHideLocationTabs(false); setExpanded({});
+      setFilterOpen(false); setShowInbox(false); setShowAcct(false); setShowUpgrade(false);
+    }
+    prevUidRef.current=uid;
+  },[user&&user.id]);
   useEffect(()=>{ setBreakdownJob(null); },[tab]); // switching tabs closes the breakdown; board returns to normal
   const showBreakdown=useCallback((job)=>setBreakdownJob(cur=>{const same=cur&&(cur.id||cur.title)===(job.id||job.title);if(!same)track("match_view",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});return same?null:job;}),[]);
   useEffect(()=>{
