@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/scan-alerts", "schedule": "0 14 * * *" }
+    { "path": "/api/cron/scan-alerts", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/purge-accounts", "schedule": "0 4 * * *" }
   ]
 }

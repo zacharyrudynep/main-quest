@@ -3470,6 +3470,32 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
       .catch(()=>{ if(alive) setPremium({isPremium:false}); });
     return()=>{ alive=false; };
   },[user?.id]);
+  const [showDelete,setShowDelete]=useState(false);
+  const [delWord,setDelWord]=useState("");
+  const [delBusy,setDelBusy]=useState(false);
+  const [delErr,setDelErr]=useState("");
+  const [delPending,setDelPending]=useState(null);
+  useEffect(()=>{ if(!user||!user.id)return; let alive=true; supabase.from("profiles").select("deletion_requested_at").eq("id",user.id).single().then(({data})=>{ if(alive&&data&&data.deletion_requested_at) setDelPending(data.deletion_requested_at); }).catch(()=>{}); return()=>{alive=false;}; },[user&&user.id]);
+  const requestDelete=async()=>{
+    setDelBusy(true);setDelErr("");
+    try{
+      const {data}=await supabase.auth.getSession();
+      const token=data&&data.session&&data.session.access_token;
+      const r=await fetch("/api/account/delete",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({confirm:delWord})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok){setDelErr(d.error||"Couldn't schedule deletion.");setDelBusy(false);return;}
+      alert("Your account is scheduled for deletion in 14 days. Log back in anytime before then to cancel it — you'll now be signed out.");
+      onLogout();
+    }catch(e){setDelErr("Something went wrong.");setDelBusy(false);}
+  };
+  const cancelDelete=async()=>{
+    try{
+      const {data}=await supabase.auth.getSession();
+      const token=data&&data.session&&data.session.access_token;
+      await fetch("/api/account/delete",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({cancel:true})});
+      setDelPending(null);
+    }catch(e){}
+  };
   const goPremium=async(plan)=>{
     setBillingBusy(true);
     try{
@@ -3590,8 +3616,27 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
             <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500}}>{v}</span></div>)}
           <div style={{marginTop:20,padding:14,background:"rgba(192,50,26,.05)",border:"1px solid rgba(192,50,26,.2)",borderRadius:10}}>
             <div style={{fontSize:11,color:"#e07060",fontFamily:"'Cinzel',serif",fontWeight:600,marginBottom:10,letterSpacing:.5}}>⚠ Danger Zone</div>
-            <button onClick={async ()=>{if(window.confirm("Clear all tracked applications?")){if(user?.id){await supabase.from("applications").delete().eq("user_id",user.id);}onUpdate({...user,applied:{}});}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",fontSize:12,padding:"7px 16px",borderRadius:8,fontFamily:"inherit"}}>Clear All Applications</button>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              <button onClick={async ()=>{if(window.confirm("Clear all tracked applications?")){if(user?.id){await supabase.from("applications").delete().eq("user_id",user.id);}onUpdate({...user,applied:{}});}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",fontSize:12,padding:"7px 16px",borderRadius:8,fontFamily:"inherit"}}>Clear All Applications</button>
+              {!delPending&&<button onClick={()=>{setShowDelete(true);setDelWord("");setDelErr("");}} style={{background:"rgba(192,50,26,.16)",border:"1px solid rgba(192,50,26,.45)",color:"#e8613a",cursor:"pointer",fontSize:12,padding:"7px 16px",borderRadius:8,fontFamily:"inherit",fontWeight:600}}>Delete Account</button>}
+            </div>
+            {delPending&&<div style={{marginTop:11,padding:"11px 13px",background:"rgba(192,50,26,.12)",border:"1px solid rgba(192,50,26,.4)",borderRadius:8}}>
+              <div style={{fontSize:11,color:"#e8613a",fontWeight:600,marginBottom:8,lineHeight:1.5}}>⚠ Your account is scheduled for permanent deletion on {new Date(new Date(delPending).getTime()+14*864e5).toLocaleDateString()}. Cancel below to keep it.</div>
+              <button onClick={cancelDelete} style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.4)",color:"#7ecfb3",cursor:"pointer",fontSize:11.5,padding:"6px 14px",borderRadius:8,fontFamily:"'Cinzel',serif",fontWeight:600}}>Cancel deletion</button>
+            </div>}
           </div>
+          {showDelete&&<div onClick={()=>!delBusy&&setShowDelete(false)} style={{position:"fixed",inset:0,zIndex:400,background:"rgba(4,3,5,.85)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+            <div onClick={e=>e.stopPropagation()} style={{maxWidth:380,width:"100%",background:"rgba(18,10,12,.99)",border:"1px solid rgba(192,50,26,.4)",borderRadius:16,padding:"24px 22px",boxShadow:"0 30px 90px rgba(0,0,0,.75)"}}>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><I.Lock s={26} c="#e8613a"/></div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:"#e8613a",textAlign:"center",marginBottom:10}}>Delete your account?</div>
+              <div style={{fontSize:12,color:"rgba(244,237,216,.65)",lineHeight:1.6,marginBottom:14}}>This schedules your account for permanent deletion. You'll have <b style={{color:"#f0d080"}}>14 days</b> to recover it by logging back in and cancelling. After that, your profile, applications, and saved jobs are erased for good.</div>
+              <div style={{fontSize:11,color:"rgba(244,237,216,.5)",marginBottom:6}}>Type <b style={{color:"#e8613a",letterSpacing:1}}>GODSPEED</b> (all caps) to confirm:</div>
+              <input value={delWord} onChange={e=>setDelWord(e.target.value)} placeholder="GODSPEED" autoFocus style={{width:"100%",boxSizing:"border-box",background:"rgba(192,50,26,.06)",border:`1px solid ${delWord==="GODSPEED"?"rgba(126,207,179,.5)":"rgba(192,50,26,.3)"}`,color:"#f4edd8",borderRadius:8,padding:"9px 12px",fontSize:14,fontFamily:"'Cinzel',serif",letterSpacing:2,textAlign:"center",outline:"none"}}/>
+              {delErr&&<div style={{color:"#e0705a",fontSize:11,marginTop:8}}>{delErr}</div>}
+              <button onClick={requestDelete} disabled={delWord!=="GODSPEED"||delBusy} style={{width:"100%",marginTop:14,background:delWord==="GODSPEED"?"linear-gradient(135deg,#c0321a,#8b2020)":"rgba(192,50,26,.15)",border:"none",color:delWord==="GODSPEED"?"#fff":"rgba(244,237,216,.4)",borderRadius:9,padding:"10px",fontSize:12.5,fontWeight:800,fontFamily:"'Cinzel',serif",cursor:(delWord==="GODSPEED"&&!delBusy)?"pointer":"default",letterSpacing:.5}}>{delBusy?"Scheduling…":"Delete My Account"}</button>
+              <button onClick={()=>setShowDelete(false)} disabled={delBusy} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"rgba(244,237,216,.45)",fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Never mind, keep my account</button>
+            </div>
+          </div>}
           <button onClick={onLogout} style={{width:"100%",marginTop:10,background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Sign Out of Main Quest</button>
         </div>}
       </div>
