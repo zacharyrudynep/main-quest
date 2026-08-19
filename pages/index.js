@@ -4010,6 +4010,8 @@ function TailorResume({job,profile,missingSkills,wide}){
   const [edited,setEdited]=useState("");
   const [initialEdit,setInitialEdit]=useState("");
   const [err,setErr]=useState("");
+  const [remaining,setRemaining]=useState(null);
+  useEffect(()=>{ if(!open)return; (async()=>{ try{ const {data}=await supabase.auth.getSession(); const token=data&&data.session&&data.session.access_token; if(!token)return; const r=await fetch("/api/ai/tailor-resume",{headers:{Authorization:`Bearer ${token}`}}); const j=await r.json().catch(()=>({})); if(typeof j.remaining==="number")setRemaining(j.remaining); }catch(e){} })(); },[open]);
   const editRef=useRef(null);
   useEffect(()=>{
     if(!md||!editRef.current)return;
@@ -4034,7 +4036,7 @@ function TailorResume({job,profile,missingSkills,wide}){
       const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
-      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
+      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);if(typeof j.remaining==="number")setRemaining(j.remaining);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
     }catch(e){setErr("Something went wrong. Try again.");}
     setBusy(false);
   };
@@ -4053,7 +4055,8 @@ function TailorResume({job,profile,missingSkills,wide}){
       <div style={{fontSize:10.5,color:"#f0d080",fontFamily:"'Cinzel',serif",marginBottom:8,lineHeight:1.5}}>Pick keywords to weave in — the AI only uses ones your real experience can honestly support:</div>
       {kws.length?<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{kws.map(chip)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginBottom:12}}>No missing keywords — your resume already covers this role well.</div>}
       {err&&<div style={{color:"#e0705a",fontSize:10.5,marginBottom:8}}>{err}</div>}
-      <button onClick={run} disabled={busy||sel.size===0} style={{...primaryBtn,opacity:(busy||sel.size===0)?.5:1,cursor:(busy||sel.size===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:`Tailor with AI${sel.size?` (${sel.size})`:""}`}</button>
+      {remaining!==null&&<div style={{fontSize:10,color:remaining===0?"#e0705a":"rgba(244,237,216,.5)",marginBottom:8,lineHeight:1.5}}>{remaining===0?"You've used all 15 tailors this month — resets on the 1st.":`${remaining} of 15 monthly tailors left.`} <span style={{opacity:.85}}>Adjusting &amp; retrying uses one too.</span></div>}
+      <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:`Tailor with AI${sel.size?` (${sel.size})`:""}`}</button>
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
     </div>}
     {md&&<div>
@@ -4070,7 +4073,7 @@ function TailorResume({job,profile,missingSkills,wide}){
         </div>
       </div>
       <button onClick={dl} style={primaryBtn}>⤓ Download {docxB64&&unedited?"— keeps your original formatting":(unedited?"tailored resume (.docx)":"with your edits (.docx)")}</button>
-      <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry</button>
+      <button onClick={()=>{setMd(null);setOpen(true);}} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",fontSize:10.5,cursor:"pointer",marginTop:7,padding:"7px",borderRadius:8,fontFamily:"inherit"}}>Adjust keywords &amp; retry{remaining!==null?` (${remaining} left)`:""}</button>
       <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",marginTop:9,lineHeight:1.5}}>Not saved anywhere — download to keep it. Always review before applying; the AI only rephrases your real experience, but you know your background best.</div>
     </div>}
   </div>;

@@ -64,7 +64,6 @@ async function generate(systemText, userText) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
   try {
     if (!GEMINI_KEY) return res.status(500).json({ error: "AI is not configured on the server." });
     const authz = req.headers.authorization || "";
@@ -74,6 +73,16 @@ export default async function handler(req, res) {
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in." });
     const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium").eq("id", u.user.id).single();
     if (!prof || !prof.is_premium) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
+
+    // ── Monthly usage limit (retries included) ──
+    const LIMIT = 15;
+    const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+    const readUsed = async () => { const { data } = await supabaseAdmin.from("ai_tailor_usage").select("count").eq("user_id", u.user.id).eq("month", month).single(); return (data && data.count) || 0; };
+    if (req.method === "GET") { const used = await readUsed(); return res.status(200).json({ limit: LIMIT, used, remaining: Math.max(0, LIMIT - used) }); }
+    if (req.method !== "POST") return res.status(405).json({ error: "GET or POST only" });
+    const used = await readUsed();
+    if (used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your resume tailors this month — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
+    const bumpUsage = async () => { await supabaseAdmin.from("ai_tailor_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" }); return Math.max(0, LIMIT - (used + 1)); };
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const resumeText = String(b.resumeText || "").slice(0, 24000);
@@ -101,7 +110,7 @@ export default async function handler(req, res) {
       try {
         const result = await tailorDocx(resumeDocxB64, rewriteFn);
         if (busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
-        if (result) return res.status(200).json({ resume: result.plain, docxB64: result.base64 });
+        if (result) { const remaining = await bumpUsage(); return res.status(200).json({ resume: result.plain, docxB64: result.base64, remaining }); }
         // result null → fall through to markdown mode below
       } catch (e) { /* invalid docx or parse issue → fall through to markdown */ }
     }
@@ -111,7 +120,7 @@ export default async function handler(req, res) {
     if (g.busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
     if (!g.ok) return res.status(502).json({ error: `Couldn't generate the resume — ${g.error}` });
     const clean = g.text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
-    return res.status(200).json({ resume: clean });
+    { const remaining = await bumpUsage(); return res.status(200).json({ resume: clean, remaining }); }
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }
