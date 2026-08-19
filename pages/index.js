@@ -377,7 +377,7 @@ const COMPANIES_DATA = {
       { name: "Demiurge", url: "https://demiurgestudios.com/job-openings/", email: null, contact: null },
       { name: "Fable Vision Studios", url: "https://www.fablevisionstudios.com/careers", email: null, contact: "https://www.fablevisionstudios.com/contact-us" },
       { name: "Firehose Games", url: "https://www.firehosegames.com/", email: null, contact: "https://www.firehosegames.com/contact-us/" },
-      { name: "First Break Labs", url: "http://firstbreaklabs.com/", email: "contact@firstbreaklabs.com", contact: "contact@firstbreaklabs.com", emailApply:true },
+      { name: "First Break Labs", url: "https://firstbreaklabs.com/#connect", email: "contact@firstbreaklabs.com", contact: "contact@firstbreaklabs.com", emailApply:true },
       { name: "Ghost Story Games", url: "https://job-boards.greenhouse.io/gsgcareers", email: "community@ghoststorygames.com", contact: "https://www.ghoststorygames.com/contact" },
       { name: "Harmonix", url: "https://www.harmonixmusic.com/about/jobs", email: null, contact: null },
       { name: "Otherside Entertainment", url: "https://careers.otherside-e.com/jobs", email: null, contact: "https://otherside-e.com/contact-us/" },
@@ -464,6 +464,7 @@ const COMPANIES_DATA = {
       { name: "Schell Games", url: "https://schellgames.com/careers#apply", email: "info@schellgames.com", contact: "https://schellgames.com/contact" },
     ],
     "Remote": [
+      { name: "Down Smash Studios", url: "https://www.downsmashstudios.com/#/careers", email: "jobs@downsmashstudios.com", contact: "https://www.downsmashstudios.com/#/contact", emailApply:true },
       { name: "Wolfpack Game Design", url: "https://www.wolfpackgamedesign.com/join-us", email: "community@wolfpackgamedesign.com", contact: null, volunteer:true },
       { name: "Space Rock Games", url: "https://www.spacerockgames.com/careers", email: null, contact: null, registerInterest:true, registerInterestLink: "https://www.spacerockgames.com/careers" },
       { name: "Cire Games", url: "https://ciregames.com/Careers/", email: null, contact: "https://ciregames.com/Contacts/" },
@@ -499,14 +500,14 @@ const COMPANIES_DATA = {
       { name: "Cards and Tankards", url: "https://cardsandtankards.com/careers", email: "support@divergent-realities.com", contact: null, emailApply:true },
       { name: "Cat Face", url: "https://www.catface.com/careers", email: null, contact: null },
       { name: "Certain Affinity", url: "https://www.certainaffinity.com/careers/", email: null, contact: "null" },
-      { name: "Cloud Imperium Games", url: "https://cloudimperiumgames.com/join-us/studio/atx#open-positions", email: null, contact: null },
+      { name: "Cloud Imperium Games", url: "https://cloudimperiumgames.com/join-us/studio/atx#open-positions", email: "recruitment@cloudimperiumgames.com", contact: "recruitment@cloudimperiumgames.com", emailApply:true },
       { name: "Cooldown Games", url: "https://cooldowngames.com/careers/", email: null, contact: "https://cooldowngames.com/contact/" },
       { name: "Crystal Dynamics", url: "https://www.crystaldynamics.com/careers/", email: null, contact: null },
       { name: "Daybreak Games", url: "https://www.daybreakgames.com/careers?locale=en_US", email: null, contact: null },
       { name: "Deadmage Games", url: "https://deadmage.com/#about-us", email: "info@deadmage.com", contact: "https://deadmage.com/#contact-us", emailApply:true },
       { name: "Devolver Digital", url: "https://www.devolverdigital.com/jobs", email: "fork@devolverdigital.com", contact: null },
       { name: "Dimensional Link", url: "https://www.dimensionalink.com/careers", email: null, contact: null },
-      { name: "Elon’s Game & Arts", url: "https://www.elosgames.net/about-us", email: "info@elosgames.net", contact: null },
+      { name: "Elos Game & Arts", url: "https://www.elosgames.net/about-us", email: "info@elosgames.net", contact: "info@elosgames.net", emailApply:true },
       { name: "Empty Vessel", url: "https://emptyvessel.io/jobs/", email: null, contact: "https://emptyvessel.io/contact/" },
       { name: "Enduring Games", url: "https://enduring.games/jobs/", email: "jobs@enduring.games", contact: "https://enduring.games/contact/", emailApply:true },
       { name: "Forward XP", url: "https://forwardxp.com/careers/#positions", email: "careers@forwardxp.com", contact: "https://forwardxp.com/contact-us/" },
@@ -573,7 +574,7 @@ const COMPANIES_DATA = {
       { name: "Ballard Games", url: "https://www.ballardgames.com/careers/index.html", email: "hiring@ballardgames.com", contact: "https://www.ballardgames.com/contact/index.html" },
       { name: "Big Box VR", url: "https://www.metacareers.com/jobsearch/?q=BigBox", email: null, contact: "https://www.bigboxvr.com/contact.html" },
       { name: "Bungie", url: "https://careers.bungie.com/jobs?_gl=1*6n4bmh*_gcl_au*MTc1MDAxNzU3Ni4xNzgwMjM3NjU1", email: null, contact: null },
-      { name: "C77 Entertainment", url: "https://www.c77.live", email: null, contact: null },
+      { name: "C77 Entertainment", url: "https://www.c77.live", email: "contact@c77.live", contact: "contact@c77.live", emailApply:true },
       { name: "Cat Daddy Games", url: "https://job-boards.greenhouse.io/catdaddy", email: null, contact: null },
       { name: "Chronicler Software", url: "https://www.chroniclersoftware.com/careers", email: null, contact: "https://www.chroniclersoftware.com/contact" },
       { name: "Cold Symmetry", url: "https://www.coldsymmetry.com/jobs", email: "info@coldsymmetry.com", contact: null },
@@ -719,7 +720,7 @@ const COMPANIES_DATA = {
       { name: "Visual Concepts", url: "https://vcentertainment.com/careers/", email: null, contact: null },
     ],
     "Manitoba": [
-      { name: "Complex Games", url: "https://www.frontier.co.uk/careers/complex", email: null, contact: "https://www.frontier.co.uk/contact" },
+      { name: "Complex Games", url: "https://www.frontier.co.uk/careers/complex", email: "recruitment@frontier.co.uk", contact: "recruitment@frontier.co.uk", emailApply:true },
       { name: "Project Whitecard", url: "https://go.projectwhitecard.com/careers/", email: "candidates@projectwhitecard.com", contact: "https://go.projectwhitecard.com/contact/", emailApply:true },
       { name: "Tactics Interactive", url: "https://tactica.ca/careers/?doing_wp_cron=1780251374.8161730766296386718750", email: "work@tactica.ca", contact: "https://tactica.ca/contact/", emailApply:true },
       { name: "Ubisoft", url: "https://www.ubisoft.com/en-us/company/careers/our-jobs", email: null, contact: null },
@@ -751,7 +752,6 @@ const COMPANIES_DATA = {
       { name: "Dark Slope", url: "https://www.darkslope.com/careers", email: null, contact: "https://www.darkslope.com/contact" },
       { name: "Digital Extremes", url: "https://www.digitalextremes.com/careers/list", email: null, contact: "https://www.digitalextremes.com/contact" },
       { name: "Doom Turtle", url: "https://doomturtle.ca/careers/", email: "support@doomturtle.ca", contact: null },
-      { name: "Down Smash Studios", url: "https://www.downsmashstudios.com/#/careers", email: "jobs@downsmashstudios.com", contact: "https://www.downsmashstudios.com/#/contact", emailApply:true },
       { name: "EA", url: "https://www.ea.com/careers", email: null, contact: null },
       { name: "Finish Line Games", url: "https://finishlinegames.com/careers/", email: "careers@finishlinegames.com", contact: "https://finishlinegames.com/contact/" },
       { name: "Game Hive", url: "https://gamehive.com/careers/", email: null, contact: null },
@@ -807,7 +807,7 @@ const COMPANIES_DATA = {
       { name: "BKOM Studios", url: "https://jobs.bkom.com/jobs/Careers", email: null, contact: "https://bkom.com/contact-us/" },
       { name: "Budge Studios", url: "https://budgestudios.com/en/careers/#anchor-672", email: "jobs@budgestudios.ca", contact: "https://budgestudios.com/en/contact/" },
       { name: "Cathar Games", url: "https://www.cathargames.com/en/careers.html", email: "bizdev@cathargames.com", contact: "https://www.cathargames.com/en/contact.html" },
-      { name: "Chasing Rats Games", url: "https://chasingratsgames.com/", email: null, contact: null },
+      { name: "Chasing Rats Games", url: "https://chasingratsgames.com/", email: "INFO@CHASINGRATSGAMES.COM", contact: "INFO@CHASINGRATSGAMES.COM", emailApply:true },
       { name: "Cloud Chamber", url: "https://2k.com/studios/cloud-chamber/", email: null, contact: null },
       { name: "Compulsion Games", url: "https://compulsiongames.com/#careers", email: null, contact: "https://compulsiongames.com/#contact" },
       { name: "Cradle Games", url: "https://www.cradlegames.com/index.php/jobs", email: "jobs@cradlegames.com", contact: "https://www.cradlegames.com/index.php/contact" },
@@ -816,7 +816,7 @@ const COMPANIES_DATA = {
       { name: "Eidos", url: "https://www.eidosmontreal.com/careers/", email: null, contact: "https://www.eidosmontreal.com/contact/" },
       { name: "Epic Games", url: "https://www.epicgames.com/site/careers/jobs", email: null, contact: null },
       { name: "Ever Curious Games", url: "https://www.evercurious.games/", email: null, contact: "https://www.evercurious.games/contact" },
-      { name: "Flameborn Games", url: "https://www.flameborngames.com", email: "studio@flameborngames.com", contact: null },
+      { name: "Flameborn Games", url: "https://www.flameborngames.com/jobs", email: "studio@flameborngames.com", contact: "studio@flameborngames.com", emailApply:true },
       { name: "Framestore VR", url: "https://framestore.recruitee.com/?jobs-c88dea0d%5Bcity%5D%5B%5D=Montreal", email: "recruiters@framestore.com", contact: "https://www.framestore.com/contact" },
       { name: "Gameloft", url: "https://www.gameloft.com/careers", email: null, contact: null },
       { name: "GAMERella", url: "https://gamerella.ca/jobs/en/", email: "hello@gamerella.ca", contact: null },
@@ -976,6 +976,7 @@ const _isEvergreen = (job) => { const t=(job&&job.title)||""; return _EVERGREEN_
 // instructions from their careers page). Shown on the email-apply card so you
 // send exactly what they want.
 const EMAIL_SPECIFICS = {
+  "Cloud Imperium Games": "resume & cover letter, a subject line detailing the location and position title you are applying for, what your ideal role is, what location interests you most, and why you would be a great fit for the team",
   "81 Monkeys": "resume and/or portfolio",
   "Aether Studios": "resume, portfolio, cover letter",
   "Annapurna Interactive": "resume",
@@ -4143,7 +4144,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium,onToggleSave,activeBreakdown}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium,onToggleSave,activeBreakdown,flatView,notifyOn,onToggleNotify}) {
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
@@ -4218,6 +4219,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {job.company&&<div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4,flexWrap:"wrap"}}>
       <span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase"}}>{job.company}</span>
       {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
+      {flatView&&user&&job.company&&<span onClick={e=>{e.stopPropagation();onToggleNotify&&onToggleNotify();}} title={notifyOn?`Alerts on for all ${job.company} jobs — click to turn off`:`Get alerts for new ${job.company} jobs`} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",background:notifyOn?"rgba(201,168,76,.14)":"rgba(201,168,76,.05)",border:`1px solid ${notifyOn?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,borderRadius:6,padding:"2px 7px"}}><I.Bell s={10} c={notifyOn?"#c9a84c":"rgba(244,237,216,.55)"} fill={notifyOn?"#c9a84c":"none"}/></span>}
       <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
         <button onClick={e=>{e.stopPropagation(); if(!user){onRequestLogin&&onRequestLogin();return;} onToggleSave&&onToggleSave(job);}} title={isSaved?"Remove from saved":"Save this job"} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:isSaved?"rgba(201,168,76,.16)":"rgba(201,168,76,.06)",border:`1px solid ${isSaved?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={isSaved?"#c9a84c":"none"} stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -5628,7 +5630,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>)}
+                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={()=>toggleNotify(j.company)}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -5741,7 +5743,7 @@ export default function App() {
                                 </button>
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
-                                    ?((company.emailApply||company.registerInterest==="email")&&company.email
+                                    ?(company.email
                                       ?<JobCard key={`${name}-emailapply`} job={{id:`${name}-emailapply`,title:"General Application",company:name,url:company.url,applyUrl:company.url,email:company.email,applyEmail:company.email,isEmailApply:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!company.volunteer,emailSpecifics:EMAIL_SPECIFICS[name]||null,summary:EMAIL_SPECIFICS[name]?`${name} accepts applications by email. They ask that you include: ${EMAIL_SPECIFICS[name]}${/[.!?]$/.test(EMAIL_SPECIFICS[name])?"":"."} Send to ${company.email}.`:`${name} accepts applications by email. Send your resume to ${company.email} to be considered — they'll reach out if there's a fit.`,responsibilities:[],requirements:[]}} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/>
                                       :<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>)
                                     :(()=>{
