@@ -4807,6 +4807,7 @@ export default function App() {
       introCollectedRef.current={};
       const CONC=16;
       let done=0;
+      let revealed=false;
       for(let i=0;i<groupList.length;i+=CONC){
         if(signal.aborted)return;
         const slice=groupList.slice(i,i+CONC);
@@ -4815,6 +4816,15 @@ export default function App() {
         for(const pairs of results)for(const[nm,jobs] of pairs)introCollectedRef.current[nm]=jobs;
         done+=slice.reduce((a,g)=>a+g.length,0);
         setLoadProgress(Math.min(99,Math.round((done/entries.length)*100)));
+        // Progressive reveal: stream each wave into the board, and drop the loader as
+        // soon as the first wave lands so the user sees jobs in ~1s instead of waiting
+        // for every studio. Remaining studios fill in behind the board.
+        setLiveJobs({...introCollectedRef.current});
+        if(!revealed){
+          revealed=true;
+          const el=Date.now()-(introStartRef.current||Date.now());
+          setTimeout(()=>{ if(!signal.aborted) setIntroDone(true); },Math.max(120,550-el));
+        }
       }
       if(signal.aborted)return;
       setLiveJobs({...introCollectedRef.current});
@@ -4826,10 +4836,9 @@ export default function App() {
       // few hundred ms, so we don't sit on a fixed delay — we reveal as soon as the
       // data is in. The only floor is a short minimum display time so the loader
       // doesn't flash on-and-off in a single frame, which reads as a glitch.
-      const MIN_SHOW=550;                                   // ms the loader is visible at minimum
-      const elapsed=Date.now()-(introStartRef.current||Date.now());
-      const wait=Math.max(120,MIN_SHOW-elapsed);            // >=120ms so React paints the full tree first
-      setTimeout(()=>{ if(!signal.aborted) setIntroDone(true); },wait);
+      // The loop above already revealed the board after the first wave. This only
+      // covers the edge case where no groups ran at all, so the loader still drops.
+      if(!revealed&&!signal.aborted) setIntroDone(true);
       return;
     }
 
