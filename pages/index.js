@@ -4231,7 +4231,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     {job.company&&<div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4,flexWrap:"wrap"}}>
       <span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase"}}>{job.company}</span>
       {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
-      {flatView&&user&&job.company&&<span onClick={e=>{e.stopPropagation();onToggleNotify&&onToggleNotify();}} title={notifyOn?`Alerts on for all ${job.company} jobs — click to turn off`:`Get alerts for new ${job.company} jobs`} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",background:notifyOn?"rgba(201,168,76,.14)":"rgba(201,168,76,.05)",border:`1px solid ${notifyOn?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,borderRadius:6,padding:"2px 7px"}}><I.Bell s={10} c={notifyOn?"#c9a84c":"rgba(244,237,216,.55)"} fill={notifyOn?"#c9a84c":"none"}/></span>}
+      {flatView&&user&&job.company&&<span onClick={e=>{e.stopPropagation();onToggleNotify&&onToggleNotify(job.company);}} title={notifyOn?`Alerts on for all ${job.company} jobs — click to turn off`:`Get alerts for new ${job.company} jobs`} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",background:notifyOn?"rgba(201,168,76,.14)":"rgba(201,168,76,.05)",border:`1px solid ${notifyOn?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,borderRadius:6,padding:"2px 7px"}}><I.Bell s={10} c={notifyOn?"#c9a84c":"rgba(244,237,216,.55)"} fill={notifyOn?"#c9a84c":"none"}/></span>}
       <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
         <button onClick={e=>{e.stopPropagation(); if(!user){onRequestLogin&&onRequestLogin();return;} onToggleSave&&onToggleSave(job);}} title={isSaved?"Remove from saved":"Save this job"} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:isSaved?"rgba(201,168,76,.16)":"rgba(201,168,76,.06)",border:`1px solid ${isSaved?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:"pointer"}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={isSaved?"#c9a84c":"none"} stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -5033,7 +5033,7 @@ export default function App() {
   }, [user?.id]);
 
   // Toggle per-company job-post notifications (stored in profile.notifyCompanies)
-  const toggleNotify = async (companyName) => {
+  const toggleNotify = useCallback(async (companyName) => {
     const cur = user?.profile?.notifyCompanies || [];
     if(!cur.includes(companyName)){
       const limit = appAdmin ? Infinity : (appPremium ? 20 : 5);
@@ -5049,7 +5049,7 @@ export default function App() {
       if (prev?.id) { supabase.from("profiles").upsert({ id: prev.id, name: prev.name, data: newProfile }, { onConflict: "id" }).then(()=>{}); }
       return { ...prev, profile: newProfile };
     });
-  };
+  },[user,appAdmin,appPremium]);
   const removeApplied = async (jobId) => {
     setUser(prev => { const na = { ...prev.applied }; delete na[jobId]; return { ...prev, applied: na }; });
     if (!user?.id) return;
@@ -5666,7 +5666,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={()=>toggleNotify(j.company)}/></div>)}
+                <div key={j.id} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10,contentVisibility:"auto",containIntrinsicSize:"0 160px"}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -5801,7 +5801,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
+                                      const renderJob=j=><div key={j.id} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10,contentVisibility:"auto",containIntrinsicSize:"0 160px"}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
