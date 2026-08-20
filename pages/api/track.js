@@ -1,9 +1,16 @@
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import { rateLimit, getClientIp } from "../../lib/rateLimit";
 
 // Records a single behavioral event to the `events` table. Public endpoint — kept
 // minimal and defensive; it never throws back to the client (analytics must not break UX).
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+
+  // Per-IP throttle. 100 events/min is generous for real browsing; bots get capped.
+  // (The client fires this fire-and-forget and ignores the response, so a 429 is invisible.)
+  const rl = await rateLimit(`track:${getClientIp(req)}`, { limit: 100, windowSeconds: 60 });
+  if (!rl.allowed) return res.status(429).json({ ok: false, error: "rate_limited" });
+
   try {
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const type = b.type ? String(b.type).slice(0, 60) : "";
