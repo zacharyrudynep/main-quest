@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
-import { encodeJob } from "../lib/shareJob";
+import { encodeJob } from "../lib/shareJob.js";
 import { track } from "../lib/track";
 import { downloadResumeDocx } from "../lib/resumeDocx";
 import dynamic from "next/dynamic";

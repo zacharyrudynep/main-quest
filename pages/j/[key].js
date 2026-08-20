@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { decodeJob } from "../../lib/shareJob";
+import { decodeJob } from "../../lib/shareJob.js";
 
 export async function getServerSideProps({ params, req }) {
   const job = decodeJob(params.key);
