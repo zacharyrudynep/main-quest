@@ -4669,10 +4669,12 @@ function JourneyMode({user,allJobs,appliedJobs,onGoToJobs}){
 let __mqBoardCache=null;                 // {jobs,ts} — survives client-side nav, resets on hard refresh
 const __MQ_BOARD_TTL=15*60*1000;         // treat an in-memory board younger than 15 min as still good
 function __mqFreshBoard(){ return !!(__mqBoardCache && (Date.now()-__mqBoardCache.ts)<__MQ_BOARD_TTL && __mqBoardCache.jobs && Object.keys(__mqBoardCache.jobs).length>0); }
+let __mqAuthCache=null; // {user,guest} — remembers who's signed in across client-side nav (this tab only); cleared on hard refresh
+function __mqAuthKnown(){ return !!(__mqAuthCache && (__mqAuthCache.user || __mqAuthCache.guest)); }
 
 export default function App() {
   const mobile = useIsMobile();
-  const [user,setUser]=useState(null);
+  const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
   useEffect(()=>{
@@ -4687,7 +4689,7 @@ export default function App() {
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
   const [pricingDismissed,setPricingDismissed]=useState(false);
-  const [guest,setGuest]=useState(false);
+  const [guest,setGuest]=useState(()=>!!(__mqAuthCache&&__mqAuthCache.guest));
   const [showLoginPopup,setShowLoginPopup]=useState(false);
   const requestLogin=useCallback(()=>setShowLoginPopup(true),[]);
   const [jobSort,setJobSort]=useState("default");
@@ -4996,7 +4998,9 @@ export default function App() {
   },[user&&user.id]);
 
   // Restore session on mount so refreshing the page doesn't log the user out.
-  const [authChecked,setAuthChecked]=useState(false);
+  const [authChecked,setAuthChecked]=useState(()=>__mqAuthKnown());
+  // Remember auth across client-side nav so returning to the board doesn't re-block on the auth check.
+  useEffect(()=>{ if(authChecked){ __mqAuthCache={user,guest}; } },[user,guest,authChecked]);
   useEffect(()=>{
     let active=true;
     (async()=>{
