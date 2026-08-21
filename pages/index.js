@@ -969,6 +969,15 @@ const _EVERGREEN_RE = /talent community|talent network|talent pool|talent connec
 // Roles outside this board's game-industry focus that were cluttering the listings.
 const _OFFTOPIC_RE = /\b(sales (executive|rep|representative|manager|associate|director|lead|specialist)|strategic sales|account executive|business development|screenwriter|scriptwriter|copywriter|content writer|novel writer)\b/i;
 const _isEvergreen = (job) => { const t=(job&&job.title)||""; return _EVERGREEN_RE.test(t)||_OFFTOPIC_RE.test(t); };
+// "Open application" postings (real ATS ones + synthetic register-interest cards).
+const _OPENAPP_RE = /general application|spontaneous application|open application/i;
+const _isOpenAppJob = (job) => !!(job && (job.isOpenApp || _OPENAPP_RE.test((job.title)||"")));
+function _makeOpenAppJob(name, meta){
+  const href=riLinkToHref(meta.registerInterestLink,name);
+  const isMail=!!href&&href.startsWith("mailto:");
+  const mailAddr=isMail?href.replace(/^mailto:/,"").split("?")[0]:"";
+  return {id:`${name}-openapp`,title:"Open Application",company:name,url:href||meta.url||"",applyUrl:href||meta.url||"",email:mailAddr||meta.email||"",applyEmail:mailAddr,isEmailApply:isMail,isOpenApp:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!meta.volunteer,summary:isMail?`Submit an open application to ${name} — they invite you to email your resume to be considered for future roles.`:`Submit an open application to ${name}. They accept open applications and invite you to register interest for future openings.`,responsibilities:[],requirements:[]};
+}
 
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
 // Companies where the ONLY way to apply is by email. Each posting routes to a
@@ -4306,10 +4315,9 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
       <button onClick={onApply} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:7,padding:mobile?"9px 16px":"8px 18px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,display:"inline-flex",alignItems:"center",gap:6,flex:mobile?"1":"none",justifyContent:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(201,168,76,.35)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>{job.isEmailApply?<><I.Send s={12} c="#0a0608"/>Apply by Email</>:<><I.Arrow s={12} c="#0a0608"/>View &amp; Apply</>}</button>
     </div>
-    {(cContact||cEmail||riHref)&&<div style={mobile?{marginTop:8,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}:{position:"absolute",bottom:13,right:15,zIndex:4,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+    {(cContact||cEmail)&&<div style={mobile?{marginTop:8,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}:{position:"absolute",bottom:13,right:15,zIndex:4,display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
         {cContact&&<a href={cContact.startsWith("http")?cContact:"https://"+cContact} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Company contact page" style={secBtn}><I.Link s={11} c="#c9a84c"/>Contact</a>}
         {cEmail&&<a href={`mailto:${cEmail}?subject=${encodeURIComponent("Inquiry — "+job.title+" at "+job.company)}`} onClick={e=>e.stopPropagation()} title={`Email ${cEmail}`} style={secBtn}><I.Send s={11} c="#c9a84c"/>Email</a>}
-        {riHref&&<a href={riHref} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} title="Submit an open application to this company" style={secBtn}><I.Scroll s={11} c="#c9a84c"/>Open Application</a>}
       </div>}
     </div>
     {/* Match score square */}
@@ -4894,6 +4902,10 @@ export default function App() {
     // Live ATS jobs take priority. gen only ever contains real volunteer-override jobs now.
     if(Array.isArray(live)&&live.length>0) all=[...live,...(gen||[])];
     else all=gen||[]; // volunteer overrides (if any), else empty — never fake jobs
+    // Register-interest companies get a synthetic "Open Application" card so it behaves
+    // like a real listing: shows on the board, obeys filters, groups by home region.
+    const _oaMeta=COMPANY_META[name];
+    if(_oaMeta&&_oaMeta.registerInterest&&!all.some(j=>j&&j.isOpenApp)) all=[...all,_makeOpenAppJob(name,_oaMeta)];
     // CD Projekt Red's "spontaneous application" is an open/register-interest posting,
     // not a real role — it's surfaced via their Register Interest button instead.
     if(/cd projekt/i.test(name)) all=all.filter(j=>!/spontaneous/i.test(j.title||""));
@@ -5098,7 +5110,7 @@ export default function App() {
 
   const matches=job=>{
     const f=filters;
-    if(_isEvergreen(job))return false; // talent-community / general-application signups aren't real roles
+    if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false; // talent-community / general-application signups aren't real roles
     if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
@@ -5111,7 +5123,7 @@ export default function App() {
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
     if(f.emailApplyOnly&&!job.isEmailApply)return false;
-    if(f.openAppOnly&&!COMPANY_META[job.company]?.registerInterest)return false;
+    if(f.openAppOnly&&!_isOpenAppJob(job))return false;
     if(f.minMatch>0){const ms=computeMatchScore(job,user?.profile)?.score??-1;if(ms<f.minMatch)return false;}
     if(f.search){const q=f.search.toLowerCase();if(!job.title.toLowerCase().includes(q)&&!job.company.toLowerCase().includes(q))return false;}
     return true;
@@ -5120,7 +5132,7 @@ export default function App() {
   // matched the search, so we show all its jobs that pass the other filters).
   const matchesExceptSearch=job=>{
     const f=filters;
-    if(_isEvergreen(job))return false;
+    if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false;
     if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
@@ -5133,7 +5145,7 @@ export default function App() {
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
     if(f.emailApplyOnly&&!job.isEmailApply)return false;
-    if(f.openAppOnly&&!COMPANY_META[job.company]?.registerInterest)return false;
+    if(f.openAppOnly&&!_isOpenAppJob(job))return false;
     if(f.minMatch>0){const ms=computeMatchScore(job,user?.profile)?.score??-1;if(ms<f.minMatch)return false;}
     return true;
   };
@@ -5738,10 +5750,9 @@ export default function App() {
                         const dj=getDisplayJobs(nm,co.jobs,state);
                         if(filters.activeOnly&&dj.length===0&&!(co.emailApply||co.registerInterest==="email"||(filters.openAppOnly&&co.registerInterest)))return false;
                         if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
-                        if(filters.openAppOnly&&!co.registerInterest)return false;
                         if(filters.types.length===1&&filters.types[0]==="Volunteer"&&(co.volunteer||dj.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
                         if(filters.search){const q=filters.search.toLowerCase();const nameHit=nm.toLowerCase().includes(q);if(!nameHit&&!dj.some(j=>matches(j)))return false;}
-                        const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
+                        const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0||filters.openAppOnly;
                         if(jlf&&!dj.some(j=>matches(j)))return false;
                         return true;
                       }).length;
@@ -5769,14 +5780,13 @@ export default function App() {
                               if(filters.activeOnly&&displayJobs.length===0&&!isEmailApplyCo&&!(filters.openAppOnly&&company.registerInterest))return false;
                               // Email Apply Only: company must have an email-apply job (or be flagged emailApply)
                               if(filters.emailApplyOnly&&!company.emailApply&&!displayJobs.some(j=>j.isEmailApply))return false;
-                              if(filters.openAppOnly&&!company.registerInterest)return false;
                               // Volunteer type filter: show companies flagged volunteer even with no listings
                               const volunteerFilterOnly=filters.types.length===1&&filters.types[0]==="Volunteer";
                               if(volunteerFilterOnly&&(company.volunteer||displayJobs.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
                               // Search: company qualifies only if its name matches OR it has a matching job.
                               if(filters.search){const q=filters.search.toLowerCase();const nameHit=name.toLowerCase().includes(q);if(!nameHit&&!displayJobs.some(j=>matches(j)))return false;}
                               // Job-level filters: company must have at least one job that passes them.
-                              const jobLevelFilters=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
+                              const jobLevelFilters=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0||filters.openAppOnly;
                               if(jobLevelFilters&&!displayJobs.some(j=>matches(j)))return false;
                               return true;
                             })
