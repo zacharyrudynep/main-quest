@@ -4912,7 +4912,7 @@ export default function App() {
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [appStage,setAppStage]=useState("applied");
-  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""});
+  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,minMatch:0,dateFrom:""});
   // Search updates go through the isolated SearchBox (which debounces locally),
   // so typing never re-renders the whole board — only the committed value lands here.
   const onSearch=useCallback((v)=>{ setFilters(f=>f.search===v?f:{...f,search:v}); },[]);
@@ -5111,6 +5111,7 @@ export default function App() {
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
     if(f.emailApplyOnly&&!job.isEmailApply)return false;
+    if(f.openAppOnly&&!COMPANY_META[job.company]?.registerInterest)return false;
     if(f.minMatch>0){const ms=computeMatchScore(job,user?.profile)?.score??-1;if(ms<f.minMatch)return false;}
     if(f.search){const q=f.search.toLowerCase();if(!job.title.toLowerCase().includes(q)&&!job.company.toLowerCase().includes(q))return false;}
     return true;
@@ -5132,6 +5133,7 @@ export default function App() {
     if(f.dateFrom&&new Date(job.posted)<new Date(f.dateFrom))return false;
     if(f.newOnly&&!job.isNew)return false;
     if(f.emailApplyOnly&&!job.isEmailApply)return false;
+    if(f.openAppOnly&&!COMPANY_META[job.company]?.registerInterest)return false;
     if(f.minMatch>0){const ms=computeMatchScore(job,user?.profile)?.score??-1;if(ms<f.minMatch)return false;}
     return true;
   };
@@ -5165,9 +5167,9 @@ export default function App() {
   };
 
   const allTitles=JOB_CATS.slice().sort();
-  const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||(filters.tiers?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.minMatch>0||!!filters.search;
-  const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.minMatch>0?1:0);
-  const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""};
+  const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||(filters.tiers?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.openAppOnly||filters.minMatch>0||!!filters.search;
+  const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.openAppOnly?1:0)+(filters.minMatch>0?1:0);
+  const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,minMatch:0,dateFrom:""};
 
   // One-time onboarding: apply a new user's personalization (from /personalize) to
   // their profile AND seed a starter board filter for their very first visit only.
@@ -5183,7 +5185,7 @@ export default function App() {
     if(pers.country) patch.country=pers.country;
     if(Object.keys(patch).length) patchProfile(patch);
     // Build the starter filter from their picks.
-    const sf={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,minMatch:0,dateFrom:""};
+    const sf={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,minMatch:0,dateFrom:""};
     if(pers.country){
       if(pers.country==="United States"||pers.country==="Canada") sf.countries=[pers.country];
       else { const cont=COUNTRY_CONTINENT[pers.country]; if(cont) sf.countries=[cont]; }
@@ -5638,7 +5640,7 @@ export default function App() {
               <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:5,marginTop:8}}>Location</div>
               <CheckGroup opts={["Remote OK","Hybrid","On-site Only"]} sel={filters.remote} onChange={v=>setFilters(f=>({...f,remote:v}))}/>
             </FSection>
-            <FSection title="Date & Other" count={(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)} onClear={()=>setFilters(f=>({...f,dateFrom:"",newOnly:false,activeOnly:false,emailApplyOnly:false}))}>
+            <FSection title="Date & Other" count={(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.openAppOnly?1:0)} onClear={()=>setFilters(f=>({...f,dateFrom:"",newOnly:false,activeOnly:false,emailApplyOnly:false,openAppOnly:false}))}>
               <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:4}}>Posted After</div>
               <input type="date" value={filters.dateFrom} onChange={e=>setFilters(f=>({...f,dateFrom:e.target.value}))} style={{width:"100%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",borderRadius:8,padding:"7px 10px",fontSize:11,fontFamily:"inherit",marginBottom:10}}/>
               <label onClick={()=>setFilters(f=>({...f,newOnly:!f.newOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none"}}>
@@ -5652,6 +5654,10 @@ export default function App() {
               <label onClick={()=>setFilters(f=>({...f,emailApplyOnly:!f.emailApplyOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginTop:8}}>
                 <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.emailApplyOnly?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.emailApplyOnly?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.emailApplyOnly&&<I.Check s={9} c="#0a0608"/>}</div>
                 <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Email Apply Only</span>
+              </label>
+              <label onClick={()=>setFilters(f=>({...f,openAppOnly:!f.openAppOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginTop:8}}>
+                <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.openAppOnly?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.openAppOnly?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.openAppOnly&&<I.Check s={9} c="#0a0608"/>}</div>
+                <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Open Application Only</span>
               </label>
             </FSection>
             <FSection title="Minimum Match Score" count={filters.minMatch>0?1:0}>
@@ -5704,9 +5710,10 @@ export default function App() {
               if(hasAnyFilter){
                 const anyCoName=filters.search&&Object.values(states).some(cos=>Object.keys(cos).some(n=>n.toLowerCase().includes(filters.search.toLowerCase())));
                 const anyEmail=filters.emailApplyOnly&&Object.values(states).some(cos=>Object.values(cos).some(co=>co.emailApply));
+                const anyOpenApp=filters.openAppOnly&&Object.values(states).some(cos=>Object.values(cos).some(co=>co.registerInterest));
                 const volOnly=filters.types.length===1&&filters.types[0]==="Volunteer";
                 const anyVol=volOnly&&Object.values(states).some(cos=>Object.values(cos).some(co=>co.volunteer));
-                if(cTotal===0&&!anyCoName&&!anyEmail&&!anyVol)return null;
+                if(cTotal===0&&!anyCoName&&!anyEmail&&!anyOpenApp&&!anyVol)return null;
               }
               return <div key={country} style={{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.14)",borderRadius:14,overflow:"hidden"}}>
                 <button onClick={()=>toggle(cKey)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,padding:mobile?"11px 12px":"14px 16px",fontFamily:"'Cinzel',serif",fontSize:mobile?12:13,fontWeight:700,color:"#f4edd8",letterSpacing:.5,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.04)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
@@ -5729,8 +5736,9 @@ export default function App() {
                         if(!hasAnyFilter)return true;
                         if((filters.tiers?.length||0)>0&&!filters.tiers.includes(companyTier(nm)))return false;
                         const dj=getDisplayJobs(nm,co.jobs,state);
-                        if(filters.activeOnly&&dj.length===0&&!(co.emailApply||co.registerInterest==="email"))return false;
+                        if(filters.activeOnly&&dj.length===0&&!(co.emailApply||co.registerInterest==="email"||(filters.openAppOnly&&co.registerInterest)))return false;
                         if(filters.emailApplyOnly&&!co.emailApply&&!dj.some(j=>j.isEmailApply))return false;
+                        if(filters.openAppOnly&&!co.registerInterest)return false;
                         if(filters.types.length===1&&filters.types[0]==="Volunteer"&&(co.volunteer||dj.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
                         if(filters.search){const q=filters.search.toLowerCase();const nameHit=nm.toLowerCase().includes(q);if(!nameHit&&!dj.some(j=>matches(j)))return false;}
                         const jlf=filters.titles.length>0||(filters.experience?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.minMatch>0;
@@ -5758,9 +5766,10 @@ export default function App() {
                               // Email-apply companies are an exception — they actively invite
                               // applications by email even without live listings, so keep them.
                               const isEmailApplyCo=company.emailApply||company.registerInterest==="email";
-                              if(filters.activeOnly&&displayJobs.length===0&&!isEmailApplyCo)return false;
+                              if(filters.activeOnly&&displayJobs.length===0&&!isEmailApplyCo&&!(filters.openAppOnly&&company.registerInterest))return false;
                               // Email Apply Only: company must have an email-apply job (or be flagged emailApply)
                               if(filters.emailApplyOnly&&!company.emailApply&&!displayJobs.some(j=>j.isEmailApply))return false;
+                              if(filters.openAppOnly&&!company.registerInterest)return false;
                               // Volunteer type filter: show companies flagged volunteer even with no listings
                               const volunteerFilterOnly=filters.types.length===1&&filters.types[0]==="Volunteer";
                               if(volunteerFilterOnly&&(company.volunteer||displayJobs.some(j=>j.isVolunteer||j.type==="Volunteer")))return true;
