@@ -4665,6 +4665,10 @@ function JourneyMode({user,allJobs,appliedJobs,onGoToJobs}){
   </div>;
 }
 
+let __mqBoardCache=null;                 // {jobs,ts} — survives client-side nav, resets on hard refresh
+const __MQ_BOARD_TTL=15*60*1000;         // treat an in-memory board younger than 15 min as still good
+function __mqFreshBoard(){ return !!(__mqBoardCache && (Date.now()-__mqBoardCache.ts)<__MQ_BOARD_TTL && __mqBoardCache.jobs && Object.keys(__mqBoardCache.jobs).length>0); }
+
 export default function App() {
   const mobile = useIsMobile();
   const [user,setUser]=useState(null);
@@ -4689,10 +4693,10 @@ export default function App() {
   const [expSortDir,setExpSortDir]=useState("asc"); // asc = low→high, desc = high→low
   const [hideLocationTabs,setHideLocationTabs]=useState(false); // flat job list, no region/state tabs
   const [flatLimit,setFlatLimit]=useState(200);                 // how many flat rows are rendered
-  const [liveJobs,setLiveJobs]=useState({});
+  const [liveJobs,setLiveJobs]=useState(()=>__mqFreshBoard()?__mqBoardCache.jobs:{});
   const [liveStatus,setLiveStatus]=useState("idle");
   const [loadProgress,setLoadProgress]=useState(0);      // 0..100 for the intro loader
-  const [introDone,setIntroDone]=useState(false);        // has the first full load finished?
+  const [introDone,setIntroDone]=useState(()=>__mqFreshBoard()); // fresh in-memory board skips the loader on soft nav
   // Cosmetic randomized loader numbers — the real load still ends the instant it's ready.
   const [displayPct,setDisplayPct]=useState(()=>Math.floor(Math.random()*8)+2);
   useEffect(()=>{
@@ -4710,6 +4714,13 @@ export default function App() {
   const abortRef=useRef(null);
   const introCollectedRef=useRef({}); // intro results accumulate here; revealed once loading completes
   const introStartRef=useRef(0);      // when the intro fetch began, for adaptive reveal timing
+  // Persist the loaded board at module scope so returning from another page
+  // (support / privacy / terms) skips the loader instead of re-running the intro.
+  useEffect(()=>{
+    if(introDone && liveJobs && Object.keys(liveJobs).length>0){
+      __mqBoardCache={jobs:liveJobs,ts:Date.now()};
+    }
+  },[liveJobs,introDone]);
 
   const fetchLiveJobs=async(isIntro=false)=>{
     if(abortRef.current)abortRef.current.abort();
@@ -4855,6 +4866,7 @@ export default function App() {
   useEffect(()=>{
     if((user||guest)&&!introStartedRef.current){
       introStartedRef.current=true;
+      if(__mqFreshBoard()){ return; } // already have a fresh in-memory board — no loader, no refetch
       introStartRef.current=Date.now();
       fetchLiveJobs(true);
       // Safety net of last resort. The normal path above waits for EVERY listing
