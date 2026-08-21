@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
@@ -5919,9 +5920,9 @@ export default function App() {
         Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.
       </div>
       <div style={{display:"flex",gap:16,alignItems:"center",flexShrink:0}}>
-        <a href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</a>
-        <a href="/privacy" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Privacy Policy</a>
-        <a href="/terms" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Terms of Service</a>
+        <Link href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</Link>
+        <Link href="/privacy" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Privacy Policy</Link>
+        <Link href="/terms" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Terms of Service</Link>
         <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest. All rights reserved.</span>
       </div>
     </footer>

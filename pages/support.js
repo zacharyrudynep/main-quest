@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useState } from "react";
 
 const REASONS = [
@@ -131,7 +132,7 @@ export default function Support() {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 30, fontSize: 12 }}>
-            <a href="/" style={{ color: "#c9a84c", fontFamily: "'Cinzel',serif", fontWeight: 700, textDecoration: "none" }}>← Back to the job board</a>
+            <Link href="/" style={{ color: "#c9a84c", fontFamily: "'Cinzel',serif", fontWeight: 700, textDecoration: "none" }}>← Back to the job board</Link>
           </div>
         </div>
       </div>
