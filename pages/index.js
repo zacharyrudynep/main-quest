@@ -969,6 +969,12 @@ const _EVERGREEN_RE = /talent community|talent network|talent pool|talent connec
 // Roles outside this board's game-industry focus that were cluttering the listings.
 const _OFFTOPIC_RE = /\b(sales (executive|rep|representative|manager|associate|director|lead|specialist)|strategic sales|account executive|business development|screenwriter|scriptwriter|copywriter|content writer|novel writer)\b/i;
 const _isEvergreen = (job) => { const t=(job&&job.title)||""; return _EVERGREEN_RE.test(t)||_OFFTOPIC_RE.test(t); };
+// Manually suppressed individual postings, keyed by exact "Company||Title".
+// Add a line here to hide a specific job without excluding its whole category.
+const _BLOCKED_JOBS = new Set([
+  "Crazy Maple Studio||Director, Brand Partnerships & Branded Content",
+]);
+const _isBlockedJob = (job) => !!job && _BLOCKED_JOBS.has(`${job.company}||${job.title}`);
 // "Open application" postings (real ATS ones + synthetic register-interest cards).
 const _OPENAPP_RE = /general application|spontaneous application|open application/i;
 const _isOpenAppJob = (job) => !!(job && (job.isOpenApp || _OPENAPP_RE.test((job.title)||"")));
@@ -4782,7 +4788,7 @@ export default function App() {
       const found=coLookup[companyName];
       const company=found?found.company:{name:companyName,url:"",email:null};
       const stateKey=found?found.stateKey:"Remote";
-      const jobs=rawJobs.map(j=>normalizeATSJob(j,platform,company,stateKey));
+      const jobs=rawJobs.map(j=>normalizeATSJob(j,platform,company,stateKey)).filter(j=>j&&!_isBlockedJob(j));
       return [companyName, jobs.length>0?jobs:null];
     };
     const fetchGroup=async(members)=>{
