@@ -4982,7 +4982,7 @@ export default function App() {
     setUser(u=>{
       if(!u) return u;
       const merged={...(u.profile||{}),...patch};
-      if(u.id){ try{ supabase.from("profiles").upsert({id:u.id,name:u.name,data:merged},{onConflict:"id"}); }catch(e){} }
+      if(u.id){ try{ supabase.from("profiles").upsert({id:u.id,name:u.name,data:merged},{onConflict:"id"}).then(()=>{}); }catch(e){} }
       return {...u,profile:merged};
     });
   };
