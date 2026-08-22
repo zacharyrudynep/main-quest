@@ -1796,7 +1796,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   }
   const parsed=parseJobSections(rawHtml,body);
   return {
-    id:`ats-${platform}-${raw.id||raw.shortcode||raw.uuid||title.replace(/\s+/g,"")}`,
+    id:`ats-${platform}-${company.name}-${raw.id||raw.shortcode||raw.uuid||title.replace(/\s+/g,"")}`,
     title, company:company.name, url, applyUrl:url, state:stateKey,
     posted:new Date(updated), postedStr:new Date(updated).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
     daysAgo, isNew:daysAgo<3, isRemote, isHybrid, type:jobType, salary, email:company.email,
@@ -4688,6 +4688,7 @@ function __mqAuthKnown(){ return !!(__mqAuthCache && (__mqAuthCache.user || __mq
 
 export default function App() {
   const mobile = useIsMobile();
+  const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
   const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
@@ -4978,9 +4979,12 @@ export default function App() {
   const inboxUnread=inbox.filter(n=>!n.read).length;
   // Merge a patch into the user's profile in state AND persist to Supabase.
   const patchProfile=async(patch)=>{
-    let merged=null;
-    setUser(u=>{ if(!u)return u; merged={...(u.profile||{}),...patch}; return {...u,profile:merged}; });
-    try{ if(user&&user.id&&merged) await supabase.from("profiles").upsert({id:user.id,name:user.name,data:merged},{onConflict:"id"}); }catch(e){}
+    setUser(u=>{
+      if(!u) return u;
+      const merged={...(u.profile||{}),...patch};
+      if(u.id){ try{ supabase.from("profiles").upsert({id:u.id,name:u.name,data:merged},{onConflict:"id"}); }catch(e){} }
+      return {...u,profile:merged};
+    });
   };
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
@@ -5559,7 +5563,7 @@ export default function App() {
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
     {/* Desktop background globe — large, bottom-left, behind everything */}
-    {!mobile&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
+    {desktop&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
     {/* Styles */}
     <style>{`@keyframes mqglow{0%,100%{text-shadow:0 0 7px rgba(240,208,128,.45)}50%{text-shadow:0 0 15px rgba(240,208,128,.9)}}@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
