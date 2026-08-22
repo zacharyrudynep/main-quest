@@ -982,7 +982,7 @@ function _makeOpenAppJob(name, meta){
   const href=riLinkToHref(meta.registerInterestLink,name);
   const isMail=!!href&&href.startsWith("mailto:");
   const mailAddr=isMail?href.replace(/^mailto:/,"").split("?")[0]:"";
-  return {id:`${name}-openapp`,title:"Open Application",company:name,url:href||meta.url||"",applyUrl:href||meta.url||"",email:mailAddr||meta.email||"",applyEmail:mailAddr,isEmailApply:isMail,isOpenApp:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!meta.volunteer,summary:isMail?`Submit an open application to ${name} — they invite you to email your resume to be considered for future roles.`:`Submit an open application to ${name}. They accept open applications and invite you to register interest for future openings.`,responsibilities:[],requirements:[]};
+  return {id:`${name}-openapp`,title:"Open Application",company:name,url:href||meta.url||"",applyUrl:href||meta.url||"",email:mailAddr||meta.email||"",applyEmail:mailAddr,isEmailApply:isMail,isOpenApp:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:null,postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!meta.volunteer,summary:isMail?`Submit an open application to ${name} — they invite you to email your resume to be considered for future roles.`:`Submit an open application to ${name}. They accept open applications and invite you to register interest for future openings.`,responsibilities:[],requirements:[]};
 }
 
 // ── EMAIL-APPLY JOBS ──────────────────────────────────────────────────────────
@@ -4707,7 +4707,7 @@ export default function App() {
   const [showLoginPopup,setShowLoginPopup]=useState(false);
   const requestLogin=useCallback(()=>setShowLoginPopup(true),[]);
   const [jobSort,setJobSort]=useState("default");
-  const [expSortDir,setExpSortDir]=useState("asc"); // asc = low→high, desc = high→low
+  const [sortRev,setSortRev]=useState(false); // false = natural order, true = inverted (newest & experience only)
   const [hideLocationTabs,setHideLocationTabs]=useState(false); // flat job list, no region/state tabs
   const [flatLimit,setFlatLimit]=useState(200);                 // how many flat rows are rendered
   const [liveJobs,setLiveJobs]=useState(()=>__mqFreshBoard()?__mqBoardCache.jobs:{});
@@ -5166,7 +5166,7 @@ export default function App() {
       for(const j of arr){ const s=computeMatchScore(j,user?.profile)?.score; sc.set(j,Number.isFinite(s)?s:-1); }
       return arr.sort((a,b)=>sc.get(b)-sc.get(a));
     }
-    if(jobSort==="newest"||jobSort==="oldest"){
+    if(jobSort==="newest"){
       const tm=new Map();
       for(const j of arr){ const t=j.posted?new Date(j.posted).getTime():NaN; tm.set(j,Number.isFinite(t)?t:null); }
       return arr.sort((a,b)=>{
@@ -5174,12 +5174,12 @@ export default function App() {
         if(va===null&&vb===null)return 0;
         if(va===null)return 1;  // undated jobs always sort to the end
         if(vb===null)return -1;
-        return jobSort==="newest"?vb-va:va-vb;
+        const d=vb-va; return sortRev?-d:d;
       });
     }
     if(jobSort==="experience"){
       const order={"Entry Level":0,"Mid Level":1,"Senior":2,"Lead":3,"Principal":4,"Director":5};
-      return arr.sort((a,b)=>{const diff=(order[a.experience]??99)-(order[b.experience]??99);return expSortDir==="desc"?-diff:diff;});
+      return arr.sort((a,b)=>{const ra=order[a&&a.experience],rb=order[b&&b.experience];const ua=ra===undefined,ub=rb===undefined;if(ua&&ub)return 0;if(ua)return 1;if(ub)return -1;const d=ra-rb;return sortRev?-d:d;});
     }
     return arr; // default: natural (board) order
   };
@@ -5408,7 +5408,7 @@ export default function App() {
       }
     }
     return sortJobs(out);
-  },[hideLocationTabs,displayTree,filters,jobSort,expSortDir,user]);
+  },[hideLocationTabs,displayTree,filters,jobSort,sortRev,user]);
   // Filter options come from the LIVE tree so continents and their countries show
   // up as soon as jobs are found there (not just the static US/CA seed data).
   const allCountries=useMemo(()=>{
@@ -5493,7 +5493,7 @@ export default function App() {
       }
     }
     return cache;
-  },[displayTree,liveJobs,filters,user,jobSort,expSortDir]);
+  },[displayTree,liveJobs,filters,user,jobSort,sortRev]);
   const appliedJobs=useMemo(()=>{
     const out=[];
     for(const [jid,entry] of Object.entries(user?.applied||{})){
@@ -5546,7 +5546,7 @@ export default function App() {
 
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const gBg="linear-gradient(135deg,rgba(201,168,76,.2),rgba(232,97,58,.15))";
-  const sortChip=(val,lbl)=><button onClick={()=>setJobSort(val)} style={{background:jobSort===val?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort===val?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort===val?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s"}}>{lbl}</button>;
+  const sortChip=(val,lbl,dir)=><button onClick={()=>{if(jobSort===val){if(dir)setSortRev(r=>!r);}else{setJobSort(val);setSortRev(false);}}} style={{background:jobSort===val?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort===val?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort===val?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s",display:"inline-flex",alignItems:"center",gap:4}}>{lbl}{dir&&jobSort===val&&<span style={{fontSize:9}}>{sortRev?"▼":"▲"}</span>}</button>;
 
   return <>
     <Head>
@@ -5693,8 +5693,7 @@ export default function App() {
         {/* Sort bar */}
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",padding:mobile?"7px 10px":"8px 12px",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:12}}>
           <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8,marginRight:2}}>Sort:</span>
-          {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest")}{sortChip("oldest","Oldest")}
-          <button onClick={()=>{if(jobSort!=="experience")setJobSort("experience");else setExpSortDir(d=>d==="asc"?"desc":"asc");}} style={{background:jobSort==="experience"?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort==="experience"?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort==="experience"?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s",display:"inline-flex",alignItems:"center",gap:4}}>Experience Level{jobSort==="experience"&&<span style={{fontSize:9}}>{expSortDir==="asc"?"▲":"▼"}</span>}</button>
+          {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest",true)}{sortChip("experience","Experience Level",true)}
           <div style={{flex:1}}/>
           <button onClick={()=>{setHideLocationTabs(v=>!v);setFlatLimit(200);}} title="Toggle a flat job list with no region/state tabs" style={{background:hideLocationTabs?"rgba(201,168,76,.16)":"rgba(201,168,76,.05)",border:`1px solid ${hideLocationTabs?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,color:hideLocationTabs?"#f0d080":"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:6,transition:"all .15s"}}><span style={{width:22,height:12,borderRadius:8,background:hideLocationTabs?"#c9a84c":"rgba(244,237,216,.15)",position:"relative",flexShrink:0,transition:"background .15s"}}><span style={{position:"absolute",top:2,left:hideLocationTabs?12:2,width:8,height:8,borderRadius:"50%",background:hideLocationTabs?"#0a0608":"rgba(244,237,216,.6)",transition:"left .15s"}}/></span>Hide location tabs</button>
           {!hideLocationTabs&&<button onClick={()=>setExpanded({})} title="Collapse all companies, states and countries" style={{background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:5}}><I.Chevron s={10} c="currentColor" dir="up"/>Close all tabs</button>}
@@ -5822,7 +5821,7 @@ export default function App() {
                                 {expanded[coKey]&&<div style={{padding:"6px 8px 8px",display:"flex",flexDirection:"column",gap:5}}>
                                   {noJobs
                                     ?(company.email
-                                      ?<JobCard key={`${name}-emailapply`} job={{id:`${name}-emailapply`,title:"General Application",company:name,url:company.url,applyUrl:company.url,email:company.email,applyEmail:company.email,isEmailApply:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:new Date(),postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!company.volunteer,emailSpecifics:EMAIL_SPECIFICS[name]||null,summary:EMAIL_SPECIFICS[name]?`${name} accepts applications by email. They ask that you include: ${EMAIL_SPECIFICS[name]}${/[.!?]$/.test(EMAIL_SPECIFICS[name])?"":"."} Send to ${company.email}.`:`${name} accepts applications by email. Send your resume to ${company.email} to be considered — they'll reach out if there's a fit.`,responsibilities:[],requirements:[]}} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/>
+                                      ?<JobCard key={`${name}-emailapply`} job={{id:`${name}-emailapply`,title:"General Application",company:name,url:company.url,applyUrl:company.url,email:company.email,applyEmail:company.email,isEmailApply:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:null,postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!company.volunteer,emailSpecifics:EMAIL_SPECIFICS[name]||null,summary:EMAIL_SPECIFICS[name]?`${name} accepts applications by email. They ask that you include: ${EMAIL_SPECIFICS[name]}${/[.!?]$/.test(EMAIL_SPECIFICS[name])?"":"."} Send to ${company.email}.`:`${name} accepts applications by email. Send your resume to ${company.email} to be considered — they'll reach out if there's a fit.`,responsibilities:[],requirements:[]}} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied}/>
                                       :<NoOpenCard company={company} companyName={name} user={user} onApplied={markApplied}/>)
                                     :(()=>{
                                       // Group this studio's jobs by their real location WITHIN this
