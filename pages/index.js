@@ -1869,13 +1869,13 @@ const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton
 
 // ── GEMINI AI HELPER — free, no credit card. Get key at aistudio.google.com ──
 async function callAI(prompt,maxTokens=2000){
-  const key=process.env.NEXT_PUBLIC_GEMINI_KEY;
-  if(!key)throw new Error("Missing NEXT_PUBLIC_GEMINI_KEY. Get a free key at aistudio.google.com and add it in Vercel \u2192 Settings \u2192 Environment Variables.");
-  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}})});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`Gemini API error ${res.status}. Check your API key.`);}
-  const data=await res.json();
-  if(!data.candidates?.length)throw new Error("Gemini returned no response. Please try again.");
-  return data.candidates[0].content?.parts?.[0]?.text||"";
+  let token="";
+  try{ const { data:sess }=await supabase.auth.getSession(); token=sess&&sess.session&&sess.session.access_token||""; }catch(e){}
+  if(!token)throw new Error("Please sign in to use AI features.");
+  const res=await fetch("/api/ai/generate",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({prompt,maxTokens})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data?.error||`AI error ${res.status}. Please try again.`);
+  return data.text||"";
 }
 
 // ── ICONS ────────────────────────────────────────────────────────────────────
@@ -2816,7 +2816,7 @@ function AIApplyModal({job,user,onClose,onApplied}) {
       const s=clean.indexOf("{"),e=clean.lastIndexOf("}");
       setResult(JSON.parse(clean.slice(s,e+1)));
       setPhase("result");
-    }catch(er){setErr(er?.message||"Could not generate. Check that NEXT_PUBLIC_GEMINI_KEY is set in Vercel environment variables.");setPhase("check");}
+    }catch(er){setErr(er?.message||"Could not generate. Please try again in a moment.");setPhase("check");}
   };
 
   const scoreColor=s=>s>=70?"#7ecfb3":s>=45?"#c9a84c":"#e07060";
