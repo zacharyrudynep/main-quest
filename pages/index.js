@@ -1926,9 +1926,11 @@ function LoginPopup({onClose,onLogin}) {
     setLoading(true);
     try{
       if(mode==="signup"){
-        const {data,error}=await supabase.auth.signUp({email,password:pass});
-        if(error){setErr(error.message);setLoading(false);return;}
-        await supabase.from("profiles").insert({id:data.user.id,name,data:{tosVersion:TOS_VERSION}});
+        const _r=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pass,name,tosVersion:TOS_VERSION})});
+        const _j=await _r.json().catch(()=>({}));
+        if(!_r.ok){setErr(_j.error||"Could not create account.");setLoading(false);return;}
+        const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
+        if(error){setErr("Account created - please sign in.");setLoading(false);return;}
         onLogin({id:data.user.id,email,name,applied:{},profile:{tosVersion:TOS_VERSION}});
       }else{
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
@@ -2633,9 +2635,11 @@ function Auth({onLogin,onGuest}) {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password: pass });
-        if (error) { setErr(error.message); setLoading(false); return; }
-        await supabase.from("profiles").insert({ id: data.user.id, name, data: { tosVersion: TOS_VERSION } });
+        const _r = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass, name, tosVersion: TOS_VERSION }) });
+        const _j = await _r.json().catch(() => ({}));
+        if (!_r.ok) { setErr(_j.error || "Could not create account."); setLoading(false); return; }
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+        if (error) { setErr("Account created - please sign in."); setLoading(false); return; }
         onLogin({ id: data.user.id, email, name, applied: {}, profile: { tosVersion: TOS_VERSION } });
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
