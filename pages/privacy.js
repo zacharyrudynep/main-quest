@@ -4,7 +4,7 @@ import Link from "next/link";
 
 // ── EDIT BEFORE PUBLISHING ───────────────────────────────────────────────────
 // Set this to your real contact address once your domain + email are live.
-const CONTACT_EMAIL = "privacy@REPLACE-WITH-YOUR-DOMAIN.com";
+const CONTACT_EMAIL = "privacy@mainquestjobs.com";
 
 export default function Privacy() {
   const G = "linear-gradient(135deg,#c9a84c,#e8613a)";

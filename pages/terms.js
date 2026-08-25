@@ -4,7 +4,7 @@ import Link from "next/link";
 
 // ── EDIT BEFORE PUBLISHING ───────────────────────────────────────────────────
 // Set these to your real values before you publish.
-const CONTACT_EMAIL = "support@REPLACE-WITH-YOUR-DOMAIN.com";
+const CONTACT_EMAIL = "support@mainquestjobs.com";
 const GOVERNING_STATE = "New York";
 
 export default function Terms() {
