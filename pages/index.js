@@ -2223,7 +2223,7 @@ function getGlobeLights(){
       const nlon=lon+Math.cos(ang)*r/Math.max(0.35,Math.cos(lat*Math.PI/180));
       if(!pointOnLand(nlon,nlat))continue;        // keep lights on land only
       const fall=1-r/(ring+0.001);
-      out.push([nlat,nlon,Math.max(0.05,w*(0.20+0.55*fall*rnd())),0.6+rnd()*0.45]);
+      out.push([nlat,nlon,Math.max(0.08,w*(0.35+0.6*fall*rnd())),0.6+rnd()*0.45]);
       placed++;
     }
   }
@@ -2244,7 +2244,7 @@ function getGlobeLights(){
       const nlon=lon+Math.cos(ang)*r/Math.max(0.35,Math.cos(lat*Math.PI/180));
       if(!pointOnLand(nlon,nlat))continue;        // keep the glow on land
       const fall=1-r/(ring+0.001);
-      out.push([nlat,nlon,Math.max(0.05,w*(0.20+0.55*fall*rnd())),0.6+rnd()*0.45]);
+      out.push([nlat,nlon,Math.max(0.08,w*(0.35+0.6*fall*rnd())),0.6+rnd()*0.45]);
       placed++;
     }
   }
@@ -2254,10 +2254,10 @@ function getGlobeLights(){
     const cnt=stateCount[st.name]||0;
     if(cnt>0){
       const factor=Math.sqrt(cnt/maxCount);
-      const n=Math.min(14, 4+Math.round(cnt*0.4));       // scale dots with company count
-      scatterInState(st, n, 0.09, Math.max(0.15, 0.13+0.45*factor));
+      const n=Math.min(18, 5+Math.round(cnt*0.5));       // scale dots with company count
+      scatterInState(st, n, 0.09, Math.max(0.24, 0.2+0.78*factor));
     }else{
-      scatterInState(st, 2, 0.045, 0.085);               // faint ambient filler
+      scatterInState(st, 3, 0.05, 0.17);               // faint ambient filler
     }
   }
   _globeLightsCache=out;
@@ -2353,10 +2353,10 @@ function GlobeHeatmap({size=180,showStates=true}){
         const p=project(lat,lon,rot);
         if(p.z>0.04){
           const depth=0.35+p.z*0.65;             // fade toward the limb
-          const haze=(spread||1)*(2.5+w*7)*depth; // soft outer bloom
+          const haze=(spread||1)*(4+w*11)*depth; // soft outer bloom
           const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,haze);
-          g.addColorStop(0,`rgba(255,205,120,${0.42*w*depth})`);
-          g.addColorStop(0.35,`rgba(244,140,70,${0.20*w*depth})`);
+          g.addColorStop(0,`rgba(255,205,120,${0.58*w*depth})`);
+          g.addColorStop(0.35,`rgba(244,140,70,${0.32*w*depth})`);
           g.addColorStop(1,"rgba(232,97,58,0)");
           ctx.fillStyle=g;
           ctx.beginPath(); ctx.arc(p.x,p.y,haze,0,Math.PI*2); ctx.fill();
@@ -2615,7 +2615,7 @@ function PricingInfo({compact,onDismiss}){
     </div>;
   }
   const free=["Browse every listing","Apply to jobs","Track your applications","Job alerts for up to 5 companies"];
-  const prem=["Everything in Free","Job Match Score","Email autofill for applications","Targeted alerts by role, location, company & seniority"];
+  const prem=["Everything in Basic","Job Match Score","Email autofill for applications","Targeted alerts by role, location, company & seniority"];
   const Card=({title,price,items,gold})=><div style={{flex:1,minWidth:0,background:gold?"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.05))":"rgba(201,168,76,.03)",border:`1px solid ${gold?"rgba(201,168,76,.4)":"rgba(201,168,76,.14)"}`,borderRadius:12,padding:14}}>
     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
       <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:14,...(gold?{background:GG,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}:{color:"#f4edd8"}),letterSpacing:.5}}>{title}</span>
@@ -2739,7 +2739,7 @@ function Auth({onLogin,onGuest}) {
       </div>
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["760+","Studios"],["Live","Job Feeds"],["2","Countries"],["1000s","Open Roles"]].map(([n,l],i)=>(
+        {[["760+","Studios"],["Live","Job Feeds"],[String(Object.keys(COMPANIES_DATA).length),"Countries"],["1000s","Open Roles"]].map(([n,l],i)=>(
           <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
             <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
@@ -4350,7 +4350,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       </div>}
     </div>
     {/* Match score square */}
-    {guest&&<div onClick={e=>{e.stopPropagation();onRequestLogin&&onRequestLogin();}} title="Sign up or log in to access this feature" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer",overflow:"hidden"}} onMouseEnter={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=1;}} onMouseLeave={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=0;}}>
+    {guest&&!_isOpenAppJob(job)&&<div onClick={e=>{e.stopPropagation();onRequestLogin&&onRequestLogin();}} title="Sign up or log in to access this feature" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer",overflow:"hidden"}} onMouseEnter={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=1;}} onMouseLeave={e=>{const t=e.currentTarget.querySelector(".gtip");if(t)t.style.opacity=0;}}>
       <div style={{filter:"blur(5px)",opacity:.5,display:"flex",flexDirection:"column",alignItems:"center"}}>
         <div style={{fontSize:mobile?17:20,fontWeight:800,color:"#c9a84c",fontFamily:"'Cinzel',serif",lineHeight:1}}>8.4</div>
         <div style={{fontSize:8,color:"#c9a84c",opacity:.7,fontFamily:"'Cinzel',serif"}}>/ 10</div>
@@ -4360,7 +4360,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <div className="gtip" style={{position:"absolute",top:"100%",right:0,marginTop:6,width:160,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 10px",fontSize:10,lineHeight:1.4,color:"rgba(244,237,216,.85)",zIndex:100,opacity:0,transition:"opacity .15s",pointerEvents:"none",fontFamily:"system-ui,sans-serif",textAlign:"center"}}>Sign up or log in to access your match score</div>
     </div>}
     {/* Match score square — shows score when profile has data, otherwise a prompt */}
-    {user&&<div onClick={e=>{e.stopPropagation(); if(!match||mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Click for the full match breakdown" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer"}}>
+    {user&&!_isOpenAppJob(job)&&<div onClick={e=>{e.stopPropagation(); if(!match||mobile){setShowScoreInfo(v=>!v);} else if(onShowBreakdown){onShowBreakdown(job);}}} title="Click for the full match breakdown" style={{flexShrink:0,width:mobile?58:66,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:match?`${scoreColor}1a`:"rgba(201,168,76,.05)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.18)"}`,borderRadius:10,padding:"6px 4px",alignSelf:"flex-start",cursor:"pointer"}}>
       {/* Info icon — hover for the disclaimer */}
       <span onMouseEnter={()=>setShowDisclaimer(true)} onMouseLeave={()=>setShowDisclaimer(false)} onClick={e=>{e.stopPropagation();setShowDisclaimer(v=>!v);}} title="What is this?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"help",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
       {showDisclaimer&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:206,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:101,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess comparing the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
