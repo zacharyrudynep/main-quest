@@ -1,8 +1,11 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { checkBanned, logUserIp } from "../../../lib/bans";
+import { containsCrisisSignal, CRISIS_MESSAGE } from "../../../lib/crisisCheck";
 
 // ── Server-side Gemini proxy for AI Apply / AI Email ──────────────────────────
 // Keeps the Gemini key server-only. Requires a signed-in user (blocks anonymous
-// quota abuse). Mirrors the multi-model fallback used by tailor-resume.
+// quota abuse), rejects banned users/IPs, and refuses to draft over content that
+// signals a personal crisis. Mirrors the multi-model fallback used by tailor-resume.
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const CANDIDATES = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
 let cachedModel = null;
@@ -57,6 +60,11 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: "Please sign in to use AI features." });
     const { data: u, error: ue } = await supabaseAdmin.auth.getUser(token);
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in to use AI features." });
+    if (!(u.user.app_metadata && u.user.app_metadata.email_verified)) return res.status(403).json({ error: "Please verify your email to use AI features.", needVerify: true });
+
+    // ── Ban check (IP or account) ──
+    const { banned, ip } = await checkBanned(req, u.user.id);
+    if (banned) return res.status(403).json({ error: "Your access to this feature has been suspended." });
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const prompt = String(b.prompt || "").slice(0, 24000);
@@ -64,6 +72,14 @@ export default async function handler(req, res) {
     if (!Number.isFinite(maxTokens) || maxTokens <= 0) maxTokens = 2000;
     maxTokens = Math.min(maxTokens, 4000);
     if (!prompt.trim()) return res.status(400).json({ error: "No prompt provided." });
+
+    // ── Crisis tripwire: don't draft over self-harm content; point to help ──
+    if (containsCrisisSignal(prompt)) {
+      return res.status(422).json({ error: CRISIS_MESSAGE });
+    }
+
+    // Best-effort IP log (so abusive accounts' IPs can be identified for banning)
+    logUserIp(u.user.id, ip);
 
     const g = await generate(prompt, maxTokens);
     if (g.busy) return res.status(503).json({ error: "The AI is busy right now. Please try again in a moment." });

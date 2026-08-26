@@ -71,6 +71,7 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: "Please sign in." });
     const { data: u, error: ue } = await supabaseAdmin.auth.getUser(token);
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in." });
+    if (!(u.user.app_metadata && u.user.app_metadata.email_verified)) return res.status(403).json({ error: "Please verify your email to use this feature.", needVerify: true });
     const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin").eq("id", u.user.id).single();
     const isAdmin = !!(prof && prof.is_admin);
     if (!prof || (!prof.is_premium && !isAdmin)) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });

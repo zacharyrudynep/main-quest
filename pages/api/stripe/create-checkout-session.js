@@ -25,6 +25,15 @@ export default async function handler(req, res) {
     const { userId, email, plan } = req.body || {};
     if (!userId) return res.status(400).json({ error: "Missing userId" });
 
+    // Require a verified email before allowing an upgrade/payment.
+    try {
+      const { data: cu } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (!(cu && cu.user && cu.user.app_metadata && cu.user.app_metadata.email_verified))
+        return res.status(403).json({ error: "Please verify your email before upgrading.", needVerify: true });
+    } catch (e) {
+      return res.status(403).json({ error: "Please verify your email before upgrading.", needVerify: true });
+    }
+
     // Pick the requested plan (default to monthly for anything unrecognized).
     const key = PLANS[plan] ? plan : "monthly";
     const chosen = PLANS[key];
