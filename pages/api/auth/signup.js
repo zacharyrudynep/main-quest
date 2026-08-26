@@ -1,11 +1,13 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getClientIp } from "../../../lib/clientIp";
 import { logUserIp } from "../../../lib/bans";
+import { sendVerificationEmail } from "../../../lib/resend";
+import crypto from "crypto";
 
-// Verify a Cloudflare Turnstile token. If TURNSTILE_SECRET isn't configured yet,
-// this is skipped (returns ok) so signup keeps working until you enable it.
-// On a network error reaching Cloudflare we fail OPEN, so a CF outage can't lock
-// real users out of signing up; an actually-invalid/missing token fails closed.
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
+
+// Verify a Cloudflare Turnstile token. Skipped if TURNSTILE_SECRET isn't set, so
+// signup keeps working until you enable it. Fails OPEN on a network error to CF.
 async function verifyTurnstile(token, ip) {
   const secret = process.env.TURNSTILE_SECRET;
   if (!secret) return { ok: true };
@@ -23,7 +25,7 @@ async function verifyTurnstile(token, ip) {
     const data = await r.json().catch(() => ({}));
     return { ok: !!data.success };
   } catch (e) {
-    return { ok: true }; // fail open on network error
+    return { ok: true };
   }
 }
 
@@ -41,7 +43,7 @@ export default async function handler(req, res) {
 
     const ip = getClientIp(req);
 
-    // ── Bot check (Cloudflare Turnstile) ──
+    // ── Bot check ──
     const ts = await verifyTurnstile(b.turnstileToken, ip);
     if (!ts.ok) return res.status(400).json({ error: "Please complete the verification challenge and try again." });
 
@@ -51,11 +53,13 @@ export default async function handler(req, res) {
       if (bip) return res.status(403).json({ error: "Sign-ups from your network are not permitted." });
     }
 
-    // ── Create the confirmed user ──
+    // ── Create the user (login-confirmed so they can browse; email_verified=false
+    //    in app_metadata gates the features until they click the email link). ──
     const { data: created, error: ce } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
+      app_metadata: { email_verified: false },
     });
     if (ce || !created || !created.user) {
       const msg = (ce && ce.message) || "Could not create account.";
@@ -64,13 +68,21 @@ export default async function handler(req, res) {
     }
     const uid = created.user.id;
 
-    // ── Profile row (service role bypasses RLS) ──
-    try { await supabaseAdmin.from("profiles").insert({ id: uid, name, data: { tosVersion } }); } catch (e) {}
+    // ── Profile row ──
+    try { await supabaseAdmin.from("profiles").insert({ id: uid, name, data: { tosVersion }, email_verified: false }); } catch (e) {}
 
-    // ── Log signup IP (best-effort) ──
+    // ── Send the verification email (best-effort; never blocks signup) ──
+    try {
+      const token = crypto.randomUUID();
+      await supabaseAdmin.from("email_verifications").insert({
+        token, user_id: uid, email,
+        expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      });
+      await sendVerificationEmail(email, name, `${SITE}/api/auth/verify-email?token=${token}`);
+    } catch (e) {}
+
+    // ── Log signup IP + bump lifetime counter (best-effort) ──
     logUserIp(uid, ip);
-
-    // ── Bump the lifetime signup counter (best-effort) ──
     try { await supabaseAdmin.rpc("bump_counter", { counter_key: "lifetime_signups" }); } catch (e) {}
 
     return res.status(200).json({ ok: true, userId: uid });
