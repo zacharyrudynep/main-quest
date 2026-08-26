@@ -31,10 +31,11 @@ export default async function handler(req, res) {
     } catch (e) {}
 
     // ── Profiles: premium, resumes, completion ──
-    let premiumUsers = 0, resumesUploaded = 0, completeProfiles = 0;
+    let premiumUsers = 0, resumesUploaded = 0, completeProfiles = 0, activeUsers = 0;
     const premMap = {};
     try {
       const { data: profs } = await supabaseAdmin.from("profiles").select("id,data,is_premium").limit(100000);
+      activeUsers = (profs || []).length;
       for (const p of profs || []) {
         premMap[p.id] = !!p.is_premium;
         if (p.is_premium) premiumUsers++;
@@ -88,6 +89,13 @@ export default async function handler(req, res) {
       }
     } catch (e) {}
 
+    // ── Lifetime signups (persistent counter, survives deletions) ──
+    let lifetimeUsers = 0;
+    try {
+      const { data: c } = await supabaseAdmin.from("app_counters").select("value").eq("key", "lifetime_signups").maybeSingle();
+      if (c && typeof c.value !== "undefined") lifetimeUsers = Number(c.value) || 0;
+    } catch (e) {}
+
     // ── 30-day series ──
     const days = [];
     for (let i = 29; i >= 0; i--) days.push(new Date(Date.now() - i * 86400000).toISOString().slice(0, 10));
@@ -96,6 +104,8 @@ export default async function handler(req, res) {
       generatedAt: new Date().toISOString(),
       // Users
       totalUsers,
+      activeUsers,
+      lifetimeUsers,
       premiumUsers,
       freeUsers: Math.max(0, totalUsers - premiumUsers),
       premiumPct: totalUsers ? Math.round((premiumUsers / totalUsers) * 1000) / 10 : 0,

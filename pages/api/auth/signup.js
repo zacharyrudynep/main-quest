@@ -4,7 +4,7 @@ import { logUserIp } from "../../../lib/bans";
 
 // Server-side signup so account creation can be gated by the IP ban list.
 // Creates a confirmed user (matching the app's no-email-confirmation flow),
-// inserts the profile row, and logs the signup IP.
+// inserts the profile row, logs the signup IP, and bumps the lifetime counter.
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
@@ -37,11 +37,14 @@ export default async function handler(req, res) {
     }
     const uid = created.user.id;
 
-    // ── Profile row (service role bypasses RLS) ──
+    // ── Profile row (service role bypasses RLS). email_verified starts false. ──
     try { await supabaseAdmin.from("profiles").insert({ id: uid, name, data: { tosVersion } }); } catch (e) { /* profile may already exist via trigger */ }
 
     // ── Log signup IP (best-effort) ──
     logUserIp(uid, ip);
+
+    // ── Bump the lifetime signup counter (best-effort; never blocks signup) ──
+    try { await supabaseAdmin.rpc("bump_counter", { counter_key: "lifetime_signups" }); } catch (e) {}
 
     return res.status(200).json({ ok: true, userId: uid });
   } catch (e) {

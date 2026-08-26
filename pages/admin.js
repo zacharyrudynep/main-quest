@@ -89,7 +89,7 @@ export default function Admin() {
               {tab === "overview" && (
                 <>
                   <Kpis items={[
-                    ["Total Users", s.totalUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
+                    ["Active Users", s.activeUsers], ["Lifetime Users", s.lifetimeUsers, "all-time signups", "#e8a070"], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
                     ["Applications", s.totalApplications], ["Saves", s.totalSaves, null, "#e8a070"],
                     ["Job Views", s.totalViews, null, "#e8a070"], ["Apply Clicks", s.totalClicks, null, "#e8a070"], ["Shares", s.totalShares, null, "#e8a070"],
                   ]} />
@@ -145,7 +145,7 @@ export default function Admin() {
               {tab === "users" && (
                 <>
                   <Kpis items={[
-                    ["Total Users", s.totalUsers], ["Free", s.freeUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
+                    ["Active Users", s.activeUsers], ["Lifetime Users", s.lifetimeUsers, "all-time signups", "#e8a070"], ["Free", s.freeUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
                     ["Resumes Uploaded", s.resumesUploaded], ["Complete Profiles", s.completeProfiles],
                   ]} />
                   <Panel title="Signups (last 30 days)"><LineChart data={s.signupSeries} color="#c9a84c" /></Panel>
