@@ -1931,8 +1931,33 @@ const I={
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
 // Centered login/signup modal for guests to upgrade to a full account.
+// Cloudflare Turnstile bot-check widget. Renders only when a site key is set
+// (NEXT_PUBLIC_TURNSTILE_SITE_KEY); otherwise it is a no-op so signup still works.
+function TurnstileWidget({ onToken }){
+  const boxRef=useRef(null);
+  const idRef=useRef(null);
+  const siteKey=process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  useEffect(()=>{
+    if(!siteKey) return;
+    let dead=false;
+    const mount=()=>{
+      if(dead||!boxRef.current||!window.turnstile||idRef.current!==null) return;
+      try{ idRef.current=window.turnstile.render(boxRef.current,{sitekey:siteKey,theme:"dark",callback:tk=>onToken(tk||""),"expired-callback":()=>onToken(""),"error-callback":()=>onToken("")}); }catch(e){}
+    };
+    if(window.turnstile){ mount(); }
+    else{
+      let s=document.getElementById("cf-turnstile-js");
+      if(!s){ s=document.createElement("script"); s.id="cf-turnstile-js"; s.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async=true; s.defer=true; document.head.appendChild(s); }
+      s.addEventListener("load",mount);
+    }
+    return ()=>{ dead=true; try{ if(idRef.current!==null&&window.turnstile) window.turnstile.remove(idRef.current); }catch(e){} idRef.current=null; };
+  },[siteKey]);
+  if(!siteKey) return null;
+  return <div ref={boxRef} style={{display:"flex",justifyContent:"center",margin:"2px 0 10px"}}/>;
+}
+
 function LoginPopup({onClose,onLogin}) {
-  const [mode,setMode]=useState("login");
+  const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
   const [agreed,setAgreed]=useState(false);
   const [name,setName]=useState(""),[email,setEmail]=useState(""),[pass,setPass]=useState("");
   const [err,setErr]=useState(""),[loading,setLoading]=useState(false);
@@ -1945,7 +1970,7 @@ function LoginPopup({onClose,onLogin}) {
     setLoading(true);
     try{
       if(mode==="signup"){
-        const _r=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pass,name,tosVersion:TOS_VERSION})});
+        const _r=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pass,name,tosVersion:TOS_VERSION,turnstileToken:tsToken})});
         const _j=await _r.json().catch(()=>({}));
         if(!_r.ok){setErr(_j.error||"Could not create account.");setLoading(false);return;}
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
@@ -1975,7 +2000,7 @@ function LoginPopup({onClose,onLogin}) {
       <input style={inp} type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password"/>
       {mode==="signup"&&<label onClick={()=>setAgreed(a=>!a)} style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",margin:"2px 0 12px",fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.4}}><div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${agreed?"#c9a84c":"rgba(201,168,76,.3)"}`,background:agreed?"#c9a84c":"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center"}}>{agreed&&<I.Check s={9} c="#0a0608"/>}</div><span>I agree to the <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a>.</span></label>}
       {err&&<div style={{fontSize:11.5,color:"#e07060",marginBottom:10,textAlign:"center"}}>{err}</div>}
-      <button onClick={submit} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:loading?"default":"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:loading?.7:1,marginBottom:12}}>{loading?"⟳":mode==="login"?"Sign In →":"Create Account →"}</button>
+      {mode==="signup"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:loading?"default":"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:loading?.7:1,marginBottom:12}}>{loading?"⟳":mode==="login"?"Sign In →":"Create Account →"}</button>
       <p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button></p>
     </div>
   </div>;
@@ -2640,7 +2665,7 @@ function PricingInfo({compact,onDismiss}){
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function Auth({onLogin,onGuest}) {
   const mobile = useIsMobile();
-  const [mode,setMode]=useState("login");
+  const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
   const [agreed,setAgreed]=useState(false);
   const [staySignedIn,setStaySignedIn]=useState(true);
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
@@ -2654,7 +2679,7 @@ function Auth({onLogin,onGuest}) {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const _r = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass, name, tosVersion: TOS_VERSION }) });
+        const _r = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass, name, tosVersion: TOS_VERSION, turnstileToken: tsToken }) });
         const _j = await _r.json().catch(() => ({}));
         if (!_r.ok) { setErr(_j.error || "Could not create account."); setLoading(false); return; }
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
@@ -2786,7 +2811,7 @@ function Auth({onLogin,onGuest}) {
             <input type="checkbox" checked={staySignedIn} onChange={e=>setStaySignedIn(e.target.checked)} style={{accentColor:"#c9a84c",cursor:"pointer"}}/>
             <span>Stay signed in on this device</span>
           </label>}
-          <button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Sign In":"Create Account"} →</>}</button>
+          {mode==="signup"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Sign In":"Create Account"} →</>}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,color:"rgba(244,237,216,.2)"}}>
             <div style={{flex:1,height:1,background:"rgba(201,168,76,.12)"}}/>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(201,168,76,.35)",letterSpacing:2}}>✦</span>
