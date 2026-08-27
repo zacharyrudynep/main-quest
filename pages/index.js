@@ -3499,6 +3499,30 @@ function GuestPanel({onClose,onSignIn}) {
   </div>;
 }
 
+// Account-tab row prompting unverified users to verify their email.
+function VerifyEmailRow({ user }){
+  const [busy,setBusy]=useState(false);
+  const [msg,setMsg]=useState("");
+  if(!(user&&user.profile&&user.profile.email_verified===false)) return null;
+  const send=async()=>{
+    setBusy(true); setMsg("");
+    try{
+      const { data }=await supabase.auth.getSession();
+      const tk=data&&data.session&&data.session.access_token;
+      const r=await fetch("/api/auth/resend-verification",{method:"POST",headers:{Authorization:`Bearer ${tk}`}});
+      const j=await r.json().catch(()=>({}));
+      setMsg(r.ok?(j.already?"Your email is already verified — refresh the page.":"Verification email sent — check your inbox."):(j.error||"Could not send. Please try again."));
+    }catch(e){ setMsg("Could not send. Please try again."); }
+    setBusy(false);
+  };
+  return <div style={{marginBottom:18,padding:14,background:"linear-gradient(150deg,rgba(201,168,76,.1),rgba(232,97,58,.05))",border:"1px solid rgba(201,168,76,.35)",borderRadius:12}}>
+    <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:13,color:"#f0d080",marginBottom:4}}>Verify your email</div>
+    <div style={{fontSize:11.5,color:"rgba(244,237,216,.6)",lineHeight:1.5,marginBottom:11}}>Confirm your email to unlock match scores, AI tools, tracking, and alerts.</div>
+    <button onClick={send} disabled={busy} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",cursor:busy?"default":"pointer",fontSize:12,fontWeight:800,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:busy?.6:1}}>{busy?"Sending…":"Verify Email"}</button>
+    {msg&&<div style={{fontSize:11,color:"#7ecfb3",marginTop:9,textAlign:"center"}}>{msg}</div>}
+  </div>;
+}
+
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
@@ -3646,6 +3670,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
           </div>
         </div>:<EmailTemplateTab profile={p} upd={upd}/>)}
         {tab==="account"&&<div>
+          <VerifyEmailRow user={user}/>
           {/* Membership / Premium */}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Membership</div>
           {premium===null?

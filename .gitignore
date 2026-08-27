@@ -44,3 +44,6 @@ next-env.d.ts
 .vscode/
 *.swp
 Thumbs.db
+
+.vercel
+.env*
