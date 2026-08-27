@@ -1882,7 +1882,7 @@ const EMAIL_PROVIDERS = {
 // ── LEGAL VERSION ─────────────────────────────────────────────────────────────
 // Bump this date whenever Terms or Privacy Policy change. Users who agreed to an
 // older version will be prompted to re-accept via a popup near the footer.
-const TOS_VERSION = "2026-06-20";
+const TOS_VERSION = "2026-08-27";
 
 const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton:"ProtonMail"};
 
