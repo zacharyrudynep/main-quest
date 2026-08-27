@@ -2747,10 +2747,10 @@ function Auth({onLogin,onGuest}) {
         {[
           [<I.Globe s={17} c="#f0d080"/>,"Job Board","760+ studios across the US and Canada, filtered by state, role, and experience.",false],
           [<I.Target s={17} c="#f0d080"/>,"Job Match Score","See how well each posting fits your skills and experience, 0–10.",true],
-          [<I.Scroll s={17} c="#f0d080"/>,"Resume Upload","Upload your resume to auto-fill your profile in seconds.",false],
-          [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to.",true],
-          [<I.Clipboard s={17} c="#f0d080"/>,"App Tracker","Track every application with dates and one-click access.",false],
+          [<I.Clipboard s={17} c="#f0d080"/>,"Application","Track every application with dates and one-click access.",false],
+          [<I.Lightning s={17} c="#f0d080"/>,"AI Resume Tailor","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.",true],
           [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most.",false],
+          [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to.",true],
         ].map(([ic,title,desc,premium])=>
           <div key={title} style={{position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:premium?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${premium?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10}}>
             {premium&&<span style={{position:"absolute",top:6,right:6,background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>Premium</span>}
@@ -4734,6 +4734,27 @@ function __mqFreshBoard(){ return !!(__mqBoardCache && (Date.now()-__mqBoardCach
 let __mqAuthCache=null; // {user,guest} — remembers who's signed in across client-side nav (this tab only); cleared on hard refresh
 function __mqAuthKnown(){ return !!(__mqAuthCache && (__mqAuthCache.user || __mqAuthCache.guest)); }
 
+// Top banner shown to signed-in users who have not verified their email yet.
+function VerifyBanner({ onToast }){
+  const [busy,setBusy]=useState(false);
+  const resend=async()=>{
+    setBusy(true);
+    try{
+      const { data }=await supabase.auth.getSession();
+      const tk=data&&data.session&&data.session.access_token;
+      const r=await fetch("/api/auth/resend-verification",{method:"POST",headers:{Authorization:`Bearer ${tk}`}});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok) onToast(j.already?"Your email is already verified.":"Verification email sent — check your inbox.");
+      else onToast(j.error||"Could not send the email. Please try again.");
+    }catch(e){ onToast("Could not send the email. Please try again."); }
+    setBusy(false);
+  };
+  return <div style={{position:"fixed",top:0,left:0,right:0,zIndex:420,background:"linear-gradient(90deg,rgba(42,26,12,.98),rgba(30,18,20,.98))",borderBottom:"1px solid rgba(201,168,76,.35)",padding:"9px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:14,flexWrap:"wrap",boxShadow:"0 4px 20px rgba(0,0,0,.4)"}}>
+    <span style={{fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",textAlign:"center"}}>Verify your email to unlock features like match scores, AI tools, tracking, and alerts.</span>
+    <button onClick={resend} disabled={busy} style={{background:"linear-gradient(135deg,#c9a84c,#f0d080)",border:"none",color:"#0a0608",borderRadius:8,padding:"5px 14px",fontSize:11,fontWeight:800,fontFamily:"'Cinzel',serif",cursor:busy?"default":"pointer",opacity:busy?.6:1,whiteSpace:"nowrap"}}>{busy?"Sending…":"Resend email"}</button>
+  </div>;
+}
+
 export default function App() {
   const mobile = useIsMobile();
   const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
@@ -5043,6 +5064,18 @@ export default function App() {
   const [appAdmin,setAppAdmin]=useState(false);
   const [toast,setToast]=useState("");
   useEffect(()=>{ if(!toast)return; const t=setTimeout(()=>setToast(""),3500); return ()=>clearTimeout(t); },[toast]);
+  // React to the ?verify=... flag the verification link redirects back with.
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    const sp=new URLSearchParams(window.location.search);
+    const v=sp.get("verify");
+    if(!v)return;
+    const msgs={success:"Email verified — all features unlocked!",already:"Your email is already verified.",expired:"That link expired. Sign in and resend a new one.",invalid:"That verification link is invalid.",error:"Something went wrong verifying. Please try again."};
+    if(msgs[v]) setToast(msgs[v]);
+    sp.delete("verify"); const qs=sp.toString();
+    window.history.replaceState({}, "", window.location.pathname+(qs?`?${qs}`:""));
+    if(v==="success"){ (async()=>{ try{ await supabase.auth.refreshSession(); }catch(e){} setUser(u=>u&&u.id?{...u,profile:{...(u.profile||{}),email_verified:true}}:u); })(); }
+  },[]);
   const [breakdownJob,setBreakdownJob]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
   useEffect(()=>{ const h=()=>setShowUpgrade(true); window.addEventListener("mq-open-upgrade",h); return ()=>window.removeEventListener("mq-open-upgrade",h); },[]);
@@ -5662,6 +5695,7 @@ export default function App() {
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
+    {user&&user.profile&&user.profile.email_verified===false&&<VerifyBanner onToast={setToast}/>}
     {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
