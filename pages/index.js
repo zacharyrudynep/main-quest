@@ -1975,14 +1975,14 @@ function LoginPopup({onClose,onLogin}) {
         if(!_r.ok){setErr(_j.error||"Could not create account.");setLoading(false);return;}
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
         if(error){setErr("Account created - please sign in.");setLoading(false);return;}
-        onLogin({id:data.user.id,email,name,applied:{},profile:{tosVersion:TOS_VERSION}});
+        onLogin({id:data.user.id,email,name,applied:{},profile:{tosVersion:TOS_VERSION,email_verified:false}});
       }else{
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
         if(error){setErr("Invalid email or password.");setLoading(false);return;}
         const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
         const {data:apps}=await supabase.from("applications").select("*").eq("user_id",data.user.id);
         const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied",title:a.job_title,company:a.company,url:a.job_url,salary:a.salary};});
-        const profData=(profile&&profile.data)?profile.data:(profile||{});
+        const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified)};
         onLogin({id:data.user.id,email,name:profile?.name||profData.name||email,applied,profile:profData});
       }
     }catch(e){setErr("Something went wrong. Please try again.");setLoading(false);}
@@ -2684,7 +2684,7 @@ function Auth({onLogin,onGuest}) {
         if (!_r.ok) { setErr(_j.error || "Could not create account."); setLoading(false); return; }
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Account created - please sign in."); setLoading(false); return; }
-        onLogin({ id: data.user.id, email, name, applied: {}, profile: { tosVersion: TOS_VERSION } });
+        onLogin({ id: data.user.id, email, name, applied: {}, profile: { tosVersion: TOS_VERSION, email_verified: false } });
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Invalid email or password."); setLoading(false); return; }
@@ -2695,7 +2695,7 @@ function Auth({onLogin,onGuest}) {
         (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied", title: a.job_title, company: a.company, url: a.job_url, salary: a.salary }; });
         const saved = {};
         try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", data.user.id); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
-        const profData = (profile && profile.data) ? profile.data : (profile || {});
+        const profData = { ...((profile && profile.data) ? profile.data : (profile || {})), email_verified: !!(profile && profile.email_verified) };
         onLogin({ id: data.user.id, email, name: profile?.name || profData.name || email, applied, saved, profile: profData });
       }
     } catch (e) {
@@ -5151,7 +5151,7 @@ export default function App() {
             const { data:sv }=await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id",uid);
             (sv||[]).forEach(s=>{ saved[s.job_id]={ date:s.saved_at }; });
           }catch{}
-          const profData=(profile&&profile.data)?profile.data:(profile||{});
+          const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified)};
           if(active)setUser({ id:uid, email:em, name:profile?.name||profData.name||em, applied, saved, profile:profData });
         }
       }catch{}
