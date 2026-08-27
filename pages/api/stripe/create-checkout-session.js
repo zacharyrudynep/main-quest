@@ -29,9 +29,9 @@ export default async function handler(req, res) {
     try {
       const { data: cu } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (!(cu && cu.user && cu.user.app_metadata && cu.user.app_metadata.email_verified))
-        return res.status(403).json({ error: "Please verify your email before upgrading.", needVerify: true });
+        return res.status(403).json({ error: "Please verify your email from the Account tab before upgrading.", needVerify: true });
     } catch (e) {
-      return res.status(403).json({ error: "Please verify your email before upgrading.", needVerify: true });
+      return res.status(403).json({ error: "Please verify your email from the Account tab before upgrading.", needVerify: true });
     }
 
     // Pick the requested plan (default to monthly for anything unrecognized).

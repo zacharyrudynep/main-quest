@@ -3511,7 +3511,7 @@ function VerifyEmailRow({ user }){
       const tk=data&&data.session&&data.session.access_token;
       const r=await fetch("/api/auth/resend-verification",{method:"POST",headers:{Authorization:`Bearer ${tk}`}});
       const j=await r.json().catch(()=>({}));
-      setMsg(r.ok?(j.already?"Your email is already verified — refresh the page.":"Verification email sent — check your inbox."):(j.error||"Could not send. Please try again."));
+      setMsg(r.ok?(j.already?"Your email is already verified — refresh the page.":"Verification email sent — check your inbox (and your spam/junk folder)."):(j.error||"Could not send. Please try again."));
     }catch(e){ setMsg("Could not send. Please try again."); }
     setBusy(false);
   };
@@ -4769,7 +4769,7 @@ function VerifyBanner({ onToast }){
       const tk=data&&data.session&&data.session.access_token;
       const r=await fetch("/api/auth/resend-verification",{method:"POST",headers:{Authorization:`Bearer ${tk}`}});
       const j=await r.json().catch(()=>({}));
-      if(r.ok) onToast(j.already?"Your email is already verified.":"Verification email sent — check your inbox.");
+      if(r.ok) onToast(j.already?"Your email is already verified.":"Verification email sent — check your inbox (and your spam/junk folder).");
       else onToast(j.error||"Could not send the email. Please try again.");
     }catch(e){ onToast("Could not send the email. Please try again."); }
     setBusy(false);
@@ -5161,6 +5161,7 @@ export default function App() {
   },[]);
 
   const markApplied = useCallback(async (jobArg) => {
+    if(user&&user.profile&&user.profile.email_verified===false){setToast("Verify your email from the Account tab to unlock this.");return;}
     const jobObj = (jobArg && typeof jobArg === "object") ? jobArg : null;
     const jobId = jobObj ? jobObj.id : jobArg;
     setUser(prev => ({ ...prev, applied: { ...prev.applied, [jobId]: { date: new Date().toISOString(), status: prev.applied?.[jobId]?.status || "applied", title: jobObj?.title, company: jobObj?.company, url: jobObj?.url || jobObj?.applyUrl, location: jobObj?.location, salary: jobObj?.salary } } }));
@@ -5179,6 +5180,7 @@ export default function App() {
 
   // Toggle per-company job-post notifications (stored in profile.notifyCompanies)
   const toggleNotify = useCallback(async (companyName) => {
+    if(user&&user.profile&&user.profile.email_verified===false){setToast("Verify your email from the Account tab to unlock this.");return;}
     const cur = user?.profile?.notifyCompanies || [];
     if(!cur.includes(companyName)){
       const limit = appAdmin ? Infinity : (appPremium ? 20 : 5);
@@ -5210,6 +5212,7 @@ export default function App() {
 
   // Save / unsave a job (bookmark). Mirrors applications; stored in the saved_jobs table.
   const toggleSaved = useCallback(async (job) => {
+    if(user&&user.profile&&user.profile.email_verified===false){setToast("Verify your email from the Account tab to unlock this.");return;}
     const jobId = job.id;
     const isSaved = !!user?.saved?.[jobId];
     setUser(prev => { const ns = { ...(prev.saved || {}) }; if (isSaved) delete ns[jobId]; else ns[jobId] = { date: new Date().toISOString() }; return { ...prev, saved: ns }; });
@@ -5720,7 +5723,6 @@ export default function App() {
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
-    {user&&user.profile&&user.profile.email_verified===false&&<VerifyBanner onToast={setToast}/>}
     {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}

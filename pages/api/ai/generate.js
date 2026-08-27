@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: "Please sign in to use AI features." });
     const { data: u, error: ue } = await supabaseAdmin.auth.getUser(token);
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in to use AI features." });
-    if (!(u.user.app_metadata && u.user.app_metadata.email_verified)) return res.status(403).json({ error: "Please verify your email to use AI features.", needVerify: true });
+    if (!(u.user.app_metadata && u.user.app_metadata.email_verified)) return res.status(403).json({ error: "Please verify your email from the Account tab to use AI features.", needVerify: true });
 
     // ── Ban check (IP or account) ──
     const { banned, ip } = await checkBanned(req, u.user.id);
