@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getClientIp } from "../../../lib/clientIp";
 import { logUserIp } from "../../../lib/bans";
-import { sendVerificationEmail } from "../../../lib/resend";
+import { sendWelcomeEmail } from "../../../lib/resend";
 import crypto from "crypto";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
         token, user_id: uid, email,
         expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
       });
-      await sendVerificationEmail(email, name, `${SITE}/api/auth/verify-email?token=${token}`);
+      await sendWelcomeEmail(email, name, `${SITE}/api/auth/verify-email?token=${token}`);
     } catch (e) {}
 
     // ── Log signup IP + bump lifetime counter (best-effort) ──

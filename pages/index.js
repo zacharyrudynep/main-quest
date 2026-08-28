@@ -1878,13 +1878,14 @@ const EMAIL_PROVIDERS = {
   outlook:(to,s,b)=>`https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`,
   yahoo:(to,s,b)=>`https://compose.mail.yahoo.com/?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`,
   proton:()=>`https://mail.proton.me/u/0/inbox#compose`,
+  icloud:(to,s,b)=>`mailto:${to}?subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`,
 };
 // ── LEGAL VERSION ─────────────────────────────────────────────────────────────
 // Bump this date whenever Terms or Privacy Policy change. Users who agreed to an
 // older version will be prompted to re-accept via a popup near the footer.
 const TOS_VERSION = "2026-08-27";
 
-const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton:"ProtonMail"};
+const PROVIDER_LABELS={gmail:"Gmail",outlook:"Outlook",yahoo:"Yahoo Mail",proton:"ProtonMail",icloud:"iCloud Mail"};
 
 // ── GEMINI AI HELPER — free, no credit card. Get key at aistudio.google.com ──
 async function callAI(prompt,maxTokens=2000){
@@ -2681,37 +2682,11 @@ function FeatureShowcase(){
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
   const REVERSE=[false,true,false,true,true,false];
-  const side=i=>REVERSE[i]?72:28;         // x of the title on each section
-  const BX=[50,36,64,44,60];              // boundary crossover x per gap
-  const mk=(sx,ex,shape)=>{
-    const mid=(sx+ex)/2;
-    if(shape==="straight") return `M${sx},1 C${sx},40 ${ex},60 ${ex},99`;
-    if(shape==="curve")    return `M${sx},1 C${sx+34},34 ${ex-34},66 ${ex},99`;
-    if(shape==="s")        return `M${sx},1 C${mid+40},28 ${mid-40},72 ${ex},99`;
-    if(shape==="loop")     return `M${sx},1 L${sx},30 a 9,9 0 1 1 4,1 L${ex},99`;
-    return `M${sx},1 L${ex+20},32 L${sx-10},60 L${ex+16},82 L${ex},99`;
-  };
-  const BOT=["curve","straight","loop","zig","curve"];   // trail leaving each title
-  const TOP=["s","curve","curve","straight","s"];        // trail arriving at next title
-  const Trail=({g,half})=>{
-    const sx=half==="bottom"?side(g):BX[g];
-    const ex=half==="bottom"?BX[g]:side(g+1);
-    const shape=half==="bottom"?BOT[g]:TOP[g];
-    const gid=`${g}-${half}`;
-    return <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{position:"absolute",left:0,width:"100%",height:"50vh",top:half==="bottom"?"50%":0,pointerEvents:"none",zIndex:0,overflow:"visible"}}>
-      <defs>
-        <linearGradient id={`tg-${gid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c9a84c"/><stop offset="0.5" stopColor="#f0d080"/><stop offset="1" stopColor="#e8613a"/></linearGradient>
-        <filter id={`tglow-${gid}`} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>
-      <path d={mk(sx,ex,shape)} fill="none" stroke={`url(#tg-${gid})`} strokeWidth="2.4" strokeDasharray="1 7" strokeLinecap="round" filter={`url(#tglow-${gid})`} vectorEffect="non-scaling-stroke"/>
-    </svg>;
-  };
   return <>
     <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}}`}</style>
     {SECTIONS.map((s,i)=>(
       <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${SHADE[i]}, ${SHADE[i+1]})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
-        {i>0 && <Trail g={i-1} half="top"/>}
-        {i<SECTIONS.length-1 && <Trail g={i} half="bottom"/>}
+        {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:1,height:48,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.55))"}}/><span style={{color:"#c9a84c",fontSize:15,lineHeight:1,margin:"5px 0",textShadow:"0 0 8px rgba(201,168,76,.6)"}}>✦</span><div style={{width:1,height:48,background:"linear-gradient(to bottom, rgba(201,168,76,.55), transparent)"}}/></div>}
         <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:REVERSE[i]?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
           <div style={{flex:"1 1 340px",minWidth:280}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
@@ -3465,9 +3440,9 @@ function EmailTemplateTab({profile,upd}){
     <div style={{marginBottom:16}}>
       <label style={lbl}>Preferred Email Provider</label>
       <p style={{fontSize:11,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.4}}>When you Apply by Email, we'll open a pre-filled draft in this provider's web compose window.</p>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{[["gmail","Gmail"],["outlook","Outlook"],["yahoo","Yahoo Mail"],["default","Default Mail App"]].map(([id,label])=><button key={id} onClick={()=>upd("emailProvider",id)} style={{background:profile.emailProvider===id?"rgba(201,168,76,.15)":"rgba(244,237,216,.04)",border:`1px solid ${profile.emailProvider===id?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:profile.emailProvider===id?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>{profile.emailProvider===id&&<I.Check s={11} c="#0a0608"/>}{label}</button>)}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{[["gmail","Gmail"],["outlook","Outlook"],["yahoo","Yahoo Mail"],["icloud","iCloud Mail"],["default","Default Mail App"]].map(([id,label])=><button key={id} onClick={()=>upd("emailProvider",id)} style={{background:profile.emailProvider===id?"rgba(201,168,76,.15)":"rgba(244,237,216,.04)",border:`1px solid ${profile.emailProvider===id?"rgba(201,168,76,.4)":"rgba(244,237,216,.1)"}`,color:profile.emailProvider===id?"#f0d080":"rgba(244,237,216,.5)",cursor:"pointer",borderRadius:8,padding:"8px 12px",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>{profile.emailProvider===id&&<I.Check s={11} c="#0a0608"/>}{label}</button>)}</div>
     </div>
-    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
+    <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write/paste your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
     <div style={{marginBottom:14}}>
       <label style={lbl}>Email Template</label>
       <textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>
@@ -3709,7 +3684,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
         <div style={{width:42,height:42,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",flexShrink:0}}>{initials}</div>
-        <div style={{flex:1}}><div style={{fontFamily:"'Cinzel',serif",fontWeight:600,fontSize:14,color:"#f4edd8"}}>{p.name||"Your Name"}</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>{user.email}</div></div>
+        <div style={{flex:1}}><div style={{fontFamily:"'Cinzel',serif",fontWeight:600,fontSize:14,color:"#f4edd8"}}>{p.name||"Your Name"}</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>{user.email}{user.profile&&user.profile.email_verified&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.4)",color:"#7ecfb3",borderRadius:20,fontSize:8,padding:"1px 6px",fontWeight:700,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>✓ Verified</span>}</div></div>
         <button onClick={onClose} style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",color:"rgba(244,237,216,.5)",cursor:"pointer",width:30,height:30,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center"}}><I.X s={12} c="currentColor"/></button>
       </div>
       {/* Tab nav */}
@@ -3762,11 +3737,6 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
         </div>:<EmailTemplateTab profile={p} upd={upd}/>)}
         {tab==="account"&&<div>
           <VerifyEmailRow user={user}/>
-          {premium&&premium.isAdmin&&<div style={{marginBottom:18,padding:14,background:"rgba(255,140,26,.08)",border:"1px solid rgba(255,140,26,.4)",borderRadius:12}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:13,color:"#ff8c1a",marginBottom:10,letterSpacing:.5}}>★ Admin Tools</div>
-            <a href="/admin" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:8}}>Admin Dashboard</a>
-            <a href="/verify" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>ATS Verification Tool</a>
-          </div>}
           {/* Membership / Premium */}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Membership</div>
           {premium===null?
@@ -3828,6 +3798,11 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
               <button onClick={requestDelete} disabled={delWord!=="GODSPEED"||delBusy} style={{width:"100%",marginTop:14,background:delWord==="GODSPEED"?"linear-gradient(135deg,#c0321a,#8b2020)":"rgba(192,50,26,.15)",border:"none",color:delWord==="GODSPEED"?"#fff":"rgba(244,237,216,.4)",borderRadius:9,padding:"10px",fontSize:12.5,fontWeight:800,fontFamily:"'Cinzel',serif",cursor:(delWord==="GODSPEED"&&!delBusy)?"pointer":"default",letterSpacing:.5}}>{delBusy?"Scheduling…":"Delete My Account"}</button>
               <button onClick={()=>setShowDelete(false)} disabled={delBusy} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"rgba(244,237,216,.45)",fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Never mind, keep my account</button>
             </div>
+          </div>}
+          {premium&&premium.isAdmin&&<div style={{marginBottom:18,padding:14,background:"rgba(255,140,26,.08)",border:"1px solid rgba(255,140,26,.4)",borderRadius:12}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:13,color:"#ff8c1a",marginBottom:10,letterSpacing:.5}}>★ Admin Tools</div>
+            <a href="/admin" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:8}}>Admin Dashboard</a>
+            <a href="/verify" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>ATS Verification Tool</a>
           </div>}
           <button onClick={onLogout} style={{width:"100%",marginTop:10,background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Sign Out of Main Quest</button>
         </div>}
@@ -5797,7 +5772,7 @@ export default function App() {
       {/* CENTER: nav tabs */}
       <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":"0 0 auto",order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
-          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{newJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{newJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
+          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{totalJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{totalJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
             {/* Journey Mode — special glowing tab (hidden while SHOW_JOURNEY_MODE is false) */}
             {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}

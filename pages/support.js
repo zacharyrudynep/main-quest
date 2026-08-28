@@ -135,6 +135,15 @@ export default function Support() {
             <Link href="/" style={{ color: "#c9a84c", fontFamily: "'Cinzel',serif", fontWeight: 700, textDecoration: "none" }}>← Back to the job board</Link>
           </div>
         </div>
+        <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:40,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,maxWidth:1000,margin:"40px auto 0"}}>
+          <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.</div>
+          <div style={{display:"flex",gap:16,alignItems:"center",flexShrink:0}}>
+            <a href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</a>
+            <a href="/privacy" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Privacy Policy</a>
+            <a href="/terms" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Terms of Service</a>
+            <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest. All rights reserved.</span>
+          </div>
+        </footer>
       </div>
     </>
   );

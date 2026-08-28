@@ -56,7 +56,7 @@ export default function Verify() {
   const shell = (inner) => <>
     <Head><title>ATS Verify Tool — Main Quest</title><meta name="robots" content="noindex" /></Head>
     <div style={{ minHeight: "100vh", background: "#080608", color: "#f4edd8", fontFamily: "system-ui, sans-serif", padding: "40px 20px" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>{inner}</div>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}><a href="/" style={{display:"inline-flex",alignItems:"center",gap:6,color:"#c9a84c",textDecoration:"none",fontSize:13,fontFamily:"'Cinzel',serif",marginBottom:20}}>← Back to Job Board</a>{inner}</div>
     </div>
   </>;
 

@@ -6,6 +6,7 @@
 // The signature is verified with STRIPE_WEBHOOK_SECRET so nobody can fake events.
 import { stripe } from "../../../lib/stripe";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { sendPurchaseReceipt } from "../../../lib/resend";
 
 // Stripe needs the RAW request body to verify the signature, so we turn off
 // Next.js's automatic JSON body parsing for this route.
@@ -79,6 +80,15 @@ export default async function handler(req, res) {
           subscription_status: isLifetime ? "lifetime" : "active",
           stripe_customer_id: s.customer,
         });
+        // Purchase receipt (best-effort).
+        try {
+          const remail = (s.customer_details && s.customer_details.email) || s.customer_email;
+          if (remail) {
+            const pl = (s.metadata && s.metadata.plan) || (isLifetime ? "lifetime" : "premium");
+            const LBL = { monthly: "Monthly Premium", annual: "Annual Premium", lifetime: "Lifetime Premium" };
+            await sendPurchaseReceipt(remail, "", LBL[pl] || "Premium");
+          }
+        } catch (e) {}
         break;
       }
 
