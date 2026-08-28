@@ -2683,14 +2683,23 @@ function FeatureShowcase(){
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
   const WANDER=["18%","72%","38%","82%","30%","60%"];   // map trail wanders side to side
   const REVERSE=[false,true,false,true,true,false];      // varied content side
+  // Curvy treasure-trail paths (viewBox 100x180); ex = x where the ✕ marker sits.
+  const TRAILS=[
+    {d:"M50,0 C6,52 96,112 40,178", ex:40},
+    {d:"M44,0 C94,58 8,124 64,178", ex:64},
+    {d:"M58,0 C14,46 96,120 34,178", ex:34},
+    {d:"M34,0 C86,62 4,112 60,178", ex:60},
+    {d:"M64,0 C18,56 98,126 46,178", ex:46},
+    {d:"M46,0 C96,50 14,130 56,178", ex:56},
+  ];
   return <>
-    <style>{`@media(min-width:768px){html{scroll-snap-type:y mandatory;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}}`}</style>
+    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}}`}</style>
     {SECTIONS.map((s,i)=>(
       <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${SHADE[i]}, ${SHADE[i+1]})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:0,left:WANDER[i],transform:"translateX(-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",opacity:.55}}>
-          <div style={{width:0,height:72,borderLeft:"2px dashed rgba(201,168,76,.4)"}}/>
-          <span style={{fontFamily:"'Cinzel',serif",color:"#c9a84c",fontSize:16,lineHeight:1,marginTop:-1}}>✕</span>
-        </div>
+        <svg width="100" height="180" viewBox="0 0 100 180" style={{position:"absolute",top:0,left:WANDER[i],transform:"translateX(-50%)",opacity:.5,pointerEvents:"none",overflow:"visible"}}>
+          <path d={TRAILS[i].d} fill="none" stroke="rgba(201,168,76,.55)" strokeWidth="2" strokeDasharray="1.5 8" strokeLinecap="round"/>
+          <path d={`M${TRAILS[i].ex-5},173 L${TRAILS[i].ex+5},183 M${TRAILS[i].ex+5},173 L${TRAILS[i].ex-5},183`} stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round"/>
+        </svg>
         <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:REVERSE[i]?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
           <div style={{flex:"1 1 340px",minWidth:280}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
