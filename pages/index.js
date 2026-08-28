@@ -2663,6 +2663,49 @@ function PricingInfo({compact,onDismiss}){
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
+// ── LANDING FEATURE SHOWCASE (scaffold; fill copy + screenshots later) ─────────
+function FeatureShowcase(){
+  const SECTIONS=[
+    {slug:"job-board",title:"Job Board",tagline:"[ One-line hook for the Job Board ]",subs:["Filters","Live feeds","[ sub-feature ]"]},
+    {slug:"application",title:"Application",tagline:"[ One-line hook for Application tracking ]",subs:["Applied / Interview / Offers / Denied","Dates + one-click access","[ sub-feature ]"]},
+    {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",subs:["Per-company notifications","Email digests","[ sub-feature ]"]},
+    {slug:"job-match-score",title:"Job Match Score",tagline:"[ One-line hook for the Match Score ]",subs:["How the 0-10 score works","Skills / experience matching","[ sub-feature ]"]},
+    {slug:"ai-resume-tailor",title:"AI Resume Tailor",tagline:"[ One-line hook for the Resume Tailor ]",subs:["Keyword matching","Surgical bullet edits","Match score before / after"]},
+    {slug:"email-templates",title:"Email Templates",tagline:"[ One-line hook for Email Templates ]",subs:["Filler: Company Name","Filler: Position","Filler: AI Search","[ more fillers ]"]},
+  ];
+  return <>
+    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}}`}</style>
+    {SECTIONS.map((s,i)=>(
+      <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:i%2?"#0a0710":"#080608",borderTop:"1px solid rgba(201,168,76,.08)",boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
+        <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:i%2?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 340px",minWidth:280}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
+            <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
+            <p style={{fontSize:16,color:"rgba(244,237,216,.6)",lineHeight:1.7,marginBottom:28}}>{s.tagline}</p>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {s.subs.map((sub,k)=>(
+                <div key={k} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10}}>
+                  <span style={{fontFamily:"'Cinzel',serif",color:"#c9a84c",fontWeight:800,fontSize:13,flexShrink:0,marginTop:1}}>◆</span>
+                  <div>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3}}>{sub}</div>
+                    <div style={{fontSize:12,color:"rgba(244,237,216,.4)",lineHeight:1.5}}>[ short description of this sub-feature ]</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{flex:"1 1 360px",minWidth:280}}>
+            <div style={{width:"100%",aspectRatio:"16/10",borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:13,color:"rgba(201,168,76,.6)"}}>Screenshot</span>
+              <span style={{fontSize:11,color:"rgba(244,237,216,.3)"}}>{s.title}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    ))}
+  </>;
+}
+
 function Auth({onLogin,onGuest}) {
   const mobile = useIsMobile();
   const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
@@ -2752,7 +2795,7 @@ function Auth({onLogin,onGuest}) {
           [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most.",false],
           [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to.",true],
         ].map(([ic,title,desc,premium])=>
-          <div key={title} style={{position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:premium?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${premium?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10}}>
+          <div key={title} onClick={()=>{const el=document.getElementById("feat-"+title.toLowerCase().replace(/\s+/g,"-"));el&&el.scrollIntoView({behavior:"smooth"});}} style={{cursor:"pointer",position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:premium?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${premium?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10}}>
             {premium&&<span style={{position:"absolute",top:6,right:6,background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>Premium</span>}
             <span style={{flexShrink:0,marginTop:1,display:"flex"}}>{ic}</span>
             <div>
@@ -2827,6 +2870,7 @@ function Auth({onLogin,onGuest}) {
       </div>
     </div>
   </div>
+  <FeatureShowcase/>
   </>;
 }
 
