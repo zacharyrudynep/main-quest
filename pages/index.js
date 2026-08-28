@@ -3671,6 +3671,11 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
         </div>:<EmailTemplateTab profile={p} upd={upd}/>)}
         {tab==="account"&&<div>
           <VerifyEmailRow user={user}/>
+          {premium&&premium.isAdmin&&<div style={{marginBottom:18,padding:14,background:"rgba(255,140,26,.08)",border:"1px solid rgba(255,140,26,.4)",borderRadius:12}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:13,color:"#ff8c1a",marginBottom:10,letterSpacing:.5}}>★ Admin Tools</div>
+            <a href="/admin" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:8}}>Admin Dashboard</a>
+            <a href="/verify" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>ATS Verification Tool</a>
+          </div>}
           {/* Membership / Premium */}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Membership</div>
           {premium===null?
