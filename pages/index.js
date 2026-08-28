@@ -2673,33 +2673,45 @@ function FeatureShowcase(){
   },[]);
   const SECTIONS=[
     {slug:"job-board",title:"Job Board",tagline:"[ One-line hook for the Job Board ]",subs:["Filters","Live feeds","[ sub-feature ]"]},
-    {slug:"application",title:"Application",tagline:"[ One-line hook for Application tracking ]",subs:["Applied / Interview / Offers / Denied","Dates + one-click access","[ sub-feature ]"]},
+    {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",subs:["Applied / Interview / Offers / Denied","Dates + one-click access","[ sub-feature ]"]},
     {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",subs:["Per-company notifications","Email digests","[ sub-feature ]"]},
-    {slug:"job-match-score",title:"Job Match Score",tagline:"[ One-line hook for the Match Score ]",subs:["How the 0-10 score works","Skills / experience matching","[ sub-feature ]"]},
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"[ Emphasize the BREAKDOWN: see exactly WHY a posting fits — not just the number ]",subs:["Per-factor breakdown (skills, experience, role, keywords)","What is boosting vs. dragging the score","How to close the gaps"]},
     {slug:"ai-resume-tailor",title:"AI Resume Tailor",tagline:"[ One-line hook for the Resume Tailor ]",subs:["Keyword matching","Surgical bullet edits","Match score before / after"]},
     {slug:"email-templates",title:"Email Templates",tagline:"[ One-line hook for Email Templates ]",subs:["Filler: Company Name","Filler: Position","Filler: AI Search","[ more fillers ]"]},
   ];
-  // Gradient blend: adjacent sections share a boundary shade for a seamless fade.
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
-  const WANDER=["18%","72%","38%","82%","30%","60%"];   // map trail wanders side to side
-  const REVERSE=[false,true,false,true,true,false];      // varied content side
-  // Curvy treasure-trail paths (viewBox 100x180); ex = x where the ✕ marker sits.
-  const TRAILS=[
-    {d:"M50,0 C6,52 96,112 40,178", ex:40},
-    {d:"M44,0 C94,58 8,124 64,178", ex:64},
-    {d:"M58,0 C14,46 96,120 34,178", ex:34},
-    {d:"M34,0 C86,62 4,112 60,178", ex:60},
-    {d:"M64,0 C18,56 98,126 46,178", ex:46},
-    {d:"M46,0 C96,50 14,130 56,178", ex:56},
-  ];
+  const REVERSE=[false,true,false,true,true,false];
+  const side=i=>REVERSE[i]?72:28;         // x of the title on each section
+  const BX=[50,36,64,44,60];              // boundary crossover x per gap
+  const mk=(sx,ex,shape)=>{
+    const mid=(sx+ex)/2;
+    if(shape==="straight") return `M${sx},1 C${sx},40 ${ex},60 ${ex},99`;
+    if(shape==="curve")    return `M${sx},1 C${sx+34},34 ${ex-34},66 ${ex},99`;
+    if(shape==="s")        return `M${sx},1 C${mid+40},28 ${mid-40},72 ${ex},99`;
+    if(shape==="loop")     return `M${sx},1 L${sx},30 a 9,9 0 1 1 4,1 L${ex},99`;
+    return `M${sx},1 L${ex+20},32 L${sx-10},60 L${ex+16},82 L${ex},99`;
+  };
+  const BOT=["curve","straight","loop","zig","curve"];   // trail leaving each title
+  const TOP=["s","curve","curve","straight","s"];        // trail arriving at next title
+  const Trail=({g,half})=>{
+    const sx=half==="bottom"?side(g):BX[g];
+    const ex=half==="bottom"?BX[g]:side(g+1);
+    const shape=half==="bottom"?BOT[g]:TOP[g];
+    const gid=`${g}-${half}`;
+    return <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{position:"absolute",left:0,width:"100%",height:"50vh",top:half==="bottom"?"50%":0,pointerEvents:"none",zIndex:0,overflow:"visible"}}>
+      <defs>
+        <linearGradient id={`tg-${gid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c9a84c"/><stop offset="0.5" stopColor="#f0d080"/><stop offset="1" stopColor="#e8613a"/></linearGradient>
+        <filter id={`tglow-${gid}`} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <path d={mk(sx,ex,shape)} fill="none" stroke={`url(#tg-${gid})`} strokeWidth="2.4" strokeDasharray="1 7" strokeLinecap="round" filter={`url(#tglow-${gid})`} vectorEffect="non-scaling-stroke"/>
+    </svg>;
+  };
   return <>
     <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}}`}</style>
     {SECTIONS.map((s,i)=>(
-      <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${SHADE[i]}, ${SHADE[i+1]})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif",overflow:"hidden"}}>
-        <svg width="100" height="180" viewBox="0 0 100 180" style={{position:"absolute",top:0,left:WANDER[i],transform:"translateX(-50%)",opacity:.5,pointerEvents:"none",overflow:"visible"}}>
-          <path d={TRAILS[i].d} fill="none" stroke="rgba(201,168,76,.55)" strokeWidth="2" strokeDasharray="1.5 8" strokeLinecap="round"/>
-          <path d={`M${TRAILS[i].ex-5},173 L${TRAILS[i].ex+5},183 M${TRAILS[i].ex+5},173 L${TRAILS[i].ex-5},183`} stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round"/>
-        </svg>
+      <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${SHADE[i]}, ${SHADE[i+1]})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
+        {i>0 && <Trail g={i-1} half="top"/>}
+        {i<SECTIONS.length-1 && <Trail g={i} half="bottom"/>}
         <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:REVERSE[i]?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
           <div style={{flex:"1 1 340px",minWidth:280}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
@@ -2726,6 +2738,17 @@ function FeatureShowcase(){
         </div>
       </section>
     ))}
+    <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.85)",position:"relative",zIndex:1}}>
+      <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
+        Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.
+      </div>
+      <div style={{display:"flex",gap:16,alignItems:"center",flexShrink:0}}>
+        <Link href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</Link>
+        <Link href="/privacy" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Privacy Policy</Link>
+        <Link href="/terms" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Terms of Service</Link>
+        <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest. All rights reserved.</span>
+      </div>
+    </footer>
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
   </>;
 }
@@ -2813,8 +2836,8 @@ function Auth({onLogin,onGuest}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
           [<I.Globe s={17} c="#f0d080"/>,"Job Board","760+ studios across the US and Canada, filtered by state, role, and experience.",false],
-          [<I.Target s={17} c="#f0d080"/>,"Job Match Score","See how well each posting fits your skills and experience, 0–10.",true],
-          [<I.Clipboard s={17} c="#f0d080"/>,"Application","Track every application with dates and one-click access.",false],
+          [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.",true],
+          [<I.Clipboard s={17} c="#f0d080"/>,"Application Tracking","Track every application with dates and one-click access.",false],
           [<I.Lightning s={17} c="#f0d080"/>,"AI Resume Tailor","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.",true],
           [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most.",false],
           [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to.",true],
