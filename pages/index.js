@@ -2773,6 +2773,16 @@ function Auth({onLogin,onGuest}) {
     <Head>
       <title>Main Quest — Game Industry Job Board</title>
       <meta name="description" content="Main Quest is a job board for the game industry — hundreds of studios in one place, with match scores, application tracking, AI resume tools, and job alerts."/>
+      <meta property="og:type" content="website"/>
+      <meta property="og:site_name" content="Main Quest"/>
+      <meta property="og:title" content="Main Quest — Game Industry Job Board"/>
+      <meta property="og:description" content="Hundreds of game studios in one job board — with match scores, application tracking, AI resume tools, and job alerts."/>
+      <meta property="og:url" content="https://mainquestjobs.com"/>
+      <meta property="og:image" content="https://mainquestjobs.com/ogdefault.png"/>
+      <meta name="twitter:card" content="summary_large_image"/>
+      <meta name="twitter:title" content="Main Quest — Game Industry Job Board"/>
+      <meta name="twitter:description" content="Hundreds of game studios in one job board — with match scores, application tracking, AI resume tools, and job alerts."/>
+      <meta name="twitter:image" content="https://mainquestjobs.com/ogdefault.png"/>
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
@@ -3405,7 +3415,7 @@ function EmailTemplateTab({profile,upd}){
   // Count [x] placeholders in order
   const placeholderCount=(text.match(/\[x\]/gi)||[]).length;
   // Dropdown options for [x] — job info plus any links the user has filled in.
-  const OPTIONS=[["company","Company Name"],["position","Position Title"],
+  const OPTIONS=[["company","Company Name"],["position","Position Title"],["ai_company","AI: Company info"],
     ...(profile.linkedin?[["linkedin","LinkedIn URL"]]:[]),
     ...(profile.portfolio?[["portfolio","Portfolio URL"]]:[]),
     ...(profile.github?[["github","GitHub URL"]]:[]),
@@ -4345,45 +4355,63 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
       const prof=user?.profile||{};
-      // Fill the saved template's [x] placeholders from this job + the user's links
-      let body="";
       const tmpl=prof.emailTemplate;
       const map=prof.emailTemplateMap||[];
-      if(tmpl){
-        let n=-1;
-        body=tmpl.replace(/\[x\]/gi,()=>{
-          n++;
-          const m=map[n];
-          if(m==="company")return job.company;
-          if(m==="position")return job.title;
-          if(m&&prof[m])return prof[m]; // link fields (linkedin, portfolio, etc.)
-          return "";
-        });
-      }
-      // Remind the applicant of this company's specific requirements.
-      if(job.emailSpecifics){
-        body+=(body?"\n\n":"")+`[Reminder — ${job.company} asks you to include: ${job.emailSpecifics}]`;
-      }
       const provider=prof.emailProvider||"default";
-      const to=encodeURIComponent(job.applyEmail);
-      const su=encodeURIComponent(subj);
-      const bo=encodeURIComponent(body);
-      let url;
-      if(provider==="gmail") url=`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`;
-      else if(provider==="outlook") url=`https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${su}&body=${bo}`;
-      else if(provider==="yahoo") url=`https://compose.mail.yahoo.com/?to=${to}&subject=${su}&body=${bo}`;
-      else url=`mailto:${job.applyEmail}?subject=${su}&body=${bo}`;
-      window.open(url,"_blank");
-      // If auto-attach is on, remind the user to attach since web compose can't take a file automatically
-      if(prof.autoAttachResume&&(prof.resumeText||prof.resumeFileName)){
-        setTimeout(()=>{try{alert("Your draft is open. Don't forget to attach your resume — browsers can't attach it automatically for security reasons.");}catch{}},400);
+      // Fill the template; aiBlurb fills any [x] slots mapped to "ai_company".
+      const fillBody=(aiBlurb)=>{
+        let body="";
+        if(tmpl){
+          let n=-1;
+          body=tmpl.replace(/\[x\]/gi,()=>{
+            n++;
+            const m=map[n];
+            if(m==="company")return job.company;
+            if(m==="position")return job.title;
+            if(m==="ai_company")return aiBlurb||"";
+            if(m&&prof[m])return prof[m];
+            return "";
+          });
+        }
+        if(job.emailSpecifics){ body+=(body?"\n\n":"")+`[Reminder — ${job.company} asks you to include: ${job.emailSpecifics}]`; }
+        return body;
+      };
+      const buildUrl=(body)=>{
+        const to=encodeURIComponent(job.applyEmail), su=encodeURIComponent(subj), bo=encodeURIComponent(body);
+        if(provider==="gmail") return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`;
+        if(provider==="outlook") return `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${su}&body=${bo}`;
+        if(provider==="yahoo") return `https://compose.mail.yahoo.com/?to=${to}&subject=${su}&body=${bo}`;
+        return `mailto:${job.applyEmail}?subject=${su}&body=${bo}`;
+      };
+      const attachReminder=()=>{ if(prof.autoAttachResume&&(prof.resumeText||prof.resumeFileName)){ setTimeout(()=>{try{alert("Your draft is open. Don't forget to attach your resume — browsers can't attach it automatically for security reasons.");}catch{}},400); } };
+      const usesAI=tmpl&&map.includes("ai_company");
+      if(usesAI){
+        // Open the window in the click gesture, generate the blurb, then redirect it.
+        const w=window.open("","_blank");
+        try{ if(w) w.document.write('<body style="background:#0a0608;color:#c9a84c;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div>Generating company info…</div></body>'); }catch(e){}
+        (async()=>{
+          let blurb="";
+          try{
+            const { data }=await supabase.auth.getSession();
+            const tk=data&&data.session&&data.session.access_token;
+            const r=await fetch("/api/ai/email-company",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({company:job.company})});
+            const j=await r.json().catch(()=>({}));
+            if(r.ok&&j.text) blurb=j.text;
+          }catch(e){}
+          const url=buildUrl(fillBody(blurb));
+          try{ if(w){ w.location.href=url; } else { window.open(url,"_blank"); } }catch(e){ window.open(url,"_blank"); }
+          attachReminder();
+        })();
+      } else {
+        window.open(buildUrl(fillBody("")),"_blank");
+        attachReminder();
       }
     } else {
       window.open(job.url,"_blank");
     }
     setTimeout(()=>setPrompt(true),2500);
   };
-  const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job);};
+    const confirm=(yes)=>{setPrompt(false);if(yes)onApplied(job);};
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const chip=(children,style={})=><span style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.65)",...style}}>{children}</span>;
   return <div style={{background:"rgba(16,10,22,.6)",border:`1px solid ${isApplied?"rgba(126,207,179,.3)":job.isNew?"rgba(192,50,26,.35)":"rgba(201,168,76,.12)"}`,borderRadius:10,padding:"13px 15px",transition:"all .2s",cursor:"default",position:"relative",boxShadow:activeBreakdown?"0 0 0 2px rgba(201,168,76,.6), 0 6px 26px rgba(201,168,76,.14)":"none"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.05)";e.currentTarget.style.transform="translateX(3px)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(16,10,22,.6)";e.currentTarget.style.transform="";}}>
