@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { tailorDocx } from "../../../lib/docxTailor";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const CANDIDATES = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
 let cachedModel = null;
 
 const SYSTEM = `You are a professional resume editor helping a candidate tailor their existing resume to a specific job posting.

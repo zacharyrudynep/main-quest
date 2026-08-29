@@ -2771,7 +2771,8 @@ function Auth({onLogin,onGuest}) {
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   return <>
     <Head>
-      <title>Main Quest — Sign In</title>
+      <title>Main Quest — Game Industry Job Board</title>
+      <meta name="description" content="Main Quest is a job board for the game industry — hundreds of studios in one place, with match scores, application tracking, AI resume tools, and job alerts."/>
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
