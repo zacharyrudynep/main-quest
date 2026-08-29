@@ -4390,16 +4390,23 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
         const w=window.open("","_blank");
         try{ if(w) w.document.write('<body style="background:#0a0608;color:#c9a84c;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div>Generating company info…</div></body>'); }catch(e){}
         (async()=>{
-          let blurb="";
+          let blurb="", errMsg="";
           try{
             const { data }=await supabase.auth.getSession();
             const tk=data&&data.session&&data.session.access_token;
             const r=await fetch("/api/ai/email-company",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({company:job.company})});
             const j=await r.json().catch(()=>({}));
-            if(r.ok&&j.text) blurb=j.text;
-          }catch(e){}
+            if(r.ok&&j.text){ blurb=j.text; }
+            else { errMsg=(j&&j.error)||("Request failed ("+r.status+")"); console.error("email-company failed:",r.status,j); }
+          }catch(e){ errMsg="Network error reaching the AI service."; console.error("email-company exception:",e); }
           const url=buildUrl(fillBody(blurb));
-          try{ if(w){ w.location.href=url; } else { window.open(url,"_blank"); } }catch(e){ window.open(url,"_blank"); }
+          if(!blurb&&errMsg){
+            // Surface the reason instead of a silent blank, then open the draft anyway.
+            try{ if(w){ w.document.body.innerHTML='<div style="padding:26px;font-family:system-ui,sans-serif;color:#f0d080;background:#0a0608;min-height:100vh;line-height:1.6">AI company info couldn\u2019t be added:<br><b>'+String(errMsg).replace(/[<>&]/g,"")+'</b><br><br>Opening your email draft\u2026</div>'; } }catch(e){}
+            setTimeout(()=>{ try{ if(w){ w.location.href=url; } else { window.open(url,"_blank"); } }catch(e){ window.open(url,"_blank"); } }, 3200);
+          } else {
+            try{ if(w){ w.location.href=url; } else { window.open(url,"_blank"); } }catch(e){ window.open(url,"_blank"); }
+          }
           attachReminder();
         })();
       } else {

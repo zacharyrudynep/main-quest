@@ -48,7 +48,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: sys }] },
               contents: [{ role: "user", parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.5, maxOutputTokens: 220 },
+              generationConfig: { temperature: 0.5, maxOutputTokens: 800 },
             }),
             signal: ctl.signal,
           });
