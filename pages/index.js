@@ -949,7 +949,7 @@ const COMPANIES_DATA = {
   "New Zealand": {
     "Auckland": [
       { name: "DOTDOT", url: "https://dotdot.studio/jobs/", email: "yes", contact: "https://dotdot.studio/contact/" },
-      { name: "Flightless", url: "https://www.flightless.co.nz/community-manager", email: "resume, cv, portfolio & make it out to John O\u2019Reilly", contact: "https://www.flightless.co.nz/contact" },
+      { name: "Flightless", url: "https://www.flightless.co.nz/community-manager", email: "resume, cv, portfolio & make it out to John O’Reilly", contact: "https://www.flightless.co.nz/contact" },
       { name: "Grinding Gear Games", url: "https://www.grindinggear.com/?page=careers", email: "please email your resume, portfolio/code samples and a cover letter with your name and the role you are applying for in the subject line", contact: "https://www.grindinggear.com/?page=contact" },
       { name: "Maple Game", url: "https://www.maple-game.co.nz/joinus.html", email: "please kindly send CV with subject \"CV-yourname\"", contact: null },
       { name: "Outerdawn", url: "https://www.outerdawn.com/careers", email: "yes", contact: "https://www.outerdawn.com/contact" },
@@ -1079,11 +1079,11 @@ const EMAIL_SPECIFICS = {
 
 const EMAIL_APPLY_JOBS = {
   "Break Away Games": { jobs:[
-    { title:"Programmer", applyEmail:"resumes0919a@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your programmer resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
-    { title:"Artist", applyEmail:"resumes0919b@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your artist resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
-    { title:"Audio/Video", applyEmail:"resumes0919e@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your audio/video resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
-    { title:"Marketing / Business Development", applyEmail:"resumes0919f@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your marketing/biz-dev resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
-    { title:"Game Tester", applyEmail:"resumes0919g@breakawayltd.com", experience:"Entry Level", type:"Full-time", isRemote:false, summary:"Send your game tester resume to apply. Please include \u2018BreakAway Online Job Posting\u2019 in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Programmer", applyEmail:"resumes0919a@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your programmer resume to apply. Please include \u2018BreakAway Online Job Posting’ in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Artist", applyEmail:"resumes0919b@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your artist resume to apply. Please include \u2018BreakAway Online Job Posting’ in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Audio/Video", applyEmail:"resumes0919e@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your audio/video resume to apply. Please include \u2018BreakAway Online Job Posting’ in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Marketing / Business Development", applyEmail:"resumes0919f@breakawayltd.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"Send your marketing/biz-dev resume to apply. Please include \u2018BreakAway Online Job Posting’ in the subject line of your email.", responsibilities:[], requirements:[] },
+    { title:"Game Tester", applyEmail:"resumes0919g@breakawayltd.com", experience:"Entry Level", type:"Full-time", isRemote:false, summary:"Send your game tester resume to apply. Please include \u2018BreakAway Online Job Posting’ in the subject line of your email.", responsibilities:[], requirements:[] },
   ]},
   "FarSight Studio": { jobs:[
     { title:"Programmer", applyEmail:"programmerjobs@farsightstudios.com", experience:"Mid Level", type:"Full-time", isRemote:false, summary:"We are always looking for talented well-rounded programmers at both junior and senior levels. You must possess strong programming skills and be capable of self-motivation with a superior work ethic to succeed at FarSight. All of our job openings require skill in C/C++. Email your resume to programmerjobs@farsightstudios.com.", responsibilities:[], requirements:["Bachelor's degree or equivalent","Self motivated, solid communicator","High quality deadline driven work","Able to give and receive constructive criticism","Proficiency in C++","Unreal Engine 4 experience including blueprints and C++ implementation"] },
@@ -1652,7 +1652,7 @@ function parseWorkdayPosted(txt){
 function normalizeATSJob(raw, platform, company, stateKey) {
   const decodeEntities = h => (h||"")
     .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'")
-    .replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"\u2019").replace(/&lsquo;/g,"\u2018").replace(/&ldquo;/g,"\u201c").replace(/&rdquo;/g,"\u201d").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
+    .replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"’").replace(/&lsquo;/g,"\u2018").replace(/&ldquo;/g,"\u201c").replace(/&rdquo;/g,"\u201d").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
   const stripHtml = h => decodeEntities(h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
   const guessExp = t => { const tl=(t||"").toLowerCase(); if(/director|head of|vp/.test(tl))return"Director"; if(/principal/.test(tl))return"Principal"; if(/\blead\b/.test(tl))return"Lead"; if(/senior|sr\./.test(tl))return"Senior"; if(/junior|jr\.|entry|\bintern\b|internship|\bco-?op\b/.test(tl))return"Entry Level"; return"Mid Level"; };
   let title="", url="", body="", loc="", updated=Date.now(), salary="Salary not listed", rawHtml="";
@@ -1831,7 +1831,7 @@ function parseJobSections(html,plainText){
   const out={summary:"",responsibilities:[],requirements:[]};
   if(!html&&!plainText)return out;
   // Decode HTML entities first (some ATS double-encode their HTML)
-  if(html)html=html.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"\u2019").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
+  if(html)html=html.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"’").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
   // Pull <li> items grouped by the nearest preceding heading
   const liItems=[];
   if(html){
@@ -3684,7 +3684,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
         <div style={{width:42,height:42,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",flexShrink:0}}>{initials}</div>
-        <div style={{flex:1}}><div style={{fontFamily:"'Cinzel',serif",fontWeight:600,fontSize:14,color:"#f4edd8"}}>{p.name||"Your Name"}</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>{user.email}{user.profile&&user.profile.email_verified&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.4)",color:"#7ecfb3",borderRadius:20,fontSize:8,padding:"1px 6px",fontWeight:700,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>✓ Verified</span>}</div></div>
+        <div style={{flex:1}}><div style={{fontFamily:"'Cinzel',serif",fontWeight:600,fontSize:14,color:"#f4edd8"}}>{p.name||"Your Name"}</div><div style={{fontSize:11,color:"rgba(244,237,216,.4)"}}>{user.email}</div></div>
         <button onClick={onClose} style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",color:"rgba(244,237,216,.5)",cursor:"pointer",width:30,height:30,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center"}}><I.X s={12} c="currentColor"/></button>
       </div>
       {/* Tab nav */}
@@ -3773,9 +3773,14 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
               <div style={{fontSize:10.5,color:"rgba(244,237,216,.38)",marginTop:10,textAlign:"center"}}>{billingBusy?"Starting checkout…":"Have a launch code? Enter it at checkout."}</div>
             </div>
           }
+          {premium&&premium.isAdmin&&<div style={{marginBottom:18,padding:14,background:"rgba(255,140,26,.08)",border:"1px solid rgba(255,140,26,.4)",borderRadius:12}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:13,color:"#ff8c1a",marginBottom:10,letterSpacing:.5}}>★ Admin Tools</div>
+            <a href="/admin" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:8}}>Admin Dashboard</a>
+            <a href="/verify" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>ATS Verification Tool</a>
+          </div>}
           <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",margin:"18px 0 8px"}}>Account Details</div>
           {[["Email",user.email],["Applications Tracked",Object.keys(user.applied||{}).length]].map(([l,v])=>
-            <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500}}>{v}</span></div>)}
+            <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid rgba(201,168,76,.07)"}}><span style={{fontSize:12,color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{l}</span><span style={{fontSize:13,color:"#f4edd8",fontWeight:500,display:"flex",alignItems:"center",gap:6}}>{v}{l==="Email"&&user.profile&&user.profile.email_verified&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(126,207,179,.15)",border:"1px solid rgba(126,207,179,.4)",color:"#7ecfb3",borderRadius:20,fontSize:8,padding:"1px 6px",fontWeight:700,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>✓ Verified</span>}</span></div>)}
           <div style={{marginTop:20,padding:14,background:"rgba(192,50,26,.05)",border:"1px solid rgba(192,50,26,.2)",borderRadius:10}}>
             <div style={{fontSize:11,color:"#e07060",fontFamily:"'Cinzel',serif",fontWeight:600,marginBottom:10,letterSpacing:.5}}>⚠ Danger Zone</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
@@ -3798,11 +3803,6 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
               <button onClick={requestDelete} disabled={delWord!=="GODSPEED"||delBusy} style={{width:"100%",marginTop:14,background:delWord==="GODSPEED"?"linear-gradient(135deg,#c0321a,#8b2020)":"rgba(192,50,26,.15)",border:"none",color:delWord==="GODSPEED"?"#fff":"rgba(244,237,216,.4)",borderRadius:9,padding:"10px",fontSize:12.5,fontWeight:800,fontFamily:"'Cinzel',serif",cursor:(delWord==="GODSPEED"&&!delBusy)?"pointer":"default",letterSpacing:.5}}>{delBusy?"Scheduling…":"Delete My Account"}</button>
               <button onClick={()=>setShowDelete(false)} disabled={delBusy} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"rgba(244,237,216,.45)",fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Never mind, keep my account</button>
             </div>
-          </div>}
-          {premium&&premium.isAdmin&&<div style={{marginBottom:18,padding:14,background:"rgba(255,140,26,.08)",border:"1px solid rgba(255,140,26,.4)",borderRadius:12}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:13,color:"#ff8c1a",marginBottom:10,letterSpacing:.5}}>★ Admin Tools</div>
-            <a href="/admin" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginBottom:8}}>Admin Dashboard</a>
-            <a href="/verify" style={{display:"block",textAlign:"center",background:"rgba(255,140,26,.16)",border:"1px solid rgba(255,140,26,.5)",color:"#ffb066",textDecoration:"none",fontSize:12,fontWeight:700,padding:10,borderRadius:9,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>ATS Verification Tool</a>
           </div>}
           <button onClick={onLogout} style={{width:"100%",marginTop:10,background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Sign Out of Main Quest</button>
         </div>}
@@ -4852,6 +4852,22 @@ function VerifyBanner({ onToast }){
   </div>;
 }
 
+// Early-development / beta notice on the job board (dismissible, remembers via localStorage).
+function BetaDisclaimer(){
+  const [show,setShow]=useState(false);
+  useEffect(()=>{ try{ setShow(localStorage.getItem("mq_beta_dismissed")!=="1"); }catch(e){ setShow(true); } },[]);
+  if(!show) return null;
+  return <div style={{position:"relative",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.22)",borderRadius:12,padding:"13px 40px 13px 15px",marginBottom:16}}>
+    <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+      <span style={{fontSize:15,lineHeight:1,marginTop:1,flexShrink:0}}>⚔️</span>
+      <div style={{fontSize:12,color:"rgba(244,237,216,.62)",lineHeight:1.6}}>
+        <strong style={{color:"#f0d080",fontFamily:"'Cinzel',serif",fontWeight:700}}>Main Quest is in early development.</strong> We’re actively adding studios and openings, so the board will keep growing — if a company or role is missing, it’s likely coming soon. Some data may be incomplete or occasionally inaccurate, so always confirm details on the employer’s official page before applying. Features are still being built and refined. Questions, bugs, or a studio you’d like added? Reach us anytime from the <a href="/support" style={{color:"#c9a84c",textDecoration:"none",fontWeight:600}}>Support</a> page. Thanks for questing with us early!
+      </div>
+    </div>
+    <button onClick={()=>{try{localStorage.setItem("mq_beta_dismissed","1");}catch(e){} setShow(false);}} title="Dismiss" style={{position:"absolute",top:8,right:10,background:"transparent",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:17,lineHeight:1,padding:4}}>×</button>
+  </div>;
+}
+
 export default function App() {
   const mobile = useIsMobile();
   const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
@@ -5802,6 +5818,7 @@ export default function App() {
 
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
+        <BetaDisclaimer/>
         {/* Pricing banner for guests (dismissible) */}
         {/* Mobile globe — centered at top */}
         {mobile&&<div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
