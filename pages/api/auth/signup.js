@@ -83,7 +83,16 @@ export default async function handler(req, res) {
 
     // ── Log signup IP + bump lifetime counter (best-effort) ──
     logUserIp(uid, ip);
-    try { await supabaseAdmin.rpc("bump_counter", { counter_key: "lifetime_signups" }); } catch (e) {}
+    // Bump the lifetime signup counter. RPC first (atomic); manual fallback if the
+    // function is missing, so the count always increments for each new user.
+    try {
+      const { error: bumpErr } = await supabaseAdmin.rpc("bump_counter", { counter_key: "lifetime_signups" });
+      if (bumpErr) {
+        const { data: row } = await supabaseAdmin.from("app_counters").select("value").eq("key", "lifetime_signups").maybeSingle();
+        const cur = row && typeof row.value !== "undefined" ? Number(row.value) : 0;
+        await supabaseAdmin.from("app_counters").upsert({ key: "lifetime_signups", value: cur + 1 }, { onConflict: "key" });
+      }
+    } catch (e) { console.error("lifetime counter bump failed:", e && e.message); }
 
     return res.status(200).json({ ok: true, userId: uid });
   } catch (e) {
