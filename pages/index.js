@@ -2783,6 +2783,10 @@ function Auth({onLogin,onGuest}) {
       <meta name="twitter:title" content="Main Quest — Game Industry Job Board"/>
       <meta name="twitter:description" content="Hundreds of game studios in one job board — with match scores, application tracking, AI resume tools, and job alerts."/>
       <meta name="twitter:image" content="https://mainquestjobs.com/ogdefault.png"/>
+      <link rel="icon" href="/favicon.ico" sizes="any"/>
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"/>
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"/>
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
@@ -4904,6 +4908,51 @@ function BetaDisclaimer(){
   </div>;
 }
 
+// AI usage meter in the top bar (Premium): shows monthly resume-tailor + company-info usage.
+function AiUsageButton(){
+  const [open,setOpen]=useState(false);
+  const [data,setData]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const load=async()=>{
+    setLoading(true);
+    try{
+      const { data:s }=await supabase.auth.getSession();
+      const tk=s&&s.session&&s.session.access_token;
+      const r=await fetch("/api/ai/usage",{headers:{Authorization:`Bearer ${tk}`}});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok) setData(j);
+    }catch(e){}
+    setLoading(false);
+  };
+  const toggle=()=>{ const n=!open; setOpen(n); if(n) load(); };
+  const Row=({label,u,lim,admin})=>{
+    const pct=admin?0:Math.min(100,Math.round((u/Math.max(1,lim))*100));
+    return <div style={{marginBottom:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:5}}>
+        <span style={{color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>{label}</span>
+        <span style={{color:admin?"#7ecfb3":"rgba(244,237,216,.6)"}}>{admin?"Unlimited":`${u} / ${lim}`}</span>
+      </div>
+      {!admin&&<div style={{height:6,background:"rgba(201,168,76,.12)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:pct>=100?"#c0321a":"linear-gradient(90deg,#c9a84c,#f0d080)",borderRadius:4}}/></div>}
+    </div>;
+  };
+  return <div style={{position:"relative",flexShrink:0}}>
+    <button onClick={toggle} title="AI usage this month" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
+      <I.Lightning s={16} c="#c9a84c"/>
+    </button>
+    {open&&<>
+      <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:299}}/>
+      <div style={{position:"absolute",top:44,right:0,width:250,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:12,padding:14,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:800,color:"#f0d080",marginBottom:12,letterSpacing:.5}}>AI Usage This Month</div>
+        {loading||!data?<div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Loading…</div>:<>
+          <Row label="Resume Tailor" u={data.tailor.used} lim={data.tailor.limit} admin={data.isAdmin}/>
+          <Row label="Company Info" u={data.company.used} lim={data.company.limit} admin={data.isAdmin}/>
+          <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:2}}>Resets on the 1st of each month.</div>
+        </>}
+      </div>
+    </>}
+  </div>;
+}
+
 export default function App() {
   const mobile = useIsMobile();
   const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
@@ -5833,6 +5882,7 @@ export default function App() {
       {/* RIGHT: Inbox + Profile */}
       <div style={{display:"flex",alignItems:"center",gap:8,flex:mobile?"0 0 auto":"1 1 0",justifyContent:"flex-end"}}>
       {user&&!appPremium&&<UpgradeLink label="Upgrade"/>}
+      {user&&(appPremium||appAdmin)&&<AiUsageButton/>}
       {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <I.Bell s={16} c="#c9a84c"/>
         {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}

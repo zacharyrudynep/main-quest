@@ -26,10 +26,10 @@ export default async function handler(req, res){
       const d = p.data || {};
       const hasFollows = Array.isArray(d.notifyCompanies) && d.notifyCompanies.length > 0;
       const hasWizard = p.is_premium && alertHasCriteria(d.jobAlerts);
-      return hasFollows || hasWizard;
+      return hasFollows;
     });
     if(candidates.length === 0){
-      return res.status(200).json({ ok: true, users: 0, note: "no users with follows or alerts" });
+      return res.status(200).json({ ok: true, users: 0, note: "no users with company follows" });
     }
 
     // 2) Fetch all current jobs once (shared across users).
@@ -53,8 +53,7 @@ export default async function handler(req, res){
       const allMatches = [];
       for(const j of jobs){
         const followHit = followed.length && followed.includes((j.company || "").toLowerCase());
-        const wizardHit = wizardOn && jobMatchesAnyAlert(j, alerts);
-        if(!(followHit || wizardHit)) continue;
+        if(!followHit) continue;
         const jobKey = `${j.company}|${j.title}|${j.location || ""}`;
         allMatches.push({ jobKey, title: j.title, company: j.company, location: j.location || "", url: j.url || base });
       }
