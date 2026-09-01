@@ -3552,11 +3552,12 @@ function LinkField({fieldKey,label,icon,placeholder,value,onChange}) {
 // ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
 // Slide-over panel shown when a guest clicks the account avatar.
 function GuestPanel({onClose,onSignIn}) {
+  const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
   const mobile=useIsMobile();
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div style={{width:"100%",maxWidth:mobile?380:460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{width:"100%",maxWidth:compact?"100%":460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
         <div style={{width:42,height:42,borderRadius:"50%",background:"rgba(201,168,76,.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><I.Person s={22} c="rgba(244,237,216,.5)"/></div>
         <div style={{flex:1}}>
@@ -3606,6 +3607,7 @@ function VerifyEmailRow({ user }){
 }
 
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
+  const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
@@ -3697,7 +3699,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
   const tabs=[["profile","Profile",<I.Person s={14} c="currentColor"/>],["resume","Resume",<I.Scroll s={14} c="currentColor"/>],["links","Links",<I.Link s={14} c="currentColor"/>],["template","Email Template",<I.Send s={14} c="currentColor"/>],["account","Account",<I.Lock s={14} c="currentColor"/>]];
 
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end",alignItems:"stretch",flexDirection:"row"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div style={{width:"100%",maxWidth:mobile?380:460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{width:"100%",maxWidth:compact?"100%":460,height:"100vh",background:"rgba(10,7,14,.97)",borderLeft:"1px solid rgba(201,168,76,.18)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"18px 18px 14px",borderBottom:"1px solid rgba(201,168,76,.1)",flexShrink:0}}>
         <div style={{width:42,height:42,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0a0608",fontFamily:"'Cinzel',serif",flexShrink:0}}>{initials}</div>
@@ -4648,7 +4650,7 @@ function TitleCategoryGroup({sel,onChange}) {
 }
 
 function FSection({title,count,children,onClear}) {
-  const [open,setOpen]=useState(true);
+  const [open,setOpen]=useState(false);
   return <div style={{border:"1px solid rgba(201,168,76,.1)",borderRadius:10,overflow:"hidden",marginBottom:4,flexShrink:0}}>
     <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",background:"rgba(201,168,76,.05)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",fontFamily:"'Cinzel',serif",color:"rgba(244,237,216,.6)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:.8,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.09)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.05)"}>
       <span style={{flex:1,textAlign:"left"}}>{title}</span>
@@ -4959,6 +4961,7 @@ export default function App() {
   const mobile = useIsMobile();
   const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
   const filterInline = useIsMobile(1780); // below this the floating filter would overlap the board, so dock it inline
+  const compactBar = useIsMobile(1000); // landscape phones / small screens: condense the top bar
   const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
@@ -5859,14 +5862,14 @@ export default function App() {
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",backgroundSize:"56px 56px"}}/>
     </div>
     {/* Header */}
-    <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",padding:mobile?"8px 14px":"0 24px",height:mobile?"auto":66,gap:10,flexWrap:mobile?"wrap":"nowrap"}}>
+    <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(8,6,8,.88)",backdropFilter:"blur(30px)",borderBottom:"1px solid rgba(201,168,76,.14)",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",padding:compactBar?"8px 14px":"0 24px",height:compactBar?"auto":66,gap:10,flexWrap:compactBar?"wrap":"nowrap"}}>
       {/* LEFT: Logo + sync/refresh */}
       <div style={{display:"flex",alignItems:"center",gap:10,flex:mobile?1:"1 1 0",minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <span style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(201,168,76,.5))",display:"inline-flex",alignItems:"center"}}><I.SwordShield s={20} c="#c9a84c"/></span>
           <div><div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(201,168,76,.5)",letterSpacing:4,lineHeight:1}}>YOUR CAREER</div><div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:mobile?13:16,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.1}}>Main Quest</div></div>
         </div>
-        {!mobile&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+        {!compactBar&&<><span style={{fontSize:10,color:"rgba(244,237,216,.3)",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>Synced {lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
         <button onClick={()=>{setLastRefresh(new Date());fetchLiveJobs();}} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",padding:2,transition:"transform .4s"}} onMouseEnter={e=>e.currentTarget.style.transform="rotate(180deg)"} onMouseLeave={e=>e.currentTarget.style.transform=""}><I.Refresh s={13} c="currentColor"/></button>
         {liveStatus==="fetching"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif"}}>fetching…</span>}
         {liveStatus==="done"&&<span style={{fontSize:9,color:"rgba(126,207,179,.6)",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>● {Object.values(liveJobs).filter(v=>Array.isArray(v)&&v.length>0).length} live</span>}</>
@@ -5876,10 +5879,10 @@ export default function App() {
       {/* CENTER: nav tabs */}
       <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":"0 0 auto",order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
-          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Jobs":"Job Board"}</span>{totalJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{totalJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Applied":"Job Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
+          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Jobs":"Job Board"}</span>{totalJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{totalJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Applied":"Job Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
             <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
             {/* Journey Mode — special glowing tab (hidden while SHOW_JOURNEY_MODE is false) */}
-            {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{mobile?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}
+            {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}
         </nav>
       </div>
       {/* RIGHT: Inbox + Profile */}
@@ -5892,7 +5895,7 @@ export default function App() {
       </button>}
       <button onClick={()=>setShowAcct(true)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:22,padding:"4px 12px 4px 4px",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <div style={{width:28,height:28,borderRadius:"50%",background:user?G:"rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:user?"#0a0608":"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>{user?(user.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?"):<I.Person s={15} c="rgba(244,237,216,.5)"/>}</div>
-        {!mobile&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user?user.name:"Guest"}</span>}
+        {!compactBar&&<span style={{fontSize:12,color:"rgba(244,237,216,.6)",fontWeight:500}}>{user?user.name:"Guest"}</span>}
       </button>
       </div>
     </header>
