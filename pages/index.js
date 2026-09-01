@@ -2396,7 +2396,7 @@ function GlobeHeatmap({size=180,showStates=true}){
       }
       ctx.restore();
 
-      rotRef.current+=0.0022; // slow rotation
+      { const _n=performance.now(); const _dt=Math.min(50,_n-(rotRef.last||_n)); rotRef.last=_n; rotRef.current+=0.00033*_dt; } // time-based rotation (consistent across framerates)
       rafRef.current=requestAnimationFrame(draw);
     };
     draw();
@@ -3552,6 +3552,7 @@ function LinkField({fieldKey,label,icon,placeholder,value,onChange}) {
 // ── ACCOUNT PANEL ─────────────────────────────────────────────────────────────
 // Slide-over panel shown when a guest clicks the account avatar.
 function GuestPanel({onClose,onSignIn}) {
+  useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
   const mobile=useIsMobile();
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
@@ -3605,6 +3606,7 @@ function VerifyEmailRow({ user }){
 }
 
 function AccountPanel({user,onClose,onUpdate,onLogout}) {
+  useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
   const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",country:user.profile?.country||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
@@ -5995,7 +5997,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={`${j.company}|${j.title}|${j.location||""}`} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10,contentVisibility:"auto",containIntrinsicSize:"0 160px"}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify}/></div>)}
+                <div key={`${j.company}|${j.title}|${j.location||""}`} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -6131,7 +6133,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={`${name}|${j.title}|${j.location||""}|${j.id}`} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10,contentVisibility:"auto",containIntrinsicSize:"0 160px"}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
+                                      const renderJob=j=><div key={`${name}|${j.title}|${j.location||""}|${j.id}`} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
