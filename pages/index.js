@@ -4956,6 +4956,7 @@ function AiUsageButton(){
 export default function App() {
   const mobile = useIsMobile();
   const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
+  const filterInline = useIsMobile(1780); // below this the floating filter would overlap the board, so dock it inline
   const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
@@ -5933,8 +5934,8 @@ export default function App() {
             filter panel floats as a fixed drawer to the RIGHT (beside the list on wide
             screens, pinned to the right edge on narrower ones) so opening it never
             resizes or pushes the job posts. On mobile it stacks in-flow above jobs. */}
-        <div style={{display:"flex",flexDirection:(mobile||(breakdownJob&&tab==="jobs"))?"column":"row",gap:16,alignItems:"flex-start"}}>
-          {filterOpen&&<div style={(mobile||(breakdownJob&&tab==="jobs"))?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(215px,1fr))",gap:"6px 14px",alignItems:"start",marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+        <div style={{display:"flex",flexDirection:(filterInline||(breakdownJob&&tab==="jobs"))?"column":"row",gap:16,alignItems:"flex-start"}}>
+          {filterOpen&&<div style={(filterInline||(breakdownJob&&tab==="jobs"))?{order:0,width:"100%",flexShrink:0,background:"rgba(16,10,22,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(201,168,76,.18)",borderRadius:14,padding:12,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(215px,1fr))",gap:"6px 14px",alignItems:"start",marginBottom:4}:{position:"fixed",top:96,left:"max(calc(50% - 878px), 12px)",width:312,maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:4,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
             <FSection title="Region" count={filters.countries.length} onClear={()=>setFilters(f=>({...f,countries:[]}))}><CheckGroup opts={allCountries} sel={filters.countries} onChange={v=>setFilters(f=>({...f,countries:v}))}/></FSection>
             <FSection title="State / Province / Country" count={filters.states.length} onClear={()=>setFilters(f=>({...f,states:[]}))}>{filters.countries.length===0?<div style={{fontSize:11,color:"rgba(244,237,216,.35)",fontStyle:"italic",padding:"4px 2px",lineHeight:1.45}}>Select a region above to choose specific states, provinces, or countries.</div>:<CheckGroup opts={allStates.filter(s=>filters.countries.some(c=>Object.keys(displayTree[c]||{}).includes(s)))} sel={filters.states} onChange={v=>setFilters(f=>({...f,states:v}))}/>}</FSection>
             <FSection title="Position Title" count={filters.titles.length} onClear={()=>setFilters(f=>({...f,titles:[]}))}><TitleCategoryGroup sel={filters.titles} onChange={v=>setFilters(f=>({...f,titles:v}))}/></FSection>
