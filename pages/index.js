@@ -2396,7 +2396,7 @@ function GlobeHeatmap({size=180,showStates=true}){
       }
       ctx.restore();
 
-      { const _n=performance.now(); const _dt=Math.min(50,_n-(rotRef.last||_n)); rotRef.last=_n; rotRef.current+=0.00033*_dt; } // time-based rotation (consistent across framerates)
+      { const _n=performance.now(); const _dt=Math.min(50,_n-(rotRef.last||_n)); rotRef.last=_n; rotRef.current+=0.00013*_dt; } // time-based rotation (consistent across framerates)
       rafRef.current=requestAnimationFrame(draw);
     };
     draw();
@@ -2686,6 +2686,7 @@ function FeatureShowcase(){
     <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}`}</style>
     {SECTIONS.map((s,i)=>(
       <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${SHADE[i]}, ${SHADE[i+1]})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
+        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
         {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:1,height:48,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.55))"}}/><span style={{color:"#c9a84c",fontSize:15,lineHeight:1,margin:"5px 0",textShadow:"0 0 8px rgba(201,168,76,.6)"}}>✦</span><div style={{width:1,height:48,background:"linear-gradient(to bottom, rgba(201,168,76,.55), transparent)"}}/></div>}
         <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:REVERSE[i]?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
           <div style={{flex:"1 1 340px",minWidth:280}}>
@@ -2771,16 +2772,16 @@ function Auth({onLogin,onGuest}) {
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   return <>
     <Head>
-      <title>Main Quest — Game Industry Job Board</title>
+      <title>Main Quest Jobs - Game Industry Job Hub</title>
       <meta name="description" content="Main Quest is a job board for the game industry — hundreds of studios in one place, with match scores, application tracking, AI resume tools, and job alerts."/>
       <meta property="og:type" content="website"/>
       <meta property="og:site_name" content="Main Quest"/>
-      <meta property="og:title" content="Main Quest — Game Industry Job Board"/>
+      <meta property="og:title" content="Main Quest Jobs - Game Industry Job Hub"/>
       <meta property="og:description" content="Hundreds of game studios in one job board — with match scores, application tracking, AI resume tools, and job alerts."/>
       <meta property="og:url" content="https://mainquestjobs.com"/>
       <meta property="og:image" content="https://mainquestjobs.com/ogdefault.png"/>
       <meta name="twitter:card" content="summary_large_image"/>
-      <meta name="twitter:title" content="Main Quest — Game Industry Job Board"/>
+      <meta name="twitter:title" content="Main Quest Jobs - Game Industry Job Hub"/>
       <meta name="twitter:description" content="Hundreds of game studios in one job board — with match scores, application tracking, AI resume tools, and job alerts."/>
       <meta name="twitter:image" content="https://mainquestjobs.com/ogdefault.png"/>
       <link rel="icon" href="/favicon.ico" sizes="any"/>
@@ -5881,7 +5882,7 @@ export default function App() {
 
   return <>
     <Head>
-      <title>Main Quest — Game Industry Job Board</title>
+      <title>Main Quest Jobs - Game Industry Job Hub</title>
       <meta name="description" content="Find your next game industry job. 300+ studios, AI-powered applications."/>
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -5890,7 +5891,7 @@ export default function App() {
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
     {/* Desktop background globe — large, bottom-left, behind everything */}
-    {desktop&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
+    {!filterInline&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
     {/* Styles */}
     <style>{`@keyframes mqglow{0%,100%{text-shadow:0 0 7px rgba(240,208,128,.45)}50%{text-shadow:0 0 15px rgba(240,208,128,.9)}}@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}select{color-scheme:dark;}select option,select optgroup{background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important;}select option:hover,select option:checked,select option:focus,select option:active{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important;}*{-webkit-tap-highlight-color:transparent;}button,a,[role="button"],input,select,textarea,label,summary{touch-action:manipulation;}button,a{-webkit-user-select:none;user-select:none;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
@@ -5951,10 +5952,6 @@ export default function App() {
       {tab==="jobs"&&<>
         <BetaDisclaimer/>
         {/* Pricing banner for guests (dismissible) */}
-        {/* Mobile globe — centered at top */}
-        {mobile&&<div style={{display:"flex",justifyContent:"center",marginBottom:8}}>
-          <GlobeHeatmap size={185} showStates={false}/>
-        </div>}
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
           {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Regions",false]].map(([n,lbl,hi])=>
