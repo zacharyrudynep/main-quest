@@ -1649,7 +1649,7 @@ function parseWorkdayPosted(txt){
   return Date.now();
 }
 
-function normalizeATSJob(raw, platform, company, stateKey) {
+function normalizeATSJob(raw, platform, company, stateKey, slug) {
   const decodeEntities = h => (h||"")
     .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&apos;/g,"'")
     .replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&mdash;/g,"\u2014").replace(/&ndash;/g,"\u2013").replace(/&rsquo;/g,"’").replace(/&lsquo;/g,"\u2018").replace(/&ldquo;/g,"\u201c").replace(/&rdquo;/g,"\u201d").replace(/&hellip;/g,"\u2026").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n));
@@ -1694,7 +1694,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     loc=[raw.city,raw.state].filter(Boolean).join(", ")||raw.location||""; updated=new Date(raw.original_open_date||raw.created_at||Date.now()).getTime();
     if(raw.minimum_salary&&raw.maximum_salary) salary=`$${raw.minimum_salary} \u2013 $${raw.maximum_salary}`;
   } else if(platform==="bamboohr"){
-    title=raw.jobOpeningName||raw.title||""; url=(raw.id&&`https://${company.slug||""}.bamboohr.com/careers/${raw.id}`)||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
+    title=raw.jobOpeningName||raw.title||""; url=(raw.id&&slug)?`https://${slug}.bamboohr.com/careers/${raw.id}`:company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.location?(typeof raw.location==="string"?raw.location:[raw.location.city,raw.location.state].filter(Boolean).join(", ")):""; updated=new Date(raw.datePosted||Date.now()).getTime();
   } else if(platform==="paylocity"){
     title=raw.title||raw.jobTitle||raw.name||""; url=raw.url||raw.applyUrl||company.url; rawHtml=raw.description||raw.jobDescription||""; body=stripHtml(rawHtml);
@@ -1703,7 +1703,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
     title=raw.title||raw.jobTitle||""; url=raw.detailUrl||raw.applyUrl||raw.url||company.url; rawHtml=raw.description||raw.jobDescription||""; body=stripHtml(rawHtml);
     loc=raw.location||[raw.city,raw.state].filter(Boolean).join(", ")||""; updated=new Date(raw.date||raw.postedDate||Date.now()).getTime();
   } else if(platform==="personio"){
-    title=raw.name||""; url=raw.jobUrl||company.url; rawHtml=raw.description||""; body=stripHtml(rawHtml);
+    title=raw.name||""; url=raw.jobUrl||((slug&&raw.id)?`https://${slug}.jobs.personio.com/job/${raw.id}`:company.url); rawHtml=raw.description||""; body=stripHtml(rawHtml);
     loc=raw.office||""; updated=new Date(raw.createdAt||Date.now()).getTime();
   } else if(platform==="rippling"){
     title=raw.name||raw.title||"";
@@ -1719,7 +1719,7 @@ function normalizeATSJob(raw, platform, company, stateKey) {
   } else if(platform==="breezy"){
     title=raw.name||raw.title||"";
     // Public posting URL — Breezy provides `url` on each posting.
-    url=raw.url||raw.careersUrl||company.url;
+    url=raw.url||raw.careersUrl||((slug&&(raw.friendly_id||raw._id))?`https://${slug}.breezy.hr/p/${raw.friendly_id||raw._id}`:company.url);
     rawHtml=raw.description||""; body=stripHtml(rawHtml);
     // Location can be a string or an object {name,city,state,country}.
     const bl=raw.location||{};
@@ -5098,11 +5098,11 @@ export default function App() {
       for(const [nm] of members){ const st=((coLookup[nm]&&coLookup[nm].stateKey)||"").toLowerCase(); if(st&&st!=="remote"&&text.includes(st)) return nm; }
       return members[0][0];
     };
-    const normFor=(companyName,platform,rawJobs)=>{
+    const normFor=(companyName,platform,rawJobs,slug)=>{
       const found=coLookup[companyName];
       const company=found?found.company:{name:companyName,url:"",email:null};
       const stateKey=found?found.stateKey:"Remote";
-      const jobs=rawJobs.map(j=>normalizeATSJob(j,platform,company,stateKey)).filter(j=>j&&!_isBlockedJob(j));
+      const jobs=rawJobs.map(j=>normalizeATSJob(j,platform,company,stateKey,slug)).filter(j=>j&&!_isBlockedJob(j));
       return [companyName, jobs.length>0?jobs:null];
     };
     const fetchGroup=async(members)=>{
@@ -5112,17 +5112,17 @@ export default function App() {
       const ctrl=new AbortController();
       const onAbort=()=>ctrl.abort();
       signal.addEventListener("abort",onAbort);
-      const timer=setTimeout(()=>ctrl.abort(),9000);
+      const timer=setTimeout(()=>ctrl.abort(),28000);
       try{
         const res=await fetch(`/api/jobs/ats?platform=${platform}&slug=${encodeURIComponent(slug)}`,{signal:ctrl.signal});
         if(!res.ok)return members.map(([nm])=>[nm,null]);
         const data=await res.json();
         const rawJobs=data.jobs||[];
-        if(members.length===1) return [normFor(members[0][0],platform,rawJobs)];
+        if(members.length===1) return [normFor(members[0][0],platform,rawJobs,slug)];
         // Shared board: bucket each posting under exactly one studio.
         const buckets={}; for(const [nm] of members) buckets[nm]=[];
         for(const rj of rawJobs){ buckets[pickStudio(rj,members)].push(rj); }
-        return members.map(([nm])=>normFor(nm,platform,buckets[nm]));
+        return members.map(([nm])=>normFor(nm,platform,buckets[nm],slug));
       }catch{return members.map(([nm])=>[nm,null]);}
       finally{ clearTimeout(timer); signal.removeEventListener("abort",onAbort); }
     };
