@@ -3927,6 +3927,41 @@ const _SKILL_KW=new Set([
   "combat","progression","balancing","economy","narrative","systems",
 ]);
 
+// Multi-word game-dev skills, matched as phrases so we surface real skills
+// ("procedural generation") instead of stray single words ("procedural").
+const _SKILL_PHRASES=[
+  "procedural generation","procedural animation","procedural content","procedural systems",
+  "behavior tree","behaviour tree","behavior trees","behaviour trees","state machine","state machines","finite state machine",
+  "gameplay systems","gameplay programming","gameplay engineering","gameplay mechanics","gameplay ability system","gameplay ability",
+  "level design","game design","system design","systems design","technical design","narrative design","combat systems","progression systems","dialogue systems","quest systems","economy design",
+  "animation systems","animation programming","facial animation","character animation","character rigging","motion capture","technical animator",
+  "ai systems","ai programming","artificial intelligence","machine learning","navigation mesh",
+  "physics simulation","physics programming","collision detection","rigid body",
+  "network programming","multiplayer networking","client server","tools programming","engine programming","graphics programming","rendering pipeline","render pipeline","shader programming","technical art","technical artist",
+  "asset pipeline","build pipeline","content pipeline","version control","source control","continuous integration",
+  "unit testing","automated testing","test automation","usability testing","user testing","play testing","playtesting","quality assurance",
+  "performance optimization","memory management","memory optimization","cpu profiling","gpu profiling",
+  "world building","open world","world design","environment art","environment design","concept art","3d modeling","3d modelling","3d animation","visual effects","special effects",
+  "user research","user experience","user interface","ui design","ux design","ui ux","game feel","live service","free to play",
+  "unreal engine","unreal blueprints","unity engine","object oriented","data structures","design patterns","data analysis","backend development","frontend development","full stack",
+  "spatial audio","audio programming","sound design","technical sound design","usability systems",
+];
+// Generic words that read as noise alone — only surfaced as part of a phrase.
+const _WEAK_SOLO=new Set(["procedural","behavior","behaviour","usability","generation","spatial","modular","scalable","iterative","deterministic","replication","collaborative","balancing"]);
+// Extract canonical skills: phrases first (claiming their words), then strong
+// single-word skills that were not part of a matched phrase.
+function _extractSkills(text){
+  const low=" "+String(text||"").toLowerCase().replace(/[^a-z0-9+#. ]+/g," ").replace(/\s+/g," ")+" ";
+  const out=[]; const claimed=new Set();
+  for(const ph of _SKILL_PHRASES){
+    if(low.indexOf(" "+ph+" ")>=0 && out.indexOf(ph)<0){ out.push(ph); ph.split(" ").forEach(w=>claimed.add(w)); }
+  }
+  for(const w of _matchTokenize(low)){
+    if(_SKILL_KW.has(w) && !_WEAK_SOLO.has(w) && !claimed.has(w) && out.indexOf(w)<0) out.push(w);
+  }
+  return out;
+}
+
 // Map an experience-level label to a rank (for the seniority modifier).
 // Extract known skills (from the curated vocabulary) found anywhere in resume text.
 function _skillsFromResume(text){
@@ -4007,8 +4042,10 @@ function computeMatchScore(job,profile){
     const skillsPct=Math.round(Math.min(100,Math.pow(rawCov,0.6)*120));
     factors.push({name:"Skills",pct:skillsPct,weight:40});
     const allSkillKws=[...new Set([...reqKws,...prefKws])];
-    missingSkills=allSkillKws.filter(k=>!profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,12);
-    matchedSkills=allSkillKws.filter(k=>profileSet.has(k)&&_SKILL_KW.has(k)).slice(0,12);
+    const _jobSkills=_extractSkills([job.title||"",(job.requirements||[]).join(" "),(job.responsibilities||[]).join(" "),job.summary||"",job.fullDescription||""].join(" "));
+    const _profHasSkill=(sk)=> sk.indexOf(" ")>=0 ? (_profileCache.corpus||"").indexOf(sk)>=0 : profileSet.has(sk);
+    matchedSkills=_jobSkills.filter(_profHasSkill).slice(0,12);
+    missingSkills=_jobSkills.filter(sk=>!_profHasSkill(sk)).slice(0,12);
     if(skillsPct<60&&missingSkills.length) notes.push(`You're missing several skills this role lists. If you have any, add them to Key Skills — e.g. ${missingSkills.slice(0,3).join(", ")}.`);
   }
 
@@ -4052,9 +4089,9 @@ function computeMatchScore(job,profile){
       let locPct;
       if(shared){ locPct=100; }
       else if(isIntern){
-        locPct=diffCountry?6:15;
-        locationMult=diffCountry?0.4:0.55; // interns rarely relocated → tanks the whole match
-        notes.push(`This internship is ${diffCountry?"in another country":"in a different area"} from your location. Companies rarely relocate or sponsor interns, so selection is unlikely — this heavily lowers the match.`);
+        locPct=diffCountry?2:(willRelocate?13:8);
+        locationMult=diffCountry?0.2:(willRelocate?0.5:0.4); // interns almost never relocated → tanks the whole match
+        notes.push(`This internship is ${diffCountry?"in a different country/continent":"in a different state or region"} from your location. Companies almost never relocate or sponsor interns, so selection is very unlikely — this drops the match to near zero.`);
       } else if(diffCountry&&!job.isHybrid){
         locPct=willRelocate?42:16;
         locationMult=willRelocate?0.8:0.55; // on-site abroad → visa/local-first hiring
