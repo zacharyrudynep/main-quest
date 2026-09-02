@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       let offset = 0, all = [], total = null, pages = 0;
       while (pages < 50) { // hard cap (1000 jobs) so we never loop forever
         const body = { appliedFacets: {}, limit: 20, offset, searchText: '' };
-        const r = await fetch(v.url, { method: 'POST', headers: wdHeaders, body: JSON.stringify(body), signal: AbortSignal.timeout(12000) });
+        const r = await fetch(v.url, { method: 'POST', headers: wdHeaders, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
         if (!r.ok) { attempts.push({ url: v.url, status: r.status, offset }); break; }
         const raw = await r.json();
         if (total === null) total = raw.total || 0;
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
       let start = 0, all = [], maxCount = null, pages = 0;
       while (pages < 40) { // hard cap (1000 jobs)
         const body = { clientNamespace: ns, jobBoardCode: board, cultureCode: 'en-US', distanceUnit: 0, paginationStart: start };
-        const r = await fetch(v.url, { method: 'POST', headers: dfHeaders, body: JSON.stringify(body), signal: AbortSignal.timeout(12000) });
+        const r = await fetch(v.url, { method: 'POST', headers: dfHeaders, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
         if (!r.ok) { attempts.push({ url: v.url, status: r.status, start }); break; }
         const raw = await r.json();
         if (maxCount === null) maxCount = raw.maxCount || raw.MaxCount || 0;
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
 
   for (const v of variants) {
     try {
-      const opts = { method: v.method || 'GET', headers: { ...headers }, signal: AbortSignal.timeout(12000) };
+      const opts = { method: v.method || 'GET', headers: { ...headers }, signal: AbortSignal.timeout(20000) };
       if (v.body) { opts.body = JSON.stringify(v.body); opts.headers['Content-Type'] = 'application/json'; }
       const r = await fetch(v.url, opts);
       const status = r.status;

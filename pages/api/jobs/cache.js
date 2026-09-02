@@ -4,7 +4,7 @@ import { rateLimit, getClientIp } from "../../../lib/rateLimit";
 
 // Raise Next.js's default 1MB API body limit — the compressed snapshot can be a few MB.
 // (Stays under Vercel's hard 4.5MB request cap.)
-export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
+export const config = { api: { bodyParser: { sizeLimit: "16mb" } } };
 
 // Shared 15-minute snapshot of the whole job board, stored gzip-compressed (base64) so it
 // stays well under Vercel's 4.5MB request/response limit. The client compresses before POST
