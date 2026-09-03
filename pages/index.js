@@ -44,7 +44,7 @@ const COMPANIES_DATA = {
       { name: "AGBO", url: "https://agbo.breezy.hr/", email: null, contact: null, registerInterest:true, registerInterestLink:"https://agbo.breezy.hr/?&department=Other#positions" },
       { name: "Airstrafe Interactive", url: "https://airstrafeinteractive.com/sections/careers/gameplay-designer", email: "contact@airstrafeinteractive.com", contact: "https://airstrafeinteractive.com/sections/contact", registerInterest:true, registerInterestLink:"https://docs.google.com/forms/d/e/1FAIpQLSc5w6nxwfXmAvWpH9eTJ7kFm8whQqcfOFq4gTWsLiR4PG7okw/viewform" },
       { name: "Akili Interactive", url: "https://www.akiliinteractive.com/careers", email: null, contact: "https://www.akiliinteractive.com/contact" },
-      { name: "Akima", url: "https://careers.akima.com/jobs?location=&page=1&sortBy=relevance", email: null, contact: "https://www.akima.com/contact-us/" },
+      { name: "Akima", url: "https://careers.akima.com/jobs?location=&page=1&sortBy=relevance", email: null, contact: "https://www.akima.com/contact-us/", registerInterest:true, registerInterestLink:"https://careers.akima.com/contact-recruiter/talentcommunity/form"  },
       { name: "Alta Reality", url: "https://www.altavr.io/", email: null, contact: null },
       { name: "Amazing Seasun Games", url: "https://job.seasungames.com/#/", email: "contact@seasungames.com", contact: null },
       { name: "Amazon Game Studio", url: "https://www.amazongamestudios.com/en-us/careers", email: null, contact: null },
@@ -894,7 +894,6 @@ const COMPANIES_DATA = {
       { name: "Studio MDHR", url: "https://studiomdhr.com/careers/", email: null, contact: null },
     ],
   },
-
 
   "Australia": {
     "Australian Capital Territory": [
