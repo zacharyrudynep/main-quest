@@ -2711,7 +2711,8 @@ function ShowcaseSection({ s, i, c0, c1 }){
   const [forced,setForced]=useState(null);
   return <section id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${c0}, ${c1})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
     <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
-    <div style={{maxWidth:1440,width:"100%",display:"flex",flexDirection:"row",gap:0,alignItems:"stretch",flexWrap:"wrap",justifyContent:"center",position:"relative",zIndex:1}}>
+    {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:64,height:1,background:"linear-gradient(to right, transparent, rgba(201,168,76,.5))"}}/><span style={{color:"#c9a84c",fontSize:15,margin:"0 9px",lineHeight:1,textShadow:"0 0 9px rgba(201,168,76,.6)"}}>✦</span><div style={{width:64,height:1,background:"linear-gradient(to left, transparent, rgba(201,168,76,.5))"}}/></div>}
+    <div className="mq-show" style={{maxWidth:1440,width:"100%",display:"flex",gap:0,alignItems:"stretch",justifyContent:"center",position:"relative",zIndex:1}}>
       <div style={{flex:"1 1 40%",minWidth:300,display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 34px"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
         <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
@@ -2721,7 +2722,7 @@ function ShowcaseSection({ s, i, c0, c1 }){
             <div key={k} onMouseEnter={()=>{ if(sub.shot!=null) setForced(sub.shot); }} onMouseLeave={()=>setForced(null)} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,cursor:sub.shot!=null?"pointer":"default",transition:"background .2s,border-color .2s"}} onMouseOver={e=>{e.currentTarget.style.background="rgba(201,168,76,.08)";e.currentTarget.style.borderColor="rgba(201,168,76,.3)";}} onMouseOut={e=>{e.currentTarget.style.background="rgba(201,168,76,.04)";e.currentTarget.style.borderColor="rgba(201,168,76,.12)";}}>
               <span style={{fontFamily:"'Cinzel',serif",color:"#c9a84c",fontWeight:800,fontSize:13,flexShrink:0,marginTop:1}}>◆</span>
               <div>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3}}>{sub.label}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3,display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{sub.label}{sub.tier&&<span style={{background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7.5,fontWeight:800,letterSpacing:.5,padding:"2px 7px",fontFamily:"'Cinzel',serif",textTransform:"uppercase",boxShadow:"0 0 10px rgba(201,168,76,.55)",flexShrink:0}}>{sub.tier}</span>}</div>
                 <div style={{fontSize:12.5,color:"rgba(244,237,216,.5)",lineHeight:1.55}}>{sub.desc}</div>
               </div>
             </div>
@@ -2756,34 +2757,34 @@ function FeatureShowcase(){
        {label:"Live Feeds",shot:3,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
        {label:"Save & Share Jobs",shot:4,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
-    {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",shots:[],subs:[
-      {label:"Company-Specific Interview Prep (Premium+)",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
+    {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",shots:[],subs:[
+      {label:"Company-Specific Interview Prep",tier:"premium+",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
       {label:"Application Status",desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
     ]},
-    {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",shots:[],subs:[
-      {label:"Job-Specific Notifications (Premium)",desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
+    {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",shots:[],subs:[
+      {label:"Job-Specific Notifications",tier:"premium",desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
       {label:"Company Bell",desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
       {label:"Email Digest",desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
     ]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"[ Emphasize the BREAKDOWN: see exactly WHY a posting fits ]",shots:[],subs:[
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",shots:[],subs:[
       {label:"Factor Breakdown",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box."},
       {label:"Potential Improvements",desc:"Get concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"[ One-line hook for AI Resume Tailoring ]",shots:[],subs:[
+    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",shots:[],subs:[
       {label:"Keyword Matching",desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
       {label:"Surgical Editing",desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting."},
       {label:"ATS Clearing",desc:"Structures your resume so it parses cleanly through applicant-tracking filters — no more silent rejections from a machine."},
       {label:"Updated Match Score",desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
-    {slug:"email-templates",title:"Email-Apply Templates",tagline:"[ One-line hook for Email-Apply Templates ]",shots:[],subs:[
-      {label:"AI Generate Template (Premium+)",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
+    {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",shots:[],subs:[
+      {label:"AI Generate Template",tier:"premium+",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
       {label:"One-Click Autofill",desc:"Company name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos."},
       {label:"Customizable",desc:"Edit, tweak, and save your own template exactly how you want it, with placeholders you control."},
     ]},
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
   return <>
-    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}@media(max-width:880px){.mq-vdiv{display:none!important}}`}</style>
+    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}@media(max-width:1000px){.mq-show{display:block!important}.mq-vdiv{display:none!important}}`}</style>
     {SECTIONS.map((s,i)=>(<ShowcaseSection key={s.slug} s={s} i={i} c0={SHADE[i]} c1={SHADE[i+1]}/>))}
     <footer className="mq-footer" style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.85)",position:"relative",zIndex:1}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
