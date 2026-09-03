@@ -44,7 +44,7 @@ const COMPANIES_DATA = {
       { name: "AGBO", url: "https://agbo.breezy.hr/", email: null, contact: null, registerInterest:true, registerInterestLink:"https://agbo.breezy.hr/?&department=Other#positions" },
       { name: "Airstrafe Interactive", url: "https://airstrafeinteractive.com/sections/careers/gameplay-designer", email: "contact@airstrafeinteractive.com", contact: "https://airstrafeinteractive.com/sections/contact", registerInterest:true, registerInterestLink:"https://docs.google.com/forms/d/e/1FAIpQLSc5w6nxwfXmAvWpH9eTJ7kFm8whQqcfOFq4gTWsLiR4PG7okw/viewform" },
       { name: "Akili Interactive", url: "https://www.akiliinteractive.com/careers", email: null, contact: "https://www.akiliinteractive.com/contact" },
-      { name: "Akima", url: "https://careers.akima.com/jobs?location=&page=1&sortBy=relevance", email: null, contact: "https://www.akima.com/contact-us/", registerInterest:true, registerInterestLink:"https://careers.akima.com/contact-recruiter/talentcommunity/form"  },
+      { name: "Akima", url: "https://careers.akima.com/jobs?location=&page=1&sortBy=relevance", email: null, contact: "https://www.akima.com/contact-us/" },
       { name: "Alta Reality", url: "https://www.altavr.io/", email: null, contact: null },
       { name: "Amazing Seasun Games", url: "https://job.seasungames.com/#/", email: "contact@seasungames.com", contact: null },
       { name: "Amazon Game Studio", url: "https://www.amazongamestudios.com/en-us/careers", email: null, contact: null },
@@ -894,6 +894,7 @@ const COMPANIES_DATA = {
       { name: "Studio MDHR", url: "https://studiomdhr.com/careers/", email: null, contact: null },
     ],
   },
+
 
   "Australia": {
     "Australian Capital Territory": [
@@ -2663,7 +2664,70 @@ function PricingInfo({compact,onDismiss}){
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
-// ── LANDING FEATURE SHOWCASE (scaffold; fill copy + screenshots later) ─────
+// ── LANDING FEATURE SHOWCASE ─────
+// Fading screenshot carousel: auto-advances, manual arrows, dot indicators,
+// and jumps to a subfeature’s image when you hover its card.
+function ShotCarousel({ shots, forcedIdx, sectionTitle }){
+  const [idx,setIdx]=useState(0);
+  const [paused,setPaused]=useState(false);
+  const has=shots&&shots.length>0;
+  useEffect(()=>{
+    if(!has||paused||shots.length<2) return;
+    const tmr=setInterval(()=>setIdx(i=>(i+1)%shots.length),4500);
+    return ()=>clearInterval(tmr);
+  },[has,paused,shots]);
+  useEffect(()=>{ if(forcedIdx!=null&&forcedIdx>=0) setIdx(forcedIdx); },[forcedIdx]);
+  if(!has){
+    return <div style={{width:"100%",aspectRatio:"16/10",borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
+      <span style={{fontFamily:"'Cinzel',serif",fontSize:13,color:"rgba(201,168,76,.6)"}}>Screenshot</span>
+      <span style={{fontSize:11,color:"rgba(244,237,216,.3)"}}>{sectionTitle}</span>
+    </div>;
+  }
+  const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
+  return <div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} style={{position:"relative",width:"100%",aspectRatio:"16/10",borderRadius:14,overflow:"hidden",border:"1px solid rgba(201,168,76,.25)",background:"#0a0710",boxShadow:"0 16px 50px rgba(0,0,0,.45)"}}>
+    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:0}}><span style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(201,168,76,.35)"}}>{sectionTitle} · {idx+1}</span></div>
+    {shots.map((src,k)=>(
+      <img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>
+    ))}
+    {shots.length>1&&<>
+      <button onClick={()=>go(-1)} aria-label="Previous" style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>‹</button>
+      <button onClick={()=>go(1)} aria-label="Next" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>›</button>
+      <div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",gap:7,zIndex:3}}>
+        {shots.map((_,k)=>(<span key={k} onClick={()=>setIdx(k)} style={{width:7,height:7,borderRadius:"50%",background:k===idx?"#f0d080":"rgba(244,237,216,.35)",cursor:"pointer",transition:"background .3s"}}/>))}
+      </div>
+    </>}
+  </div>;
+}
+
+function ShowcaseSection({ s, i, reverse, c0, c1 }){
+  const [forced,setForced]=useState(null);
+  return <section id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${c0}, ${c1})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
+    <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
+    {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:1,height:48,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.55))"}}/><span style={{color:"#c9a84c",fontSize:15,lineHeight:1,margin:"5px 0",textShadow:"0 0 8px rgba(201,168,76,.6)"}}>✦</span><div style={{width:1,height:48,background:"linear-gradient(to bottom, rgba(201,168,76,.55), transparent)"}}/></div>}
+    <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:reverse?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
+      <div style={{flex:"1 1 340px",minWidth:280}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
+        <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
+        <p style={{fontSize:16,color:"rgba(244,237,216,.6)",lineHeight:1.7,marginBottom:28}}>{s.tagline}</p>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {s.subs.map((sub,k)=>(
+            <div key={k} onMouseEnter={()=>{ if(sub.shot!=null) setForced(sub.shot); }} onMouseLeave={()=>setForced(null)} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,cursor:sub.shot!=null?"pointer":"default",transition:"background .2s,border-color .2s"}} onMouseOver={e=>{e.currentTarget.style.background="rgba(201,168,76,.08)";e.currentTarget.style.borderColor="rgba(201,168,76,.3)";}} onMouseOut={e=>{e.currentTarget.style.background="rgba(201,168,76,.04)";e.currentTarget.style.borderColor="rgba(201,168,76,.12)";}}>
+              <span style={{fontFamily:"'Cinzel',serif",color:"#c9a84c",fontWeight:800,fontSize:13,flexShrink:0,marginTop:1}}>◆</span>
+              <div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3}}>{sub.label}</div>
+                <div style={{fontSize:12.5,color:"rgba(244,237,216,.5)",lineHeight:1.55}}>{sub.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{flex:"1 1 360px",minWidth:280}}>
+        <ShotCarousel shots={s.shots} forcedIdx={forced} sectionTitle={s.title}/>
+      </div>
+    </div>
+  </section>;
+}
+
 function FeatureShowcase(){
   const [showTop,setShowTop]=useState(false);
   useEffect(()=>{
@@ -2672,50 +2736,28 @@ function FeatureShowcase(){
     return ()=>window.removeEventListener("scroll",onScroll);
   },[]);
   const SECTIONS=[
-    {slug:"job-board",title:"Job Board",tagline:"[ One-line hook for the Job Board ]",subs:["Filters","Live feeds","[ sub-feature ]"]},
-    {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",subs:["Applied / Interview / Offers / Denied","Dates + one-click access","[ sub-feature ]"]},
-    {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",subs:["Per-company notifications","Email digests","[ sub-feature ]"]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"[ Emphasize the BREAKDOWN: see exactly WHY a posting fits — not just the number ]",subs:["Per-factor breakdown (skills, experience, role, keywords)","What is boosting vs. dragging the score","How to close the gaps"]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailor",tagline:"[ One-line hook for the Resume Tailor ]",subs:["Keyword matching","Surgical bullet edits","Match score before / after"]},
-    {slug:"email-templates",title:"Email Templates",tagline:"[ One-line hook for Email Templates ]",subs:["Filler: Company Name","Filler: Position","Filler: AI Search","[ more fillers ]"]},
+    {slug:"job-board",title:"Job Board",
+     tagline:"Every game-industry opening, gathered into one living board that never goes stale.",
+     shots:["/shots/job-board-1.png","/shots/job-board-2.png","/shots/job-board-3.png"],
+     subs:[
+       {label:"Filters & Sorting",shot:0,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
+       {label:"Live Feeds",shot:1,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
+       {label:"Save & Share Jobs",shot:2,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
+     ]},
+    {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",shots:[],subs:[{label:"Applied / Interview / Offers / Denied",desc:"[ description ]"},{label:"Dates + one-click access",desc:"[ description ]"},{label:"[ sub-feature ]",desc:"[ description ]"}]},
+    {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",shots:[],subs:[{label:"Per-company notifications",desc:"[ description ]"},{label:"Email digests",desc:"[ description ]"},{label:"[ sub-feature ]",desc:"[ description ]"}]},
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"[ Emphasize the BREAKDOWN: see exactly WHY a posting fits ]",shots:[],subs:[{label:"Per-factor breakdown",desc:"[ description ]"},{label:"What is boosting vs. dragging the score",desc:"[ description ]"},{label:"How to close the gaps",desc:"[ description ]"}]},
+    {slug:"ai-resume-tailor",title:"AI Resume Tailor",tagline:"[ One-line hook for the Resume Tailor ]",shots:[],subs:[{label:"Keyword matching",desc:"[ description ]"},{label:"Surgical bullet edits",desc:"[ description ]"},{label:"Match score before / after",desc:"[ description ]"}]},
+    {slug:"email-templates",title:"Email Templates",tagline:"[ One-line hook for Email Templates ]",shots:[],subs:[{label:"Filler: Company Name",desc:"[ description ]"},{label:"Filler: Position",desc:"[ description ]"},{label:"Filler: AI Search",desc:"[ description ]"}]},
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
   const REVERSE=[false,true,false,true,true,false];
   return <>
     <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}`}</style>
-    {SECTIONS.map((s,i)=>(
-      <section key={s.slug} id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${SHADE[i]}, ${SHADE[i+1]})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
-        {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:1,height:48,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.55))"}}/><span style={{color:"#c9a84c",fontSize:15,lineHeight:1,margin:"5px 0",textShadow:"0 0 8px rgba(201,168,76,.6)"}}>✦</span><div style={{width:1,height:48,background:"linear-gradient(to bottom, rgba(201,168,76,.55), transparent)"}}/></div>}
-        <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:REVERSE[i]?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
-          <div style={{flex:"1 1 340px",minWidth:280}}>
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
-            <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
-            <p style={{fontSize:16,color:"rgba(244,237,216,.6)",lineHeight:1.7,marginBottom:28}}>{s.tagline}</p>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {s.subs.map((sub,k)=>(
-                <div key={k} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10}}>
-                  <span style={{fontFamily:"'Cinzel',serif",color:"#c9a84c",fontWeight:800,fontSize:13,flexShrink:0,marginTop:1}}>◆</span>
-                  <div>
-                    <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3}}>{sub}</div>
-                    <div style={{fontSize:12,color:"rgba(244,237,216,.4)",lineHeight:1.5}}>[ short description of this sub-feature ]</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{flex:"1 1 360px",minWidth:280}}>
-            <div style={{width:"100%",aspectRatio:"16/10",borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:13,color:"rgba(201,168,76,.6)"}}>Screenshot</span>
-              <span style={{fontSize:11,color:"rgba(244,237,216,.3)"}}>{s.title}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-    ))}
+    {SECTIONS.map((s,i)=>(<ShowcaseSection key={s.slug} s={s} i={i} reverse={REVERSE[i]} c0={SHADE[i]} c1={SHADE[i+1]}/>))}
     <footer className="mq-footer" style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.85)",position:"relative",zIndex:1}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
-        Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.
+        Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer’s official site. Trademarks belong to their respective owners.
       </div>
       <div style={{display:"flex",gap:16,alignItems:"center",flexShrink:0}}>
         <Link href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</Link>
