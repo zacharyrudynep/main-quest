@@ -2711,7 +2711,7 @@ function ShowcaseSection({ s, i, c0, c1 }){
   const [forced,setForced]=useState(null);
   return <section id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${c0}, ${c1})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
     <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
-    {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:64,height:1,background:"linear-gradient(to right, transparent, rgba(201,168,76,.5))"}}/><span style={{color:"#c9a84c",fontSize:15,margin:"0 9px",lineHeight:1,textShadow:"0 0 9px rgba(201,168,76,.6)"}}>✦</span><div style={{width:64,height:1,background:"linear-gradient(to left, transparent, rgba(201,168,76,.5))"}}/></div>}
+    {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",width:"min(78%,1000px)",height:1,background:"linear-gradient(to right, transparent, rgba(201,168,76,.5) 22%, rgba(201,168,76,.5) 78%, transparent)",pointerEvents:"none",zIndex:2}}/>}
     <div className="mq-show" style={{maxWidth:1440,width:"100%",display:"flex",gap:0,alignItems:"stretch",justifyContent:"center",position:"relative",zIndex:1}}>
       <div style={{flex:"1 1 40%",minWidth:300,display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 34px"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
@@ -2761,20 +2761,20 @@ function FeatureShowcase(){
       {label:"Company-Specific Interview Prep",tier:"premium+",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
       {label:"Application Status",desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
     ]},
-    {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",shots:[],subs:[
-      {label:"Job-Specific Notifications",tier:"premium",desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
-      {label:"Company Bell",desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
-      {label:"Email Digest",desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
+    {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",shots:["/shots/Notifications_IMG01.png","/shots/Notifications_IMG02.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],subs:[
+      {label:"Job-Specific Notifications",tier:"premium",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
+      {label:"Company Bell",shot:2,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
+      {label:"Email Digest",shot:3,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
     ]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",shots:[],subs:[
-      {label:"Factor Breakdown",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box."},
-      {label:"Potential Improvements",desc:"Get concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",shots:["/shots/FactorBreakdown_IMG.png","/shots/PotIMP_IMG.png"],subs:[
+      {label:"Factor Breakdown",shot:0,desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box."},
+      {label:"Potential Improvements",shot:1,desc:"Get concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",shots:[],subs:[
-      {label:"Keyword Matching",desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
-      {label:"Surgical Editing",desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting."},
+    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",shots:["/shots/KeyMatch_IMG.png","/shots/Editing_IMG.png","/shots/UPMatchScore_IMG.png"],subs:[
+      {label:"Keyword Matching",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
+      {label:"Surgical Editing",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting."},
       {label:"ATS Clearing",desc:"Structures your resume so it parses cleanly through applicant-tracking filters — no more silent rejections from a machine."},
-      {label:"Updated Match Score",desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
+      {label:"Updated Match Score",shot:2,desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
     {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",shots:[],subs:[
       {label:"AI Generate Template",tier:"premium+",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
