@@ -2678,13 +2678,13 @@ function ShotCarousel({ shots, forcedIdx, sectionTitle }){
   },[has,paused,shots]);
   useEffect(()=>{ if(forcedIdx!=null&&forcedIdx>=0) setIdx(forcedIdx); },[forcedIdx]);
   if(!has){
-    return <div style={{width:"100%",aspectRatio:"16/10",borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
+    return <div style={{width:"100%",height:"100%",minHeight:320,borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
       <span style={{fontFamily:"'Cinzel',serif",fontSize:13,color:"rgba(201,168,76,.6)"}}>Screenshot</span>
       <span style={{fontSize:11,color:"rgba(244,237,216,.3)"}}>{sectionTitle}</span>
     </div>;
   }
   const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
-  return <div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} style={{position:"relative",width:"100%",aspectRatio:"16/10",borderRadius:14,overflow:"hidden",border:"1px solid rgba(201,168,76,.25)",background:"#0a0710",boxShadow:"0 16px 50px rgba(0,0,0,.45)"}}>
+  return <div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} style={{position:"relative",width:"100%",height:"100%",minHeight:320,borderRadius:14,overflow:"hidden",border:"1px solid rgba(201,168,76,.25)",background:"#0a0710",boxShadow:"0 16px 50px rgba(0,0,0,.45)"}}>
     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:0}}><span style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(201,168,76,.35)"}}>{sectionTitle} · {idx+1}</span></div>
     {shots.map((src,k)=>(
       <img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>
@@ -2704,8 +2704,8 @@ function ShowcaseSection({ s, i, reverse, c0, c1 }){
   return <section id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${c0}, ${c1})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
     <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
     {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:1,height:48,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.55))"}}/><span style={{color:"#c9a84c",fontSize:15,lineHeight:1,margin:"5px 0",textShadow:"0 0 8px rgba(201,168,76,.6)"}}>✦</span><div style={{width:1,height:48,background:"linear-gradient(to bottom, rgba(201,168,76,.55), transparent)"}}/></div>}
-    <div style={{maxWidth:1040,width:"100%",display:"flex",flexDirection:reverse?"row-reverse":"row",gap:48,alignItems:"center",flexWrap:"wrap",position:"relative",zIndex:1}}>
-      <div style={{flex:"1 1 340px",minWidth:280}}>
+    <div style={{maxWidth:1440,width:"100%",display:"flex",flexDirection:reverse?"row-reverse":"row",gap:40,alignItems:"stretch",flexWrap:"wrap",position:"relative",zIndex:1}}>
+      <div style={{flex:"1 1 42%",minWidth:300,display:"flex",flexDirection:"column",justifyContent:"center"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
         <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
         <p style={{fontSize:16,color:"rgba(244,237,216,.6)",lineHeight:1.7,marginBottom:28}}>{s.tagline}</p>
@@ -2721,7 +2721,7 @@ function ShowcaseSection({ s, i, reverse, c0, c1 }){
           ))}
         </div>
       </div>
-      <div style={{flex:"1 1 360px",minWidth:280}}>
+      <div style={{flex:"1 1 50%",minWidth:300,display:"flex"}}>
         <ShotCarousel shots={s.shots} forcedIdx={forced} sectionTitle={s.title}/>
       </div>
     </div>
