@@ -2738,11 +2738,11 @@ function FeatureShowcase(){
   const SECTIONS=[
     {slug:"job-board",title:"Job Board",
      tagline:"Every game-industry opening, gathered into one living board that never goes stale.",
-     shots:["/shots/job-board-1.png","/shots/job-board-2.png","/shots/job-board-3.png"],
+     shots:["/shots/JobBoard_IMG01.png","/shots/JobBoard_IMG02.png","/shots/Filter_IMG.png","/shots/LiveFeed_IMG.png","/shots/SavedJobs_IMG.png","/shots/ShareJob_IMG01.png","/shots/ShareJob_IMG02.png"],
      subs:[
-       {label:"Filters & Sorting",shot:0,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
-       {label:"Live Feeds",shot:1,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
-       {label:"Save & Share Jobs",shot:2,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
+       {label:"Filters & Sorting",shot:2,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
+       {label:"Live Feeds",shot:3,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
+       {label:"Save & Share Jobs",shot:4,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
     {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",shots:[],subs:[{label:"Applied / Interview / Offers / Denied",desc:"[ description ]"},{label:"Dates + one-click access",desc:"[ description ]"},{label:"[ sub-feature ]",desc:"[ description ]"}]},
     {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",shots:[],subs:[{label:"Per-company notifications",desc:"[ description ]"},{label:"Email digests",desc:"[ description ]"},{label:"[ sub-feature ]",desc:"[ description ]"}]},
