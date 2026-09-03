@@ -2665,47 +2665,54 @@ function PricingInfo({compact,onDismiss}){
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 // ── LANDING FEATURE SHOWCASE ─────
-// Fading screenshot carousel: auto-advances, manual arrows, dot indicators,
-// and jumps to a subfeature’s image when you hover its card.
 function ShotCarousel({ shots, forcedIdx, sectionTitle }){
   const [idx,setIdx]=useState(0);
   const [paused,setPaused]=useState(false);
+  const [zoom,setZoom]=useState(false);
   const has=shots&&shots.length>0;
   useEffect(()=>{
-    if(!has||paused||shots.length<2) return;
+    if(!has||paused||zoom||shots.length<2) return;
     const tmr=setInterval(()=>setIdx(i=>(i+1)%shots.length),4500);
     return ()=>clearInterval(tmr);
-  },[has,paused,shots]);
+  },[has,paused,zoom,shots]);
   useEffect(()=>{ if(forcedIdx!=null&&forcedIdx>=0) setIdx(forcedIdx); },[forcedIdx]);
+  useEffect(()=>{ if(typeof document==="undefined")return; if(zoom){ const pv=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{document.body.style.overflow=pv;}; } },[zoom]);
+  const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
   if(!has){
     return <div style={{width:"100%",height:"100%",minHeight:320,borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
       <span style={{fontFamily:"'Cinzel',serif",fontSize:13,color:"rgba(201,168,76,.6)"}}>Screenshot</span>
       <span style={{fontSize:11,color:"rgba(244,237,216,.3)"}}>{sectionTitle}</span>
     </div>;
   }
-  const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
-  return <div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} style={{position:"relative",width:"100%",height:"100%",minHeight:320,borderRadius:14,overflow:"hidden",border:"1px solid rgba(201,168,76,.25)",background:"#0a0710",boxShadow:"0 16px 50px rgba(0,0,0,.45)"}}>
+  const dot=(k,fixed)=>(<span key={k} onClick={e=>{e.stopPropagation();setIdx(k);}} style={{width:8,height:8,borderRadius:"50%",background:k===idx?"#f0d080":"rgba(244,237,216,.35)",cursor:"pointer",transition:"background .3s"}}/>);
+  const arrowStyle=(side)=>({position:"absolute",[side]:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"});
+  return <><div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onClick={()=>setZoom(true)} style={{position:"relative",width:"100%",height:"100%",minHeight:320,borderRadius:14,overflow:"hidden",border:"1px solid rgba(201,168,76,.25)",background:"#0a0710",boxShadow:"0 16px 50px rgba(0,0,0,.45)",cursor:"zoom-in"}}>
     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:0}}><span style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(201,168,76,.35)"}}>{sectionTitle} · {idx+1}</span></div>
-    {shots.map((src,k)=>(
-      <img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>
-    ))}
+    {shots.map((src,k)=>(<img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>))}
     {shots.length>1&&<>
-      <button onClick={()=>go(-1)} aria-label="Previous" style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>‹</button>
-      <button onClick={()=>go(1)} aria-label="Next" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>›</button>
-      <div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",gap:7,zIndex:3}}>
-        {shots.map((_,k)=>(<span key={k} onClick={()=>setIdx(k)} style={{width:7,height:7,borderRadius:"50%",background:k===idx?"#f0d080":"rgba(244,237,216,.35)",cursor:"pointer",transition:"background .3s"}}/>))}
-      </div>
+      <button onClick={e=>{e.stopPropagation();go(-1);}} aria-label="Previous" style={arrowStyle("left")}>‹</button>
+      <button onClick={e=>{e.stopPropagation();go(1);}} aria-label="Next" style={arrowStyle("right")}>›</button>
+      <div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",gap:7,zIndex:3}}>{shots.map((_,k)=>dot(k))}</div>
     </>}
-  </div>;
+  </div>
+  {zoom&&<div onClick={()=>setZoom(false)} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,.92)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <img src={shots[idx]} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"92vw",maxHeight:"86vh",objectFit:"contain",borderRadius:8,boxShadow:"0 20px 80px rgba(0,0,0,.7)"}}/>
+    <button onClick={()=>setZoom(false)} title="Close" style={{position:"fixed",top:18,right:22,zIndex:3,width:40,height:40,borderRadius:"50%",background:"rgba(20,14,10,.7)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+    {shots.length>1&&<>
+      <button onClick={e=>{e.stopPropagation();go(-1);}} style={{position:"fixed",left:18,top:"50%",transform:"translateY(-50%)",zIndex:3,width:46,height:46,borderRadius:"50%",background:"rgba(20,14,10,.7)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",fontSize:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+      <button onClick={e=>{e.stopPropagation();go(1);}} style={{position:"fixed",right:18,top:"50%",transform:"translateY(-50%)",zIndex:3,width:46,height:46,borderRadius:"50%",background:"rgba(20,14,10,.7)",border:"1px solid rgba(201,168,76,.4)",color:"#f0d080",fontSize:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+      <div style={{position:"fixed",bottom:22,left:0,right:0,display:"flex",justifyContent:"center",gap:8,zIndex:3}} onClick={e=>e.stopPropagation()}>{shots.map((_,k)=>dot(k,true))}</div>
+    </>}
+  </div>}
+  </>;
 }
 
-function ShowcaseSection({ s, i, reverse, c0, c1 }){
+function ShowcaseSection({ s, i, c0, c1 }){
   const [forced,setForced]=useState(null);
   return <section id={`feat-${s.slug}`} className="mq-feat-sec" style={{position:"relative",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"64px 24px",background:`linear-gradient(180deg, ${c0}, ${c1})`,boxSizing:"border-box",fontFamily:"'Space Grotesk',sans-serif"}}>
     <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
-    {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",pointerEvents:"none",zIndex:2}}><div style={{width:1,height:48,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.55))"}}/><span style={{color:"#c9a84c",fontSize:15,lineHeight:1,margin:"5px 0",textShadow:"0 0 8px rgba(201,168,76,.6)"}}>✦</span><div style={{width:1,height:48,background:"linear-gradient(to bottom, rgba(201,168,76,.55), transparent)"}}/></div>}
-    <div style={{maxWidth:1440,width:"100%",display:"flex",flexDirection:reverse?"row-reverse":"row",gap:40,alignItems:"stretch",flexWrap:"wrap",position:"relative",zIndex:1}}>
-      <div style={{flex:"1 1 42%",minWidth:300,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+    <div style={{maxWidth:1440,width:"100%",display:"flex",flexDirection:"row",gap:0,alignItems:"stretch",flexWrap:"wrap",justifyContent:"center",position:"relative",zIndex:1}}>
+      <div style={{flex:"1 1 40%",minWidth:300,display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 34px"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
         <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
         <p style={{fontSize:16,color:"rgba(244,237,216,.6)",lineHeight:1.7,marginBottom:28}}>{s.tagline}</p>
@@ -2721,7 +2728,12 @@ function ShowcaseSection({ s, i, reverse, c0, c1 }){
           ))}
         </div>
       </div>
-      <div style={{flex:"1 1 50%",minWidth:300,display:"flex"}}>
+      <div className="mq-vdiv" style={{alignSelf:"stretch",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:"0 0 auto",padding:"18px 0"}}>
+        <div style={{flex:1,width:1,background:"linear-gradient(to bottom, transparent, rgba(201,168,76,.4))"}}/>
+        <span style={{color:"#c9a84c",fontSize:16,margin:"9px 0",textShadow:"0 0 9px rgba(201,168,76,.6)"}}>✦</span>
+        <div style={{flex:1,width:1,background:"linear-gradient(to bottom, rgba(201,168,76,.4), transparent)"}}/>
+      </div>
+      <div style={{flex:"1 1 40%",minWidth:300,display:"flex",padding:"0 34px"}}>
         <ShotCarousel shots={s.shots} forcedIdx={forced} sectionTitle={s.title}/>
       </div>
     </div>
@@ -2744,17 +2756,35 @@ function FeatureShowcase(){
        {label:"Live Feeds",shot:3,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
        {label:"Save & Share Jobs",shot:4,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
-    {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",shots:[],subs:[{label:"Applied / Interview / Offers / Denied",desc:"[ description ]"},{label:"Dates + one-click access",desc:"[ description ]"},{label:"[ sub-feature ]",desc:"[ description ]"}]},
-    {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",shots:[],subs:[{label:"Per-company notifications",desc:"[ description ]"},{label:"Email digests",desc:"[ description ]"},{label:"[ sub-feature ]",desc:"[ description ]"}]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"[ Emphasize the BREAKDOWN: see exactly WHY a posting fits ]",shots:[],subs:[{label:"Per-factor breakdown",desc:"[ description ]"},{label:"What is boosting vs. dragging the score",desc:"[ description ]"},{label:"How to close the gaps",desc:"[ description ]"}]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailor",tagline:"[ One-line hook for the Resume Tailor ]",shots:[],subs:[{label:"Keyword matching",desc:"[ description ]"},{label:"Surgical bullet edits",desc:"[ description ]"},{label:"Match score before / after",desc:"[ description ]"}]},
-    {slug:"email-templates",title:"Email Templates",tagline:"[ One-line hook for Email Templates ]",shots:[],subs:[{label:"Filler: Company Name",desc:"[ description ]"},{label:"Filler: Position",desc:"[ description ]"},{label:"Filler: AI Search",desc:"[ description ]"}]},
+    {slug:"application-tracking",title:"Application Tracking",tagline:"[ One-line hook for Application Tracking ]",shots:[],subs:[
+      {label:"Company-Specific Interview Prep (Premium+)",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
+      {label:"Application Status",desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
+    ]},
+    {slug:"company-alerts",title:"Company Alerts",tagline:"[ One-line hook for Company Alerts ]",shots:[],subs:[
+      {label:"Job-Specific Notifications (Premium)",desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
+      {label:"Company Bell",desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
+      {label:"Email Digest",desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
+    ]},
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"[ Emphasize the BREAKDOWN: see exactly WHY a posting fits ]",shots:[],subs:[
+      {label:"Factor Breakdown",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box."},
+      {label:"Potential Improvements",desc:"Get concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
+    ]},
+    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"[ One-line hook for AI Resume Tailoring ]",shots:[],subs:[
+      {label:"Keyword Matching",desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
+      {label:"Surgical Editing",desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting."},
+      {label:"ATS Clearing",desc:"Structures your resume so it parses cleanly through applicant-tracking filters — no more silent rejections from a machine."},
+      {label:"Updated Match Score",desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
+    ]},
+    {slug:"email-templates",title:"Email-Apply Templates",tagline:"[ One-line hook for Email-Apply Templates ]",shots:[],subs:[
+      {label:"AI Generate Template (Premium+)",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
+      {label:"One-Click Autofill",desc:"Company name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos."},
+      {label:"Customizable",desc:"Edit, tweak, and save your own template exactly how you want it, with placeholders you control."},
+    ]},
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
-  const REVERSE=[false,true,false,true,true,false];
   return <>
-    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}`}</style>
-    {SECTIONS.map((s,i)=>(<ShowcaseSection key={s.slug} s={s} i={i} reverse={REVERSE[i]} c0={SHADE[i]} c1={SHADE[i+1]}/>))}
+    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}@media(max-width:880px){.mq-vdiv{display:none!important}}`}</style>
+    {SECTIONS.map((s,i)=>(<ShowcaseSection key={s.slug} s={s} i={i} c0={SHADE[i]} c1={SHADE[i+1]}/>))}
     <footer className="mq-footer" style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.85)",position:"relative",zIndex:1}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
         Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer’s official site. Trademarks belong to their respective owners.
