@@ -5119,6 +5119,50 @@ function GeneratedResumes({ user, onPanel }){
   </div>;
 }
 
+// ── Interview Prep (Premium) ──
+function _inlineBold(s){ const parts=String(s).split(/(\*\*[^*]+\*\*)/g); return parts.map((x,i)=> (x.startsWith("**")&&x.endsWith("**"))?<strong key={i} style={{color:"#f4edd8"}}>{x.slice(2,-2)}</strong>:x); }
+function PrepMarkdown({ text }){
+  const lines=String(text||"").split(/\r?\n/); const out=[]; let buf=[];
+  const flush=()=>{ if(buf.length){ out.push(<ul key={"u"+out.length} style={{margin:"4px 0 12px",paddingLeft:20}}>{buf.map((it,i)=><li key={i} style={{marginBottom:5,fontSize:13,color:"rgba(244,237,216,.75)",lineHeight:1.55}}>{_inlineBold(it)}</li>)}</ul>); buf=[]; } };
+  lines.forEach((ln,i)=>{
+    const li=ln.match(/^\s*[-*]\s+(.*)/); if(li){ buf.push(li[1]); return; } flush();
+    const h1=ln.match(/^#\s+(.*)/), h2=ln.match(/^##\s+(.*)/), h3=ln.match(/^###\s+(.*)/);
+    if(h3){ out.push(<h4 key={i} style={{fontFamily:"'Cinzel',serif",fontSize:12.5,color:"#c9a84c",fontWeight:700,margin:"12px 0 5px",letterSpacing:.3}}>{_inlineBold(h3[1])}</h4>); return; }
+    if(h1||h2){ out.push(<h3 key={i} style={{fontFamily:"'Cinzel',serif",fontSize:15,color:"#f0d080",fontWeight:700,margin:"16px 0 7px"}}>{_inlineBold((h1||h2)[1])}</h3>); return; }
+    if(!ln.trim()) return;
+    out.push(<p key={i} style={{fontSize:13,color:"rgba(244,237,216,.7)",lineHeight:1.6,margin:"0 0 9px"}}>{_inlineBold(ln)}</p>);
+  });
+  flush(); return <div>{out}</div>;
+}
+function InterviewPrepPanel({ job, onClose }){
+  const mobile=useIsMobile();
+  const [st,setSt]=useState("loading"); const [text,setText]=useState(""); const [err,setErr]=useState("");
+  const jobKey=`${job.company}|${job.title}|${job.location||""}`;
+  const tokenOf=async()=>{ const {data}=await supabase.auth.getSession(); return data&&data.session&&data.session.access_token; };
+  useEffect(()=>{ let alive=true; (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(!alive)return; if(j.prep){ setText(j.prep); setSt("ready"); } else setSt("empty"); }catch(e){ if(alive)setSt("empty"); } })(); return ()=>{alive=false;}; },[]);
+  const gen=async()=>{ setSt("generating"); setErr(""); try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]})}); const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ setText(j.prep); setSt("ready"); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } }catch(e){ setErr("Something went wrong."); setSt("empty"); } };
+  const dl=()=>{ const clean=String(text||"").replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1"); const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(clean,`${safe(job.company)}_${safe(job.title)}_interview_prep.docx`.slice(0,90)); };
+  return <div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:16,overflowY:"auto"}:{position:"fixed",top:96,right:16,width:"50vw",maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:12,borderBottom:"1px solid rgba(201,168,76,.15)",paddingBottom:10}}>
+      <div><div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"#c9a84c",fontWeight:700,textTransform:"uppercase",letterSpacing:.3}}>{job.company} · Interview Prep</div><div style={{fontSize:15,color:"#f0d080",fontWeight:700}}>{job.title}</div></div>
+      <button onClick={onClose} title="Close" style={{flexShrink:0,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",cursor:"pointer",fontSize:14}}>✕</button>
+    </div>
+    {st==="loading"&&<div style={{padding:"30px 0",textAlign:"center",color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>Checking…</div>}
+    {st==="empty"&&<div style={{padding:"6px 0"}}>
+      <p style={{fontSize:13,color:"rgba(244,237,216,.65)",lineHeight:1.6,marginBottom:14}}>Generate a tailored interview prep guide for this role — likely questions with suggested angles, company notes, topics to review, and questions to ask them. Uses one of your monthly AI interview preps and is saved here permanently.</p>
+      {err&&<div style={{fontSize:12,color:"#e07060",marginBottom:10}}>{err}</div>}
+      <button onClick={gen} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>✦ Generate Interview Prep</button>
+    </div>}
+    {st==="generating"&&<div style={{padding:"44px 0",textAlign:"center"}}><div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:14,marginBottom:8}}>Generating your interview prep…</div><div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Reviewing the company and tailoring questions. This can take up to a minute.</div></div>}
+    {st==="ready"&&<><PrepMarkdown text={text}/><button onClick={dl} style={{width:"100%",marginTop:14,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>⤓ Download (.docx)</button></>}
+  </div>;
+}
+function InterviewPrepButton({ job, onOpen }){
+  const [has,setHas]=useState(false);
+  useEffect(()=>{ let alive=true; (async()=>{ try{ const {data}=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk)return; const jk=`${job.company}|${job.title}|${job.location||""}`; const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jk),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(alive&&j.prep) setHas(true); }catch(e){} })(); return ()=>{alive=false;}; },[]);
+  return <button onClick={()=>onOpen(job)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:8,padding:"6px 14px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3,cursor:"pointer"}}>{has?"✦ Interview Prep":"✦ Generate Interview Prep"}</button>;
+}
+
 export default function App() {
   const mobile = useIsMobile();
   const desktop = !useIsMobile(1024); // large background globe only on true desktop widths
@@ -5126,6 +5170,7 @@ export default function App() {
   const compactBar = useIsMobile(1000); // landscape phones / small screens: condense the top bar
   const [savedTab,setSavedTab]=useState("jobs");
   const [resumePanel,setResumePanel]=useState(false);
+  const [prepJob,setPrepJob]=useState(null);
   const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
@@ -6072,7 +6117,7 @@ export default function App() {
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
-    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":(resumePanel&&!mobile&&tab==="saved")?"0 calc(50vw + 24px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
+    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":(resumePanel&&!mobile&&tab==="saved")?"0 calc(50vw + 24px) 0 24px":(prepJob&&!mobile&&tab==="applied")?"0 calc(50vw + 24px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
         <BetaDisclaimer/>
         {/* Pricing banner for guests (dismissible) */}
@@ -6389,13 +6434,14 @@ export default function App() {
                   <button onClick={()=>removeApplied(job.id)} title="Remove" style={{background:"rgba(192,50,26,.08)",border:"1px solid rgba(192,50,26,.2)",color:"rgba(232,120,90,.7)",cursor:"pointer",width:26,height:26,borderRadius:8,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(192,50,26,.2)";e.currentTarget.style.color="#e87060";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(192,50,26,.08)";e.currentTarget.style.color="rgba(232,120,90,.7)";}}><I.X s={11} c="currentColor"/></button>
                 </div>
               </div>
-              <a href={job.applyUrl||job.url} target="_blank" rel="noreferrer" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",borderRadius:8,padding:"6px 14px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3}}>View Posting <I.Arrow s={11} c="#f0d080"/></a>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><a href={job.applyUrl||job.url} target="_blank" rel="noreferrer" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",borderRadius:8,padding:"6px 14px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3}}>View Posting <I.Arrow s={11} c="#f0d080"/></a><InterviewPrepButton job={job} onOpen={setPrepJob}/></div>
             </div>;
           })}
         </div>}
       </div>}
 
     </main>
+    {prepJob&&<InterviewPrepPanel job={prepJob} onClose={()=>setPrepJob(null)}/>}
     {/* Legal footer */}
     <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
