@@ -5062,6 +5062,7 @@ function AiUsageButton(){
         {loading||!data?<div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Loading…</div>:<>
           <Row label="Resume Tailor" u={data.tailor.used} lim={data.tailor.limit} admin={data.isAdmin}/>
           <Row label="Company Info" u={data.company.used} lim={data.company.limit} admin={data.isAdmin}/>
+          {data.interview&&<Row label="Interview Prep" u={data.interview.used} lim={data.interview.limit} admin={data.isAdmin}/>}
           <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:2}}>Resets on the 1st of each month.</div>
         </>}
       </div>
@@ -5092,11 +5093,11 @@ function GeneratedResumes({ user, onPanel }){
       <p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>Tailor a resume from any job and it will be saved here.</p>
     </div>:<div style={{display:"flex",flexDirection:"column",gap:10}}>
       {list.map(rz=>(
-        <div key={rz.id} onClick={()=>open(rz)} style={{cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,padding:"13px 15px",background:(sel&&sel.id===rz.id)?"rgba(201,168,76,.1)":"rgba(16,10,22,.5)",border:`1px solid ${(sel&&sel.id===rz.id)?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,borderRadius:10}}>
+        <div key={rz.id} onClick={()=>open(rz)} style={{cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,padding:sel?"9px 14px":"13px 15px",background:(sel&&sel.id===rz.id)?"rgba(201,168,76,.1)":"rgba(16,10,22,.5)",border:`1px solid ${(sel&&sel.id===rz.id)?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,borderRadius:10}}>
           <div style={{minWidth:0}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"#c9a84c",fontWeight:700,textTransform:"uppercase",letterSpacing:.3,marginBottom:2}}>{rz.company}</div>
             <div style={{fontSize:14,color:"#f4edd8",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rz.title}</div>
-            <div style={{fontSize:11,color:"rgba(244,237,216,.4)",marginTop:2}}>{rz.location||"—"} · Tailored {fmt(rz.created_at)}</div>
+            {!sel&&<div style={{fontSize:11,color:"rgba(244,237,216,.4)",marginTop:2}}>{rz.location||"—"} · Tailored {fmt(rz.created_at)}</div>}
           </div>
           <button onClick={e=>del(rz.id,e)} title="Delete" style={{flexShrink:0,background:"transparent",border:"1px solid rgba(192,50,26,.3)",color:"#c0703a",borderRadius:7,padding:"5px 9px",fontSize:11,cursor:"pointer"}}>✕</button>
         </div>

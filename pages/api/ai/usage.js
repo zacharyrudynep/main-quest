@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const TAILOR_LIMIT = 15;   // must match tailor-resume.js
 const COMPANY_LIMIT = 25;  // must match email-company.js
+const INTERVIEW_LIMIT = 10; // must match interview-prep.js
 
 // GET -> this month's AI usage for the signed-in user.
 export default async function handler(req, res) {
@@ -19,11 +20,12 @@ export default async function handler(req, res) {
       const { data } = await supabaseAdmin.from(tbl).select("count").eq("user_id", u.user.id).eq("month", month).single();
       return (data && data.count) || 0;
     };
-    const [tailorUsed, companyUsed] = await Promise.all([read("ai_tailor_usage"), read("ai_email_usage")]);
+    const [tailorUsed, companyUsed, interviewUsed] = await Promise.all([read("ai_tailor_usage"), read("ai_email_usage"), read("ai_interview_usage")]);
     return res.status(200).json({
       isAdmin,
       tailor: { used: tailorUsed, limit: TAILOR_LIMIT },
       company: { used: companyUsed, limit: COMPANY_LIMIT },
+      interview: { used: interviewUsed, limit: INTERVIEW_LIMIT },
     });
   } catch (e) {
     return res.status(500).json({ error: "Could not load usage." });
