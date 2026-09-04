@@ -5070,7 +5070,7 @@ function AiUsageButton(){
 }
 
 // Saved tailored resumes: list + right-side view/edit/download panel.
-function GeneratedResumes({ user }){
+function GeneratedResumes({ user, onPanel }){
   const mobile=useIsMobile();
   const [list,setList]=useState(null);
   const [sel,setSel]=useState(null);
@@ -5079,13 +5079,13 @@ function GeneratedResumes({ user }){
   const [savedMsg,setSavedMsg]=useState("");
   const tokenOf=async()=>{ const {data}=await supabase.auth.getSession(); return data&&data.session&&data.session.access_token; };
   useEffect(()=>{ (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/resumes",{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); setList(j.resumes||[]); }catch(e){ setList([]); } })(); },[]);
-  const open=(rz)=>{ setSel(rz); setEdit(rz.resume_text||""); setSavedMsg(""); };
+  const open=(rz)=>{ setSel(rz); setEdit(rz.resume_text||""); setSavedMsg(""); if(onPanel)onPanel(true); };
   const saveEdit=async()=>{ if(!sel)return; setSaving(true); try{ const tk=await tokenOf(); await fetch("/api/resumes",{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({id:sel.id,resumeText:edit})}); setList(l=>(l||[]).map(x=>x.id===sel.id?{...x,resume_text:edit}:x)); setSavedMsg("Saved to your account."); }catch(e){ setSavedMsg("Could not save."); } setSaving(false); };
-  const del=async(id,e)=>{ if(e)e.stopPropagation(); try{ const tk=await tokenOf(); await fetch("/api/resumes?id="+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:`Bearer ${tk}`}}); }catch(e2){} setList(l=>(l||[]).filter(x=>x.id!==id)); if(sel&&sel.id===id)setSel(null); };
+  const del=async(id,e)=>{ if(e)e.stopPropagation(); try{ const tk=await tokenOf(); await fetch("/api/resumes?id="+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:`Bearer ${tk}`}}); }catch(e2){} setList(l=>(l||[]).filter(x=>x.id!==id)); if(sel&&sel.id===id){ setSel(null); if(onPanel)onPanel(false); } };
   const dl=()=>{ if(!sel)return; const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(edit,`${safe(sel.company)}_${safe(sel.title)}_resume.docx`.slice(0,90)); };
   const fmt=(d)=>{ try{ return new Date(d).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); }catch(e){ return ""; } };
   if(list===null) return <div style={{padding:"40px 0",textAlign:"center",color:"rgba(244,237,216,.5)",fontFamily:"'Cinzel',serif"}}>Loading…</div>;
-  return <div style={{marginRight:(sel&&!mobile)?"min(46vw,720px)":0,transition:"margin .35s ease"}}>
+  return <div style={{textAlign:"left"}}>
     {list.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
       <span style={{fontSize:34,color:"rgba(201,168,76,.5)"}}>✦</span>
       <p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No tailored resumes yet.</p>
@@ -5102,10 +5102,10 @@ function GeneratedResumes({ user }){
         </div>
       ))}
     </div>}
-    {sel&&<div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:16,overflowY:"auto"}:{position:"fixed",top:96,right:16,width:"min(46vw,720px)",maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+    {sel&&<div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:16,overflowY:"auto"}:{position:"fixed",top:96,right:16,width:"50vw",maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:12}}>
         <div><div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"#c9a84c",fontWeight:700,textTransform:"uppercase"}}>{sel.company}</div><div style={{fontSize:15,color:"#f0d080",fontWeight:700}}>{sel.title}</div></div>
-        <button onClick={()=>setSel(null)} title="Close" style={{flexShrink:0,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",cursor:"pointer",fontSize:14}}>✕</button>
+        <button onClick={()=>{setSel(null);if(onPanel)onPanel(false);}} title="Close" style={{flexShrink:0,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",cursor:"pointer",fontSize:14}}>✕</button>
       </div>
       <div style={{fontSize:11,color:"rgba(244,237,216,.45)",marginBottom:8,lineHeight:1.5}}>Edit your saved resume below, then download. Edits save to your account.</div>
       <textarea value={edit} onChange={e=>setEdit(e.target.value)} style={{width:"100%",minHeight:mobile?"52vh":420,background:"rgba(8,6,10,.6)",border:"1px solid rgba(201,168,76,.2)",borderRadius:8,color:"#f4edd8",fontSize:12.5,lineHeight:1.55,padding:12,fontFamily:"monospace",boxSizing:"border-box",resize:"vertical"}}/>
@@ -5124,6 +5124,7 @@ export default function App() {
   const filterInline = useIsMobile(1780); // below this the floating filter would overlap the board, so dock it inline
   const compactBar = useIsMobile(1000); // landscape phones / small screens: condense the top bar
   const [savedTab,setSavedTab]=useState("jobs");
+  const [resumePanel,setResumePanel]=useState(false);
   const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
@@ -6070,7 +6071,7 @@ export default function App() {
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}
     {showLoginPopup&&<LoginPopup onClose={()=>setShowLoginPopup(false)} onLogin={guestLogin}/>}
 
-    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
+    <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":(resumePanel&&!mobile&&tab==="saved")?"0 calc(50vw + 24px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
         <BetaDisclaimer/>
         {/* Pricing banner for guests (dismissible) */}
@@ -6326,10 +6327,10 @@ export default function App() {
       </>}
 
       {tab==="saved"&&<div>
-        <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18,flexWrap:"wrap"}}>
-          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,display:"flex",alignItems:"center",gap:8}}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>{savedTab==="resumes"?"Generated Resumes":"Saved Jobs"}</h2>{user&&<div style={{display:"flex",gap:8,marginLeft:"auto"}}>{[["jobs","Saved Jobs"],["resumes","Generated Resumes"]].map(([sid,lbl])=>(<button key={sid} onClick={()=>setSavedTab(sid)} style={{background:savedTab===sid?"rgba(201,168,76,.16)":"transparent",border:`1px solid ${savedTab===sid?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:savedTab===sid?"#f0d080":"rgba(244,237,216,.6)",borderRadius:8,padding:"6px 12px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,cursor:"pointer",letterSpacing:.3,whiteSpace:"nowrap"}}>{lbl}</button>))}</div>}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:14,marginBottom:18,flexWrap:"wrap"}}>
+          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:1,display:"flex",alignItems:"center",gap:8}}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>{savedTab==="resumes"?"Generated Resumes":"Saved Jobs"}</h2>{user&&<div style={{display:"flex",gap:8}}>{[["jobs","Saved Jobs"],["resumes","Generated Resumes"]].map(([sid,lbl])=>(<button key={sid} onClick={()=>setSavedTab(sid)} style={{background:savedTab===sid?"rgba(201,168,76,.16)":"transparent",border:`1px solid ${savedTab===sid?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:savedTab===sid?"#f0d080":"rgba(244,237,216,.6)",borderRadius:8,padding:"6px 12px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,cursor:"pointer",letterSpacing:.3,whiteSpace:"nowrap"}}>{lbl}</button>))}</div>}
         </div>
-        {savedTab==="resumes"?<GeneratedResumes user={user}/>:savedJobs.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+        {savedTab==="resumes"?<GeneratedResumes user={user} onPanel={setResumePanel}/>:savedJobs.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,.5)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No saved jobs yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>Tap the bookmark icon on any posting to save it here.</p>
         </div>:<div style={{display:"flex",flexDirection:"column",gap:14}}>
