@@ -2671,10 +2671,10 @@ function ShotCarousel({ shots, forcedIdx, sectionTitle }){
   const [zoom,setZoom]=useState(false);
   const has=shots&&shots.length>0;
   useEffect(()=>{
-    if(!has||paused||zoom||shots.length<2) return;
+    if(!has||paused||zoom||(forcedIdx!=null&&forcedIdx>=0)||shots.length<2) return;
     const tmr=setInterval(()=>setIdx(i=>(i+1)%shots.length),4500);
     return ()=>clearInterval(tmr);
-  },[has,paused,zoom,shots]);
+  },[has,paused,zoom,forcedIdx,shots]);
   useEffect(()=>{ if(forcedIdx!=null&&forcedIdx>=0) setIdx(forcedIdx); },[forcedIdx]);
   useEffect(()=>{ if(typeof document==="undefined")return; if(zoom){ const pv=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{document.body.style.overflow=pv;}; } },[zoom]);
   const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
@@ -2713,7 +2713,7 @@ function ShowcaseSection({ s, i, c0, c1 }){
     <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)",backgroundSize:"56px 56px",pointerEvents:"none",zIndex:0}}/>
     {i>0 && <div style={{position:"absolute",top:0,left:"50%",transform:"translate(-50%,-50%)",width:"min(78%,1000px)",height:1,background:"linear-gradient(to right, transparent, rgba(201,168,76,.5) 22%, rgba(201,168,76,.5) 78%, transparent)",pointerEvents:"none",zIndex:2}}/>}
     <div className="mq-show" style={{maxWidth:1440,width:"100%",display:"flex",gap:0,alignItems:"stretch",justifyContent:"center",position:"relative",zIndex:1}}>
-      <div style={{flex:"1 1 40%",minWidth:300,display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 34px"}}>
+      <div style={{flex:"1 1 33%",minWidth:280,display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 22px 0 6px"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:3,color:"rgba(201,168,76,.7)",textTransform:"uppercase",marginBottom:12}}>{`0${i+1}`} — Feature</div>
         <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,fontWeight:700,color:"#f0d080",lineHeight:1.15,marginBottom:16}}>{s.title}</h2>
         <p style={{fontSize:16,color:"rgba(244,237,216,.6)",lineHeight:1.7,marginBottom:28}}>{s.tagline}</p>
@@ -2734,7 +2734,7 @@ function ShowcaseSection({ s, i, c0, c1 }){
         <span style={{color:"#c9a84c",fontSize:16,margin:"9px 0",textShadow:"0 0 9px rgba(201,168,76,.6)"}}>✦</span>
         <div style={{flex:1,width:1,background:"linear-gradient(to bottom, rgba(201,168,76,.4), transparent)"}}/>
       </div>
-      <div style={{flex:"1 1 40%",minWidth:300,display:"flex",padding:"0 34px"}}>
+      <div className="mq-shot" style={{flex:"1 1 55%",minWidth:300,display:"flex",padding:"0 18px"}}>
         <ShotCarousel shots={s.shots} forcedIdx={forced} sectionTitle={s.title}/>
       </div>
     </div>
@@ -2773,7 +2773,6 @@ function FeatureShowcase(){
     {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",shots:["/shots/KeyMatch_IMG.png","/shots/Editing_IMG.png","/shots/UPMatchScore_IMG.png"],subs:[
       {label:"Keyword Matching",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
       {label:"Surgical Editing",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting."},
-      {label:"ATS Clearing",desc:"Structures your resume so it parses cleanly through applicant-tracking filters — no more silent rejections from a machine."},
       {label:"Updated Match Score",shot:2,desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
     {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",shots:[],subs:[
@@ -2784,7 +2783,7 @@ function FeatureShowcase(){
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
   return <>
-    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}@media(max-width:1000px){.mq-show{display:block!important}.mq-vdiv{display:none!important}}`}</style>
+    <style>{`@media(min-width:768px){html{scroll-snap-type:y proximity;scroll-behavior:smooth}.mq-feat-sec{scroll-snap-align:start}.mq-footer{scroll-snap-align:end}}@media(max-width:1000px){.mq-show{display:block!important}.mq-vdiv{display:none!important}.mq-shot{margin-top:30px}}`}</style>
     {SECTIONS.map((s,i)=>(<ShowcaseSection key={s.slug} s={s} i={i} c0={SHADE[i]} c1={SHADE[i+1]}/>))}
     <footer className="mq-footer" style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.85)",position:"relative",zIndex:1}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
@@ -6397,7 +6396,7 @@ export default function App() {
         </>}
         {appliedJobs.length===0?<div style={{padding:"48px 0",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
           <span style={{display:"flex"}}><I.Clipboard s={40} c="rgba(201,168,76,.5)"/></span><p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No applications tracked yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>When you apply and confirm, it'll appear here.</p>
-        </div>:appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)===appStage).length===0?<div style={{padding:"40px 0",textAlign:"center",color:"rgba(244,237,216,.4)",fontSize:13,fontFamily:"'Cinzel',serif"}}>No applications in this stage yet.</div>:<div style={{display:"flex",flexDirection:"column",gap:10,maxWidth:(prepJob&&!mobile)?"calc(50vw - 44px)":"none"}}>
+        </div>:appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)===appStage).length===0?<div style={{padding:"40px 0",textAlign:"center",color:"rgba(244,237,216,.4)",fontSize:13,fontFamily:"'Cinzel',serif"}}>No applications in this stage yet.</div>:<div style={{display:"flex",flexDirection:"column",gap:10,maxWidth:(prepJob&&!mobile)?"calc(50vw - 96px)":"none"}}>
           {[...appliedJobs].filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)===appStage).sort((a,b)=>{
             const ad=user.applied[a.id]?.date?new Date(user.applied[a.id].date):new Date(0);
             const bd=user.applied[b.id]?.date?new Date(user.applied[b.id].date):new Date(0);
