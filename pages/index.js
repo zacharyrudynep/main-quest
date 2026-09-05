@@ -6046,7 +6046,7 @@ export default function App() {
 
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   const gBg="linear-gradient(135deg,rgba(201,168,76,.2),rgba(232,97,58,.15))";
-  const sortChip=(val,lbl,dir)=><button onClick={()=>{if(jobSort===val){if(dir)setSortRev(r=>!r);}else{setJobSort(val);setSortRev(false);}}} style={{background:jobSort===val?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort===val?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort===val?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:10,padding:"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s",display:"inline-flex",alignItems:"center",gap:4}}>{lbl}{dir&&jobSort===val&&<span style={{fontSize:9}}>{sortRev?"▼":"▲"}</span>}</button>;
+  const sortChip=(val,lbl,dir)=><button onClick={()=>{if(jobSort===val){if(dir)setSortRev(r=>!r);}else{setJobSort(val);setSortRev(false);}}} style={{background:jobSort===val?"rgba(201,168,76,.15)":"rgba(201,168,76,.05)",border:`1px solid ${jobSort===val?"rgba(201,168,76,.4)":"rgba(201,168,76,.12)"}`,color:jobSort===val?"#f0d080":"rgba(244,237,216,.45)",cursor:"pointer",borderRadius:20,fontSize:mobile?9.5:10,padding:mobile?"4px 9px":"3px 12px",fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .15s",display:"inline-flex",alignItems:"center",gap:4}}>{lbl}{dir&&jobSort===val&&<span style={{fontSize:9}}>{sortRev?"▼":"▲"}</span>}</button>;
 
   return <>
     <Head>
@@ -6131,12 +6131,14 @@ export default function App() {
         </div>
         {/* Filter bar */}
         <div style={{marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <button onClick={()=>setFilterOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:7,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",cursor:"pointer",fontSize:11,padding:"8px 14px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,flexShrink:0}}>
+          <div style={{display:"flex",flexDirection:mobile?"column":"row",alignItems:mobile?"stretch":"center",gap:8,flexWrap:mobile?"nowrap":"wrap"}}>
+            <button onClick={()=>setFilterOpen(o=>!o)} style={{order:mobile?2:0,display:"flex",justifyContent:mobile?"center":"flex-start",alignItems:"center",gap:7,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.2)",color:"#f4edd8",cursor:"pointer",fontSize:11,padding:mobile?"11px 14px":"8px 14px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,flexShrink:0,width:mobile?"100%":"auto"}}>
               <I.Cog s={13} c="currentColor"/>Filters{activeCount>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 7px",fontWeight:800}}>{activeCount}</span>}<I.Chevron s={11} c="currentColor" dir={filterOpen?"up":"down"}/>
             </button>
-            <SearchBox value={filters.search} onSearch={onSearch}/>
-            {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
+            <div style={{order:1,display:"flex",gap:8,alignItems:"stretch",flex:mobile?"none":1,minWidth:0,width:mobile?"100%":"auto"}}>
+              <SearchBox value={filters.search} onSearch={onSearch}/>
+              {activeCount>0&&<button onClick={()=>setFilters(CLEAR)} style={{background:"rgba(232,97,58,.1)",border:"1px solid rgba(232,97,58,.3)",color:"#e8a070",cursor:"pointer",fontSize:11,padding:"7px 12px",borderRadius:8,fontFamily:"inherit",flexShrink:0}}>✕ Clear</button>}
+            </div>
           </div>
         </div>
         {/* Main area: the job list keeps its full width at all times. On desktop the
@@ -6189,12 +6191,10 @@ export default function App() {
           </div>}
           <div style={{order:1,flex:1,minWidth:0,width:mobile?"100%":"auto",display:"flex",flexDirection:"column"}}>
         {/* Sort bar */}
-        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",padding:mobile?"7px 10px":"8px 12px",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:12}}>
-          <span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8,marginRight:2}}>Sort:</span>
-          {sortChip("default","Default")}{sortChip("match","Best Match")}{sortChip("newest","Newest",true)}{sortChip("experience","Experience Level",true)}
-          <div style={{flex:1}}/>
-          <button onClick={()=>{setHideLocationTabs(v=>!v);setFlatLimit(200);}} title="Toggle a flat job list with no region/state tabs" style={{background:hideLocationTabs?"rgba(201,168,76,.16)":"rgba(201,168,76,.05)",border:`1px solid ${hideLocationTabs?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,color:hideLocationTabs?"#f0d080":"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:6,transition:"all .15s"}}><span style={{width:22,height:12,borderRadius:8,background:hideLocationTabs?"#c9a84c":"rgba(244,237,216,.15)",position:"relative",flexShrink:0,transition:"background .15s"}}><span style={{position:"absolute",top:2,left:hideLocationTabs?12:2,width:8,height:8,borderRadius:"50%",background:hideLocationTabs?"#0a0608":"rgba(244,237,216,.6)",transition:"left .15s"}}/></span>Hide location tabs</button>
-          {!hideLocationTabs&&<button onClick={()=>setExpanded({})} title="Collapse all companies, states and countries" style={{background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:5}}><I.Chevron s={10} c="currentColor" dir="up"/>Close all tabs</button>}
+        <div style={{display:"flex",flexDirection:mobile?"column":"row",alignItems:mobile?"stretch":"center",gap:mobile?8:6,flexWrap:mobile?"nowrap":"wrap",padding:mobile?"8px 10px":"8px 12px",background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.08)",borderRadius:10,marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:mobile?4:6,flexWrap:"nowrap",overflowX:mobile?"auto":"visible",maxWidth:"100%"}}><span style={{fontSize:9,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.8,marginRight:2,flexShrink:0}}>Sort:</span>
+          {sortChip("default","Default")}{sortChip("match",mobile?"Match":"Best Match")}{sortChip("newest","Newest",true)}{sortChip("experience",mobile?"Exp":"Experience Level",true)}</div>{!mobile&&<div style={{flex:1}}/>}<div style={{display:"flex",alignItems:"center",gap:6,justifyContent:mobile?"space-between":"flex-end",width:mobile?"100%":"auto"}}><button onClick={()=>{setHideLocationTabs(v=>!v);setFlatLimit(200);}} title="Toggle a flat job list with no region/state tabs" style={{background:hideLocationTabs?"rgba(201,168,76,.16)":"rgba(201,168,76,.05)",border:`1px solid ${hideLocationTabs?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,color:hideLocationTabs?"#f0d080":"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:6,transition:"all .15s"}}><span style={{width:22,height:12,borderRadius:8,background:hideLocationTabs?"#c9a84c":"rgba(244,237,216,.15)",position:"relative",flexShrink:0,transition:"background .15s"}}><span style={{position:"absolute",top:2,left:hideLocationTabs?12:2,width:8,height:8,borderRadius:"50%",background:hideLocationTabs?"#0a0608":"rgba(244,237,216,.6)",transition:"left .15s"}}/></span>Hide location tabs</button>
+          {!hideLocationTabs&&<button onClick={()=>setExpanded({})} title="Collapse all companies, states and countries" style={{background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.55)",cursor:"pointer",borderRadius:8,fontSize:10,padding:"4px 11px",fontFamily:"'Cinzel',serif",letterSpacing:.3,display:"flex",alignItems:"center",gap:5}}><I.Chevron s={10} c="currentColor" dir="up"/>Close all tabs</button>}</div>
         </div>
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
