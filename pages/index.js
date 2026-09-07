@@ -2534,7 +2534,29 @@ function JobAlertManager({alerts,onSave,isPremium,isAdmin,companyOptions,locatio
 }
 
 // ── INBOX PANEL (slide-over) ──────────────────────────────────────────────────
-function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,profile,onPatch,isPremium,isAdmin,companyOptions,locationOptions}){
+// Inbox row with ✕ to clear and mobile swipe-left-to-delete.
+function InboxItem({ n, onOpen, onDismiss, timeAgo }){
+  const [dx,setDx]=useState(0);
+  const [sw,setSw]=useState(false);
+  const startX=useRef(0);
+  const onTS=(e)=>{ startX.current=e.touches[0].clientX; setSw(true); };
+  const onTM=(e)=>{ if(!sw)return; const d=e.touches[0].clientX-startX.current; setDx(d<0?Math.max(d,-140):Math.min(d,16)); };
+  const onTE=()=>{ setSw(false); if(dx<-80){ setDx(-500); setTimeout(()=>onDismiss&&onDismiss(n.id),160); } else setDx(0); };
+  return <div style={{position:"relative",marginBottom:6,borderRadius:10,overflow:"hidden"}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(192,50,26,.22)",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:18,color:"#e87060",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>DELETE</div>
+    <div onClick={()=>{ if(dx===0&&onOpen) onOpen(n); }} onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE} title="Open this job on the board" style={{position:"relative",display:"flex",gap:10,padding:"11px 12px",borderRadius:10,cursor:"pointer",background:n.read?"#110b16":"#1c1410",border:`1px solid ${n.read?"rgba(201,168,76,.08)":"rgba(201,168,76,.2)"}`,transform:`translateX(${dx}px)`,transition:sw?"none":"transform .16s ease"}}>
+      <div style={{width:8,height:8,borderRadius:"50%",background:n.read?"transparent":"#e8613a",flexShrink:0,marginTop:5}}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8",marginBottom:2}}>{n.title}</div>
+        <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>{n.company}{n.location?` · ${n.location}`:""}</div>
+        <div style={{fontSize:10,color:"rgba(244,237,216,.3)",marginTop:3}}>{timeAgo(n.ts)}</div>
+      </div>
+      <button onClick={e=>{ e.stopPropagation(); onDismiss&&onDismiss(n.id); }} title="Clear this" style={{flexShrink:0,alignSelf:"flex-start",background:"transparent",border:"none",color:"rgba(201,168,76,.45)",cursor:"pointer",fontSize:14,lineHeight:1,padding:2}}>✕</button>
+    </div>
+  </div>;
+}
+
+function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onDismiss,onOpenJob,profile,onPatch,isPremium,isAdmin,companyOptions,locationOptions}){
   const [view,setView]=useState("inbox"); // "inbox" = matched-job feed; "notifications" = alert settings
   const timeAgo=(ts)=>{const d=Date.now()-ts;const h=Math.floor(d/3600000);if(h<1)return"just now";if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";};
   const unread=items.filter(n=>!n.read).length;
@@ -2571,15 +2593,7 @@ function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onOpenJob,pr
               <div style={{textAlign:"center",color:"rgba(244,237,216,.35)",fontSize:11.5,padding:"46px 20px",lineHeight:1.6}}><div style={{marginBottom:12,opacity:.5,display:"flex",justifyContent:"center"}}><I.Bell s={30} c="rgba(244,237,216,.3)"/></div>No job matches yet. Set up alerts under <strong style={{color:"rgba(244,237,216,.55)"}}>Notifications</strong> and we'll drop matching roles here — tap one to jump to it on the board.</div>
             :
               items.map(n=>
-                <div key={n.id} onClick={()=>onOpenJob&&onOpenJob(n)} title="Open this job on the board" style={{display:"flex",gap:10,padding:"11px 12px",marginBottom:6,borderRadius:10,cursor:"pointer",background:n.read?"transparent":"rgba(201,168,76,.06)",border:`1px solid ${n.read?"rgba(201,168,76,.08)":"rgba(201,168,76,.2)"}`,transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background=n.read?"transparent":"rgba(201,168,76,.06)"}>
-                  <div style={{width:8,height:8,borderRadius:"50%",background:n.read?"transparent":"#e8613a",flexShrink:0,marginTop:5}}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12.5,fontWeight:600,color:"#f4edd8",marginBottom:2}}>{n.title}</div>
-                    <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>{n.company}{n.location?` · ${n.location}`:""}</div>
-                    <div style={{fontSize:10,color:"rgba(244,237,216,.3)",marginTop:3}}>{timeAgo(n.ts)}</div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",color:"rgba(201,168,76,.4)",flexShrink:0}}><I.Chevron s={12} c="currentColor" dir="right"/></div>
-                </div>)}
+                <InboxItem key={n.id} n={n} onOpen={onOpenJob} onDismiss={onDismiss} timeAgo={timeAgo}/>)}
           </>
         :
           <>
@@ -5471,6 +5485,7 @@ export default function App() {
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
   const clearInbox=()=>patchProfile({inbox:[]});
+  const dismissInboxItem=(id)=>patchProfile({inbox:inbox.filter(n=>n.id!==id)});
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
@@ -6109,7 +6124,7 @@ export default function App() {
       </div>
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
-    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
+    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
     {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
