@@ -5094,10 +5094,8 @@ function AiUsageButton(){
       <div style={{position:"absolute",top:44,right:0,width:250,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:12,padding:14,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:800,color:"#f0d080",marginBottom:12,letterSpacing:.5}}>AI Usage This Month</div>
         {loading||!data?<div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Loading…</div>:<>
-          <Row label="Resume Tailor" u={data.tailor.used} lim={data.tailor.limit} admin={data.isAdmin}/>
-          <Row label="Company Info" u={data.company.used} lim={data.company.limit} admin={data.isAdmin}/>
-          {data.interview&&<Row label="Interview Prep" u={data.interview.used} lim={data.interview.limit} admin={data.isAdmin}/>}
-          {data.template&&<Row label="Email Template" u={data.template.used} lim={data.template.limit} admin={data.isAdmin}/>}
+          <Row label="AI Uses" u={data.used} lim={data.limit} admin={data.isAdmin}/>
+          <div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginTop:2}}>Shared across resume tailoring, company info, interview prep, and templates.</div>
           <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:2}}>Resets on the 1st of each month.</div>
         </>}
       </div>

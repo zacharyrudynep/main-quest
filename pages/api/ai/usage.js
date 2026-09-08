@@ -1,9 +1,6 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
-const TAILOR_LIMIT = 15;   // must match tailor-resume.js
-const COMPANY_LIMIT = 25;  // must match email-company.js
-const INTERVIEW_LIMIT = 10; // must match interview-prep.js
-const TEMPLATE_LIMIT = 5;   // must match email-template.js
+const AI_LIMIT = 40; // shared monthly AI usage pool (must match the AI routes)
 
 // GET -> this month's AI usage for the signed-in user.
 export default async function handler(req, res) {
@@ -21,14 +18,8 @@ export default async function handler(req, res) {
       const { data } = await supabaseAdmin.from(tbl).select("count").eq("user_id", u.user.id).eq("month", month).single();
       return (data && data.count) || 0;
     };
-    const [tailorUsed, companyUsed, interviewUsed, templateUsed] = await Promise.all([read("ai_tailor_usage"), read("ai_email_usage"), read("ai_interview_usage"), read("ai_template_usage")]);
-    return res.status(200).json({
-      isAdmin,
-      tailor: { used: tailorUsed, limit: TAILOR_LIMIT },
-      company: { used: companyUsed, limit: COMPANY_LIMIT },
-      interview: { used: interviewUsed, limit: INTERVIEW_LIMIT },
-      template: { used: templateUsed, limit: TEMPLATE_LIMIT },
-    });
+    const used = await read("ai_usage");
+    return res.status(200).json({ isAdmin, used, limit: AI_LIMIT });
   } catch (e) {
     return res.status(500).json({ error: "Could not load usage." });
   }

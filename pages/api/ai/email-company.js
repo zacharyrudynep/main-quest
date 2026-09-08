@@ -2,7 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
-const LIMIT = 25; // AI company lookups per user per month
+const LIMIT = 40; // shared monthly AI pool (ai_usage)
 
 // POST { company } -> { text, remaining }
 // Premium + verified only. Generates 1-2 sentences about a game company to drop
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     if (!company) return res.status(400).json({ error: "Missing company." });
 
     const month = new Date().toISOString().slice(0, 7);
-    const { data: usageRow } = await supabaseAdmin.from("ai_email_usage").select("count").eq("user_id", u.user.id).eq("month", month).single();
+    const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", u.user.id).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
     if (!isAdmin && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} AI company lookups this month.`, remaining: 0 });
 
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     }
     if (!text) return res.status(503).json({ error: "Could not generate right now. Please try again." });
 
-    if (!isAdmin) await supabaseAdmin.from("ai_email_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" });
+    if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" });
     return res.status(200).json({ text, remaining: isAdmin ? null : Math.max(0, LIMIT - (used + 1)) });
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });

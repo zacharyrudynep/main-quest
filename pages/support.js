@@ -72,7 +72,7 @@ export default function Support() {
         @media(max-width:820px){.sgrid{grid-template-columns:1fr;}}
       `}</style>
 
-      <div style={{ minHeight: "100vh", background: "radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.14), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "#080608", backgroundImage: "linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px),radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.14), transparent)", backgroundSize: "56px 56px,56px 56px,100% 100%", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
           {/* Header */}

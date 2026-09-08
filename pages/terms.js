@@ -16,7 +16,7 @@ export default function Terms() {
 
   return <>
     <Head><title>Terms of Service — Main Quest</title><meta name="robots" content="index,follow" /></Head>
-    <div style={{ minHeight: "100vh", background: "#080608", color: "#f4edd8", fontFamily: "system-ui,sans-serif", padding: "40px 20px" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#080608", backgroundImage: "linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)", backgroundSize: "56px 56px", color: "#f4edd8", fontFamily: "system-ui,sans-serif", padding: "40px 20px" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <Link href="/" style={{ color: "#c9a84c", fontSize: 13, textDecoration: "none" }}>&larr; Back to Main Quest</Link>
         <h1 style={{ fontSize: 28, margin: "16px 0 4px", fontFamily: "'Cinzel Decorative',serif", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Terms of Service</h1>
