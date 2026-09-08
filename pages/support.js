@@ -1,6 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
+import { supabase } from "../lib/supabase";
 
 const REASONS = [
   "General Inquiry",
@@ -45,10 +46,12 @@ export default function Support() {
     if (!message.trim()) return setErr("Please enter a message.");
     setBusy(true);
     try {
+      let token = null;
+      try { const { data } = await supabase.auth.getSession(); token = (data && data.session && data.session.access_token) || null; } catch (e) {}
       const r = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, reason, message }),
+        body: JSON.stringify({ name, email, reason, message, token }),
       });
       const j = await r.json();
       if (j.ok) { setSent(true); }

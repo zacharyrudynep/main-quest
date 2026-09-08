@@ -5058,52 +5058,35 @@ function BetaDisclaimer(){
   </div>;
 }
 
-// AI usage meter in the top bar (Premium): shows monthly resume-tailor + company-info usage.
-function AiUsageButton(){
-  const [open,setOpen]=useState(false);
+// AI usage bar in the top bar: remaining/40 with a progress bar + reset countdown.
+function AiUsageBar(){
   const [data,setData]=useState(null);
-  const [loading,setLoading]=useState(false);
-  const load=async()=>{
-    setLoading(true);
-    try{
-      const { data:s }=await supabase.auth.getSession();
-      const tk=s&&s.session&&s.session.access_token;
-      const r=await fetch("/api/ai/usage",{headers:{Authorization:`Bearer ${tk}`}});
-      const j=await r.json().catch(()=>({}));
-      if(r.ok) setData(j);
-    }catch(e){}
-    setLoading(false);
-  };
-  const toggle=()=>{ const n=!open; setOpen(n); if(n) load(); };
-  const Row=({label,u,lim,admin})=>{
-    const pct=admin?0:Math.min(100,Math.round((u/Math.max(1,lim))*100));
-    return <div style={{marginBottom:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:5}}>
-        <span style={{color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>{label}</span>
-        <span style={{color:admin?"#7ecfb3":"rgba(244,237,216,.6)"}}>{admin?"Unlimited":`${u} / ${lim}`}</span>
-      </div>
-      {!admin&&<div style={{height:6,background:"rgba(201,168,76,.12)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:pct>=100?"#c0321a":"linear-gradient(90deg,#c9a84c,#f0d080)",borderRadius:4}}/></div>}
-    </div>;
-  };
-  return <div style={{position:"relative",flexShrink:0}}>
-    <button onClick={toggle} title="AI usage this month" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
-      <I.Lightning s={16} c="#c9a84c"/>
+  const [open,setOpen]=useState(false);
+  const [,setNow]=useState(0);
+  const load=async()=>{ try{ const {data:s}=await supabase.auth.getSession(); const tk=s&&s.session&&s.session.access_token; if(!tk)return; const r=await fetch("/api/ai/usage",{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(r.ok)setData(j); }catch(e){} };
+  useEffect(()=>{ load(); const onVis=()=>{ if(!document.hidden) load(); }; document.addEventListener("visibilitychange",onVis); return ()=>document.removeEventListener("visibilitychange",onVis); },[]);
+  useEffect(()=>{ if(!open)return; load(); const t=setInterval(()=>setNow(n=>n+1),1000); return ()=>clearInterval(t); },[open]);
+  if(!data) return null;
+  const isAdmin=data.isAdmin;
+  const limit=data.limit||40;
+  const remaining=isAdmin?limit:Math.max(0,limit-(data.used||0));
+  const pct=isAdmin?100:Math.round((remaining/limit)*100);
+  const barColor=isAdmin?"linear-gradient(90deg,#7ecfb3,#c9a84c)":pct>50?"linear-gradient(90deg,#c9a84c,#f0d080)":pct>20?"#e8a070":"#c0703a";
+  const cd=()=>{ const d=new Date(); const next=new Date(d.getFullYear(),d.getMonth()+1,1,0,0,0,0); let ms=next-d; const days=Math.floor(ms/86400000); ms-=days*86400000; const hrs=Math.floor(ms/3600000); ms-=hrs*3600000; const mins=Math.floor(ms/60000); ms-=mins*60000; const secs=Math.floor(ms/1000); return `${days}d ${hrs}h ${mins}m ${secs}s`; };
+  return <div style={{position:"relative",flexShrink:0}} onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
+    <button onClick={()=>setOpen(o=>!o)} title="AI uses this month" style={{display:"flex",alignItems:"center",gap:8,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",borderRadius:20,padding:"6px 12px",cursor:"pointer"}}>
+      <I.Lightning s={13} c="#c9a84c"/>
+      <div style={{width:60,height:6,background:"rgba(201,168,76,.14)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:barColor,borderRadius:4,transition:"width .45s ease"}}/></div>
+      <span style={{fontSize:11,fontWeight:700,color:"#f0d080",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>{isAdmin?"\u221e":`${remaining}/${limit}`}</span>
     </button>
-    {open&&<>
-      <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:299}}/>
-      <div style={{position:"absolute",top:44,right:0,width:250,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:12,padding:14,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:800,color:"#f0d080",marginBottom:12,letterSpacing:.5}}>AI Usage This Month</div>
-        {loading||!data?<div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Loading…</div>:<>
-          <Row label="AI Uses" u={data.used} lim={data.limit} admin={data.isAdmin}/>
-          <div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginTop:2}}>Shared across resume tailoring, company info, interview prep, and templates.</div>
-          <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:2}}>Resets on the 1st of each month.</div>
-        </>}
-      </div>
-    </>}
+    {open&&<div style={{position:"absolute",top:44,right:0,width:216,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:10,padding:12,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:800,color:"#f0d080",marginBottom:6,letterSpacing:.5}}>AI Uses</div>
+      <div style={{fontSize:12,color:"rgba(244,237,216,.72)",marginBottom:7}}>{isAdmin?"Unlimited (admin)":`${remaining} of ${limit} left this month`}</div>
+      <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>Resets in <span style={{color:"#c9a84c",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{cd()}</span></div>
+      <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:6,lineHeight:1.4}}>Shared across resume tailoring, company info, interview prep &amp; templates.</div>
+    </div>}
   </div>;
 }
-
-// Saved tailored resumes: list + right-side view/edit/download panel.
 function GeneratedResumes({ user, onPanel }){
   const mobile=useIsMobile();
   const [list,setList]=useState(null);
@@ -6131,7 +6114,7 @@ export default function App() {
       {/* RIGHT: Inbox + Profile */}
       <div style={{display:"flex",alignItems:"center",gap:8,flex:mobile?"0 0 auto":"1 1 0",justifyContent:"flex-end"}}>
       {user&&!appPremium&&<UpgradeLink label="Upgrade"/>}
-      {user&&(appPremium||appAdmin)&&<AiUsageButton/>}
+      {user&&(appPremium||appAdmin)&&<AiUsageBar/>}
       {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <I.Bell s={16} c="#c9a84c"/>
         {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}
