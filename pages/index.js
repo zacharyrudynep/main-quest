@@ -1984,7 +1984,7 @@ function LoginPopup({onClose,onLogin}) {
         const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
         const {data:apps}=await supabase.from("applications").select("*").eq("user_id",data.user.id);
         const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied",title:a.job_title,company:a.company,url:a.job_url,salary:a.salary};});
-        const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified)};
+        const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified),plan:(profile&&profile.plan)||"basic"};
         onLogin({id:data.user.id,email,name:profile?.name||profData.name||email,applied,profile:profData});
       }
     }catch(e){setErr("Something went wrong. Please try again.");setLoading(false);}
@@ -2847,7 +2847,7 @@ function Auth({onLogin,onGuest}) {
         (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied", title: a.job_title, company: a.company, url: a.job_url, salary: a.salary }; });
         const saved = {};
         try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", data.user.id); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
-        const profData = { ...((profile && profile.data) ? profile.data : (profile || {})), email_verified: !!(profile && profile.email_verified) };
+        const profData = { ...((profile && profile.data) ? profile.data : (profile || {})), email_verified: !!(profile && profile.email_verified), plan: (profile && profile.plan) || "basic" };
         onLogin({ id: data.user.id, email, name: profile?.name || profData.name || email, applied, saved, profile: profData });
       }
     } catch (e) {
@@ -5059,6 +5059,9 @@ function BetaDisclaimer(){
 }
 
 // AI usage bar in the top bar: remaining/40 with a progress bar + reset countdown.
+// Plan tiers: basic(0) < plus(1) < premium(2). Admins are treated as premium.
+const PLAN_RANK={basic:0,plus:1,premium:2};
+function planRank(p){ return PLAN_RANK[p]!=null?PLAN_RANK[p]:0; }
 function AiUsageBar(){
   const [data,setData]=useState(null);
   const [open,setOpen]=useState(false);
@@ -5491,6 +5494,7 @@ export default function App() {
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
+  const [appPlan,setAppPlan]=useState("basic");
   const [appAdmin,setAppAdmin]=useState(false);
   const [toast,setToast]=useState("");
   useEffect(()=>{ if(!toast)return; const t=setTimeout(()=>setToast(""),3500); return ()=>clearTimeout(t); },[toast]);
@@ -5526,7 +5530,7 @@ export default function App() {
   useEffect(()=>{
     if(!user||!user.id){setAppPremium(false);setAppAdmin(false);return;}
     let alive=true;
-    fetch(`/api/stripe/status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(d=>{if(alive){setAppPremium(!!(d&&d.isPremium));setAppAdmin(!!(d&&d.isAdmin));}}).catch(()=>{if(alive){setAppPremium(false);setAppAdmin(false);}});
+    fetch(`/api/stripe/status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(d=>{if(alive){setAppPremium(!!(d&&d.isPremium));setAppAdmin(!!(d&&d.isAdmin));setAppPlan((d&&d.plan)||"basic");}}).catch(()=>{if(alive){setAppPremium(false);setAppAdmin(false);}});
     return()=>{alive=false;};
   },[user&&user.id]);
 
@@ -5556,7 +5560,7 @@ export default function App() {
             const { data:sv }=await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id",uid);
             (sv||[]).forEach(s=>{ saved[s.job_id]={ date:s.saved_at }; });
           }catch{}
-          const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified)};
+          const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified),plan:(profile&&profile.plan)||"basic"};
           if(active)setUser({ id:uid, email:em, name:profile?.name||profData.name||em, applied, saved, profile:profData });
         }
       }catch{}

@@ -8,12 +8,13 @@ export default async function handler(req, res) {
   try {
     const { data } = await supabaseAdmin
       .from("profiles")
-      .select("is_premium, is_admin, subscription_status, subscription_period_end")
+      .select("is_premium, is_admin, subscription_status, subscription_period_end, plan")
       .eq("id", userId)
       .single();
     return res.status(200).json({
       isPremium: !!(data && (data.is_premium || data.is_admin)),
       isAdmin: !!(data && data.is_admin),
+      plan: (data && data.is_admin) ? "premium" : ((data && data.plan) || ((data && data.is_premium) ? "premium" : "basic")),
       status: (data && data.subscription_status) || null,
       periodEnd: (data && data.subscription_period_end) || null,
     });
