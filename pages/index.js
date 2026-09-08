@@ -4361,10 +4361,10 @@ function TailorResume({job,profile,missingSkills,wide}){
       const {data}=await supabase.auth.getSession();
       const token=data&&data.session&&data.session.access_token;
       if(!token){setErr("Please sign in.");setBusy(false);return;}
-      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,requirements:job.requirements,responsibilities:job.responsibilities}})});
+      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,location:job.location||"",url:job.url||"",requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
-      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);try{ fetch("/api/resumes",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company,title:job.title,location:job.location||"",url:job.url||"",resumeText:j.resume})}).catch(()=>{}); }catch(e){}if(typeof j.remaining==="number")setRemaining(j.remaining);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
+      setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);if(typeof j.remaining==="number")setRemaining(j.remaining);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
     }catch(e){setErr("Something went wrong. Try again.");}
     setBusy(false);
   };
@@ -4388,6 +4388,7 @@ function TailorResume({job,profile,missingSkills,wide}){
         <span title="Tailors left this month" style={{fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap",color:(()=>{const f=Math.max(0,Math.min(1,remaining/15));const r=Math.round(126+(224-126)*(1-f)),g=Math.round(207+(112-207)*(1-f)),bl=Math.round(179+(90-179)*(1-f));return `rgb(${r},${g},${bl})`;})()}}>{remaining}/15</span>
       </div>}
       <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,position:"relative",opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:<>{`Tailor with AI${sel.size?` (${sel.size})`:""}`}{remaining!==null&&remaining>0&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"inline-flex",alignItems:"center",gap:1,fontSize:9.5,fontWeight:800,opacity:.85}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#0a0608"><path d="M13 2L4 14h6l-1 8 10-12h-6l0-8z"/></svg>-1</span>}</>}</button>
+      {busy&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",textAlign:"center",marginTop:8,lineHeight:1.5,fontStyle:"italic"}}>This can take up to a minute — please don’t refresh. Your tailored resume saves to Generated Resumes even if you navigate away.</div>}
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
     </div>}
     {md&&<div>

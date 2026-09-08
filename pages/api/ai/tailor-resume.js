@@ -91,6 +91,15 @@ export default async function handler(req, res) {
     const resumeDocxB64 = typeof b.resumeDocxB64 === "string" ? b.resumeDocxB64 : "";
     const keywords = Array.isArray(b.keywords) ? b.keywords.slice(0, 40).map((k) => String(k).slice(0, 60)) : [];
     const job = b.job || {};
+    const saveResume = async (resumeText) => {
+      try {
+        const company = String(job.company || "").slice(0,200);
+        const title = String(job.title || "").slice(0,300);
+        if (!company || !title || !resumeText) return;
+        const location = String(job.location || "").slice(0,200);
+        await supabaseAdmin.from("generated_resumes").insert({ user_id: u.user.id, job_key: `${company}|${title}|${location}`, company, title, location, url: String(job.url || "").slice(0,800), resume_text: String(resumeText).slice(0,60000) });
+      } catch (e) {}
+    };
     if (!resumeText.trim() && !resumeDocxB64) return res.status(400).json({ error: "No resume found — upload a resume in your profile first." });
 
     const jobReqs = [].concat(job.requirements || [], job.responsibilities || []).filter(Boolean).map(String).slice(0, 40);
@@ -112,7 +121,7 @@ export default async function handler(req, res) {
       try {
         const result = await tailorDocx(resumeDocxB64, rewriteFn);
         if (busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
-        if (result) { const remaining = await bumpUsage(); return res.status(200).json({ resume: result.plain, docxB64: result.base64, remaining }); }
+        if (result) { await saveResume(result.plain); const remaining = await bumpUsage(); return res.status(200).json({ resume: result.plain, docxB64: result.base64, remaining }); }
         // result null → fall through to markdown mode below
       } catch (e) { /* invalid docx or parse issue → fall through to markdown */ }
     }
@@ -122,7 +131,7 @@ export default async function handler(req, res) {
     if (g.busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
     if (!g.ok) return res.status(502).json({ error: `Couldn't generate the resume — ${g.error}` });
     const clean = g.text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
-    { const remaining = await bumpUsage(); return res.status(200).json({ resume: clean, remaining }); }
+    { await saveResume(clean); const remaining = await bumpUsage(); return res.status(200).json({ resume: clean, remaining }); }
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }
