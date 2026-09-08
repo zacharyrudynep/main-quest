@@ -3480,10 +3480,10 @@ const upload=async(e)=>{
       {ps==="error"&&<><I.X s={26} c="#e07060"/><div style={{fontSize:12,color:"#e07060",fontFamily:"'Cinzel',serif"}}>{msg}</div><div style={{background:G,border:"none",color:"#0a0608",borderRadius:8,padding:"7px 18px",fontSize:11,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>Try Again</div></>}
     </div>
     )}
-    <div style={fld}><label style={lbl}>Key Skills <span style={{textTransform:"none",color:"rgba(244,237,216,.4)",fontWeight:400,letterSpacing:0}}>· detected from your resume</span></label>
+    <div style={fld}><label style={lbl}>Key Skills <span style={{textTransform:"none",color:"rgba(244,237,216,.4)",fontWeight:400,letterSpacing:0}}>· detected from your resume, tap × to remove</span></label>
       {(()=>{const sk=(profile.skills||"").split(",").map(s=>s.trim()).filter(Boolean);
         return sk.length
-          ? <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sk.map((s,i)=><span key={i} style={{background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.28)",color:"#f0d080",borderRadius:14,fontSize:11,padding:"3px 11px",textTransform:"capitalize"}}>{s}</span>)}</div>
+          ? <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sk.map((s,i)=><span key={i} style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.28)",color:"#f0d080",borderRadius:14,fontSize:11,padding:"3px 6px 3px 11px",textTransform:"capitalize"}}>{s}<button onClick={()=>updateField("skills",sk.filter(x=>x!==s).join(", "))} title="Remove skill" style={{background:"rgba(192,50,26,.15)",border:"none",color:"#e0906a",cursor:"pointer",borderRadius:"50%",width:16,height:16,fontSize:11,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0}}>×</button></span>)}</div>
           : <div style={{fontSize:11.5,color:"rgba(244,237,216,.42)",fontStyle:"italic",padding:"10px 12px",background:"rgba(201,168,76,.02)",border:"1px dashed rgba(201,168,76,.15)",borderRadius:8,lineHeight:1.5}}>Upload your resume above to detect your skills. These come straight from your resume, so your match score reflects what employers actually see.</div>;
       })()}
     </div>
@@ -4072,8 +4072,7 @@ function _extractSkills(text){
 // Map an experience-level label to a rank (for the seniority modifier).
 // Extract known skills (from the curated vocabulary) found anywhere in resume text.
 function _skillsFromResume(text){
-  const found=new Set(_matchTokenize(String(text||"").toLowerCase()).filter(k=>_SKILL_KW.has(k)));
-  return [...found].slice(0,40).join(", ");
+  return _extractSkills(String(text||"")).slice(0,40).join(", ");
 }
 const _EXP_RANK={"director":6,"principal":5,"lead":4,"manager":4,"senior":3,"mid level":2,"mid-level":2,"mid":2,"junior":1,"entry level":1,"entry":1};
 function _expRank(s){ if(!s)return null; const t=String(s).toLowerCase(); for(const k of Object.keys(_EXP_RANK)) if(t.includes(k)) return _EXP_RANK[k]; return null; }
