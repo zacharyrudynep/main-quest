@@ -3514,6 +3514,26 @@ function EmailTemplateTab({profile,upd}){
     ...(profile.behance?[["behance","Behance URL"]]:[]),
   ];
   const hasResume=!!(profile.resumeText||profile.resumeFileName);
+  const [gen,setGen]=useState(false);
+  const generateTemplate=async()=>{
+    const hasT=!!(text&&text.trim());
+    const msg=hasT
+      ? "Generate a new email template with AI?\n\nThis uses one AI usage token AND will overwrite your current template."
+      : "Generate an email template with AI?\n\nThis uses one AI usage token.";
+    if(typeof window!=="undefined"&&!window.confirm(msg)) return;
+    setGen(true);
+    try{
+      const { data }=await supabase.auth.getSession();
+      const tk=data&&data.session&&data.session.access_token;
+      const r=await fetch("/api/ai/email-template",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({name:profile.name||""})});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.text){
+        const map=[]; const conv=j.text.replace(/\{(company|position)\}/gi,(m,k)=>{ map.push(k.toLowerCase()); return "[x]"; });
+        upd("emailTemplate",conv); upd("emailTemplateMap",map);
+      } else { if(typeof window!=="undefined") window.alert(j.error||"Could not generate. Please try again."); }
+    }catch(e){ if(typeof window!=="undefined") window.alert("Something went wrong."); }
+    setGen(false);
+  };
 
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:6,display:"block"};
@@ -3546,7 +3566,7 @@ function EmailTemplateTab({profile,upd}){
     </div>
     <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write/paste your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
     <div style={{marginBottom:14}}>
-      <label style={lbl}>Email Template</label>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}><label style={{...lbl,marginBottom:0}}>Email Template</label><button onClick={generateTemplate} disabled={gen} style={{display:"inline-flex",alignItems:"center",gap:6,background:gen?"rgba(201,168,76,.08)":"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:gen?"#c9a84c":"#0a0608",borderRadius:8,padding:"6px 13px",fontSize:11,fontWeight:800,cursor:gen?"default":"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3,opacity:gen?.7:1}}>{gen?"Generating…":"✦ Generate with AI"}</button></div>
       <textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>
     </div>
     {placeholderCount>0&&<div style={{marginBottom:14}}>
@@ -5077,6 +5097,7 @@ function AiUsageButton(){
           <Row label="Resume Tailor" u={data.tailor.used} lim={data.tailor.limit} admin={data.isAdmin}/>
           <Row label="Company Info" u={data.company.used} lim={data.company.limit} admin={data.isAdmin}/>
           {data.interview&&<Row label="Interview Prep" u={data.interview.used} lim={data.interview.limit} admin={data.isAdmin}/>}
+          {data.template&&<Row label="Email Template" u={data.template.used} lim={data.template.limit} admin={data.isAdmin}/>}
           <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:2}}>Resets on the 1st of each month.</div>
         </>}
       </div>
