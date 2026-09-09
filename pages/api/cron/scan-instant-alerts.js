@@ -20,10 +20,10 @@ export default async function handler(req, res){
   try{
     // Premium users with an active personalized alert wizard.
     const { data: profiles, error } = await supabaseAdmin
-      .from("profiles").select("id,name,data,is_premium");
+      .from("profiles").select("id,name,data,is_premium,plan");
     if(error) throw error;
     const candidates = (profiles || []).filter(p =>
-      p.is_premium && alertHasCriteria((p.data || {}).jobAlerts)
+      (p.plan === "plus" || p.plan === "premium") && alertHasCriteria((p.data || {}).jobAlerts)
     );
     if(candidates.length === 0){
       return res.status(200).json({ ok: true, users: 0, note: "no premium users with alerts" });
