@@ -2652,11 +2652,11 @@ function PricingInfo({compact,onDismiss}){
           <div style={{fontSize:9.5,color:"rgba(244,237,216,.4)",lineHeight:1.3}}>+ match score, alerts &amp; autofill</div>
         </div>
       </div>
-      <div style={{fontSize:9,color:"rgba(244,237,216,.32)",textAlign:"center",marginTop:7}}>Premium also: $49.99/yr · $119.99 lifetime</div>
+      <div style={{fontSize:9,color:"rgba(244,237,216,.32)",textAlign:"center",marginTop:7}}>Plus $3.99/mo · Premium $7.99/mo · Lifetime $189.99</div>
     </div>;
   }
-  const free=["Browse every listing","Apply to jobs","Track your applications","Job alerts for up to 5 companies"];
-  const prem=["Everything in Basic","Job Match Score","Email autofill for applications","Targeted alerts by role, location, company & seniority"];
+  const free=["Browse every listing","Apply to jobs","Track your applications","Job match score","Alerts for up to 5 companies"];
+  const prem=["Match score breakdown","Email templates & autofill","Targeted job alerts","AI resume tailoring — Premium","AI interview prep — Premium"];
   const Card=({title,price,items,gold})=><div style={{flex:1,minWidth:0,background:gold?"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.05))":"rgba(201,168,76,.03)",border:`1px solid ${gold?"rgba(201,168,76,.4)":"rgba(201,168,76,.14)"}`,borderRadius:12,padding:14}}>
     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
       <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:14,...(gold?{background:GG,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}:{color:"#f4edd8"}),letterSpacing:.5}}>{title}</span>
@@ -2672,8 +2672,8 @@ function PricingInfo({compact,onDismiss}){
     {onDismiss&&<button onClick={onDismiss} title="Dismiss" style={{position:"absolute",top:6,right:9,background:"none",border:"none",color:"rgba(244,237,216,.35)",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>}
     <div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(201,168,76,.75)",textTransform:"uppercase",letterSpacing:1.2,textAlign:"center",marginBottom:12}}>Choose Your Path</div>
     <div style={{display:"flex",flexDirection:"row",gap:10}}>
-      <Card title="Free" price="$0 — forever" items={free}/>
-      <Card title="Premium" gold price="$4.99/mo · $49.99/yr · $119.99 lifetime" items={prem}/>
+      <Card title="Basic" price="$0 — forever" items={free}/>
+      <Card title="Plus & Premium" gold price="From $3.99/mo" items={prem}/>
     </div>
   </div>;
 }
@@ -2773,11 +2773,11 @@ function FeatureShowcase(){
        {label:"Save & Share Jobs",shot:4,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
     {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",shots:[],subs:[
-      {label:"Company-Specific Interview Prep",tier:"premium+",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
+      {label:"Company-Specific Interview Prep",tier:"premium",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
       {label:"Application Status",desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
     ]},
     {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",shots:["/shots/Notifications_IMG01.png","/shots/Notifications_IMG02.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],subs:[
-      {label:"Job-Specific Notifications",tier:"premium",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
+      {label:"Job-Specific Notifications",tier:"plus",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
       {label:"Company Bell",shot:2,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
       {label:"Email Digest",shot:3,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
     ]},
@@ -2791,7 +2791,7 @@ function FeatureShowcase(){
       {label:"Updated Match Score",shot:2,desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
     {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",shots:[],subs:[
-      {label:"AI Generate Template",tier:"premium+",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
+      {label:"AI Generate Template",tier:"premium",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
       {label:"One-Click Autofill",desc:"Company name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos."},
       {label:"Customizable",desc:"Edit, tweak, and save your own template exactly how you want it, with placeholders you control."},
     ]},
@@ -3714,7 +3714,7 @@ function VerifyEmailRow({ user }){
   </div>;
 }
 
-function AccountPanel({user,onClose,onUpdate,onLogout}) {
+function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
   const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
   const mobile = useIsMobile();
@@ -3881,22 +3881,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
           :
             <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.06))",border:"1px solid rgba(201,168,76,.3)",borderRadius:12,marginBottom:18}}>
               <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:4}}>Upgrade to Premium</div>
-              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>Support Main Quest and unlock premium features. Choose a plan:</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {[
-                  {id:"monthly",name:"Monthly",price:"$4.99",per:"/mo",badge:null},
-                  {id:"annual",name:"Annual",price:"$49.99",per:"/yr",badge:"Save 16%"},
-                  {id:"lifetime",name:"Lifetime",price:"$119.99",per:"once",badge:"Best value"},
-                ].map(pl=>
-                  <button key={pl.id} onClick={()=>goPremium(pl.id)} disabled={billingBusy} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,width:"100%",textAlign:"left",background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.22)",borderRadius:10,padding:"11px 13px",cursor:billingBusy?"default":"pointer",opacity:billingBusy?.6:1,transition:"all .15s"}}>
-                    <span style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                      <span style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:13,color:"#f4edd8"}}>{pl.name}</span>
-                      {pl.badge&&<span style={{background:"rgba(126,207,179,.12)",border:"1px solid rgba(126,207,179,.3)",color:"#7ecfb3",borderRadius:20,fontSize:8.5,padding:"1px 7px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3}}>{pl.badge}</span>}
-                    </span>
-                    <span style={{fontSize:14,fontWeight:800,color:"#f0d080",whiteSpace:"nowrap"}}>{pl.price}<span style={{fontSize:10,fontWeight:600,color:"rgba(244,237,216,.4)",marginLeft:2}}>{pl.per}</span></span>
-                  </button>
-                )}
-              </div>
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>You’re on the <strong style={{color:"#f0d080",textTransform:"capitalize"}}>{(premium&&premium.plan)||"basic"}</strong> plan. Upgrade to unlock more features.</div>
+              <button onClick={()=>{onClose&&onClose();onUpgrade&&onUpgrade();}} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>View Plans &amp; Upgrade</button>
               <div style={{fontSize:10.5,color:"rgba(244,237,216,.38)",marginTop:10,textAlign:"center"}}>{billingBusy?"Starting checkout…":"Have a launch code? Enter it at checkout."}</div>
             </div>
           }
@@ -6141,7 +6127,7 @@ export default function App() {
       </button>
       </div>
     </header>
-    {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
+    {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appIsPlus} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPlus={appIsPlus} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
