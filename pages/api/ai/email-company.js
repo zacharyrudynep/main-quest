@@ -20,9 +20,9 @@ export default async function handler(req, res) {
     if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
       return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
 
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin").eq("id", u.user.id).single();
+    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin,plan").eq("id", u.user.id).single();
     const isAdmin = !!(prof && prof.is_admin);
-    if (!isAdmin && !(prof && prof.is_premium)) return res.status(403).json({ error: "AI company info is a Premium feature." });
+    if (!isAdmin && !(prof && prof.plan === "premium")) return res.status(403).json({ error: "AI company info is a Premium feature." });
 
     const company = String((req.body && req.body.company) || "").trim().slice(0, 120);
     if (!company) return res.status(400).json({ error: "Missing company." });

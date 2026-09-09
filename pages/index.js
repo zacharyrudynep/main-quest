@@ -3500,7 +3500,7 @@ const upload=async(e)=>{
 // User writes a template with [x] placeholders. One dropdown per [x], in order.
 // Each dropdown maps that [x] to either Company Name or Position Title.
 // On email-apply, placeholders are filled from the job being applied to.
-function EmailTemplateTab({profile,upd}){
+function EmailTemplateTab({profile,upd,canAI}){
   const text=profile.emailTemplate||"";
   const mappings=profile.emailTemplateMap||[];
   // Count [x] placeholders in order
@@ -3516,6 +3516,7 @@ function EmailTemplateTab({profile,upd}){
   const hasResume=!!(profile.resumeText||profile.resumeFileName);
   const [gen,setGen]=useState(false);
   const generateTemplate=async()=>{
+    if(!canAI){ if(typeof window!=="undefined") window.alert("AI template generation is a Premium feature. Upgrade to Premium to use it."); return; }
     const hasT=!!(text&&text.trim());
     const msg=hasT
       ? "Generate a new email template with AI?\n\nThis uses one AI usage token AND will overwrite your current template."
@@ -3566,7 +3567,7 @@ function EmailTemplateTab({profile,upd}){
     </div>
     <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write/paste your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
     <div style={{marginBottom:14}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}><label style={{...lbl,marginBottom:0}}>Email Template</label><button onClick={generateTemplate} disabled={gen} style={{display:"inline-flex",alignItems:"center",gap:6,background:gen?"rgba(201,168,76,.08)":"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:gen?"#c9a84c":"#0a0608",borderRadius:8,padding:"6px 13px",fontSize:11,fontWeight:800,cursor:gen?"default":"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3,opacity:gen?.7:1}}>{gen?"Generating…":"✦ Generate with AI"}</button></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}><label style={{...lbl,marginBottom:0}}>Email Template</label><button onClick={generateTemplate} disabled={gen||!canAI} title={canAI?"":"Premium feature"} style={{display:"inline-flex",alignItems:"center",gap:6,background:(gen||!canAI)?"rgba(201,168,76,.08)":"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:(gen||!canAI)?"#c9a84c":"#0a0608",borderRadius:8,padding:"6px 13px",fontSize:11,fontWeight:800,cursor:(gen||!canAI)?"default":"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3,opacity:(gen||!canAI)?.6:1}}>{gen?"Generating…":canAI?"✦ Generate with AI":"✦ Generate (Premium)"}</button></div>
       <textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>
     </div>
     {placeholderCount>0&&<div style={{marginBottom:14}}>
@@ -3850,17 +3851,17 @@ function AccountPanel({user,onClose,onUpdate,onLogout}) {
             </div>)}
           <button onClick={()=>upd("customLinks",[...(p.customLinks||[]),{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:"",url:""}])} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"rgba(201,168,76,.06)",border:"1px dashed rgba(201,168,76,.35)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.5,marginTop:2}}><span style={{fontSize:17,lineHeight:1}}>+</span> Add another website</button>
         </div>}
-        {tab==="template"&&(premium&&!premium.isPremium?<div style={{position:"relative",minHeight:320}}>
+        {tab==="template"&&(premium&&!(premium.isAdmin||planRank(premium.plan)>=1)?<div style={{position:"relative",minHeight:320}}>
           <div style={{opacity:.28,pointerEvents:"none",filter:"grayscale(.3)"}}><EmailTemplateTab profile={p} upd={upd}/></div>
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:70}}>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:7,background:"rgba(16,10,22,.95)",border:"1px solid rgba(201,168,76,.35)",borderRadius:12,padding:"20px 24px",maxWidth:290,textAlign:"center",boxShadow:"0 16px 50px rgba(0,0,0,.6)"}}>
               <I.Lock s={24} c="#c9a84c"/>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#f0d080"}}>Premium Feature</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#f0d080"}}>Plus Feature</div>
               <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Save a reusable email template that auto-fills the right details for every job you apply to.</div>
               <UpgradeLink label="Upgrade now" mt={4}/>
             </div>
           </div>
-        </div>:<EmailTemplateTab profile={p} upd={upd}/>)}
+        </div>:<EmailTemplateTab profile={p} upd={upd} canAI={!!(premium&&(premium.isPremium||premium.isAdmin))}/>)}
         {tab==="account"&&<div>
           <VerifyEmailRow user={user}/>
           {/* Membership / Premium */}
@@ -4284,51 +4285,61 @@ function UpgradeLink({label,size,mt}){
 // Full-page upgrade modal — plans, feature showcase, and Stripe checkout buttons.
 function UpgradeModal({user,onClose}){
   const [busy,setBusy]=useState("");
-  const go=async(plan)=>{
+  const [cycle,setCycle]=useState("yearly");
+  const currentPlan=(user&&user.plan)||"basic";
+  const rank={basic:0,plus:1,premium:2};
+  const go=async(plan,cyc)=>{
     if(!user||!user.id){onClose&&onClose();return;}
-    setBusy(plan);
+    setBusy(plan+":"+cyc);
     try{
-      const r=await fetch("/api/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id,email:user.email,plan})});
+      const r=await fetch("/api/stripe/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:user.id,email:user.email,plan,cycle:cyc})});
       const d=await r.json();
       if(d.url){window.location.href=d.url;}else{alert(d.error||"Couldn't start checkout.");setBusy("");}
     }catch(e){alert("Couldn't start checkout — please try again.");setBusy("");}
   };
-  const plans=[{id:"monthly",name:"Monthly",price:"$4.99",per:"/mo",badge:null},{id:"annual",name:"Annual",price:"$49.99",per:"/yr",badge:"Save 16%"},{id:"lifetime",name:"Lifetime",price:"$119.99",per:"once",badge:"Best value"}];
-  const feats=[
-    [<I.Star s={20} c="#f0d080"/>,"Full Match Breakdown","See exactly which skills and keywords you're missing for each role — and precisely how to close the gap."],
-    [<I.Scroll s={20} c="#f0d080"/>,"AI Resume Tailoring","Rewrite your resume for any job in one click — keeping your original .docx formatting intact."],
-    [<I.Send s={20} c="#f0d080"/>,"Email Templates","Save reusable application templates that auto-fill the right details for every job you apply to."],
-    [<I.Bell s={20} c="#f0d080"/>,"Custom Job Alerts","Get notified the moment new roles matching your target companies, titles, and seniority are posted."],
+  const gold="linear-gradient(135deg,#c9a84c,#e8613a)";
+  const TIERS=[
+    {id:"basic",name:"Basic",m:"Free",y:"Free",feats:["Full job board access","Apply & track applications","Follow 5 companies for alerts","Job match score"]},
+    {id:"plus",name:"Plus",m:"$3.99",y:"$39.99",feats:["Everything in Basic","Match score breakdown","Email autofill templates","Targeted job notifications","Follow up to 15 companies"]},
+    {id:"premium",name:"Premium",m:"$7.99",y:"$79.99",feats:["Everything in Plus","AI resume tailoring","AI email autofill","AI email template generation","AI interview prep","Unlimited company alerts","40 AI uses / month"]},
   ];
   return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:300,background:"rgba(4,3,5,.88)",backdropFilter:"blur(10px)",overflowY:"auto",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"clamp(16px,5vh,56px) 16px"}}>
-    <div onClick={e=>e.stopPropagation()} style={{maxWidth:920,width:"100%",background:"radial-gradient(140% 90% at 50% 0%, rgba(40,26,18,.98), rgba(14,10,16,.99))",border:"1px solid rgba(201,168,76,.32)",borderRadius:20,padding:"clamp(22px,4vw,38px)",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,.75)"}}>
+    <div onClick={e=>e.stopPropagation()} style={{maxWidth:960,width:"100%",background:"radial-gradient(140% 90% at 50% 0%, rgba(40,26,18,.98), rgba(14,10,16,.99))",border:"1px solid rgba(201,168,76,.32)",borderRadius:20,padding:"clamp(22px,4vw,36px)",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,.75)"}}>
       <button onClick={onClose} title="Close" style={{position:"absolute",top:16,right:16,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.6)",cursor:"pointer",fontSize:16,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-      <div style={{textAlign:"center",marginBottom:26}}>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><svg width="34" height="34" viewBox="0 0 24 24" fill="#f0d080" style={{filter:"drop-shadow(0 0 12px rgba(240,208,128,.6))"}}><path d="M3 7l4.5 3L12 4l4.5 6L21 7l-1.6 11H4.6L3 7zm3 13h12v1.5H6V20z"/></svg></div>
-        <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:"clamp(22px,4vw,30px)",fontWeight:700,background:"linear-gradient(135deg,#f0d080,#e8613a)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:8}}>Unlock the Full Quest</div>
-        <div style={{fontSize:13,color:"rgba(244,237,216,.6)",maxWidth:520,margin:"0 auto",lineHeight:1.6}}>Go Premium to turn Main Quest into your full job-hunt command center — smarter matching, AI-tailored resumes, and alerts that reach you first.</div>
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:26,fontWeight:700,color:"#f0d080",marginBottom:6}}>Choose your plan</h2>
+        <p style={{fontSize:13,color:"rgba(244,237,216,.55)"}}>Upgrade anytime · cancel anytime.</p>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:12,marginBottom:28}}>
-        {plans.map(pl=><div key={pl.id} style={{background:pl.badge==="Best value"?"rgba(240,208,128,.07)":"rgba(201,168,76,.04)",border:`1px solid ${pl.badge==="Best value"?"rgba(240,208,128,.45)":"rgba(201,168,76,.16)"}`,borderRadius:14,padding:"18px 16px",display:"flex",flexDirection:"column",alignItems:"center",gap:10,position:"relative"}}>
-          {pl.badge&&<span style={{position:"absolute",top:-9,background:"linear-gradient(135deg,#c9a84c,#e8613a)",color:"#0a0608",borderRadius:20,fontSize:9,padding:"2px 10px",fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5}}>{pl.badge}</span>}
-          <div style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:15,color:"#f4edd8"}}>{pl.name}</div>
-          <div><span style={{fontSize:28,fontWeight:800,color:"#f0d080",fontFamily:"'Cinzel',serif"}}>{pl.price}</span><span style={{fontSize:12,color:"rgba(244,237,216,.5)"}}> {pl.per}</span></div>
-          <button onClick={()=>go(pl.id)} disabled={!!busy} style={{width:"100%",background:pl.badge==="Best value"?"linear-gradient(135deg,#c9a84c,#e8613a)":"rgba(201,168,76,.1)",border:pl.badge==="Best value"?"none":"1px solid rgba(201,168,76,.35)",color:pl.badge==="Best value"?"#0a0608":"#f0d080",borderRadius:9,padding:"9px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",cursor:busy?"default":"pointer",letterSpacing:.4,opacity:busy&&busy!==pl.id?.5:1}}>{busy===pl.id?"Starting…":"Upgrade"}</button>
-        </div>)}
+      <div style={{display:"flex",justifyContent:"center",marginBottom:24}}>
+        <div style={{display:"inline-flex",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,padding:3}}>
+          {[["monthly","Monthly"],["yearly","Yearly"]].map(([c,l])=><button key={c} onClick={()=>setCycle(c)} style={{background:cycle===c?gold:"transparent",color:cycle===c?"#0a0608":"rgba(244,237,216,.7)",border:"none",borderRadius:18,padding:"6px 18px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>{l}{c==="yearly"&&<span style={{fontSize:9,marginLeft:5,opacity:.85}}>save ~16%</span>}</button>)}
+        </div>
       </div>
-      <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif",textAlign:"center",marginBottom:16}}>Everything you unlock</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:14}}>
-        {feats.map(([ic,t,d])=><div key={t} style={{display:"flex",gap:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:12,padding:"14px 15px"}}>
-          <div style={{flexShrink:0,width:38,height:38,borderRadius:10,background:"rgba(240,208,128,.09)",border:"1px solid rgba(240,208,128,.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>{ic}</div>
-          <div><div style={{fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:13,color:"#f0d080",marginBottom:3}}>{t}</div><div style={{fontSize:11.5,color:"rgba(244,237,216,.6)",lineHeight:1.5}}>{d}</div></div>
-        </div>)}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:16}}>
+        {TIERS.map(tier=>{
+          const isCurrent=currentPlan===tier.id;
+          const price=cycle==="yearly"?tier.y:tier.m;
+          const per=tier.id==="basic"?"":(cycle==="yearly"?"/yr":"/mo");
+          const canBuy=tier.id!=="basic"&&rank[tier.id]>rank[currentPlan];
+          const highlight=tier.id==="premium";
+          return <div key={tier.id} style={{background:highlight?"rgba(201,168,76,.06)":"rgba(16,10,22,.5)",border:`1px solid ${highlight?"rgba(201,168,76,.4)":"rgba(201,168,76,.14)"}`,borderRadius:14,padding:"22px 18px 18px",display:"flex",flexDirection:"column",position:"relative"}}>
+            {highlight&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:gold,color:"#0a0608",fontSize:9,fontWeight:800,padding:"2px 10px",borderRadius:20,fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>Most Popular</div>}
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:6}}>{tier.name}</div>
+            <div style={{marginBottom:14}}><span style={{fontSize:26,fontWeight:800,color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>{price}</span><span style={{fontSize:12,color:"rgba(244,237,216,.5)"}}> {per}</span></div>
+            <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18,flex:1}}>
+              {tier.feats.map((f,i)=><div key={i} style={{display:"flex",gap:7,fontSize:12,color:"rgba(244,237,216,.72)",lineHeight:1.4}}><span style={{color:"#7ecfb3",flexShrink:0}}>✓</span>{f}</div>)}
+            </div>
+            {isCurrent?<div style={{textAlign:"center",padding:"10px",fontSize:12,fontWeight:700,color:"rgba(244,237,216,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>Current plan</div>
+             :canBuy?<button onClick={()=>go(tier.id,cycle)} disabled={!!busy} style={{background:gold,border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1}}>{busy===tier.id+":"+cycle?"Starting…":`Choose ${tier.name}`}</button>
+             :<div style={{textAlign:"center",padding:"10px",fontSize:11,color:"rgba(244,237,216,.35)"}}>Included</div>}
+            {tier.id==="premium"&&rank[currentPlan]<2&&<button onClick={()=>go("premium","lifetime")} disabled={!!busy} style={{marginTop:8,background:"transparent",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:10,padding:"8px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1}}>{busy==="premium:lifetime"?"Starting…":"or Lifetime — $189.99"}</button>}
+          </div>;
+        })}
       </div>
-      <div style={{fontSize:10.5,color:"rgba(244,237,216,.35)",textAlign:"center",marginTop:22}}>Cancel anytime · Secure checkout via Stripe · Have a launch code? Enter it at checkout.</div>
+      <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.35)",marginTop:18,lineHeight:1.5}}>Payments are processed securely by Stripe. Refunds are limited once AI features are used — see our Terms.</p>
     </div>
   </div>;
 }
-
-// Premium AI resume-tailoring — shared by the desktop panel and mobile popup.
 function TailorResume({job,profile,missingSkills,wide}){
   const [open,setOpen]=useState(false);
   const [sel,setSel]=useState(()=>new Set());
@@ -4411,7 +4422,7 @@ function TailorResume({job,profile,missingSkills,wide}){
   </div>;
 }
 
-function ScoreBreakdownPanel({job,profile,isPremium,onClose,inline}){
+function ScoreBreakdownPanel({job,profile,isPlus,isPremium,onClose,inline}){
   const match=computeMatchScore(job,profile);
   const scoreColor=match?(match.score>=7.5?"#7ecfb3":match.score>=5?"#c9a84c":match.score>=3?"#e8a070":"#c0703a"):"#c9a84c";
   return <div style={inline?{position:"relative",width:"100%",background:"rgba(16,10,22,.95)",border:"1px solid rgba(201,168,76,.35)",borderRadius:10,padding:"16px 14px"}:{position:"fixed",top:96,right:16,left:"auto",width:"min(46vw,720px)",maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:20,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
@@ -4423,11 +4434,11 @@ function ScoreBreakdownPanel({job,profile,isPremium,onClose,inline}){
       <div style={{fontSize:13,fontWeight:700,color:"#f4edd8",lineHeight:1.3}}>{job.title}</div>
       <div style={{fontSize:11,color:"rgba(244,237,216,.5)",marginTop:2}}>{job.company}{job.location?` · ${job.location}`:""}</div>
     </div>
-    {!isPremium ?
+    {!isPlus ?
       <div style={{textAlign:"center",padding:"24px 10px"}}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><I.Lock s={26} c="#c9a84c"/></div>
-        <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080",marginBottom:6}}>Premium Feature</div>
-        <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to see your full match breakdown — which skills and keywords you're missing, and how to improve for this role.</div><div style={{marginTop:9}}><UpgradeLink label="Upgrade now"/></div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f0d080",marginBottom:6}}>Plus Feature</div>
+        <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",lineHeight:1.5}}>Upgrade to Plus to see your full match breakdown — which skills and keywords you're missing, and how to improve for this role.</div><div style={{marginTop:9}}><UpgradeLink label="Upgrade now"/></div>
       </div>
     : !match ?
       <div style={{fontSize:12,color:"rgba(244,237,216,.55)",lineHeight:1.6,padding:"10px 0"}}>Add more to your profile — Key Skills, Experience Level, and Work History — to see how you match this role.</div>
@@ -4479,7 +4490,7 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPremium,onToggleSave,activeBreakdown,flatView,notifyOn,onToggleNotify}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPlus,isPremium,onToggleSave,activeBreakdown,flatView,notifyOn,onToggleNotify}) {
   const [flipped,setFlipped]=useState(false);
   const smallBreak=useIsMobile(1024); // on small screens flip the card instead of the cut-off side panel
   const mobile = useIsMobile();
@@ -4677,7 +4688,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <span onMouseEnter={()=>setShowDisclaimer(true)} onMouseLeave={()=>setShowDisclaimer(false)} onClick={e=>{e.stopPropagation();setShowDisclaimer(v=>!v);}} title="What is this?" style={{position:"absolute",top:3,right:3,width:13,height:13,borderRadius:"50%",border:`1px solid ${match?scoreColor:"rgba(201,168,76,.5)"}99`,color:match?scoreColor:"rgba(201,168,76,.7)",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",cursor:"help",fontFamily:"Georgia,serif",lineHeight:1,userSelect:"none"}}>i</span>
       {showDisclaimer&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:206,background:"rgba(20,14,10,.98)",border:"1px solid rgba(201,168,76,.3)",borderRadius:8,padding:"9px 11px",fontSize:10.5,lineHeight:1.5,color:"rgba(244,237,216,.8)",zIndex:101,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none"}}>This is an estimated guess comparing the skills and experience in your profile to this job's listed requirements. It's a rough guide only — a lower score doesn't mean you shouldn't apply, and a high score isn't a guarantee. Use it as one signal among many.</div>}
       {showScoreInfo&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:"100%",right:0,marginTop:6,width:258,maxHeight:360,overflowY:"auto",background:"rgba(20,14,10,.98)",border:`1px solid ${match?scoreColor+"55":"rgba(201,168,76,.3)"}`,borderRadius:10,padding:"12px 13px",zIndex:100,boxShadow:"0 8px 24px rgba(0,0,0,.5)",textAlign:"left",fontFamily:"system-ui,sans-serif",fontStyle:"normal",letterSpacing:0,textTransform:"none",overscrollBehavior:"contain"}}>
-        {match?(isPremium?<>
+        {match?(isPlus?<>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:scoreColor}}>{match.rating}</span>
             <span style={{fontSize:12,fontWeight:800,color:scoreColor}}>{match.score.toFixed(1)}/10</span>
@@ -4716,7 +4727,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       </>}
     </div>}
     </div>
-  </div></div><div style={{backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",position:flipped?"relative":"absolute",top:0,left:0,width:"100%"}}>{flipped&&<ScoreBreakdownPanel job={job} profile={user&&user.profile} isPremium={isPremium} onClose={()=>setFlipped(false)} inline/>}</div></div></div>;
+  </div></div><div style={{backfaceVisibility:"hidden",WebkitBackfaceVisibility:"hidden",transform:"rotateY(180deg)",position:flipped?"relative":"absolute",top:0,left:0,width:"100%"}}>{flipped&&<ScoreBreakdownPanel job={job} profile={user&&user.profile} isPlus={isPlus} isPremium={isPremium} onClose={()=>setFlipped(false)} inline/>}</div></div></div>;
 });
 
 // Isolated, debounced search box. It keeps its own input state so typing only
@@ -5496,6 +5507,7 @@ export default function App() {
   const [appPremium,setAppPremium]=useState(false);
   const [appPlan,setAppPlan]=useState("basic");
   const [appAdmin,setAppAdmin]=useState(false);
+  const appIsPlus = appAdmin || appPremium || planRank(appPlan) >= 1; // Plus tier or above
   const [toast,setToast]=useState("");
   useEffect(()=>{ if(!toast)return; const t=setTimeout(()=>setToast(""),3500); return ()=>clearTimeout(t); },[toast]);
   // React to the ?verify=... flag the verification link redirects back with.
@@ -5592,9 +5604,9 @@ export default function App() {
     if(user&&user.profile&&user.profile.email_verified===false){setToast("Verify your email from the Account tab to unlock this.");return;}
     const cur = user?.profile?.notifyCompanies || [];
     if(!cur.includes(companyName)){
-      const limit = appAdmin ? Infinity : (appPremium ? 20 : 5);
+      const limit = (appAdmin||appPremium) ? Infinity : (appIsPlus ? 15 : 5);
       if(cur.length >= limit){
-        setToast(appPremium ? `You can follow up to 20 companies.` : `Free plan follows up to 5 companies — upgrade for 20.`);
+        setToast(appIsPlus ? `Plus follows up to 15 companies — upgrade to Premium for unlimited.` : `Basic follows up to 5 companies — upgrade for more.`);
         return;
       }
     }
@@ -5605,7 +5617,7 @@ export default function App() {
       if (prev?.id) { supabase.from("profiles").upsert({ id: prev.id, name: prev.name, data: newProfile }, { onConflict: "id" }).then(()=>{}); }
       return { ...prev, profile: newProfile };
     });
-  },[user,appAdmin,appPremium]);
+  },[user,appAdmin,appPremium,appIsPlus]);
   const removeApplied = async (jobId) => {
     setUser(prev => { const na = { ...prev.applied }; delete na[jobId]; return { ...prev, applied: na }; });
     if (!user?.id) return;
@@ -5773,7 +5785,7 @@ export default function App() {
     if(prof.notifications===false) return;          // in-app inbox notifications turned off
     const alerts=prof.jobAlerts;
     const followed=(prof.notifyCompanies||[]).map(c=>String(c).toLowerCase());
-    const wizardOn=appPremium&&alertHasCriteria(alerts); // the premium alert wizard
+    const wizardOn=appIsPlus&&alertHasCriteria(alerts); // personalized alerts (Plus+)
     if(!wizardOn&&followed.length===0) return;      // nothing set up to notify on
     const last=prof.lastAlertScan||0;
     if(Date.now()-last < 24*3600*1000) return;      // once a day
@@ -5796,7 +5808,7 @@ export default function App() {
     if(fresh.length>0) patchProfile({inbox:[...fresh,...existing].slice(0,100),lastAlertScan:Date.now()});
     else patchProfile({lastAlertScan:Date.now()});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user&&user.id,introDone,appPremium,allJobs.length,user&&user.profile&&(user.profile.notifyCompanies||[]).length,user&&user.profile&&user.profile.notifications]);
+  },[user&&user.id,introDone,appIsPlus,allJobs.length,user&&user.profile&&(user.profile.notifyCompanies||[]).length,user&&user.profile&&user.profile.notifications]);
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
   const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically
@@ -6130,8 +6142,8 @@ export default function App() {
       </div>
     </header>
     {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout}/>}
-    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appPremium} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
-    {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
+    {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appIsPlus} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
+    {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPlus={appIsPlus} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
     {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
@@ -6226,7 +6238,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={`${j.company}|${j.title}|${j.location||""}`} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify}/></div>)}
+                <div key={`${j.company}|${j.title}|${j.location||""}`} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -6362,7 +6374,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={`${name}|${j.title}|${j.location||""}|${j.id}`} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
+                                      const renderJob=j=><div key={`${name}|${j.title}|${j.location||""}|${j.id}`} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
@@ -6401,7 +6413,7 @@ export default function App() {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,.5)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No saved jobs yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>Tap the bookmark icon on any posting to save it here.</p>
         </div>:<div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {savedJobs.map(j=><JobCard key={`${j.company}|${j.title}|${j.location||""}|${j.id}`} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/>)}
+          {savedJobs.map(j=><JobCard key={`${j.company}|${j.title}|${j.location||""}|${j.id}`} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/>)}
         </div>}
       </div>}
 

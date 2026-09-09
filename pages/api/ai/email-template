@@ -17,9 +17,9 @@ export default async function handler(req, res) {
     const uid = u.user.id;
     if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
       return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin").eq("id", uid).single();
+    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin,plan").eq("id", uid).single();
     const isAdmin = !!(prof && prof.is_admin);
-    if (!isAdmin && !(prof && prof.is_premium)) return res.status(403).json({ error: "AI template generation is a Premium feature." });
+    if (!isAdmin && !(prof && prof.plan === "premium")) return res.status(403).json({ error: "AI template generation is a Premium feature." });
 
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single();
