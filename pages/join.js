@@ -4,30 +4,30 @@ import { useRouter } from "next/router";
 import { supabase } from "../lib/supabase";
 
 const TOS_VERSION = "2026-06-20";
-const MONTHLY = 4.99, ANNUAL = 49.99, LIFETIME = 119.99;
+const PLUS_M = 3.99, PLUS_Y = 39.99, PREM_M = 7.99, PREM_Y = 79.99, LIFETIME = 189.99;
 const PCT_OFF = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
 
 const FEATURES = {
-  free: [
+  basic: [
     "Full access to the entire job board",
     "Apply to any listing",
     "Track all your applications",
-    "Follow companies for new-posting alerts",
-    "Free forever — no card required",
+    "Follow up to 5 companies for alerts",
+    "Job match score on every listing",
+  ],
+  plus: [
+    "Everything in Basic",
+    "Full match score breakdown",
+    "Email autofill templates",
+    "Targeted alerts by role, location, company & seniority",
+    "Follow up to 15 companies",
   ],
   premium: [
-    "Everything in Free",
-    "Job Match Score on every listing",
-    "One-click email autofill for applications",
-    "Targeted alerts by role, location, company & seniority",
-    "Price-lock guarantee — your rate never rises, even as new features are added",
-  ],
-  lifetime: [
-    "Everything in Premium",
-    "One payment — yours for life",
-    "Every future feature included, for life",
-    "No recurring billing, ever",
-    "*Excludes any future AI features that consume usage-based tokens",
+    "Everything in Plus",
+    "AI resume tailoring",
+    "AI email autofill & template generation",
+    "AI company interview prep",
+    "40 AI uses / month + unlimited company alerts",
   ],
 };
 
@@ -38,8 +38,9 @@ export default function Join() {
   const [pass, setPass] = useState("");
   const [show, setShow] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [selected, setSelected] = useState(null); // "free" | "premium" | "lifetime"
-  const [billing, setBilling] = useState("monthly"); // for premium: "monthly" | "annual"
+  const [selected, setSelected] = useState(null); // "basic" | "plus" | "premium"
+  const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
+  const [lifetime, setLifetime] = useState(false); // Premium one-time option
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [finishing, setFinishing] = useState(false); // completing after paid checkout
@@ -59,9 +60,9 @@ export default function Join() {
           setEmail(pend.email || "");
           setPass(pend.password || "");
           setAgreed(true);
-          setSelected(pend.plan === "lifetime" ? "lifetime" : "premium");
-          if (pend.plan === "annual") setBilling("annual");
-          if (pend.plan === "monthly") setBilling("monthly");
+          setSelected(pend.plan || "premium");
+          if (pend.cycle === "yearly") setBilling("annual");
+          if (pend.cycle === "lifetime") setLifetime(true);
         }
       } catch (e) {}
       router.replace("/join", undefined, { shallow: true });
@@ -117,7 +118,7 @@ export default function Join() {
     if (!selected) return setErr("Choose a plan to continue.");
     setBusy(true);
     try {
-      if (selected === "free") {
+      if (selected === "basic") {
         const { data, error } = await supabase.auth.signUp({ email, password: pass });
         if (error) { setErr(error.message); setBusy(false); return; }
         await supabase.from("profiles").insert({ id: data.user.id, name, data: { tosVersion: TOS_VERSION } });
@@ -126,12 +127,12 @@ export default function Join() {
         return;
       }
       // Paid: stash credentials for the return trip, then go to Stripe.
-      const plan = selected === "lifetime" ? "lifetime" : (billing === "annual" ? "annual" : "monthly");
-      try { sessionStorage.setItem("mq_pending_signup", JSON.stringify({ name, email, password: pass, plan })); } catch (e) {}
+      const cyc = (selected === "premium" && lifetime) ? "lifetime" : (billing === "annual" ? "yearly" : "monthly");
+      try { sessionStorage.setItem("mq_pending_signup", JSON.stringify({ name, email, password: pass, plan: selected, cycle: cyc })); } catch (e) {}
       const r = await fetch("/api/stripe/join-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, plan }),
+        body: JSON.stringify({ email, plan: selected, cycle: cyc }),
       });
       const j = await r.json();
       if (j.url) { window.location.href = j.url; return; }
@@ -143,9 +144,10 @@ export default function Join() {
     }
   }
 
-  const premiumPrice = billing === "annual" ? ANNUAL : MONTHLY;
-  const premiumUnit = billing === "annual" ? "/yr" : "/mo";
-  const proceedLabel = selected === "free" ? "Enter Main Quest →" : selected ? "Continue to Payment →" : "Select a plan";
+  const plusPrice = billing === "annual" ? PLUS_Y : PLUS_M;
+  const premPrice = billing === "annual" ? PREM_Y : PREM_M;
+  const unit = billing === "annual" ? "/yr" : "/mo";
+  const proceedLabel = selected === "basic" ? "Enter Main Quest →" : selected ? "Continue to Payment →" : "Select a plan";
   const inp = { background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.2)", color: "#f4edd8", colorScheme: "dark", borderRadius: 9, padding: "12px 14px", fontSize: 13, fontFamily: "inherit", width: "100%", boxSizing: "border-box", outline: "none" };
 
   return (
@@ -214,49 +216,40 @@ export default function Join() {
               <div style={{ textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: 15, color: "#f0d080", letterSpacing: 1, marginBottom: 4 }}>Choose Your Path</div>
               <div style={{ textAlign: "center", fontSize: 12, color: "rgba(244,237,216,.45)", marginBottom: 20 }}>Select a plan to finish creating your account.</div>
 
-              <div className="qgrid">
-                {/* BASIC (free) */}
-                <div className={"qcard" + (selected === "free" ? " qsel" : "")} onClick={() => setSelected("free")}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(244,237,216,.6)", textAlign: "center" }}>Basic</div>
-                  <div style={{ textAlign: "center", margin: "8px 0 4px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f4edd8" }}>FREE</span></div>
-                  <div style={{ textAlign: "center", fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>Free forever</div>
-                  <FeatureList items={FEATURES.free} />
-                  <SelectPip on={selected === "free"} />
+              <div style={{display:"flex",justifyContent:"center",marginBottom:16}} onClick={e=>e.stopPropagation()}>
+                <div style={{display:"inline-flex",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,padding:3}}>
+                  {["monthly","annual"].map(b => (
+                    <button key={b} type="button" onClick={() => setBilling(b)} style={{background:billing===b?"linear-gradient(135deg,#c9a84c,#f0d080)":"transparent",color:billing===b?"#0a0608":"rgba(244,237,216,.7)",border:"none",borderRadius:18,padding:"6px 18px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>{b==="monthly"?"Monthly":"Yearly"}{b==="annual" && <span style={{fontSize:9,marginLeft:5,opacity:.85}}>save ~16%</span>}</button>
+                  ))}
                 </div>
-
+              </div>
+              <div className="qgrid">
+                {/* BASIC */}
+                <div className={"qcard" + (selected === "basic" ? " qsel" : "")} onClick={() => setSelected("basic")}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(244,237,216,.6)", textAlign: "center" }}>Basic</div>
+                  <div style={{ textAlign: "center", margin: "8px 0 4px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f4edd8" }}>$0</span></div>
+                  <div style={{ textAlign: "center", fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>Free forever</div>
+                  <FeatureList items={FEATURES.basic} />
+                  <SelectPip on={selected === "basic"} />
+                </div>
+                {/* PLUS */}
+                <div className={"qcard" + (selected === "plus" ? " qsel" : "")} onClick={() => setSelected("plus")}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(244,237,216,.78)", textAlign: "center" }}>Plus</div>
+                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${plusPrice}</span><span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{unit}</span></div>
+                  <div style={{ textAlign: "center", fontSize: 10.5, color: "rgba(244,237,216,.35)", marginBottom: 14, minHeight: 14 }}>{billing === "annual" ? "Billed yearly" : "Billed monthly"}</div>
+                  <FeatureList items={FEATURES.plus} />
+                  <SelectPip on={selected === "plus"} />
+                </div>
                 {/* PREMIUM */}
                 <div className={"qcard qprem" + (selected === "premium" ? " qsel" : "")} onClick={() => setSelected("premium")}>
                   <div className="qbadge" style={{ background: "linear-gradient(135deg,#c9a84c,#f0d080)", color: "#0a0608" }}>Most Popular</div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <span style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", background: "linear-gradient(135deg,#c9a84c,#f0d080)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800 }}>Premium</span>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", background: "linear-gradient(135deg,#c9a84c,#f0d080)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800, textAlign: "center" }}>Premium</div>
+                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${lifetime ? LIFETIME : premPrice}</span><span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{lifetime ? " one-time" : unit}</span></div>
+                  <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center", marginBottom: 12, minHeight: 20 }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "rgba(244,237,216,.6)", cursor: "pointer" }}><input type="checkbox" checked={lifetime} onChange={e => setLifetime(e.target.checked)} style={{ accentColor: "#c9a84c" }} />Lifetime — ${LIFETIME}</label>
                   </div>
-                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}>
-                    <span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${premiumPrice}</span>
-                    <span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{premiumUnit}</span>
-                  </div>
-                  {/* Monthly / Yearly toggle */}
-                  <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
-                    <div style={{ display: "inline-flex", background: "rgba(201,168,76,.08)", border: "1px solid rgba(201,168,76,.2)", borderRadius: 20, padding: 2 }}>
-                      {["monthly", "annual"].map(b => (
-                        <button key={b} onClick={() => setBilling(b)} style={{ background: billing === b ? "linear-gradient(135deg,#c9a84c,#f0d080)" : "transparent", color: billing === b ? "#0a0608" : "rgba(244,237,216,.55)", border: "none", cursor: "pointer", borderRadius: 20, fontSize: 10.5, fontWeight: 700, padding: "5px 13px", fontFamily: "'Cinzel',serif" }}>{b === "monthly" ? "Monthly" : "Yearly"}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center", fontSize: 10.5, color: billing === "annual" ? "#7ecfb3" : "rgba(244,237,216,.35)", marginBottom: 14, minHeight: 14 }}>{billing === "annual" ? `Save ${PCT_OFF}% vs monthly` : `or $${ANNUAL}/yr — save ${PCT_OFF}%`}</div>
                   <FeatureList items={FEATURES.premium} gold />
                   <SelectPip on={selected === "premium"} />
-                </div>
-
-                {/* LIFETIME */}
-                <div className={"qcard qlife" + (selected === "lifetime" ? " qsel" : "")} onClick={() => setSelected("lifetime")}>
-                  <div className="qbadge" style={{ background: "linear-gradient(135deg,#f0d080,#e8613a)", color: "#0a0608", boxShadow: "0 4px 16px rgba(232,97,58,.45)" }}>Best Value</div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "#e8a070", textAlign: "center", fontWeight: 800 }}>Lifetime</div>
-                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}>
-                    <span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${LIFETIME}</span>
-                  </div>
-                  <div style={{ textAlign: "center", fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>One payment · yours for life</div>
-                  <FeatureList items={FEATURES.lifetime} gold />
-                  <SelectPip on={selected === "lifetime"} />
                 </div>
               </div>
 

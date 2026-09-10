@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       return res.status(402).json({ error: "Payment not completed", paid: false });
     }
 
-    const plan = (session.metadata && session.metadata.plan) || "monthly";
+    const plan = (session.metadata && session.metadata.plan) || "premium";
     const customerId = session.customer || null;
 
     let subStatus = "active";
@@ -38,7 +38,8 @@ export default async function handler(req, res) {
     await supabaseAdmin
       .from("profiles")
       .update({
-        is_premium: true,
+        plan,
+        is_premium: plan === "premium",
         stripe_customer_id: customerId,
         subscription_status: subStatus,
         subscription_period_end: periodEnd,
