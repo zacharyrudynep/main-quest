@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 
 const TOS_VERSION = "2026-06-20";
 const PLUS_M = 3.99, PLUS_Y = 39.99, PREM_M = 7.99, PREM_Y = 79.99, LIFETIME = 189.99;
-const PCT_OFF = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
+const PCT_OFF = Math.round((1 - PREM_Y / (PREM_M * 12)) * 100);
 
 const FEATURES = {
   basic: [
