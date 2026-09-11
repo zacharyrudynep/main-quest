@@ -971,6 +971,247 @@ const COMPANIES_DATA = {
       { name: "DEEP FIELD GAMES", url: "https://www.xrgames.io/join", email: "Please clearly specify the position you're applying for in the email subject, Include a brief cover letter (the email body itself is fine), Attach your CV / resume document, Include a link to any past works or portfolios (if applicable)", contact: "https://www.deepfield.games/contact.html", registerInterest:true, registerInterestLink: "email & If you are a voice actor, send it to henry@deepfield.games instead." },
     ],
   },
+  "Algeria": {
+    "Algiers": [
+      { name: "Last Lion Studio", url: "https://www.lastlionstudio.com/", email: null, contact: "https://www.lastlionstudio.com/", registerInterest:true, registerInterestLink:"https://www.lastlionstudio.com/", tier:"indie" },
+      { name: "Xerise", url: "https://www.xerise.net/#contact", email: "contact@xerise.com", contact: "https://www.xerise.net/#contact", registerInterest:true, registerInterestLink:"https://www.xerise.net/#contact", tier:"indie" },
+    ],
+  },
+  "Cameroon": {
+    "Mfoundi": [
+      { name: "Dawn of Game Studio", url: "https://www.dawnofgamestudio.com/#contact", email: "contact@dawnofgamestudio.com", contact: "https://www.dawnofgamestudio.com/#contact", registerInterest:"email", registerInterestLink:"contact@dawnofgamestudio.com", emailApply:true, tier:"indie" },
+    ],
+    "Littoral": [
+      { name: "Noohkema Interactive", url: "https://www.noohkema.com/#contact", email: "careers@noohkema.com", contact: "https://www.noohkema.com/#contact", registerInterest:"email", registerInterestLink:"careers@noohkema.com", emailApply:true, tier:"indie" },
+    ],
+  },
+  "Egypt": {
+    "Alexandria": [
+      { name: "Cryptyd Games", url: "https://cryptydgames.com/join-us/", email: "a.alaa@cryptydgames.com", contact: "https://cryptydgames.com/contact-us/", registerInterest:true, registerInterestLink:"https://cryptydgames.com/join-us/" },
+      { name: "FunRock", url: "https://funrock.com/jobs/", email: "info@funrock.com", contact: "https://funrock.com/contact/", registerInterest:"email", registerInterestLink:"info@funrock.com", emailApply:true, emailSpecifics:"send us your resume and CV" },
+    ],
+    "Cairo": [
+      { name: "Gimzat", url: "https://www.gimzat.com/join-us", email: "contact@gimzat.com", contact: null, registerInterest:"email", registerInterestLink:"contact@gimzat.com" },
+      { name: "Nout Games", url: "https://noutgames.com/#jobs", email: "info@noutgames.com", contact: "https://noutgames.com/#contact", registerInterest:"email", registerInterestLink:"info@noutgames.com" },
+      { name: "Rare Castle Games", url: "https://www.rare-castle.com/careers/", email: "contact@rare-castle.com", contact: "https://www.rare-castle.com/contact/", registerInterest:"email", registerInterestLink:"contact@rare-castle.com", volunteer:true, tier:"indie" },
+      { name: "The Bad Nomads", url: "https://thebadnomads.com/careers", email: null, contact: "https://thebadnomads.com/#contact", tier:"outsourcing" },
+    ],
+  },
+  "Kenya": {
+    "Nairobi": [
+      { name: "Nout Games", url: "https://noutgames.com/#jobs", email: "info@noutgames.com", contact: "https://noutgames.com/#contact", registerInterest:"email", registerInterestLink:"info@noutgames.com" },
+    ],
+  },
+  "Mauritius": {
+    "Grand Baie": [
+      { name: "Playtouch", url: "https://playtouch.net/career/", email: "contact@playtouch.net", contact: "https://playtouch.net/#contact", registerInterest:"email", registerInterestLink:"contact@playtouch.net", emailApply:true },
+    ],
+  },
+  "Morocco": {
+    "Casablanca": [
+      { name: "Ashira Studio", url: "https://ashirastudio.com/careers/", email: null, contact: "https://ashirastudio.com/contact-us/" },
+    ],
+    "Grand Casablanca": [
+      { name: "Grid Paper Studio", url: "https://www.gridpaperstudio.com/gridpaperstudiocareers", email: null, contact: null, tier:"outsourcing" },
+    ],
+  },
+  "Nigeria": {
+    "Lagos": [
+      { name: "Maliyo Games", url: "https://www.maliyo.com/career/", email: null, contact: null },
+    ],
+    "Osun": [
+      { name: "Dimension11 Studios", url: "https://www.dimension11studios.com/joinus", email: "contact@dimension11studios.com", contact: "https://www.dimension11studios.com/contact-us", emailApply:true, emailSpecifics:"CV and brief introduction" },
+    ],
+    "Remote": [
+      { name: "Carry1st", url: "https://carry1st.com/join-us#join-us", email: null, contact: "https://carry1st.com/contact" },
+      { name: "CrazyLabs", url: "https://www.crazylabs.com/careers/remote/", email: "support@crazylabs.com", contact: "https://www.crazylabs.com/contact-us/" },
+      { name: "RetroMuse Studio", url: "https://www.retromuse-studios.com/#join", email: "contact@retromuse-studios.com", contact: "https://www.retromuse-studios.com/#join", registerInterest:"email", registerInterestLink:"contact@retromuse-studios.com", emailApply:true, tier:"indie" },
+    ],
+  },
+  "Rwanda": {
+    "Kigali": [
+      { name: "Digital Realm Entertainment", url: "https://www.digitalrealm-entertainment.com/careers/", email: "info@digitalrealm-entertainment.com", contact: null, registerInterest:true, registerInterestLink:"https://www.digitalrealm-entertainment.com/join-the-realm-application/" },
+    ],
+  },
+  "South Africa": {
+    "Gauteng": [
+      { name: "24 Bit Games", url: "https://24bitgames.com/careers/", email: "info@24bitgames.com", contact: "https://24bitgames.com/contact/" },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+      { name: "Nyamakop", url: "https://nyamakop.co.za/work-with-us/", email: null, contact: "https://nyamakop.co.za/contact/" },
+    ],
+    "Western Cape": [
+      { name: "Clockwork Acorn", url: "https://clockworkacorn.com/", email: "info@clockworkacorn.com", contact: "https://clockworkacorn.com/contact/", registerInterest:true, registerInterestLink:"https://docs.google.com/forms/d/e/1FAIpQLScJ77Fr6IXO9aFrLtKV1GgO2wSgkJ8BR8br3lLpyK_Q8l2DVQ/viewform" },
+      { name: "Free Lives", url: "https://freelives.net/careers/", email: "support@freelives.net", contact: "https://freelives.net/contact/" },
+      { name: "Nifty Llama Games", url: "https://niftyllamagames.com/", email: "hello@niftyllamagames.com", contact: null, registerInterest:"email", registerInterestLink:"hello@niftyllamagames.com" },
+      { name: "Pressure Cooker Studios", url: "https://pressurecookerstudios.co.za/what-we-do/gaming/", email: "info@pressurecookerstudios.co.za", contact: null, registerInterest:true, registerInterestLink:"https://forms.monday.com/forms/086007a0844c79c843cd6bb3c47c9afa?r=use1" },
+      { name: "Reforged Studios", url: "https://www.reforgedstudios.io/", email: "contact@reforgedstudios.io", contact: null },
+      { name: "Sea Monster", url: "https://www.seamonster.digital/careers", email: "careers@seamonster.digital", contact: "https://www.seamonster.digital/contact", emailApply:true },
+    ],
+  },
+  "Tunisia": {
+    "Tunis": [
+      { name: "Lanterns Studios", url: "https://careers.lanterns-studios.com/", email: "recruitment@lanterns-studios.com", contact: null },
+    ],
+  },
+  "Costa Rica": {
+    "San Jose": [
+      { name: "Fair Play Labs", url: "https://fairplaylabs.com/careers/", email: "info@fairplaylabs.com", contact: "https://fairplaylabs.com/contact-us/" },
+    ],
+  },
+  "El Salvador": {
+    "San Salvador": [
+      { name: "Stone Bot Studios", url: "https://www.thestonebot.com/", email: null, contact: null, tier:"outsourcing" },
+    ],
+  },
+  "Mexico": {
+    "Baja California": [
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+    ],
+    "Coahuila": [
+      { name: "We The Force", url: "https://wetheforcestudios.com/", email: "about@wetheforce.com", contact: null },
+    ],
+    "Guanajuato": [
+      { name: "Game Coder Studios", url: "https://gamecoderstudios.com/careers/", email: "contact@gamecoderstudios.com", contact: null, registerInterest:true, registerInterestLink:"https://gamecoderstudios.typeform.com/to/h8urHYFD?typeform-source=gamecoderstudios.com" },
+    ],
+    "Jalisco": [
+      { name: "1 Simple Game", url: "https://1simplegame.com/careers/", email: "contact@1simplegame.com", contact: null },
+      { name: "Amber", url: "https://jobs.jobvite.com/amberstudiocareers/search?l=Guadalajara", email: null, contact: "https://amberstudio.com/contact", registerInterest:true, registerInterestLink:"https://jobs.jobvite.com/amberstudiocareers/apply" },
+      { name: "Carbon Machina", url: "https://www.carbonmachina.com/careers", email: null, contact: null },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+    ],
+    "Mexico City": [
+      { name: "Etermax", url: "https://www.etermax.com/careers", email: "jobs@etermax.com", contact: "https://www.etermax.com/contact", emailApply:true },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+      { name: "HyperBeard", url: "https://hyperbeard.com/jobs/", email: "hola@hyperbeard.com", contact: "https://hyperbeard.com/contact-us/" },
+      { name: "Infinity Ward", url: "https://careers.infinityward.com/", email: null, contact: null },
+      { name: "Riot Games", url: "https://www.riotgames.com/en/work-with-us", email: null, contact: null },
+      { name: "Scopely", url: "https://careers.scopely.com/us/en", email: null, contact: null },
+    ],
+    "Nuevo Leon": [
+      { name: "Kinali Works", url: "https://kinaliworks.com/careers-alma-stone", email: "contact@kinaliworks.com", contact: "https://kinaliworks.com/contact-us-alma-stone" },
+      { name: "Bromio", url: "https://bromio.com.mx/", email: "info@bromio.com.mx", contact: null, emailApply:true, tier:"outsourcing" },
+    ],
+  },
+  "Argentina": {
+    "Buenos Aires": [
+      { name: "Agonalea Games", url: "https://agonaleagames.com/careers/", email: "admin@agonaleagames.com", contact: null, registerInterest:"email", registerInterestLink:"admin@agonaleagames.com", emailSpecifics:"portfolio", tier:"indie" },
+      { name: "Etermax", url: "https://www.etermax.com/careers", email: "jobs@etermax.com", contact: "https://www.etermax.com/contact", emailApply:true },
+      { name: "Game Ever Studio", url: "https://gameeverstudio.com/", email: "jobs@gameeverstudio.com", contact: "https://gameeverstudio.com/#contact", emailApply:true },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+      { name: "Jam City", url: "https://www.jamcity.com/life-at-jam-city/", email: null, contact: null },
+      { name: "Nimble Giant Entertainment", url: "https://careers.nimblegiant.com/jobs", email: null, contact: "https://nimblegiant.com/contact/" },
+      { name: "Whiteboard Games", url: "https://whiteboard.games/en/jobs/", email: "contact@whiteboard.games", contact: null, emailApply:true },
+      { name: "Wildlife Studios", url: "https://careers.wildlifestudios.com/search-jobs/", email: null, contact: null },
+    ],
+    "Mendoza": [
+      { name: "Etermax", url: "https://www.etermax.com/careers", email: "jobs@etermax.com", contact: "https://www.etermax.com/contact", emailApply:true },
+    ],
+    "Santa Fe": [
+      { name: "SISMO", url: "https://sismogames.com/", email: "joinus@sismogames.com", contact: null, emailApply:true, emailSpecifics:"subject line: “CV - your name - Expertise”, Curriculum in PDF format and a link to your portfolio" },
+    ],
+  },
+  "Brazil": {
+    "Federal District": [
+      { name: "Maximum Entertainment", url: "https://maximument.com/careers/", email: null, contact: "https://maximument.com/contact/" },
+    ],
+    "Minas Gerais": [
+      { name: "Onrizion", url: "https://onrizon.com/en/career", email: null, contact: "https://onrizon.com/en#contact", registerInterest:true, registerInterestLink:"https://onrizon.com/en#contact" },
+    ],
+    "Parana": [
+      { name: "Wingeon", url: "https://wingeon.com/careers", email: "contact@wingeon.com", contact: null },
+    ],
+    "Rio Grande do Norte": [
+      { name: "Wingeon", url: "https://www.pippingames.com/join-our-team", email: null, contact: null },
+    ],
+    "Rio Grande do Sul": [
+      { name: "Aquiris Game Studio", url: "https://www.aquiris.com.br/", email: "contact@aquiris.com.br", contact: "https://www.aquiris.com.br/#contact" },
+      { name: "Epic Games", url: "https://www.epicgames.com/site/careers/jobs?country=Brazil&state=Rio%20Grande%20do%20Sul&page=1", email: null, contact: null },
+    ],
+    "Rio de Janeiro": [
+      { name: "BitCake Studio", url: "https://www.bitcake.studio/", email: null, contact: null, registerInterest:true, registerInterestLink:"https://docs.google.com/forms/d/e/1FAIpQLSfRDDIeTmaxBJ8Yg7R119Cz_uOrmsKomzraTZOav87MpoPuHA/viewform" },
+      { name: "Double Dash Studios", url: "https://www.doubledashstudios.com/careers", email: "contato@doubledashstudios.com", contact: "https://www.doubledashstudios.com/contact" },
+    ],
+    "Santa Catarina": [
+      { name: "Cafundo Creative Studio", url: "https://cafundo.notion.site/2ed02372aa0a80f4ae6dc33e06200258", email: "fabio@cafundo.tv", contact: "https://www.cafundo.tv/contato-pt/" },
+      { name: "Flipstar Game Studio", url: "https://flipstar.com.br/#career", email: "jobs@flipstar.com.br", contact: "https://flipstar.com.br/#contact" },
+      { name: "Hoplon Game Studio", url: "https://www.hoplon.com/#careers", email: "contato@hoplon.com", contact: "https://www.hoplon.com/#contact" },
+    ],
+    "São Paulo": [
+      { name: "1 Million Bits Horde", url: "https://www.1mbitshorde.com/jobs", email: null, contact: null },
+      { name: "Bandai Namco", url: "https://www.bandainamcoent.com/careers#join", email: null, contact: "https://www.bandainamcoent.com/contact" },
+      { name: "Bend Studio", url: "https://www.bendstudio.com/careers", email: "bendstudio@sony.com", contact: null },
+      { name: "EA", url: "https://jobs.ea.com/en_US/careers/Home", email: null, contact: null },
+      { name: "Etermax", url: "https://www.etermax.com/careers", email: "jobs@etermax.com", contact: "https://www.etermax.com/contact", emailApply:true },
+      { name: "Fanatee", url: "https://www.fanatee.com/#careers", email: "hello@fanatee.com", contact: "https://www.fanatee.com/contact" },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+      { name: "Insane Media", url: "https://www.insa.ne/", email: null, contact: null },
+      { name: "Lunic Games", url: "https://lunicgames.com/work-with-us", email: "contact@lunicgames.com", contact: "https://lunicgames.com/contact" },
+      { name: "QUByte Interactive", url: "https://engenha.com/e/47134", email: "contact@qubyteinteractive.com", contact: null },
+      { name: "Riot Games", url: "https://www.riotgames.com/en/work-with-us", email: null, contact: null },
+      { name: "Roblox", url: "https://careers.roblox.com/jobs", email: null, contact: "https://about.roblox.com/contact" },
+      { name: "Tapps Games", url: "https://tappsgames.com/#Careers", email: "vempratapps@tappsgames.com", contact: "https://tappsgames.com/#contact" },
+      { name: "TestFly", url: "https://testflyqa.com/careers", email: null, contact: "https://testflyqa.com/contact-us" },
+      { name: "Ubisoft", url: "https://www.ubisoft.com/en-us/company/careers/our-jobs", email: null, contact: null },
+      { name: "Webcore Games", url: "https://www.webcoregames.com/careers#openings", email: null, contact: "https://www.webcoregames.com/contact" },
+      { name: "Wildlife Studios", url: "https://careers.wildlifestudios.com/search-jobs/", email: null, contact: null },
+    ],
+  },
+  "Chile": {
+    "Region Metropolitana": [
+      { name: "AOne Games", url: "https://aonegames.com/", email: "contact@aonegames.com", contact: "https://aonegames.com/contact", emailApply:true },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+      { name: "Octeto Studios", url: "https://www.octetostudios.com/applications", email: "contact@octetostudios.com", contact: null },
+    ],
+    "Valparaiso": [
+      { name: "Raincup Games", url: "https://www.raincupgames.com/#jobs", email: null, contact: null },
+    ],
+  },
+  "Colombia": {
+    "Antioquia": [
+      { name: "BW Studios", url: "https://www.bwstudios.co/jobs", email: "hi@bwstudios.co", contact: "https://www.bwstudios.co/contacto-en" },
+    ],
+    "Bogota": [
+      { name: "Amber", url: "https://jobs.jobvite.com/amberstudiocareers/", email: null, contact: null },
+      { name: "Efecto Studios", url: "https://www.efectostudios.com/careers/", email: "contact@efectostudios.com", contact: null },
+      { name: "Gameloft", url: "https://www.gameloft.com/jobs", email: null, contact: null },
+      { name: "Hasbro", url: "https://job-boards.greenhouse.io/hasbro?field_4827213009%5B%5D=8741744009&offices%5B%5D=4021637009", email: null, contact: null },
+      { name: "Jam City", url: "https://www.jamcity.com/life-at-jam-city/", email: null, contact: null },
+      { name: "Tera Vision Games", url: "https://teravisiongames.com/", email: null, contact: null },
+    ],
+    "Caldas": [
+      { name: "Blind Squirrel Games", url: "https://blindsquirrelentertainment.com/careers", email: "careers@blindsquirrelgames.com", contact: null },
+    ],
+  },
+  "Ecuador": {
+    "Pichincha": [
+      { name: "Studio High Ground", url: "https://www.studiohighground.com/#jobs", email: "info@studiohighground.com", contact: "https://www.studiohighground.com/#contact", emailApply:true },
+    ],
+  },
+  "Paraguay": {
+    "Gran Asuncion": [
+      { name: "Posibillian Tech", url: "https://posibillian.tech/", email: "talento@posibillian.tech", contact: null, emailApply:true },
+    ],
+  },
+  "Peru": {
+    "Lima": [
+      { name: "Artigames", url: "https://artigames.com/join-our-team/", email: "info@artigames.com", contact: "https://artigames.com/contact_us/", emailApply:true },
+      { name: "Boomware Studio", url: "https://boomware.pe/careers/", email: "jobs@boomware.pe", contact: null, emailApply:true },
+    ],
+    "Remote": [
+      { name: "AFTERVERSE", url: "https://afterverse.com/trabalhe-conosco/", email: null, contact: null },
+      { name: "ARVORE", url: "https://arvore.io/work-with-us", email: "contact@arvore.io", contact: "https://arvore.io/contact" },
+      { name: "Gixer Entertainment", url: "https://www.gixer.com.br/vagas", email: null, contact: null },
+      { name: "Tiny Bytes Games", url: "https://www.tinybytes.com/careers.html", email: "jobs@tinybytes.com", contact: "https://www.tinybytes.com/contact.html", emailApply:true },
+    ],
+  },
+  "Uruguay": {
+    "Montevideo": [
+      { name: "Etermax", url: "https://www.etermax.com/careers", email: "jobs@etermax.com", contact: "https://www.etermax.com/contact", emailApply:true },
+      { name: "Ironhide Game Studio", url: "https://www.ironhidegames.com/Careers", email: null, contact: "https://www.ironhidegames.com/ContactUs" },
+      { name: "Jam City", url: "https://www.jamcity.com/life-at-jam-city/", email: null, contact: null },
+      { name: "Pomelo Games", url: "https://www.pomelogames.com/careers/", email: "hello@pomelogames.com", contact: null },
+    ],
+  },
 };
 
 // Company → its full entry from COMPANIES_DATA (url, email, contact, registerInterest…),
@@ -1254,10 +1495,11 @@ const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","u
 // "United States" / "Canada" (kept as countries, they're the core market) and
 // then continents; each continent expands into its countries.
 const COUNTRY_CONTINENT = {
+  "Cameroon":"Africa","Mauritius":"Africa","Rwanda":"Africa",
   "Albania":"Europe","Algeria":"Africa","Argentina":"South America","Armenia":"Asia","Australia":"Oceania",
   "Austria":"Europe","Azerbaijan":"Asia","Bahrain":"Asia","Bangladesh":"Asia","Belarus":"Europe","Belgium":"Europe",
   "Bolivia":"South America","Bosnia and Herzegovina":"Europe","Brazil":"South America","Bulgaria":"Europe",
-  "Cambodia":"Asia","Chile":"South America","China":"Asia","Colombia":"South America","Costa Rica":"Latin America",
+  "Cambodia":"Asia","Chile":"South America","China":"Asia","Colombia":"South America","Costa Rica":"Latin America","El Salvador":"Latin America",
   "Croatia":"Europe","Cyprus":"Europe","Czechia":"Europe","Denmark":"Europe","Ecuador":"South America",
   "Egypt":"Africa","Estonia":"Europe","Ethiopia":"Africa","Finland":"Europe","France":"Europe",
   "Georgia (country)":"Asia","Germany":"Europe","Ghana":"Africa","Greece":"Europe","Guatemala":"Latin America",
@@ -2424,12 +2666,32 @@ function asAlertArray(ja){
   return [];
 }
 function alertHasCriteria(alerts){ return asAlertArray(alerts).length>0; }
+// --- Precise role/title matching -------------------------------------------
+// A job matches a selected title only if the WHOLE role is present as whole
+// words (seniority prefixes ignored), not just a shared domain word. This stops
+// "Game Producer" matching "Game Designer" or "Systems Support" matching
+// "Systems Designer". Slash titles (UI/UX Designer) expand to alternatives.
+const _MQ_LEVELS=/\b(senior|sr|junior|jr|principal|staff|associate|assoc|mid|entry|intermediate|ii|iii|iv)\b/g;
+function _mqNorm(s){ return " "+String(s||"").toLowerCase().replace(/[\/_,.()\-]/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim()+" "; }
+function _mqStrip(norm){ return " "+norm.replace(_MQ_LEVELS," ").replace(/\s+/g," ").trim()+" "; }
+function _mqTokens(s){ return _mqStrip(_mqNorm(s)).trim().split(" ").filter(w=>w.length>1); }
+function _mqExpandSlash(title){ const m=String(title||"").match(/([A-Za-z]+(?:\/[A-Za-z]+)+)/); if(!m) return [title]; const slashed=m[1]; return slashed.split("/").map(part=>String(title).replace(slashed,part)); }
+function titleMatchesFilter(jobTitle, filterTitle){
+  const jt=_mqStrip(_mqNorm(jobTitle));
+  return _mqExpandSlash(filterTitle).some(alt=>{
+    const ft=_mqStrip(_mqNorm(alt)).trim();
+    if(!ft) return false;
+    if(jt.includes(" "+ft+" ")) return true;               // full role phrase present
+    const toks=_mqTokens(alt);
+    return toks.length>0 && toks.every(tk=>jt.includes(" "+tk+" ")); // every role word present
+  });
+}
 function jobMatchesOneAlert(job,a){
   const title=(job.title||"").toLowerCase();
   const comp=(job.company||"").toLowerCase();
   const loc=(job.location||"").toLowerCase();
   const results=[];
-  if(a.roles&&a.roles.length) results.push(a.roles.some(r=>title.includes(String(r).toLowerCase())));
+  if(a.roles&&a.roles.length) results.push(a.roles.some(r=>titleMatchesFilter(job.title,r)));
   if(a.seniority&&a.seniority.length) results.push(a.seniority.some(s=>{const t=String(s).toLowerCase();return title.includes(t)||title.includes(t.split("-")[0]);}));
   if(a.companies&&a.companies.length) results.push(a.companies.some(c=>comp.includes(String(c).toLowerCase())));
   if(a.locations&&a.locations.length) results.push(a.locations.some(l=>{const ll=String(l).toLowerCase();return loc.includes(ll)||(ll==="remote"&&(job.isRemote||/remote/i.test(loc)));}));
@@ -4271,7 +4533,8 @@ function UpgradeLink({label,size,mt}){
 // Full-page upgrade modal — plans, feature showcase, and Stripe checkout buttons.
 function UpgradeModal({user,onClose}){
   const [busy,setBusy]=useState("");
-  const [cycle,setCycle]=useState("yearly");
+  const [plusCycle,setPlusCycle]=useState("yearly");
+  const [premCycle,setPremCycle]=useState("yearly");
   const currentPlan=(user&&user.plan)||"basic";
   const rank={basic:0,plus:1,premium:2};
   const go=async(plan,cyc)=>{
@@ -4284,43 +4547,42 @@ function UpgradeModal({user,onClose}){
     }catch(e){alert("Couldn't start checkout — please try again.");setBusy("");}
   };
   const gold="linear-gradient(135deg,#c9a84c,#e8613a)";
-  const TIERS=[
-    {id:"basic",name:"Basic",m:"Free",y:"Free",feats:["Full job board access","Apply & track applications","Follow 5 companies for alerts","Job match score"]},
-    {id:"plus",name:"Plus",m:"$3.99",y:"$39.99",feats:["Everything in Basic","Match score breakdown","Email autofill templates","Targeted job notifications","Follow up to 15 companies"]},
-    {id:"premium",name:"Premium",m:"$7.99",y:"$79.99",feats:["Everything in Plus","AI resume tailoring","AI email autofill","AI email template generation","AI interview prep","Unlimited company alerts","40 AI uses / month"]},
-  ];
+  const plusPrices={monthly:"$3.99",yearly:"$39.99"};
+  const premPrices={monthly:"$7.99",yearly:"$79.99",lifetime:"$189.99"};
+  const cycLabel={monthly:"/mo",yearly:"/yr",lifetime:" once"};
+  const Toggle=({opts,val,set})=><div onClick={e=>e.stopPropagation()} style={{display:"flex",gap:0,justifyContent:"center",marginBottom:14}}><div style={{display:"inline-flex",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.25)",borderRadius:16,padding:2,flexWrap:"wrap",justifyContent:"center"}}>{opts.map(o=><button key={o} type="button" onClick={()=>set(o)} style={{background:val===o?gold:"transparent",color:val===o?"#0a0608":"rgba(244,237,216,.65)",border:"none",borderRadius:14,padding:"5px 11px",fontSize:10.5,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer",textTransform:"capitalize"}}>{o}</button>)}</div></div>;
   return <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:300,background:"rgba(4,3,5,.88)",backdropFilter:"blur(10px)",overflowY:"auto",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"clamp(16px,5vh,56px) 16px"}}>
     <div onClick={e=>e.stopPropagation()} style={{maxWidth:960,width:"100%",background:"radial-gradient(140% 90% at 50% 0%, rgba(40,26,18,.98), rgba(14,10,16,.99))",border:"1px solid rgba(201,168,76,.32)",borderRadius:20,padding:"clamp(22px,4vw,36px)",position:"relative",boxShadow:"0 40px 120px rgba(0,0,0,.75)"}}>
       <button onClick={onClose} title="Close" style={{position:"absolute",top:16,right:16,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.6)",cursor:"pointer",fontSize:16,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-      <div style={{textAlign:"center",marginBottom:20}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
         <h2 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:26,fontWeight:700,color:"#f0d080",marginBottom:6}}>Choose your plan</h2>
         <p style={{fontSize:13,color:"rgba(244,237,216,.55)"}}>Upgrade anytime · cancel anytime.</p>
       </div>
-      <div style={{display:"flex",justifyContent:"center",marginBottom:24}}>
-        <div style={{display:"inline-flex",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,padding:3}}>
-          {[["monthly","Monthly"],["yearly","Yearly"]].map(([c,l])=><button key={c} onClick={()=>setCycle(c)} style={{background:cycle===c?gold:"transparent",color:cycle===c?"#0a0608":"rgba(244,237,216,.7)",border:"none",borderRadius:18,padding:"6px 18px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>{l}{c==="yearly"&&<span style={{fontSize:9,marginLeft:5,opacity:.85}}>save ~16%</span>}</button>)}
-        </div>
-      </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:16}}>
-        {TIERS.map(tier=>{
-          const isCurrent=currentPlan===tier.id;
-          const price=cycle==="yearly"?tier.y:tier.m;
-          const per=tier.id==="basic"?"":(cycle==="yearly"?"/yr":"/mo");
-          const canBuy=tier.id!=="basic"&&rank[tier.id]>rank[currentPlan];
-          const highlight=tier.id==="premium";
-          return <div key={tier.id} style={{background:highlight?"rgba(201,168,76,.06)":"rgba(16,10,22,.5)",border:`1px solid ${highlight?"rgba(201,168,76,.4)":"rgba(201,168,76,.14)"}`,borderRadius:14,padding:"22px 18px 18px",display:"flex",flexDirection:"column",position:"relative"}}>
-            {highlight&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:gold,color:"#0a0608",fontSize:9,fontWeight:800,padding:"2px 10px",borderRadius:20,fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>Most Popular</div>}
-            <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:6}}>{tier.name}</div>
-            <div style={{marginBottom:14}}><span style={{fontSize:26,fontWeight:800,color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>{price}</span><span style={{fontSize:12,color:"rgba(244,237,216,.5)"}}> {per}</span></div>
-            <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18,flex:1}}>
-              {tier.feats.map((f,i)=><div key={i} style={{display:"flex",gap:7,fontSize:12,color:"rgba(244,237,216,.72)",lineHeight:1.4}}><span style={{color:"#7ecfb3",flexShrink:0}}>✓</span>{f}</div>)}
-            </div>
-            {isCurrent?<div style={{textAlign:"center",padding:"10px",fontSize:12,fontWeight:700,color:"rgba(244,237,216,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>Current plan</div>
-             :canBuy?<button onClick={()=>go(tier.id,cycle)} disabled={!!busy} style={{background:gold,border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1}}>{busy===tier.id+":"+cycle?"Starting…":`Choose ${tier.name}`}</button>
-             :<div style={{textAlign:"center",padding:"10px",fontSize:11,color:"rgba(244,237,216,.35)"}}>Included</div>}
-            {tier.id==="premium"&&rank[currentPlan]<2&&<button onClick={()=>go("premium","lifetime")} disabled={!!busy} style={{marginTop:8,background:"transparent",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:10,padding:"8px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1}}>{busy==="premium:lifetime"?"Starting…":"or Lifetime — $189.99"}</button>}
-          </div>;
-        })}
+        {/* BASIC */}
+        {(()=>{const isCur=currentPlan==="basic";return <div style={{background:"rgba(16,10,22,.5)",border:"1px solid rgba(201,168,76,.14)",borderRadius:14,padding:"22px 18px 18px",display:"flex",flexDirection:"column"}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:6}}>Basic</div>
+          <div style={{marginBottom:14}}><span style={{fontSize:26,fontWeight:800,color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>Free</span></div>
+          <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18,flex:1}}>{["Full job board access","Apply & track applications","Follow 5 companies for alerts","Job match score"].map((f,i)=><div key={i} style={{display:"flex",gap:7,fontSize:12,color:"rgba(244,237,216,.72)",lineHeight:1.4}}><span style={{color:"#7ecfb3",flexShrink:0}}>✓</span>{f}</div>)}</div>
+          <div style={{textAlign:"center",padding:"10px",fontSize:11,color:"rgba(244,237,216,.4)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>{isCur?"Current plan":"Included"}</div>
+        </div>;})()}
+        {/* PLUS */}
+        {(()=>{const isCur=currentPlan==="plus";const canBuy=rank.plus>rank[currentPlan];return <div style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.4)",borderRadius:14,padding:"22px 18px 18px",display:"flex",flexDirection:"column"}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:6}}>Plus</div>
+          <div style={{marginBottom:12}}><span style={{fontSize:26,fontWeight:800,color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>{plusPrices[plusCycle]}</span><span style={{fontSize:12,color:"rgba(244,237,216,.5)"}}> {cycLabel[plusCycle]}</span></div>
+          <Toggle opts={["monthly","yearly"]} val={plusCycle} set={setPlusCycle}/>
+          <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18,flex:1}}>{["Everything in Basic","Match score breakdown","Email autofill templates","Targeted job notifications","Follow up to 15 companies"].map((f,i)=><div key={i} style={{display:"flex",gap:7,fontSize:12,color:"rgba(244,237,216,.72)",lineHeight:1.4}}><span style={{color:"#7ecfb3",flexShrink:0}}>✓</span>{f}</div>)}</div>
+          {isCur?<div style={{textAlign:"center",padding:"10px",fontSize:12,fontWeight:700,color:"rgba(244,237,216,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>Current plan</div>:canBuy?<button onClick={()=>go("plus",plusCycle)} disabled={!!busy} style={{background:gold,border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1}}>{busy==="plus:"+plusCycle?"Starting…":"Choose Plus"}</button>:<div style={{textAlign:"center",padding:"10px",fontSize:11,color:"rgba(244,237,216,.35)"}}>Included</div>}
+        </div>;})()}
+        {/* PREMIUM */}
+        {(()=>{const isCur=currentPlan==="premium";const canBuy=rank.premium>rank[currentPlan];return <div style={{background:"linear-gradient(160deg, rgba(232,140,58,.12), rgba(201,168,76,.06))",border:"1px solid rgba(240,160,80,.55)",borderRadius:14,padding:"22px 18px 18px",display:"flex",flexDirection:"column",position:"relative",boxShadow:"0 0 34px rgba(232,120,58,.28), inset 0 0 30px rgba(240,160,80,.06)"}}>
+          <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#f0d080,#e8613a)",color:"#1a0e06",fontSize:9,fontWeight:800,padding:"2px 10px",borderRadius:20,fontFamily:"'Cinzel',serif",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(232,120,58,.5)"}}>Most Popular</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,background:"linear-gradient(135deg,#f7d98a,#f0a050)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:6}}>Premium</div>
+          <div style={{marginBottom:12}}><span style={{fontSize:26,fontWeight:800,color:"#f7d98a",fontFamily:"'Cinzel',serif"}}>{premPrices[premCycle]}</span><span style={{fontSize:12,color:"rgba(244,237,216,.5)"}}> {cycLabel[premCycle]}</span></div>
+          <Toggle opts={["monthly","yearly","lifetime"]} val={premCycle} set={setPremCycle}/>
+          <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18,flex:1}}>{["Everything in Plus","AI resume tailoring","AI email autofill","AI email template generation","AI interview prep","Unlimited company alerts","40 AI uses / month"].map((f,i)=><div key={i} style={{display:"flex",gap:7,fontSize:12,color:"rgba(244,237,216,.78)",lineHeight:1.4}}><span style={{color:"#f0a050",flexShrink:0}}>✓</span>{f}</div>)}</div>
+          {isCur?<div style={{textAlign:"center",padding:"10px",fontSize:12,fontWeight:700,color:"rgba(244,237,216,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>Current plan</div>:canBuy?<button onClick={()=>go("premium",premCycle)} disabled={!!busy} style={{background:"linear-gradient(135deg,#f0b850,#e8613a)",border:"none",color:"#1a0e06",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1,boxShadow:"0 6px 20px rgba(232,120,58,.4)"}}>{busy==="premium:"+premCycle?"Starting…":"Choose Premium"}</button>:<div style={{textAlign:"center",padding:"10px",fontSize:11,color:"rgba(244,237,216,.35)"}}>Included</div>}
+        </div>;})()}
       </div>
       <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.35)",marginTop:18,lineHeight:1.5}}>Payments are processed securely by Stripe. Refunds are limited once AI features are used — see our Terms.</p>
     </div>
@@ -5486,8 +5748,8 @@ export default function App() {
   };
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
-  const clearInbox=()=>patchProfile({inbox:[]});
-  const dismissInboxItem=(id)=>patchProfile({inbox:inbox.filter(n=>n.id!==id)});
+  const clearInbox=()=>{ const seen=(user&&user.profile&&user.profile.seenInboxKeys)||[]; const keys=inbox.map(n=>n.jobKey).filter(Boolean); const merged=[...new Set([...seen,...keys])].slice(-1500); patchProfile({inbox:[],seenInboxKeys:merged}); };
+  const dismissInboxItem=(id)=>{ const it=inbox.find(n=>n.id===id); const k=it&&it.jobKey; const seen=(user&&user.profile&&user.profile.seenInboxKeys)||[]; patchProfile({inbox:inbox.filter(n=>n.id!==id),...(k&&!seen.includes(k)?{seenInboxKeys:[...seen,k].slice(-1500)}:{})}); };
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
@@ -5637,7 +5899,7 @@ export default function App() {
   const matches=job=>{
     const f=filters;
     if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false; // talent-community / general-application signups aren't real roles
-    if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
+    if(f.titles.length>0){if(!f.titles.some(t=>titleMatchesFilter(job.title,t)))return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
       const okR=f.remote.includes("Remote OK")&&job.isRemote;
@@ -5659,7 +5921,7 @@ export default function App() {
   const matchesExceptSearch=job=>{
     const f=filters;
     if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false;
-    if(f.titles.length>0){const jt=(job.title||"").toLowerCase();const hit=f.titles.some(t=>{const kw=t.toLowerCase().replace(/ (designer|programmer|engineer|artist|developer|analyst|manager|specialist)$/,"");return jt.includes(t.toLowerCase())||jt.includes(kw);});if(!hit)return false;}
+    if(f.titles.length>0){if(!f.titles.some(t=>titleMatchesFilter(job.title,t)))return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
       const okR=f.remote.includes("Remote OK")&&job.isRemote;
@@ -6045,7 +6307,7 @@ export default function App() {
   // live listings load, so the board appears fully populated and smooth.
   if(!introDone){
     const pct=Math.max(4,Math.max(displayPct,loadProgress)); // randomized numbers, but never below real progress
-    return <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 35%, #140d09 0%, #080608 70%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:22,padding:24,textAlign:"center"}}>
+    return <div style={{minHeight:"100vh",overflowX:"hidden",background:"radial-gradient(ellipse at 50% 35%, #140d09 0%, #080608 70%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:22,padding:24,textAlign:"center"}}>
       <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <div style={{position:"absolute",width:78,height:78,borderRadius:"50%",border:"2px solid rgba(201,168,76,.15)",borderTopColor:"#c9a84c",animation:"mqspin 1s linear infinite"}}/>
         <I.Sword s={30} c="#c9a84c"/>

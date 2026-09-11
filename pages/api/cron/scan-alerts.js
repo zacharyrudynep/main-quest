@@ -47,7 +47,8 @@ export default async function handler(req, res){
       const followed = (d.notifyCompanies || []).map(c => String(c).toLowerCase());
       const emailedKeys = new Set(d.emailedKeys || []);
       const inbox = d.inbox || [];
-      const inboxKeys = new Set(inbox.map(n => n.jobKey));
+      const seenKeys = new Set(d.seenInboxKeys || []);
+      inbox.forEach(n => n.jobKey && seenKeys.add(n.jobKey));
 
       // Every current posting that matches a followed company or the premium wizard.
       const allMatches = [];
@@ -76,14 +77,16 @@ export default async function handler(req, res){
 
       // Inbox: only postings not already in the inbox, if the toggle is on.
       const newInboxItems = inAppOn
-        ? allMatches.filter(m => !inboxKeys.has(m.jobKey))
+        ? allMatches.filter(m => !seenKeys.has(m.jobKey))
             .map(m => ({ id: m.jobKey, jobKey: m.jobKey, title: m.title, company: m.company, location: m.location, ts: Date.now(), read: false }))
         : [];
+      newInboxItems.forEach(m => seenKeys.add(m.jobKey));
       totalNew += allMatches.length;
 
       const nextData = {
         ...d,
         emailedKeys: [...emailedKeys].slice(-800),
+        seenInboxKeys: [...seenKeys].slice(-1500),
         inbox: [...newInboxItems, ...inbox].slice(0, 100),
         lastEmailScan: Date.now(),
       };

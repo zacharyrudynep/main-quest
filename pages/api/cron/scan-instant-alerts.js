@@ -41,7 +41,9 @@ export default async function handler(req, res){
       const alerts = asAlertArray(d.jobAlerts);
       const emailedKeys = new Set(d.emailedKeys || []);
       const inbox = d.inbox || [];
-      const inboxKeys = new Set(inbox.map(n => n.jobKey));
+      // Persistent "already surfaced" set so dismissed/cleared items never re-appear.
+      const seenKeys = new Set(d.seenInboxKeys || []);
+      inbox.forEach(n => n.jobKey && seenKeys.add(n.jobKey));
 
       // Postings matching this user's personalized criteria.
       const allMatches = [];
@@ -68,17 +70,20 @@ export default async function handler(req, res){
       }
 
       const newInboxItems = inAppOn
-        ? allMatches.filter(m => !inboxKeys.has(m.jobKey))
+        ? allMatches.filter(m => !seenKeys.has(m.jobKey))
             .map(m => ({ id: m.jobKey, jobKey: m.jobKey, title: m.title, company: m.company, location: m.location, ts: Date.now(), read: false }))
         : [];
+      newInboxItems.forEach(m => seenKeys.add(m.jobKey));
       totalNew += allMatches.length;
 
       // Only write if something actually changed, to keep this light on frequent runs.
       const changedEmail = emailOn && [...emailedKeys].length !== (d.emailedKeys || []).length;
-      if(changedEmail || newInboxItems.length){
+      const changedSeen = seenKeys.size !== (d.seenInboxKeys || []).length;
+      if(changedEmail || newInboxItems.length || changedSeen){
         const nextData = {
           ...d,
           emailedKeys: [...emailedKeys].slice(-800),
+          seenInboxKeys: [...seenKeys].slice(-1500),
           inbox: [...newInboxItems, ...inbox].slice(0, 100),
           lastInstantScan: Date.now(),
         };

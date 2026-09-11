@@ -39,8 +39,8 @@ export default function Join() {
   const [show, setShow] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [selected, setSelected] = useState(null); // "basic" | "plus" | "premium"
-  const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
-  const [lifetime, setLifetime] = useState(false); // Premium one-time option
+  const [plusCycle, setPlusCycle] = useState("yearly"); // "monthly" | "yearly"
+  const [premCycle, setPremCycle] = useState("yearly"); // "monthly" | "yearly" | "lifetime"
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [finishing, setFinishing] = useState(false); // completing after paid checkout
@@ -61,8 +61,9 @@ export default function Join() {
           setPass(pend.password || "");
           setAgreed(true);
           setSelected(pend.plan || "premium");
-          if (pend.cycle === "yearly") setBilling("annual");
-          if (pend.cycle === "lifetime") setLifetime(true);
+          if (pend.cycle === "yearly") { setPlusCycle("yearly"); setPremCycle("yearly"); }
+          if (pend.cycle === "monthly") { setPlusCycle("monthly"); setPremCycle("monthly"); }
+          if (pend.cycle === "lifetime") setPremCycle("lifetime");
         }
       } catch (e) {}
       router.replace("/join", undefined, { shallow: true });
@@ -127,7 +128,7 @@ export default function Join() {
         return;
       }
       // Paid: stash credentials for the return trip, then go to Stripe.
-      const cyc = (selected === "premium" && lifetime) ? "lifetime" : (billing === "annual" ? "yearly" : "monthly");
+      const cyc = selected === "plus" ? plusCycle : selected === "premium" ? premCycle : "monthly";
       try { sessionStorage.setItem("mq_pending_signup", JSON.stringify({ name, email, password: pass, plan: selected, cycle: cyc })); } catch (e) {}
       const r = await fetch("/api/stripe/join-checkout", {
         method: "POST",
@@ -144,9 +145,10 @@ export default function Join() {
     }
   }
 
-  const plusPrice = billing === "annual" ? PLUS_Y : PLUS_M;
-  const premPrice = billing === "annual" ? PREM_Y : PREM_M;
-  const unit = billing === "annual" ? "/yr" : "/mo";
+  const plusPrice = plusCycle === "yearly" ? PLUS_Y : PLUS_M;
+  const plusUnit = plusCycle === "yearly" ? "/yr" : "/mo";
+  const premPrice = premCycle === "lifetime" ? LIFETIME : (premCycle === "yearly" ? PREM_Y : PREM_M);
+  const premUnit = premCycle === "lifetime" ? " once" : (premCycle === "yearly" ? "/yr" : "/mo");
   const proceedLabel = selected === "basic" ? "Enter Main Quest →" : selected ? "Continue to Payment →" : "Select a plan";
   const inp = { background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.2)", color: "#f4edd8", colorScheme: "dark", borderRadius: 9, padding: "12px 14px", fontSize: 13, fontFamily: "inherit", width: "100%", boxSizing: "border-box", outline: "none" };
 
@@ -168,6 +170,8 @@ export default function Join() {
         .qcard:hover::before{opacity:1;animation:qspin 2.4s linear infinite;}
         @keyframes qspin{to{--qa:360deg;}}
         .qprem{background:linear-gradient(165deg,rgba(201,168,76,.09),rgba(16,10,22,.9));border-color:rgba(201,168,76,.34);}
+        .qglow{background:linear-gradient(160deg,rgba(232,140,58,.16),rgba(16,10,22,.92));border-color:rgba(240,160,80,.5);box-shadow:0 0 36px rgba(232,120,58,.28),inset 0 0 34px rgba(240,160,80,.07);}
+        .qglow:hover{box-shadow:0 0 48px rgba(232,120,58,.4),inset 0 0 34px rgba(240,160,80,.09);}
         .qlife{background:linear-gradient(165deg,rgba(201,168,76,.16),rgba(139,32,32,.12));border-color:rgba(201,168,76,.5);box-shadow:0 0 30px rgba(201,168,76,.15);}
         .qcard.qsel{border-color:#c9a84c;box-shadow:inset 0 0 46px rgba(201,168,76,.18),0 0 26px rgba(201,168,76,.3);}
         .qcard.qsel::before{opacity:0!important;animation:none!important;}
@@ -216,13 +220,6 @@ export default function Join() {
               <div style={{ textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: 15, color: "#f0d080", letterSpacing: 1, marginBottom: 4 }}>Choose Your Path</div>
               <div style={{ textAlign: "center", fontSize: 12, color: "rgba(244,237,216,.45)", marginBottom: 20 }}>Select a plan to finish creating your account.</div>
 
-              <div style={{display:"flex",justifyContent:"center",marginBottom:16}} onClick={e=>e.stopPropagation()}>
-                <div style={{display:"inline-flex",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",borderRadius:20,padding:3}}>
-                  {["monthly","annual"].map(b => (
-                    <button key={b} type="button" onClick={() => setBilling(b)} style={{background:billing===b?"linear-gradient(135deg,#c9a84c,#f0d080)":"transparent",color:billing===b?"#0a0608":"rgba(244,237,216,.7)",border:"none",borderRadius:18,padding:"6px 18px",fontSize:12,fontWeight:700,fontFamily:"'Cinzel',serif",cursor:"pointer"}}>{b==="monthly"?"Monthly":"Yearly"}{b==="annual" && <span style={{fontSize:9,marginLeft:5,opacity:.85}}>save ~16%</span>}</button>
-                  ))}
-                </div>
-              </div>
               <div className="qgrid">
                 {/* BASIC */}
                 <div className={"qcard" + (selected === "basic" ? " qsel" : "")} onClick={() => setSelected("basic")}>
@@ -233,21 +230,19 @@ export default function Join() {
                   <SelectPip on={selected === "basic"} />
                 </div>
                 {/* PLUS */}
-                <div className={"qcard" + (selected === "plus" ? " qsel" : "")} onClick={() => setSelected("plus")}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(244,237,216,.78)", textAlign: "center" }}>Plus</div>
-                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${plusPrice}</span><span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{unit}</span></div>
-                  <div style={{ textAlign: "center", fontSize: 10.5, color: "rgba(244,237,216,.35)", marginBottom: 14, minHeight: 14 }}>{billing === "annual" ? "Billed yearly" : "Billed monthly"}</div>
-                  <FeatureList items={FEATURES.plus} />
+                <div className={"qcard qprem" + (selected === "plus" ? " qsel" : "")} onClick={() => setSelected("plus")}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", background: "linear-gradient(135deg,#c9a84c,#f0d080)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800, textAlign: "center" }}>Plus</div>
+                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${plusPrice}</span><span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{plusUnit}</span></div>
+                  <CycleToggle opts={["monthly", "yearly"]} val={plusCycle} set={setPlusCycle} />
+                  <FeatureList items={FEATURES.plus} gold />
                   <SelectPip on={selected === "plus"} />
                 </div>
                 {/* PREMIUM */}
-                <div className={"qcard qprem" + (selected === "premium" ? " qsel" : "")} onClick={() => setSelected("premium")}>
-                  <div className="qbadge" style={{ background: "linear-gradient(135deg,#c9a84c,#f0d080)", color: "#0a0608" }}>Most Popular</div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", background: "linear-gradient(135deg,#c9a84c,#f0d080)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800, textAlign: "center" }}>Premium</div>
-                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f0d080" }}>${lifetime ? LIFETIME : premPrice}</span><span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{lifetime ? " one-time" : unit}</span></div>
-                  <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center", marginBottom: 12, minHeight: 20 }}>
-                    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "rgba(244,237,216,.6)", cursor: "pointer" }}><input type="checkbox" checked={lifetime} onChange={e => setLifetime(e.target.checked)} style={{ accentColor: "#c9a84c" }} />Lifetime — ${LIFETIME}</label>
-                  </div>
+                <div className={"qcard qprem qglow" + (selected === "premium" ? " qsel" : "")} onClick={() => setSelected("premium")}>
+                  <div className="qbadge" style={{ background: "linear-gradient(135deg,#f0d080,#e8613a)", color: "#1a0e06", boxShadow: "0 4px 16px rgba(232,120,58,.5)" }}>Most Popular</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", background: "linear-gradient(135deg,#f7d98a,#f0a050)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800, textAlign: "center" }}>Premium</div>
+                  <div style={{ textAlign: "center", margin: "8px 0 2px" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: "#f7d98a" }}>${premPrice}</span><span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{premUnit}</span></div>
+                  <CycleToggle opts={["monthly", "yearly", "lifetime"]} val={premCycle} set={setPremCycle} />
                   <FeatureList items={FEATURES.premium} gold />
                   <SelectPip on={selected === "premium"} />
                 </div>
@@ -293,6 +288,17 @@ function SwordShield({ s = 34, c = "#c9a84c" }) {
   );
 }
 
+function CycleToggle({ opts, val, set }) {
+  return (
+    <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+      <div style={{ display: "inline-flex", background: "rgba(10,7,8,.5)", border: "1px solid rgba(201,168,76,.25)", borderRadius: 14, padding: 2, flexWrap: "wrap", justifyContent: "center" }}>
+        {opts.map(o => (
+          <button key={o} type="button" onClick={() => set(o)} style={{ background: val === o ? "linear-gradient(135deg,#c9a84c,#f0d080)" : "transparent", color: val === o ? "#0a0608" : "rgba(244,237,216,.65)", border: "none", borderRadius: 12, padding: "5px 10px", fontSize: 10, fontWeight: 700, fontFamily: "'Cinzel',serif", cursor: "pointer", textTransform: "capitalize" }}>{o}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
 function FeatureList({ items, gold }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 9, flex: 1 }}>
