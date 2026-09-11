@@ -2963,9 +2963,10 @@ function ShotCarousel({ shots, forcedIdx, sectionTitle }){
   }
   const dot=(k,fixed)=>(<span key={k} onClick={e=>{e.stopPropagation();setIdx(k);}} style={{width:8,height:8,borderRadius:"50%",background:k===idx?"#f0d080":"rgba(244,237,216,.35)",cursor:"pointer",transition:"background .3s"}}/>);
   const arrowStyle=(side)=>({position:"absolute",[side]:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"});
-  return <><div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onClick={()=>setZoom(true)} style={{position:"relative",width:"100%",height:"100%",minHeight:320,borderRadius:14,overflow:"hidden",border:"1px solid rgba(201,168,76,.25)",background:"#0a0710",boxShadow:"0 16px 50px rgba(0,0,0,.45)",cursor:"zoom-in"}}>
-    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:0}}><span style={{fontFamily:"'Cinzel',serif",fontSize:12,color:"rgba(201,168,76,.35)"}}>{sectionTitle} · {idx+1}</span></div>
-    {shots.map((src,k)=>(<img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>))}
+  return <><div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onClick={()=>setZoom(true)} style={{position:"relative",width:"100%",minHeight:200,cursor:"zoom-in"}}>
+    {/* invisible sizer: makes the frame take the ACTIVE image's natural height so images show full-size, uncropped, with no box */}
+    <img src={shots[idx]} alt="" aria-hidden="true" style={{display:"block",width:"100%",height:"auto",visibility:"hidden",pointerEvents:"none"}}/>
+    {shots.map((src,k)=>(<img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"contain",borderRadius:10,opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>))}
     {shots.length>1&&<>
       <button onClick={e=>{e.stopPropagation();go(-1);}} aria-label="Previous" style={arrowStyle("left")}>‹</button>
       <button onClick={e=>{e.stopPropagation();go(1);}} aria-label="Next" style={arrowStyle("right")}>›</button>
