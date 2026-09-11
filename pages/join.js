@@ -179,7 +179,7 @@ export default function Join() {
         .qbadge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;z-index:2;}
       `}</style>
 
-      <div style={{ minHeight: "100vh", background: "radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.16), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
+      <div style={{ minHeight: "100vh", overflowX: "hidden", maxWidth: "100%", background: "radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.16), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
         <div style={{ maxWidth: 1040, margin: "0 auto" }}>
 
           {/* Header — matches the site's title logo */}
