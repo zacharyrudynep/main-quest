@@ -3028,34 +3028,40 @@ function FeatureShowcase(){
   const SECTIONS=[
     {slug:"job-board",title:"Job Board",
      tagline:"Every game-industry opening, gathered into one living board that never goes stale.",
-     shots:["/shots/JobBoard_IMG01.png","/shots/JobBoard_IMG02.png","/shots/Filter_IMG.png","/shots/LiveFeed_IMG.png","/shots/SavedJobs_IMG.png","/shots/ShareJob_IMG01.png","/shots/ShareJob_IMG02.png"],
+     shots:["/shots/JobBoard_IMG01.png","/shots/Filter_IMG.png","/shots/LiveFeed_IMG.png","/shots/SavedJobs_IMG.png"],
      subs:[
-       {label:"Filters & Sorting",shot:2,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
-       {label:"Live Feeds",shot:3,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
-       {label:"Save & Share Jobs",shot:4,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
+       {label:"Filters & Sorting",tier:"plus",shot:1,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
+       {label:"Live Feeds",shot:2,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
+       {label:"Save & Share Jobs",shot:3,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
-    {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",shots:[],subs:[
-      {label:"Company-Specific Interview Prep",tier:"premium",desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
-      {label:"Application Status",desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
+    {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",
+     shots:["/shots/InterviewPrep_IMG.png","/shots/Applications_IMG.png"],
+     subs:[
+      {label:"Company-Specific Interview Prep",tier:"premium",shot:0,desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
+      {label:"Application Status",shot:1,desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
     ]},
-    {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",shots:["/shots/Notifications_IMG01.png","/shots/Notifications_IMG02.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],subs:[
+    {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",
+     shots:["/shots/Notifications_IMG.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],
+     subs:[
       {label:"Job-Specific Notifications",tier:"plus",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
-      {label:"Company Bell",shot:2,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
-      {label:"Email Digest",shot:3,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
+      {label:"Company Bell",shot:1,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
+      {label:"Email Digest",shot:2,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
     ]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",shots:["/shots/FactorBreakdown_IMG.png","/shots/PotIMP_IMG.png"],subs:[
-      {label:"Factor Breakdown",shot:0,desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box."},
-      {label:"Potential Improvements",shot:1,desc:"Get concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
+     shots:["/shots/Breakdown_IMG.png"],
+     subs:[
+      {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",shots:["/shots/KeyMatch_IMG.png","/shots/Editing_IMG.png","/shots/UPMatchScore_IMG.png"],subs:[
-      {label:"Keyword Matching",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
-      {label:"Surgical Editing",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting."},
-      {label:"Updated Match Score",shot:2,desc:"Shows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
+    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
+     shots:["/shots/KeywordMatch_IMG.png","/shots/TailorResume_IMG.png"],
+     subs:[
+      {label:"Keyword Matching",tier:"plus",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
+      {label:"Surgical Editing & Updated Match Score",tier:"plus",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting.\n\nShows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
-    {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",shots:[],subs:[
-      {label:"AI Generate Template",tier:"premium",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role."},
-      {label:"One-Click Autofill",desc:"Company name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos."},
-      {label:"Customizable",desc:"Edit, tweak, and save your own template exactly how you want it, with placeholders you control."},
+    {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",
+     shots:["/shots/EmailTemplate_IMG.png"],
+     subs:[
+      {label:"Customizable One-Click Generation",tier:"premium",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role.\n\nCompany name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos.\n\nEdit, tweak, and save your own template exactly how you want it, with placeholders you control."},
     ]},
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
