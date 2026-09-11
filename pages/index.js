@@ -3171,7 +3171,7 @@ function Auth({onLogin,onGuest}) {
       </div>
       {/* Hero tagline */}
       <h1 style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:700,color:"#f4edd8",lineHeight:1.3,marginBottom:10,letterSpacing:.5}}>Your launchpad into the game industry.</h1>
-      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>One giant game job hub. Main Quest brings live job listings from game studios across North America into one convenient place — with smart job match scoring, reusable email templates, and application tracking to help you land your next role faster.</p>
+      <p style={{color:"rgba(244,237,216,.55)",fontSize:14,lineHeight:1.7,marginBottom:28}}>One giant game job hub. Main Quest brings live job listings from game studios across the world into one convenient place — with smart job match scoring, resume tailoring, and job specific interview prep to help you land your next role faster.</p>
       {/* Divider */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24,opacity:.5}}>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(201,168,76,.6))"}}/>
@@ -3181,12 +3181,12 @@ function Auth({onLogin,onGuest}) {
       {/* Features */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
-          [<I.Globe s={17} c="#f0d080"/>,"Job Board","760+ studios across the US and Canada, filtered by state, role, and experience.",false],
+          [<I.Globe s={17} c="#f0d080"/>,"Job Hub","800+ studios across the world with thousands of jobs filtered by state, role, and experience.",false],
           [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.",true],
-          [<I.Clipboard s={17} c="#f0d080"/>,"Application Tracking","Track every application with dates and one-click access.",false],
-          [<I.Lightning s={17} c="#f0d080"/>,"AI Resume Tailor","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.",true],
-          [<I.Bell s={17} c="#f0d080"/>,"Company Alerts","Turn on notifications for the studios you care about most.",false],
-          [<I.Send s={17} c="#f0d080"/>,"Email Templates","Save a reusable template that auto-fills for each job you apply to.",true],
+          [<I.Bell s={17} c="#f0d080"/>,"Live Company Alerts","Turn on notifications for the studios you care about most.",false],
+          [<I.Lightning s={17} c="#f0d080"/>,"Resume Tailoring","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.",true],
+          [<I.Send s={17} c="#f0d080"/>,"Email-Apply Templates","Save a reusable template that auto-fills for each job you apply to.",true],
+          [<I.Clipboard s={17} c="#f0d080"/>,"Job Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.",true],
         ].map(([ic,title,desc,premium])=>
           <div key={title} onClick={()=>{const el=document.getElementById("feat-"+title.toLowerCase().replace(/\s+/g,"-"));el&&el.scrollIntoView({behavior:"smooth"});}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(201,168,76,.2)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}} style={{cursor:"pointer",transition:"transform .15s,box-shadow .15s",position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:premium?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${premium?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10}}>
             {premium&&<span style={{position:"absolute",top:6,right:6,background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>Premium</span>}
@@ -3200,7 +3200,7 @@ function Auth({onLogin,onGuest}) {
       </div>
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["760+","Studios"],["Live","Job Feeds"],[String(Object.keys(COMPANIES_DATA).length),"Countries"],["1000s","Open Roles"]].map(([n,l],i)=>(
+        {[["800+","Studios"],["Live","Job Feeds"],[String(Object.keys(COMPANIES_DATA).length),"Countries"],["1000s of","Open Roles"]].map(([n,l],i)=>(
           <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
             <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
