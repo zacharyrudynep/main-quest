@@ -3203,7 +3203,7 @@ function Auth({onLogin,onGuest}) {
       
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
-        {[["800+","Studios"],["Live","Job Feeds"],[String(Object.keys(COMPANIES_DATA).length),"Countries"],["1000s of","Open Roles"]].map(([n,l],i)=>(
+        {[["800+","Studios"],["Live","Job Feeds"],[String([...new Set([...Object.keys(COMPANIES_DATA),...Object.keys(COUNTRY_CONTINENT)])].filter(c=>c!=="Remote").length),"Countries"],["1000s of","Open Roles"]].map(([n,l],i)=>(
           <div key={l} style={{flex:1,padding:"12px 0",textAlign:"center",borderRight:i<3?"1px solid rgba(201,168,76,.12)":"none"}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</div>
             <div style={{fontSize:9,color:"rgba(244,237,216,.35)",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Cinzel',serif"}}>{l}</div>
