@@ -489,6 +489,7 @@ const COMPANIES_DATA = {
       { name: "Night Garden Studio", url: "https://www.nightgardenstudio.com/careers", email: "contact@nightgardenstudios.com", contact: "https://www.nightgardenstudio.com/contact-us", registerInterest:"email", registerInterestLink:"contact@nightgardenstudios.com" },
       { name: "Simply Sweet Games", url: "https://simplysweetgames.ca/careers.html", email: "Sweet@simplysweetgames.ca", contact: "https://simplysweetgames.ca/contact.html", registerInterest:"email", registerInterestLink:"Sweet@simplysweetgames.ca" },
       { name: "Space Rock Games", url: "https://www.spacerockgames.com/careers", email: null, contact: null, registerInterest:true, registerInterestLink: "https://www.spacerockgames.com/careers" },
+      { name: "Spiderware", url: "https://spiderware.gg/careers", email: null, contact: "https://spiderware.gg/contact"},
       { name: "Squanch Games", url: "https://squanchgames.com/jobs/", email: "workwithus@squanchgames.com", contact: "https://squanchgames.com/contact/", registerInterest:"email", registerInterestLink:"workwithus@squanchgames.com" },
       { name: "Thought Pennies", url: "https://thought-pennies.careers-page.com/", email: null, contact: null, registerInterest:true, registerInterestLink:"https://thought-pennies.careers-page.com/open-application" },
       { name: "Twin Atlas", url: "https://twinatlas.com/careers", email: null, contact: null },
@@ -3054,7 +3055,7 @@ function FeatureShowcase(){
     return ()=>window.removeEventListener("scroll",onScroll);
   },[]);
   const SECTIONS=[
-    {slug:"job-board",title:"Job Board",
+    {slug:"job-board",title:"Job Hub",
      tagline:"Every game-industry opening, gathered into one living board that never goes stale.",
      shots:["/shots/JobBoard_IMG01.png","/shots/Filter_IMG.png","/shots/LiveFeed_IMG.png","/shots/SavedJobs_IMG.png"],
      subs:[
@@ -3062,7 +3063,7 @@ function FeatureShowcase(){
        {label:"Live Feeds",shot:2,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
        {label:"Save & Share Jobs",shot:3,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
-    {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",
+    {slug:"company-alerts",title:"Live Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",
      shots:["/shots/Notifications_IMG.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],
      subs:[
       {label:"Job-Specific Notifications",tier:"plus",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
@@ -3074,22 +3075,22 @@ function FeatureShowcase(){
      subs:[
       {label:"Customizable One-Click Generation",tier:"plus",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role.\n\nCompany name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos.\n\nEdit, tweak, and save your own template exactly how you want it, with placeholders you control."},
     ]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
+    {slug:"job-match-score-breakdown",title:"Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
      shots:["/shots/Breakdown_IMG.png"],
      subs:[
       {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
+    {slug:"ai-resume-tailor",title:"Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
      shots:["/shots/KeywordMatch_IMG.png","/shots/TailorResume_IMG.png"],
      subs:[
       {label:"Keyword Matching",tier:"premium",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
       {label:"Surgical Editing & Updated Match Score",tier:"premium",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting.\n\nShows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
-    {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",
+    {slug:"application-tracking",title:"Job-Specific Interview Prep",tagline:"Every application, organized from first click to final answer — and prepped to win.",
      shots:["/shots/InterviewPrep_IMG.png","/shots/Applications_IMG.png"],
      subs:[
-      {label:"Company-Specific Interview Prep",tier:"premium",shot:0,desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
-      {label:"Application Status",shot:1,desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
+      {label:"Interview Prep",tier:"premium",shot:0,desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
+      {label:"Application Tracking",shot:1,desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
     ]},
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
@@ -3209,11 +3210,11 @@ function Auth({onLogin,onGuest}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
           [<I.Globe s={17} c="#f0d080"/>,"Job Hub","800+ studios across the world with thousands of jobs filtered by state, role, and experience.",false,"job-board"],
-          [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.","plus","job-match-score-breakdown"],
+          [<I.Target s={17} c="#f0d080"/>,"Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.","plus","job-match-score-breakdown"],
           [<I.Bell s={17} c="#f0d080"/>,"Live Company Alerts","Turn on notifications for the studios you care about most.",false,"company-alerts"],
           [<I.Lightning s={17} c="#f0d080"/>,"Resume Tailoring","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.","premium","ai-resume-tailor"],
           [<I.Send s={17} c="#f0d080"/>,"Email-Apply Templates","Save a reusable template that auto-fills for each job you apply to.","plus","email-templates"],
-          [<I.Clipboard s={17} c="#f0d080"/>,"Job Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.","premium","application-tracking"],
+          [<I.Clipboard s={17} c="#f0d080"/>,"Job-Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.","premium","application-tracking"],
         ].map(([ic,title,desc,tier,slug])=>{
           const isP=tier==="premium", isPlus=tier==="plus", paid=isP||isPlus;
           const glow=isP?"0 0 20px rgba(232,120,58,.26)":"";
