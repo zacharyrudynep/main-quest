@@ -3182,22 +3182,25 @@ function Auth({onLogin,onGuest}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
           [<I.Globe s={17} c="#f0d080"/>,"Job Hub","800+ studios across the world with thousands of jobs filtered by state, role, and experience.",false],
-          [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.",true],
+          [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.","plus"],
           [<I.Bell s={17} c="#f0d080"/>,"Live Company Alerts","Turn on notifications for the studios you care about most.",false],
-          [<I.Lightning s={17} c="#f0d080"/>,"Resume Tailoring","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.",true],
-          [<I.Send s={17} c="#f0d080"/>,"Email-Apply Templates","Save a reusable template that auto-fills for each job you apply to.",true],
-          [<I.Clipboard s={17} c="#f0d080"/>,"Job Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.",true],
-        ].map(([ic,title,desc,premium])=>
-          <div key={title} onClick={()=>{const el=document.getElementById("feat-"+title.toLowerCase().replace(/\s+/g,"-"));el&&el.scrollIntoView({behavior:"smooth"});}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(201,168,76,.2)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}} style={{cursor:"pointer",transition:"transform .15s,box-shadow .15s",position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:premium?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${premium?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10}}>
-            {premium&&<span style={{position:"absolute",top:6,right:6,background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>Premium</span>}
+          [<I.Lightning s={17} c="#f0d080"/>,"Resume Tailoring","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.","premium"],
+          [<I.Send s={17} c="#f0d080"/>,"Email-Apply Templates","Save a reusable template that auto-fills for each job you apply to.","plus"],
+          [<I.Clipboard s={17} c="#f0d080"/>,"Job Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.","premium"],
+        ].map(([ic,title,desc,tier])=>{
+          const isP=tier==="premium", isPlus=tier==="plus", paid=isP||isPlus;
+          const glow=isP?"0 0 20px rgba(232,120,58,.26)":"";
+          return <div key={title} onClick={()=>{const el=document.getElementById("feat-"+title.toLowerCase().replace(/\s+/g,"-"));el&&el.scrollIntoView({behavior:"smooth"});}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=isP?"0 6px 26px rgba(232,120,58,.42)":"0 6px 20px rgba(201,168,76,.2)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=glow;}} style={{cursor:"pointer",transition:"transform .15s,box-shadow .15s",position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:isP?"linear-gradient(150deg,rgba(232,140,58,.13),rgba(201,168,76,.03))":isPlus?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${isP?"rgba(240,160,80,.5)":isPlus?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10,boxShadow:glow}}>
+            {paid&&<span style={{position:"absolute",top:6,right:6,background:isP?"linear-gradient(135deg,#f7d98a,#e8613a)":"linear-gradient(135deg,#c9a84c,#f0d080)",color:isP?"#1a0e06":"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase",boxShadow:isP?"0 2px 10px rgba(232,120,58,.5)":"none"}}>{isP?"Premium":"Plus"}</span>}
             <span style={{flexShrink:0,marginTop:1,display:"flex"}}>{ic}</span>
             <div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3,paddingRight:premium?48:0}}>{title}</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#f0d080",marginBottom:2,letterSpacing:.3,paddingRight:paid?48:0}}>{title}</div>
               <div style={{fontSize:11,color:"rgba(244,237,216,.48)",lineHeight:1.45}}>{desc}</div>
             </div>
-          </div>
-        )}
+          </div>;
+        })}
       </div>
+      
       {/* Stats */}
       <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:12,overflow:"hidden"}}>
         {[["800+","Studios"],["Live","Job Feeds"],[String(Object.keys(COMPANIES_DATA).length),"Countries"],["1000s of","Open Roles"]].map(([n,l],i)=>(
