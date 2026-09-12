@@ -2426,13 +2426,13 @@ const GEO_LANDMASS=[[[-59.57,-80.04],[-60.16,-81.0],[-64.49,-80.92],[-66.29,-80.
 // Night-lights field derived from the hotspots, clipped to land so glows don't spill
 // into the ocean. Each city center seeds a cluster of smaller lights; busy regions
 // (e.g. California) bloom into a connected glow. Format: [lat, lon, weight, spread].
-let _globeLightsCache=null;
-function getGlobeLights(){
-  if(_globeLightsCache) return _globeLightsCache;
+let _globeLightsCache=null; const _glLiveCache=new WeakMap();
+function getGlobeLights(liveCounts){
+  if(liveCounts){ if(_glLiveCache.has(liveCounts)) return _glLiveCache.get(liveCounts); } else if(_globeLightsCache){ return _globeLightsCache; }
   // Real company count per state/province name (deduped by company name), so the
   // heatmap reflects the current studio list — busier states glow brighter.
-  const stateCount={};
-  try{
+  const stateCount = liveCounts || {};
+  if(!liveCounts) try{
     for(const country of Object.values(COMPANIES_DATA||{})){
       for(const [stateName,list] of Object.entries(country||{})){
         if(!Array.isArray(list)) continue;
@@ -2550,12 +2550,13 @@ function getGlobeLights(){
       scatterInState(st, 3, 0.05, 0.17);               // faint ambient filler
     }
   }
-  _globeLightsCache=out;
+  if(liveCounts) _glLiveCache.set(liveCounts,out); else _globeLightsCache=out;
   return out;
 }
 
-function GlobeHeatmap({size=180,showStates=true}){
+function GlobeHeatmap({size=180,showStates=true,counts=null}){
   const canvasRef=useRef(null);
+  const countsRef=useRef(counts); countsRef.current=counts;
   const rafRef=useRef(0);
   const rotRef=useRef(0);
   useEffect(()=>{
@@ -2639,7 +2640,7 @@ function GlobeHeatmap({size=180,showStates=true}){
       // Night-lights: additive blending makes overlapping glows pool brighter in dense areas.
       ctx.save();
       ctx.globalCompositeOperation="lighter";
-      for(const [lat,lon,w,spread] of getGlobeLights()){
+      for(const [lat,lon,w,spread] of getGlobeLights(countsRef.current)){
         const p=project(lat,lon,rot);
         if(p.z>0.04){
           const depth=0.35+p.z*0.65;             // fade toward the limb
@@ -6054,6 +6055,9 @@ export default function App() {
         }
     return out;
   },[liveJobs]);
+  // Live heatmap intensity: current job count per region, recomputed whenever
+  // the live feed adds or removes jobs (drives the globe's brightness).
+  const heatCounts=useMemo(()=>{ const c={}; for(const j of allJobs){ const pl=jobPlace(j); if(pl&&typeof pl==="object"&&pl.sub) c[pl.sub]=(c[pl.sub]||0)+1; } return c; },[allJobs]);
   const totalJobs=useMemo(()=>allJobs.filter(matches).length,[allJobs,filters,user]);
   // Once-a-day job-alert scan (in-website badges only for now). When a premium
   // user has alert criteria set, compare live jobs against them and drop new
@@ -6373,7 +6377,7 @@ export default function App() {
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
     {/* Desktop background globe — large, bottom-left, behind everything */}
-    {!filterInline&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true}/></div>}
+    {!filterInline&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true} counts={heatCounts}/></div>}
     {/* Styles */}
     <style>{`@keyframes mqglow{0%,100%{text-shadow:0 0 7px rgba(240,208,128,.45)}50%{text-shadow:0 0 15px rgba(240,208,128,.9)}}@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}select{color-scheme:dark;}select option,select optgroup{background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important;}select option:hover,select option:checked,select option:focus,select option:active{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important;}*{-webkit-tap-highlight-color:transparent;}button,a,[role="button"],input,select,textarea,label,summary{touch-action:manipulation;}button,a{-webkit-user-select:none;user-select:none;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
