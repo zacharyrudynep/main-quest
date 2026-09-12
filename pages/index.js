@@ -3001,7 +3001,7 @@ function ShowcaseSection({ s, i, c0, c1 }){
             <div key={k} onMouseEnter={()=>{ if(sub.shot!=null) setForced(sub.shot); }} onMouseLeave={()=>setForced(null)} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,cursor:sub.shot!=null?"pointer":"default",transition:"background .2s,border-color .2s"}} onMouseOver={e=>{e.currentTarget.style.background="rgba(201,168,76,.08)";e.currentTarget.style.borderColor="rgba(201,168,76,.3)";}} onMouseOut={e=>{e.currentTarget.style.background="rgba(201,168,76,.04)";e.currentTarget.style.borderColor="rgba(201,168,76,.12)";}}>
               <span style={{fontFamily:"'Cinzel',serif",color:"#c9a84c",fontWeight:800,fontSize:13,flexShrink:0,marginTop:1}}>◆</span>
               <div>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3,display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{sub.label}{sub.tier&&<span style={{background:"linear-gradient(135deg,#c9a84c,#f0d080)",color:"#0a0608",borderRadius:20,fontSize:7.5,fontWeight:800,letterSpacing:.5,padding:"2px 7px",fontFamily:"'Cinzel',serif",textTransform:"uppercase",boxShadow:"0 0 10px rgba(201,168,76,.55)",flexShrink:0}}>{sub.tier}</span>}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#f4edd8",marginBottom:3,display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{sub.label}{sub.tier&&<span style={{background:sub.tier.indexOf("premium")===0?"linear-gradient(135deg,#f7d98a,#e8613a)":"linear-gradient(135deg,#c9a84c,#f0d080)",color:sub.tier.indexOf("premium")===0?"#1a0e06":"#0a0608",borderRadius:20,fontSize:7.5,fontWeight:800,letterSpacing:.5,padding:"2px 7px",fontFamily:"'Cinzel',serif",textTransform:"uppercase",boxShadow:sub.tier.indexOf("premium")===0?"0 0 12px rgba(232,120,58,.6)":"0 0 10px rgba(201,168,76,.55)",flexShrink:0}}>{sub.tier}</span>}</div>
                 <div style={{fontSize:12.5,color:"rgba(244,237,216,.5)",lineHeight:1.55}}>{sub.desc}</div>
               </div>
             </div>
@@ -3032,15 +3032,10 @@ function FeatureShowcase(){
      tagline:"Every game-industry opening, gathered into one living board that never goes stale.",
      shots:["/shots/JobBoard_IMG01.png","/shots/Filter_IMG.png","/shots/LiveFeed_IMG.png","/shots/SavedJobs_IMG.png"],
      subs:[
-       {label:"Filters & Sorting",tier:"plus",shot:1,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
+       {label:"Filters & Sorting",shot:1,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
        {label:"Live Feeds",shot:2,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
        {label:"Save & Share Jobs",shot:3,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
-     shots:["/shots/Breakdown_IMG.png"],
-     subs:[
-      {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
-    ]},
     {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",
      shots:["/shots/Notifications_IMG.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],
      subs:[
@@ -3048,16 +3043,21 @@ function FeatureShowcase(){
       {label:"Company Bell",shot:1,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
       {label:"Email Digest",shot:2,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
     ]},
-    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
-     shots:["/shots/KeywordMatch_IMG.png","/shots/TailorResume_IMG.png"],
-     subs:[
-      {label:"Keyword Matching",tier:"plus",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
-      {label:"Surgical Editing & Updated Match Score",tier:"plus",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting.\n\nShows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
-    ]},
     {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",
      shots:["/shots/EmailTemplate_IMG.png"],
      subs:[
-      {label:"Customizable One-Click Generation",tier:"premium",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role.\n\nCompany name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos.\n\nEdit, tweak, and save your own template exactly how you want it, with placeholders you control."},
+      {label:"Customizable One-Click Generation",tier:"plus",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role.\n\nCompany name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos.\n\nEdit, tweak, and save your own template exactly how you want it, with placeholders you control."},
+    ]},
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
+     shots:["/shots/Breakdown_IMG.png"],
+     subs:[
+      {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
+    ]},
+    {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
+     shots:["/shots/KeywordMatch_IMG.png","/shots/TailorResume_IMG.png"],
+     subs:[
+      {label:"Keyword Matching",tier:"premium",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
+      {label:"Surgical Editing & Updated Match Score",tier:"premium",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting.\n\nShows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
     {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",
      shots:["/shots/InterviewPrep_IMG.png","/shots/Applications_IMG.png"],
