@@ -39,8 +39,8 @@ export default function Join() {
   const [show, setShow] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [selected, setSelected] = useState(null); // "basic" | "plus" | "premium"
-  const [plusCycle, setPlusCycle] = useState("yearly"); // "monthly" | "yearly"
-  const [premCycle, setPremCycle] = useState("yearly"); // "monthly" | "yearly" | "lifetime"
+  const [plusCycle, setPlusCycle] = useState("monthly"); // "monthly" | "yearly"
+  const [premCycle, setPremCycle] = useState("monthly"); // "monthly" | "yearly" | "lifetime"
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [finishing, setFinishing] = useState(false); // completing after paid checkout

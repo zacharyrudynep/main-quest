@@ -2978,6 +2978,10 @@ function ShotCarousel({ shots, forcedIdx, sectionTitle }){
   useEffect(()=>{ if(forcedIdx!=null&&forcedIdx>=0) setIdx(forcedIdx); },[forcedIdx]);
   useEffect(()=>{ if(typeof document==="undefined"||!zoom)return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{document.body.style.overflow=b;document.documentElement.style.overflow=h;}; },[zoom]);
   const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
+  const swipeRef=useRef({x:0,y:0,moved:false});
+  const onCarTouchStart=e=>{ const p=e.touches[0]; swipeRef.current={x:p.clientX,y:p.clientY,moved:false}; };
+  const onCarTouchMove=e=>{ const p=e.touches[0]; if(Math.abs(p.clientX-swipeRef.current.x)>10) swipeRef.current.moved=true; };
+  const onCarTouchEnd=e=>{ const p=e.changedTouches[0]; const dx=p.clientX-swipeRef.current.x, dy=p.clientY-swipeRef.current.y; if(shots.length>1 && Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ setPaused(true); go(dx<0?1:-1); } };
   if(!has){
     return <div style={{width:"100%",height:"100%",minHeight:320,borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
       <span style={{fontFamily:"'Cinzel',serif",fontSize:13,color:"rgba(201,168,76,.6)"}}>Screenshot</span>
@@ -2986,7 +2990,7 @@ function ShotCarousel({ shots, forcedIdx, sectionTitle }){
   }
   const dot=(k,fixed)=>(<span key={k} onClick={e=>{e.stopPropagation();setIdx(k);}} style={{width:8,height:8,borderRadius:"50%",background:k===idx?"#f0d080":"rgba(244,237,216,.35)",cursor:"pointer",transition:"background .3s"}}/>);
   const arrowStyle=(side)=>({position:"absolute",[side]:8,top:"50%",transform:"translateY(-50%)",zIndex:3,width:34,height:34,borderRadius:"50%",background:"rgba(10,7,8,.4)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",fontSize:20,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"});
-  return <><div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onClick={()=>setZoom(true)} style={{position:"relative",width:"100%",minHeight:200,cursor:"zoom-in"}}>
+  return <><div onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onTouchStart={onCarTouchStart} onTouchMove={onCarTouchMove} onTouchEnd={onCarTouchEnd} onClick={()=>{ if(!swipeRef.current.moved) setZoom(true); }} style={{position:"relative",width:"100%",minHeight:200,cursor:"zoom-in",touchAction:"pan-y"}}>
     {/* invisible sizer: makes the frame take the ACTIVE image's natural height so images show full-size, uncropped, with no box */}
     <img src={shots[idx]} alt="" aria-hidden="true" style={{display:"block",width:"100%",height:"auto",visibility:"hidden",pointerEvents:"none"}}/>
     {shots.map((src,k)=>(<img key={k} src={src} alt="" onError={e=>{e.currentTarget.style.opacity=0;}} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"contain",borderRadius:10,opacity:k===idx?1:0,transition:"opacity .7s ease",zIndex:1}}/>))}
