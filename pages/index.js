@@ -2820,6 +2820,7 @@ function InboxItem({ n, onOpen, onDismiss, timeAgo }){
 
 function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onDismiss,onOpenJob,profile,onPatch,isPremium,isAdmin,companyOptions,locationOptions}){
   const [view,setView]=useState("inbox"); // "inbox" = matched-job feed; "notifications" = alert settings
+  useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
   const timeAgo=(ts)=>{const d=Date.now()-ts;const h=Math.floor(d/3600000);if(h<1)return"just now";if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";};
   const unread=items.filter(n=>!n.read).length;
   const P=profile||{};
@@ -2953,7 +2954,7 @@ function ShotCarousel({ shots, forcedIdx, sectionTitle }){
     return ()=>clearInterval(tmr);
   },[has,paused,zoom,forcedIdx,shots]);
   useEffect(()=>{ if(forcedIdx!=null&&forcedIdx>=0) setIdx(forcedIdx); },[forcedIdx]);
-  useEffect(()=>{ if(typeof document==="undefined")return; if(zoom){ const pv=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{document.body.style.overflow=pv;}; } },[zoom]);
+  useEffect(()=>{ if(typeof document==="undefined"||!zoom)return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{document.body.style.overflow=b;document.documentElement.style.overflow=h;}; },[zoom]);
   const go=(d)=>setIdx(i=>(i+d+shots.length)%shots.length);
   if(!has){
     return <div style={{width:"100%",height:"100%",minHeight:320,borderRadius:14,border:"1px dashed rgba(201,168,76,.35)",background:"rgba(201,168,76,.03)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
@@ -3035,11 +3036,10 @@ function FeatureShowcase(){
        {label:"Live Feeds",shot:2,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
        {label:"Save & Share Jobs",shot:3,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
-    {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",
-     shots:["/shots/InterviewPrep_IMG.png","/shots/Applications_IMG.png"],
+    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
+     shots:["/shots/Breakdown_IMG.png"],
      subs:[
-      {label:"Company-Specific Interview Prep",tier:"premium",shot:0,desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
-      {label:"Application Status",shot:1,desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
+      {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
     {slug:"company-alerts",title:"Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",
      shots:["/shots/Notifications_IMG.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],
@@ -3047,11 +3047,6 @@ function FeatureShowcase(){
       {label:"Job-Specific Notifications",tier:"plus",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
       {label:"Company Bell",shot:1,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
       {label:"Email Digest",shot:2,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
-    ]},
-    {slug:"job-match-score-breakdown",title:"Job Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
-     shots:["/shots/Breakdown_IMG.png"],
-     subs:[
-      {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
     {slug:"ai-resume-tailor",title:"AI Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
      shots:["/shots/KeywordMatch_IMG.png","/shots/TailorResume_IMG.png"],
@@ -3063,6 +3058,12 @@ function FeatureShowcase(){
      shots:["/shots/EmailTemplate_IMG.png"],
      subs:[
       {label:"Customizable One-Click Generation",tier:"premium",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role.\n\nCompany name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos.\n\nEdit, tweak, and save your own template exactly how you want it, with placeholders you control."},
+    ]},
+    {slug:"application-tracking",title:"Application Tracking",tagline:"Every application, organized from first click to final answer — and prepped to win.",
+     shots:["/shots/InterviewPrep_IMG.png","/shots/Applications_IMG.png"],
+     subs:[
+      {label:"Company-Specific Interview Prep",tier:"premium",shot:0,desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
+      {label:"Application Status",shot:1,desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
     ]},
   ];
   const SHADE=["#080608","#0b0812","#080a0e","#0c0711","#090610","#0a0812","#080608"];
@@ -3181,16 +3182,16 @@ function Auth({onLogin,onGuest}) {
       {/* Features */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:24}}>
         {[
-          [<I.Globe s={17} c="#f0d080"/>,"Job Hub","800+ studios across the world with thousands of jobs filtered by state, role, and experience.",false],
-          [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.","plus"],
-          [<I.Bell s={17} c="#f0d080"/>,"Live Company Alerts","Turn on notifications for the studios you care about most.",false],
-          [<I.Lightning s={17} c="#f0d080"/>,"Resume Tailoring","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.","premium"],
-          [<I.Send s={17} c="#f0d080"/>,"Email-Apply Templates","Save a reusable template that auto-fills for each job you apply to.","plus"],
-          [<I.Clipboard s={17} c="#f0d080"/>,"Job Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.","premium"],
-        ].map(([ic,title,desc,tier])=>{
+          [<I.Globe s={17} c="#f0d080"/>,"Job Hub","800+ studios across the world with thousands of jobs filtered by state, role, and experience.",false,"job-board"],
+          [<I.Target s={17} c="#f0d080"/>,"Job Match Score Breakdown","A full breakdown of why each posting fits — skills, experience, role, and keywords, not just a number.","plus","job-match-score-breakdown"],
+          [<I.Bell s={17} c="#f0d080"/>,"Live Company Alerts","Turn on notifications for the studios you care about most.",false,"company-alerts"],
+          [<I.Lightning s={17} c="#f0d080"/>,"Resume Tailoring","Rewrite your resume to fit any posting with AI - surgical edits, matched keywords, and a fit score.","premium","ai-resume-tailor"],
+          [<I.Send s={17} c="#f0d080"/>,"Email-Apply Templates","Save a reusable template that auto-fills for each job you apply to.","plus","email-templates"],
+          [<I.Clipboard s={17} c="#f0d080"/>,"Job Specific Interview Prep","Track every application with one click and generate interview prep tuned to the exact studio and role that you are applying to.","premium","application-tracking"],
+        ].map(([ic,title,desc,tier,slug])=>{
           const isP=tier==="premium", isPlus=tier==="plus", paid=isP||isPlus;
           const glow=isP?"0 0 20px rgba(232,120,58,.26)":"";
-          return <div key={title} onClick={()=>{const el=document.getElementById("feat-"+title.toLowerCase().replace(/\s+/g,"-"));el&&el.scrollIntoView({behavior:"smooth"});}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=isP?"0 6px 26px rgba(232,120,58,.42)":"0 6px 20px rgba(201,168,76,.2)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=glow;}} style={{cursor:"pointer",transition:"transform .15s,box-shadow .15s",position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:isP?"linear-gradient(150deg,rgba(232,140,58,.13),rgba(201,168,76,.03))":isPlus?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${isP?"rgba(240,160,80,.5)":isPlus?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10,boxShadow:glow}}>
+          return <div key={title} onClick={()=>{const el=document.getElementById("feat-"+slug);el&&el.scrollIntoView({behavior:"smooth"});}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=isP?"0 6px 26px rgba(232,120,58,.42)":"0 6px 20px rgba(201,168,76,.2)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=glow;}} style={{cursor:"pointer",transition:"transform .15s,box-shadow .15s",position:"relative",display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:isP?"linear-gradient(150deg,rgba(232,140,58,.13),rgba(201,168,76,.03))":isPlus?"linear-gradient(150deg,rgba(201,168,76,.09),rgba(201,168,76,.03))":"rgba(201,168,76,.04)",border:`1px solid ${isP?"rgba(240,160,80,.5)":isPlus?"rgba(201,168,76,.3)":"rgba(201,168,76,.1)"}`,borderRadius:10,boxShadow:glow}}>
             {paid&&<span style={{position:"absolute",top:6,right:6,background:isP?"linear-gradient(135deg,#f7d98a,#e8613a)":"linear-gradient(135deg,#c9a84c,#f0d080)",color:isP?"#1a0e06":"#0a0608",borderRadius:20,fontSize:7,fontWeight:800,letterSpacing:.5,padding:"1px 6px",fontFamily:"'Cinzel',serif",textTransform:"uppercase",boxShadow:isP?"0 2px 10px rgba(232,120,58,.5)":"none"}}>{isP?"Premium":"Plus"}</span>}
             <span style={{flexShrink:0,marginTop:1,display:"flex"}}>{ic}</span>
             <div>
@@ -3933,7 +3934,7 @@ function LinkField({fieldKey,label,icon,placeholder,value,onChange}) {
 // Slide-over panel shown when a guest clicks the account avatar.
 function GuestPanel({onClose,onSignIn}) {
   const compact = useIsMobile(1000);
-  useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
+  useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
   const mobile=useIsMobile();
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",zIndex:200,display:"flex",justifyContent:"flex-end"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
@@ -3988,7 +3989,7 @@ function VerifyEmailRow({ user }){
 
 function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
   const compact = useIsMobile(1000);
-  useEffect(()=>{ if(typeof document==="undefined")return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[]);
+  useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
   const mobile = useIsMobile();
   const [tab,setTab]=useState("profile");
   const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",country:user.profile?.country||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
