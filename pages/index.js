@@ -8,6 +8,9 @@ import { encodeJob } from "../lib/shareJob.js";
 import { track } from "../lib/track";
 import { downloadResumeDocx } from "../lib/resumeDocx";
 import dynamic from "next/dynamic";
+
+// Fire an account/security email (welcome, password-changed, device-check) for the current user.
+async function notifyEmail(type){ try{ const { data }=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk) return; await fetch("/api/email/notify",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({type})}); }catch(e){} }
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
 // Journey Mode is hidden for now (code kept intact). Flip to true to bring it back.
@@ -1240,7 +1243,9 @@ const _isBlockedJob = (job) => !!job && _BLOCKED_JOBS.has(`${job.company}||${job
 const _OPENAPP_RE = /general application|spontaneous application|open application/i;
 const _isOpenAppJob = (job) => !!(job && (job.isOpenApp || _OPENAPP_RE.test((job.title)||"")));
 function _makeOpenAppJob(name, meta){
-  const href=riLinkToHref(meta.registerInterestLink,name);
+  let href=riLinkToHref(meta.registerInterestLink,name);
+  if(!href && meta.emailApply && meta.email) href="mailto:"+meta.email;
+  if(!href && meta.contact) href=meta.contact;
   const isMail=!!href&&href.startsWith("mailto:");
   const mailAddr=isMail?href.replace(/^mailto:/,"").split("?")[0]:"";
   return {id:`${name}-openapp`,title:"Open Application",company:name,url:href||meta.url||"",applyUrl:href||meta.url||"",email:mailAddr||meta.email||"",applyEmail:mailAddr,isEmailApply:isMail,isOpenApp:true,experience:"",type:"Full-time",salary:"",isRemote:false,isHybrid:false,posted:null,postedStr:"",daysAgo:0,isNew:false,isVolunteer:!!meta.volunteer,summary:isMail?`Submit an open application to ${name} — they invite you to email your resume to be considered for future roles.`:`Submit an open application to ${name}. They accept open applications and invite you to register interest for future openings.`,responsibilities:[],requirements:[]};
@@ -2204,14 +2209,18 @@ function TurnstileWidget({ onToken }){
 function LoginPopup({onClose,onLogin}) {
   const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
   const [agreed,setAgreed]=useState(false);
-  const [name,setName]=useState(""),[email,setEmail]=useState(""),[pass,setPass]=useState("");
-  const [err,setErr]=useState(""),[loading,setLoading]=useState(false);
+  const [name,setName]=useState(""),[email,setEmail]=useState(""),[pass,setPass]=useState(""),[pass2,setPass2]=useState("");
+  const [err,setErr]=useState(""),[loading,setLoading]=useState(false),[resetMsg,setResetMsg]=useState("");
   const G="linear-gradient(135deg,#c9a84c,#e8613a)";
+  const sendReset=async()=>{ setErr(""); setResetMsg(""); if(!email){setErr("Enter your email above first.");return;} setLoading(true); try{ await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/reset-password"}); }catch(e){} setLoading(false); setResetMsg("If an account exists for "+email+", a password reset link is on its way — check your inbox (and spam)."); };
   const submit=async()=>{
     setErr("");
+    if(mode==="reset") return sendReset();
     if(!email||!pass){setErr("Fill in all fields.");return;}
     if(mode==="signup"&&!name){setErr("Enter your name.");return;}
     if(mode==="signup"&&!agreed){setErr("Please agree to the Terms and Privacy Policy.");return;}
+    if(mode==="signup"&&pass.length<6){setErr("Password must be at least 6 characters.");return;}
+    if(mode==="signup"&&pass!==pass2){setErr("Passwords do not match.");return;}
     setLoading(true);
     try{
       if(mode==="signup"){
@@ -2222,6 +2231,8 @@ function LoginPopup({onClose,onLogin}) {
         if(error){setErr("Account created - please sign in.");setLoading(false);return;}
         onLogin({id:data.user.id,email,name,applied:{},profile:{tosVersion:TOS_VERSION,email_verified:false}});
       }else{
+        const _v=await fetch("/api/auth/verify-turnstile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:tsToken})}).then(r=>r.json()).catch(()=>({ok:true}));
+        if(!_v.ok){setErr("Verification failed — please try again.");setLoading(false);return;}
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
         if(error){setErr("Invalid email or password.");setLoading(false);return;}
         const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
@@ -2238,15 +2249,17 @@ function LoginPopup({onClose,onLogin}) {
       <button onClick={onClose} style={{position:"absolute",top:14,right:14,background:"none",border:"none",color:"rgba(244,237,216,.4)",cursor:"pointer",fontSize:18,lineHeight:1}}>✕</button>
       <div style={{textAlign:"center",marginBottom:18}}>
         <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:24,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:4}}>Main Quest</div>
-        <div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>{mode==="login"?"Sign in to unlock all features":"Create a free account"}</div>
+        <div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>{mode==="reset"?"Enter your email to reset your password":mode==="login"?"Sign in to unlock all features":"Create a free account"}</div>
       </div>
       {mode==="signup"&&<input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>}
       <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com"/>
-      <input style={inp} type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password"/>
+      {mode!=="reset"&&<input style={inp} type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password"/>}
+      {mode==="signup"&&<input style={inp} type="password" value={pass2} onChange={e=>setPass2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Confirm password"/>}
       {mode==="signup"&&<label onClick={()=>setAgreed(a=>!a)} style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",margin:"2px 0 12px",fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.4}}><div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${agreed?"#c9a84c":"rgba(201,168,76,.3)"}`,background:agreed?"#c9a84c":"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center"}}>{agreed&&<I.Check s={9} c="#0a0608"/>}</div><span>I agree to the <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a>.</span></label>}
       {err&&<div style={{fontSize:11.5,color:"#e07060",marginBottom:10,textAlign:"center"}}>{err}</div>}
-      {mode==="signup"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:loading?"default":"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:loading?.7:1,marginBottom:12}}>{loading?"⟳":mode==="login"?"Sign In →":"Create Account →"}</button>
-      <p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button></p>
+      {resetMsg&&<div style={{fontSize:12,color:"#7ecfb3",marginBottom:10,textAlign:"center",lineHeight:1.45}}>{resetMsg}</div>}
+      {mode!=="reset"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:loading?"default":"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:loading?.7:1,marginBottom:12}}>{loading?"⟳":mode==="reset"?"Send Reset Link →":mode==="login"?"Sign In →":"Create Account →"}</button>
+      {mode==="reset"?<p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}><button onClick={()=>{setMode("login");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>← Back to sign in</button></p>:<><p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button></p>{mode==="login"&&<p style={{textAlign:"center",margin:"8px 0 0"}}><button onClick={()=>{setMode("reset");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",fontSize:11.5}}>Forgot password?</button></p>}</>}
     </div>
   </div>;
 }
@@ -3117,14 +3130,17 @@ function Auth({onLogin,onGuest}) {
   const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
   const [agreed,setAgreed]=useState(false);
   const [staySignedIn,setStaySignedIn]=useState(true);
-  const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState("");
-  const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false);
+  const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState(""), [pass2,setPass2]=useState("");
+  const [err,setErr]=useState(""), [loading,setLoading]=useState(false), [show,setShow]=useState(false), [resetMsg,setResetMsg]=useState("");
   const [mobileFormOpen,setMobileFormOpen]=useState(false);
+  const sendReset = async () => { setErr(""); setResetMsg(""); if(!email){ setErr("Enter your email above, then tap Forgot password."); return; } setLoading(true); try{ await supabase.auth.resetPasswordForEmail(email,{ redirectTo: window.location.origin+"/reset-password" }); }catch(e){} setLoading(false); setResetMsg("If an account exists for "+email+", a password reset link is on its way — check your inbox (and spam)."); };
   const submit = async () => {
     setErr("");
     if (!email || !pass) { setErr("Fill in all fields."); return; }
     if (mode === "signup" && !name) { setErr("Enter your name."); return; }
     if (mode === "signup" && !agreed) { setErr("Please agree to the Terms of Service and Privacy Policy."); return; }
+    if (mode === "signup" && pass.length < 6) { setErr("Password must be at least 6 characters."); return; }
+    if (mode === "signup" && pass !== pass2) { setErr("Passwords do not match."); return; }
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -3135,6 +3151,8 @@ function Auth({onLogin,onGuest}) {
         if (error) { setErr("Account created - please sign in."); setLoading(false); return; }
         onLogin({ id: data.user.id, email, name, applied: {}, profile: { tosVersion: TOS_VERSION, email_verified: false } });
       } else {
+        const _v=await fetch("/api/auth/verify-turnstile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:tsToken})}).then(r=>r.json()).catch(()=>({ok:true}));
+        if(!_v.ok){setErr("Verification failed — please try again.");setLoading(false);return;}
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Invalid email or password."); setLoading(false); return; }
         try{ if(staySignedIn){localStorage.setItem("mq_stay","1");}else{localStorage.removeItem("mq_stay");sessionStorage.setItem("mq_session","1");} }catch{}
@@ -3267,9 +3285,10 @@ function Auth({onLogin,onGuest}) {
           </div>
           <div>
             <div style={{fontSize:10,color:"rgba(201,168,76,.8)",textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'Cinzel',serif",marginBottom:5}}>Password</div>
-            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:.5,pointerEvents:"none",display:"flex"}}><I.Lock s={14} c="#c9a84c"/></span><input className="mq-in" type={show?"text":"password"} placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} style={{paddingRight:40}}/><button onClick={()=>setShow(s=>!s)} tabIndex={-1} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",opacity:.5,display:"flex"}}>{show?<I.EyeOff s={15} c="#c9a84c"/>:<I.Eye s={15} c="#c9a84c"/>}</button></div>
+            <div style={{position:"relative"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:.5,pointerEvents:"none",display:"flex"}}><I.Lock s={14} c="#c9a84c"/></span><input className="mq-in" type={show?"text":"password"} placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} style={{paddingRight:40}}/><button onClick={()=>setShow(s=>!s)} tabIndex={-1} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",opacity:.5,display:"flex"}}>{show?<I.EyeOff s={15} c="#c9a84c"/>:<I.Eye s={15} c="#c9a84c"/>}</button></div>{mode==="signup"&&<div style={{position:"relative",marginTop:10}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",opacity:.5,pointerEvents:"none",display:"flex"}}><I.Lock s={14} c="#c9a84c"/></span><input className="mq-in" type={show?"text":"password"} placeholder="Confirm password" value={pass2} onChange={e=>setPass2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} style={{paddingRight:40}}/></div>}
           </div>
           {err&&<div style={{background:"rgba(192,50,26,.12)",border:"1px solid rgba(192,50,26,.3)",color:"#ff8080",borderRadius:8,padding:"9px 14px",fontSize:12,display:"flex",alignItems:"center",gap:8}}>⚠ {err}</div>}
+          {resetMsg&&<div style={{background:"rgba(126,207,179,.1)",border:"1px solid rgba(126,207,179,.3)",color:"#9fe0c8",borderRadius:8,padding:"9px 14px",fontSize:12,lineHeight:1.4}}>{resetMsg}</div>}
           {mode==="signup"&&<label style={{display:"flex",alignItems:"flex-start",gap:8,fontSize:11,color:"rgba(244,237,216,.55)",lineHeight:1.5,cursor:"pointer"}}>
             <input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)} style={{marginTop:2,accentColor:"#c9a84c",cursor:"pointer",flexShrink:0}}/>
             <span>I agree to the <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a>.</span>
@@ -3278,7 +3297,7 @@ function Auth({onLogin,onGuest}) {
             <input type="checkbox" checked={staySignedIn} onChange={e=>setStaySignedIn(e.target.checked)} style={{accentColor:"#c9a84c",cursor:"pointer"}}/>
             <span>Stay signed in on this device</span>
           </label>}
-          {mode==="signup"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Sign In":"Create Account"} →</>}</button>
+          {mode!=="reset"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{background:G,border:"none",color:"#0a0608",cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,padding:13,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:1.5,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,transition:"all .2s"}} onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(201,168,76,.35)"}}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>{loading?"⟳":<>{mode==="login"?"Sign In":"Create Account"} →</>}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,color:"rgba(244,237,216,.2)"}}>
             <div style={{flex:1,height:1,background:"rgba(201,168,76,.12)"}}/>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(201,168,76,.35)",letterSpacing:2}}>✦</span>
@@ -3287,6 +3306,7 @@ function Auth({onLogin,onGuest}) {
           <p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>
             Don't have an account? <a href="/join" style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,textDecoration:"none"}}>Create one →</a>
           </p>
+          {mode==="login"&&<p style={{textAlign:"center",margin:"6px 0 0"}}><button onClick={sendReset} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",fontSize:11.5}}>Forgot password?</button></p>}
           {/* Continue as Guest */}
           <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",marginTop:4,background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.06)";e.currentTarget.style.color="#f0d080";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(244,237,216,.6)";}}>Continue as Guest →</button>
           <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.3)",margin:"8px 0 0",lineHeight:1.4}}>Browse all postings without an account. Sign in any time to unlock match scores, tracking, and alerts.</p>
@@ -3550,10 +3570,17 @@ function parseResumeText(text){
     if(words.length>=2&&words.length<=4&&/^[A-Za-z][A-Za-z.'-]*$/.test(words[0])&&l.length<46){out.name=l;break;}
   }
 
-  // Location — look for "City, ST" pattern
-  const loc=flat.match(/\b([A-Z][a-zA-Z.\- ]+),\s*([A-Z]{2})\b/);
-  if(loc)out.location=`${loc[1].trim()}, ${loc[2]}`;
-
+// Location — City + state/province/country, searched in the contact area (top lines).
+  {
+    let lm=null;
+    for(const l of lines.slice(0,14)){
+      if(/@/.test(l)||/\b(street|st\.|road|rd\.|ave|avenue|blvd|suite|floor|drive|lane|way|apt)\b/i.test(l)) continue;
+      const m=l.match(/([A-Z][A-Za-z.'\-]+(?:\s[A-Z][A-Za-z.'\-]+){0,2}),\s*([A-Z]{2}|[A-Z][A-Za-z.'\-]+(?:\s[A-Z][A-Za-z.'\-]+)?)\b/);
+      if(m){ lm=m; break; }
+    }
+    if(lm){ out.location=`${lm[1].trim()}, ${lm[2].trim()}`; if(lm[2].trim().length>2) out.country=lm[2].trim(); }
+  }
+  
   // Role / current title — look for common title keywords near the top
   const titleRe=/(Senior |Junior |Lead |Principal |Staff )?(Game |Gameplay |Technical |Software |Systems |UI\/?UX |3D |Environment |Character |Narrative |Level )?(Designer|Developer|Engineer|Artist|Programmer|Producer|Animator|Writer|Manager|Director|Analyst)/i;
   for(const l of lines.slice(0,8)){
@@ -3579,10 +3606,28 @@ function parseResumeText(text){
   const yrs=flat.match(/(\d{1,2})\+?\s*years?(\s+of)?\s+(experience|exp)/i);
   if(yrs){const n=parseInt(yrs[1]);out.experience=n<2?"Entry Level":n<5?"Mid Level":n<8?"Senior":n<12?"Lead":"Principal";}
 
-  // Bio — first sentence of a summary/objective section, else first long line
-  const sumIdx=lines.findIndex(l=>/^(summary|profile|objective|about)\b/i.test(l));
-  if(sumIdx>-1&&lines[sumIdx+1]){out.bio=lines[sumIdx+1].slice(0,300);}
-
+// Summary / bio — text under a summary heading (multi-line), else first real paragraph.
+  {
+    const heads=/^(professional\s+summary|summary|profile|objective|about( me)?|overview)\b/i;
+    const si=lines.findIndex(l=>heads.test(l));
+    let bio="";
+    if(si>-1){
+      const inline=lines[si].replace(heads,"").replace(/^[\s:.\-]+/,"").trim();
+      if(inline.length>20) bio=inline;
+      else {
+        const stop=/^(experience|education|skills|projects|employment|work|technical|core|certification|contact|references)\b/i;
+        const buf=[];
+        for(let i=si+1;i<lines.length&&buf.length<5;i++){ if(stop.test(lines[i])||lines[i].length<3) break; buf.push(lines[i]); }
+        bio=buf.join(" ");
+      }
+    }
+    if(!bio){
+      const cand=lines.slice(1,14).find(l=>l.length>=60&&!/@|http|linkedin|\b\d{3}[-.\s]\d{3}\b/i.test(l)&&l!==out.name&&l!==out.role&&l!==out.location);
+      if(cand) bio=cand;
+    }
+    if(bio) out.bio=bio.slice(0,400);
+  }
+  
   // Work history — capture lines under an Experience/Employment heading
   const expIdx=lines.findIndex(l=>/^(work )?(experience|employment|professional experience|work history)\b/i.test(l));
   if(expIdx>-1){
@@ -3815,14 +3860,9 @@ function EmailTemplateTab({profile,upd,canAI}){
   ];
   const hasResume=!!(profile.resumeText||profile.resumeFileName);
   const [gen,setGen]=useState(false);
-  const generateTemplate=async()=>{
-    if(!canAI){ if(typeof window!=="undefined") window.alert("AI template generation is a Premium feature. Upgrade to Premium to use it."); return; }
-    const hasT=!!(text&&text.trim());
-    const msg=hasT
-      ? "Generate a new email template with AI?\n\nThis uses one AI usage token AND will overwrite your current template."
-      : "Generate an email template with AI?\n\nThis uses one AI usage token.";
-    if(typeof window!=="undefined"&&!window.confirm(msg)) return;
-    setGen(true);
+  const [tplModal,setTplModal]=useState(null); // styled confirm/alert for AI generation
+  const doGenerate=async()=>{
+    setTplModal(null); setGen(true);
     try{
       const { data }=await supabase.auth.getSession();
       const tk=data&&data.session&&data.session.access_token;
@@ -3831,9 +3871,14 @@ function EmailTemplateTab({profile,upd,canAI}){
       if(r.ok&&j.text){
         const map=[]; const conv=j.text.replace(/\{(company|position)\}/gi,(m,k)=>{ map.push(k.toLowerCase()); return "[x]"; });
         upd("emailTemplate",conv); upd("emailTemplateMap",map);
-      } else { if(typeof window!=="undefined") window.alert(j.error||"Could not generate. Please try again."); }
-    }catch(e){ if(typeof window!=="undefined") window.alert("Something went wrong."); }
+      } else { setTplModal({kind:"alert",title:"Couldn’t generate",msg:j.error||"Could not generate right now. Please try again in a moment."}); }
+    }catch(e){ setTplModal({kind:"alert",title:"Something went wrong",msg:"Please check your connection and try again."}); }
     setGen(false);
+  };
+  const generateTemplate=()=>{
+    if(!canAI){ setTplModal({kind:"alert",title:"Premium feature",msg:"AI template generation is a Premium feature — upgrade to Premium to use it."}); return; }
+    const hasT=!!(text&&text.trim());
+    setTplModal({kind:"confirm",title:hasT?"Overwrite template?":"Generate template?",msg:hasT?"This uses one AI usage token and will overwrite your current template.":"This uses one AI usage token."});
   };
 
   const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
@@ -3859,6 +3904,15 @@ function EmailTemplateTab({profile,upd,canAI}){
   })();
 
   return <div>
+    {tplModal&&<div onClick={()=>setTplModal(null)} style={{position:"fixed",inset:0,zIndex:2000,background:"rgba(4,3,5,.82)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{maxWidth:360,width:"100%",background:"linear-gradient(160deg,#1a120c,#0a0608)",border:"1px solid rgba(201,168,76,.3)",borderRadius:16,padding:"22px 20px",boxShadow:"0 30px 80px rgba(0,0,0,.7)"}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:8}}>{tplModal.title}</div>
+        <div style={{fontSize:12.5,color:"rgba(244,237,216,.7)",lineHeight:1.5,marginBottom:18}}>{tplModal.msg}</div>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          {tplModal.kind==="confirm"?<><button onClick={()=>setTplModal(null)} style={{background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.7)",borderRadius:9,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>Cancel</button><button onClick={doGenerate} style={{background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"8px 18px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>Generate</button></>:<button onClick={()=>setTplModal(null)} style={{background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"8px 20px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>OK</button>}
+        </div>
+      </div>
+    </div>}
     {/* Preferred email provider (moved here from Links) */}
     <div style={{marginBottom:16}}>
       <label style={lbl}>Preferred Email Provider</label>
@@ -4014,6 +4068,95 @@ function VerifyEmailRow({ user }){
   </div>;
 }
 
+function MfaSection(){
+  const [state,setState]=useState("loading");   // loading | off | enrolling | on
+  const [factorId,setFactorId]=useState("");
+  const [qr,setQr]=useState(""); const [secret,setSecret]=useState("");
+  const [code,setCode]=useState(""); const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
+  const [confirmRemove,setConfirmRemove]=useState(false);
+
+  const refresh=async()=>{
+    try{
+      const { data }=await supabase.auth.mfa.listFactors();
+      const v=((data&&data.totp)||[]).find(f=>f.status==="verified");
+      if(v){ setFactorId(v.id); setState("on"); } else { setState("off"); }
+    }catch(e){ setState("off"); }
+  };
+  useEffect(()=>{ refresh(); },[]);
+
+  const startEnroll=async()=>{
+    setErr(""); setBusy(true);
+    try{
+      // remove any leftover unverified factors first (Supabase caps enrolled factors)
+      const { data:list }=await supabase.auth.mfa.listFactors();
+      for(const f of (((list&&list.totp)||[]))) if(f.status!=="verified") await supabase.auth.mfa.unenroll({ factorId:f.id }).catch(()=>{});
+      const { data, error }=await supabase.auth.mfa.enroll({ factorType:"totp" });
+      if(error){ setErr(error.message||"Could not start setup."); setBusy(false); return; }
+      setFactorId(data.id); setQr((data.totp&&data.totp.qr_code)||""); setSecret((data.totp&&data.totp.secret)||"");
+      setState("enrolling");
+    }catch(e){ setErr("Could not start setup."); }
+    setBusy(false);
+  };
+
+  const verify=async()=>{
+    setErr(""); setBusy(true);
+    try{
+      const { data:ch, error:ce }=await supabase.auth.mfa.challenge({ factorId });
+      if(ce){ setErr(ce.message||"Verification failed."); setBusy(false); return; }
+      const { error:ve }=await supabase.auth.mfa.verify({ factorId, challengeId:ch.id, code:code.replace(/\s/g,"") });
+      if(ve){ setErr("Incorrect code — check the app and try again."); setBusy(false); return; }
+      setCode(""); setState("on");
+    }catch(e){ setErr("Verification failed."); }
+    setBusy(false);
+  };
+
+  const remove=async()=>{
+    setBusy(true);
+    try{ await supabase.auth.mfa.unenroll({ factorId }); }catch(e){}
+    setBusy(false); setConfirmRemove(false); setState("off");
+  };
+
+  const inp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:15,letterSpacing:4,textAlign:"center",outline:"none",width:"100%",boxSizing:"border-box"};
+  const goldBtn={background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"};
+
+  return (
+    <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
+      <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Two-Factor Authentication</div>
+      {state==="loading" && <div style={{fontSize:12,color:"rgba(244,237,216,.4)"}}>Checking…</div>}
+
+      {state==="off" && <div>
+        <p style={{fontSize:12,color:"rgba(244,237,216,.55)",lineHeight:1.5,margin:"0 0 10px"}}>Add an extra layer of security. You'll enter a 6-digit code from an authenticator app (Google Authenticator, Authy, 1Password) when you sign in.</p>
+        <button onClick={startEnroll} disabled={busy} style={{...goldBtn,width:"100%",opacity:busy?.7:1}}>{busy?"Starting…":"Enable Two-Factor Authentication"}</button>
+        {err && <div style={{fontSize:11.5,color:"#e07060",marginTop:8}}>{err}</div>}
+      </div>}
+
+      {state==="enrolling" && <div>
+        <p style={{fontSize:12,color:"rgba(244,237,216,.6)",lineHeight:1.5,margin:"0 0 10px"}}>1. Scan this with your authenticator app:</p>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
+          <div style={{background:"#fff",padding:8,borderRadius:10,width:168,height:168,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {qr ? (qr.trim().startsWith("<svg") ? <div style={{width:150,height:150}} dangerouslySetInnerHTML={{__html:qr}}/> : <img src={qr} alt="QR code" style={{width:150,height:150}}/>) : <span style={{color:"#888",fontSize:11}}>No QR</span>}
+          </div>
+        </div>
+        {secret && <div style={{fontSize:10.5,color:"rgba(244,237,216,.45)",textAlign:"center",marginBottom:12,wordBreak:"break-all"}}>Or enter this key manually:<br/><span style={{color:"#c9a84c",fontFamily:"monospace",letterSpacing:1}}>{secret}</span></div>}
+        <p style={{fontSize:12,color:"rgba(244,237,216,.6)",margin:"0 0 8px"}}>2. Enter the 6-digit code it shows:</p>
+        <input style={inp} value={code} onChange={e=>setCode(e.target.value)} onKeyDown={e=>e.key==="Enter"&&verify()} placeholder="000000" inputMode="numeric" maxLength={6}/>
+        {err && <div style={{fontSize:11.5,color:"#e07060",marginTop:8}}>{err}</div>}
+        <div style={{display:"flex",gap:8,marginTop:10}}>
+          <button onClick={()=>{setState("off");setErr("");setCode("");}} style={{flex:"0 0 auto",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.7)",borderRadius:9,padding:"10px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>Cancel</button>
+          <button onClick={verify} disabled={busy||code.replace(/\s/g,"").length<6} style={{...goldBtn,flex:1,opacity:(busy||code.replace(/\s/g,"").length<6)?.6:1}}>{busy?"Verifying…":"Verify & Enable"}</button>
+        </div>
+      </div>}
+
+      {state==="on" && <div>
+        <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5,color:"#7ecfb3",marginBottom:10}}><span>✓</span> Two-factor authentication is on.</div>
+        {!confirmRemove
+          ? <button onClick={()=>setConfirmRemove(true)} style={{width:"100%",background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600}}>Turn off two-factor</button>
+          : <div><div style={{fontSize:12,color:"rgba(244,237,216,.6)",marginBottom:8,lineHeight:1.4}}>Turn off 2FA? Your account will be less secure.</div><div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmRemove(false)} style={{flex:1,background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.7)",borderRadius:9,padding:"9px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>Keep on</button><button onClick={remove} disabled={busy} style={{flex:1,background:"rgba(192,50,26,.18)",border:"1px solid rgba(192,50,26,.4)",color:"#ff9080",borderRadius:9,padding:"9px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>{busy?"…":"Turn off"}</button></div></div>}
+      </div>}
+    </div>
+  );
+}
+
 function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
   const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
@@ -4021,6 +4164,22 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
   const [tab,setTab]=useState("profile");
   const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",country:user.profile?.country||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
   const [saved,setSaved]=useState(false);
+  const [pwOpen,setPwOpen]=useState(false),[pwOld,setPwOld]=useState(""),[pwNew,setPwNew]=useState(""),[pwNew2,setPwNew2]=useState(""),[pwMsg,setPwMsg]=useState(""),[pwBusy,setPwBusy]=useState(false);
+  const pwInp={background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"#f4edd8",colorScheme:"dark",borderRadius:8,padding:"10px 12px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box"};
+  const changePassword=async()=>{
+    setPwMsg("");
+    if(pwNew.length<6){ setPwMsg("New password must be at least 6 characters."); return; }
+    if(pwNew!==pwNew2){ setPwMsg("New passwords do not match."); return; }
+    setPwBusy(true);
+    try{
+      const { error:e1 }=await supabase.auth.signInWithPassword({ email:user.email, password:pwOld });
+      if(e1){ setPwBusy(false); setPwMsg("Current password is incorrect."); return; }
+      const { error:e2 }=await supabase.auth.updateUser({ password:pwNew });
+      setPwBusy(false);
+      if(e2){ setPwMsg(e2.message||"Could not update password."); return; }
+      setPwOld("");setPwNew("");setPwNew2("");setPwMsg("✓ Password updated."); notifyEmail("password-changed");
+    }catch(e){ setPwBusy(false); setPwMsg("Something went wrong. Please try again."); }
+  };
   const [saveErr,setSaveErr]=useState("");
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
   const toggleOt=(v)=>setP(prev=>({...prev,openTo:prev.openTo.includes(v)?prev.openTo.filter(x=>x!==v):[...prev.openTo,v]}));
@@ -4217,6 +4376,18 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
               <button onClick={()=>setShowDelete(false)} disabled={delBusy} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"rgba(244,237,216,.45)",fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Never mind, keep my account</button>
             </div>
           </div>}
+          {/* Security — change password */}
+          <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
+            <button onClick={()=>{setPwOpen(o=>!o);setPwMsg("");}} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.7)",cursor:"pointer",fontSize:12,padding:"11px 13px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600}}><span>Change Password</span><span style={{opacity:.6,fontSize:15}}>{pwOpen?"–":"+"}</span></button>
+            {pwOpen&&<div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
+              <input type="password" value={pwOld} onChange={e=>setPwOld(e.target.value)} placeholder="Current password" style={pwInp}/>
+              <input type="password" value={pwNew} onChange={e=>setPwNew(e.target.value)} placeholder="New password" style={pwInp}/>
+              <input type="password" value={pwNew2} onChange={e=>setPwNew2(e.target.value)} placeholder="Confirm new password" style={pwInp}/>
+              {pwMsg&&<div style={{fontSize:11.5,color:pwMsg.indexOf("✓")===0?"#7ecfb3":"#e07060",lineHeight:1.4}}>{pwMsg}</div>}
+              <button onClick={changePassword} disabled={pwBusy} style={{background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:pwBusy?.7:1}}>{pwBusy?"Updating…":"Update Password"}</button>
+            </div>}
+          </div>
+          <MfaSection/>
           <button onClick={onLogout} style={{width:"100%",marginTop:10,background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Sign Out of Main Quest</button>
         </div>}
       </div>
@@ -4571,8 +4742,8 @@ function UpgradeLink({label,size,mt}){
 // Full-page upgrade modal — plans, feature showcase, and Stripe checkout buttons.
 function UpgradeModal({user,onClose}){
   const [busy,setBusy]=useState("");
-  const [plusCycle,setPlusCycle]=useState("yearly");
-  const [premCycle,setPremCycle]=useState("yearly");
+  const [plusCycle,setPlusCycle]=useState("monthly");
+  const [premCycle,setPremCycle]=useState("monthly");
   const currentPlan=(user&&user.plan)||"basic";
   const rank={basic:0,plus:1,premium:2};
   const go=async(plan,cyc)=>{
@@ -5710,7 +5881,7 @@ export default function App() {
     // Register-interest companies get a synthetic "Open Application" card so it behaves
     // like a real listing: shows on the board, obeys filters, groups by home region.
     const _oaMeta=COMPANY_META[name];
-    if(_oaMeta&&_oaMeta.registerInterest&&!all.some(j=>j&&j.isOpenApp)) all=[...all,_makeOpenAppJob(name,_oaMeta)];
+    if(_oaMeta&&(_oaMeta.registerInterest||_oaMeta.emailApply||_oaMeta.contact)&&!all.some(j=>j&&j.isOpenApp)) all=[...all,_makeOpenAppJob(name,_oaMeta)];
     // CD Projekt Red's "spontaneous application" is an open/register-interest posting,
     // not a real role — it's surfaced via their Register Interest button instead.
     if(/cd projekt/i.test(name)) all=all.filter(j=>!/spontaneous/i.test(j.title||""));
@@ -5721,6 +5892,7 @@ export default function App() {
     // jobs fall back to the company's home region so they're not lost.
     const homeState=companyHomeState[name];
     return all.filter(j=>{
+      if(j.isOpenApp) return true;       // open-application card shows in the company’s home listing (foreign tabs group by country, not city)
       const js=jobStateName(j);
       if(js==="REMOTE") return stateName==="Remote";        // remote jobs live in the Remote tab only
       if(js==="UNKNOWN") return stateName===homeState;       // unpinnable domestic → home region
@@ -5762,6 +5934,7 @@ export default function App() {
   useEffect(()=>{refreshTimer.current=setInterval(()=>setLastRefresh(new Date()),300000);return()=>clearInterval(refreshTimer.current);},[]);
 
   const login=u=>setUser(u);
+  useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("welcome"); notifyEmail("device-check"); },[user&&user.id,guest]);
   const guestLogin=u=>{setUser(u);setGuest(false);setShowLoginPopup(false);};
   // Lock page scroll while Journey Mode (full-screen globe) is active.
   useEffect(()=>{
@@ -6410,8 +6583,8 @@ export default function App() {
       {/* CENTER: nav tabs */}
       <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":"0 0 auto",order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
-          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Jobs":"Job Board"}</span>{totalJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{totalJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Applied":"Job Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
-            <button key={id} onClick={()=>{if(id==="applied"&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{id==="applied"&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
+          {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Jobs":"Job Board"}</span>{totalJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{totalJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Applied":"Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
+            <button key={id} onClick={()=>{if((id==="applied"||id==="saved")&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{(id==="applied"||id==="saved")&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
             {/* Journey Mode — special glowing tab (hidden while SHOW_JOURNEY_MODE is false) */}
             {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}
         </nav>

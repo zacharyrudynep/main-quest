@@ -181,6 +181,7 @@ export default function Join() {
 
       <div style={{ minHeight: "100vh", overflowX: "hidden", maxWidth: "100%", background: "radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.16), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
         <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+          <button onClick={() => router.push("/")} style={{ position: "fixed", top: 18, left: 18, zIndex: 20, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(201,168,76,.08)", border: "1px solid rgba(201,168,76,.25)", color: "rgba(244,237,216,.78)", borderRadius: 9, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Cinzel',serif", backdropFilter: "blur(6px)" }}>← Back</button>
 
           {/* Header — matches the site's title logo */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 8 }}>
