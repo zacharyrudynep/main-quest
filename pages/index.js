@@ -2208,6 +2208,24 @@ function TurnstileWidget({ onToken }){
 
 function LoginPopup({onClose,onLogin}) {
   const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
+  const [mfaStep,setMfaStep]=useState(false),[mfaFactor,setMfaFactor]=useState(""),[mfaUid,setMfaUid]=useState(""),[mfaCode,setMfaCode]=useState("");
+  const completeLogin=async(uid)=>{
+    const {data:profile}=await supabase.from("profiles").select("*").eq("id",uid).single();
+    const {data:apps}=await supabase.from("applications").select("*").eq("user_id",uid);
+    const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied",title:a.job_title,company:a.company,url:a.job_url,salary:a.salary};});
+    const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified),plan:(profile&&profile.plan)||"basic"};
+    onLogin({id:uid,email,name:profile?.name||profData.name||email,applied,profile:profData});
+  };
+  const verifyMfa=async()=>{
+    setErr(""); setLoading(true);
+    try{
+      const { data:ch, error:ce }=await supabase.auth.mfa.challenge({ factorId:mfaFactor });
+      if(ce){ setErr(ce.message||"Please try again."); setLoading(false); return; }
+      const { error:ve }=await supabase.auth.mfa.verify({ factorId:mfaFactor, challengeId:ch.id, code:mfaCode.replace(/\s/g,"") });
+      if(ve){ setErr("Incorrect code — try again."); setLoading(false); return; }
+      await completeLogin(mfaUid);
+    }catch(e){ setErr("Verification failed."); setLoading(false); }
+  };
   const [agreed,setAgreed]=useState(false);
   const [name,setName]=useState(""),[email,setEmail]=useState(""),[pass,setPass]=useState(""),[pass2,setPass2]=useState("");
   const [err,setErr]=useState(""),[loading,setLoading]=useState(false),[resetMsg,setResetMsg]=useState("");
@@ -2235,11 +2253,8 @@ function LoginPopup({onClose,onLogin}) {
         if(!_v.ok){setErr("Verification failed — please try again.");setLoading(false);return;}
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
         if(error){setErr("Invalid email or password.");setLoading(false);return;}
-        const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
-        const {data:apps}=await supabase.from("applications").select("*").eq("user_id",data.user.id);
-        const applied={};(apps||[]).forEach(a=>{applied[a.job_id]={date:a.applied_at,status:a.status||"applied",title:a.job_title,company:a.company,url:a.job_url,salary:a.salary};});
-        const profData={...((profile&&profile.data)?profile.data:(profile||{})),email_verified:!!(profile&&profile.email_verified),plan:(profile&&profile.plan)||"basic"};
-        onLogin({id:data.user.id,email,name:profile?.name||profData.name||email,applied,profile:profData});
+        try{ const { data:aal }=await supabase.auth.mfa.getAuthenticatorAssuranceLevel(); if(aal&&aal.nextLevel==="aal2"&&aal.currentLevel!=="aal2"){ const { data:facs }=await supabase.auth.mfa.listFactors(); const totp=((facs&&facs.totp)||[]).find(f=>f.status==="verified"); if(totp){ setMfaFactor(totp.id); setMfaUid(data.user.id); setMfaStep(true); setLoading(false); return; } } }catch(e){}
+        await completeLogin(data.user.id);
       }
     }catch(e){setErr("Something went wrong. Please try again.");setLoading(false);}
   };
@@ -2251,7 +2266,7 @@ function LoginPopup({onClose,onLogin}) {
         <div style={{fontFamily:"'Cinzel Decorative',serif",fontSize:24,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:4}}>Main Quest</div>
         <div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>{mode==="reset"?"Enter your email to reset your password":mode==="login"?"Sign in to unlock all features":"Create a free account"}</div>
       </div>
-      {mode==="signup"&&<input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>}
+      {mfaStep?<div style={{display:"flex",flexDirection:"column",gap:10}}><div style={{fontSize:12.5,color:"rgba(244,237,216,.6)",lineHeight:1.5,textAlign:"center"}}>Enter the 6-digit code from your authenticator app.</div><input style={{...inp,letterSpacing:4,textAlign:"center",fontSize:16}} value={mfaCode} onChange={e=>setMfaCode(e.target.value)} onKeyDown={e=>e.key==="Enter"&&verifyMfa()} placeholder="000000" inputMode="numeric" maxLength={6} autoFocus/>{err&&<div style={{fontSize:11.5,color:"#e07060",textAlign:"center"}}>{err}</div>}<button onClick={verifyMfa} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",opacity:loading?.7:1}}>{loading?"⟳":"Verify →"}</button><button onClick={()=>{setMfaStep(false);setMfaCode("");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",fontSize:11.5}}>← Back</button></div>:<>{mode==="signup"&&<input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>}
       <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com"/>
       {mode!=="reset"&&<input style={inp} type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Password"/>}
       {mode==="signup"&&<input style={inp} type="password" value={pass2} onChange={e=>setPass2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Confirm password"/>}
@@ -2259,7 +2274,7 @@ function LoginPopup({onClose,onLogin}) {
       {err&&<div style={{fontSize:11.5,color:"#e07060",marginBottom:10,textAlign:"center"}}>{err}</div>}
       {resetMsg&&<div style={{fontSize:12,color:"#7ecfb3",marginBottom:10,textAlign:"center",lineHeight:1.45}}>{resetMsg}</div>}
       {mode!=="reset"&&<TurnstileWidget onToken={setTsToken}/>}<button onClick={submit} disabled={loading} style={{width:"100%",background:G,border:"none",color:"#0a0608",cursor:loading?"default":"pointer",borderRadius:9,padding:"12px",fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:loading?.7:1,marginBottom:12}}>{loading?"⟳":mode==="reset"?"Send Reset Link →":mode==="login"?"Sign In →":"Create Account →"}</button>
-      {mode==="reset"?<p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}><button onClick={()=>{setMode("login");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>← Back to sign in</button></p>:<><p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button></p>{mode==="login"&&<p style={{textAlign:"center",margin:"8px 0 0"}}><button onClick={()=>{setMode("reset");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",fontSize:11.5}}>Forgot password?</button></p>}</>}
+      {mode==="reset"?<p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}><button onClick={()=>{setMode("login");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>← Back to sign in</button></p>:<><p style={{textAlign:"center",fontSize:12,color:"rgba(244,237,216,.4)",margin:0}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(m=>m==="login"?"signup":"login");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700}}>{mode==="login"?"Sign up free":"Sign in instead"}</button></p>{mode==="login"&&<p style={{textAlign:"center",margin:"8px 0 0"}}><button onClick={()=>{setMode("reset");setErr("");setResetMsg("");}} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",fontSize:11.5}}>Forgot password?</button></p>}</>}</>}
     </div>
   </div>;
 }
@@ -3128,6 +3143,18 @@ function FeatureShowcase(){
 function Auth({onLogin,onGuest}) {
   const mobile = useIsMobile();
   const [mode,setMode]=useState("login");const [tsToken,setTsToken]=useState("");
+  const [mfaStep,setMfaStep]=useState(false),[mfaFactor,setMfaFactor]=useState(""),[mfaUid,setMfaUid]=useState(""),[mfaCode,setMfaCode]=useState("");
+  const completeLogin=async(uid)=>{
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", uid).single();
+    const { data: apps } = await supabase.from("applications").select("*").eq("user_id", uid);
+    const applied = {};
+    (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied", title: a.job_title, company: a.company, url: a.job_url, salary: a.salary }; });
+    const saved = {};
+    try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", uid); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
+    const profData = { ...((profile && profile.data) ? profile.data : (profile || {})), email_verified: !!(profile && profile.email_verified), plan: (profile && profile.plan) || "basic" };
+    onLogin({ id: uid, email, name: profile?.name || profData.name || email, applied, saved, profile: profData });
+  };
+  const verifyMfa=async()=>{ setErr(""); setLoading(true); try{ const { data:ch, error:ce }=await supabase.auth.mfa.challenge({ factorId:mfaFactor }); if(ce){ setErr(ce.message||"Please try again."); setLoading(false); return; } const { error:ve }=await supabase.auth.mfa.verify({ factorId:mfaFactor, challengeId:ch.id, code:mfaCode.replace(/\s/g,"") }); if(ve){ setErr("Incorrect code — try again."); setLoading(false); return; } await completeLogin(mfaUid); }catch(e){ setErr("Verification failed."); setLoading(false); } };
   const [agreed,setAgreed]=useState(false);
   const [staySignedIn,setStaySignedIn]=useState(true);
   const [name,setName]=useState(""),  [email,setEmail]=useState(""), [pass,setPass]=useState(""), [pass2,setPass2]=useState("");
@@ -3156,14 +3183,8 @@ function Auth({onLogin,onGuest}) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Invalid email or password."); setLoading(false); return; }
         try{ if(staySignedIn){localStorage.setItem("mq_stay","1");}else{localStorage.removeItem("mq_stay");sessionStorage.setItem("mq_session","1");} }catch{}
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-        const { data: apps } = await supabase.from("applications").select("*").eq("user_id", data.user.id);
-        const applied = {};
-        (apps || []).forEach(a => { applied[a.job_id] = { date: a.applied_at, status: a.status || "applied", title: a.job_title, company: a.company, url: a.job_url, salary: a.salary }; });
-        const saved = {};
-        try { const { data: sv } = await supabase.from("saved_jobs").select("job_id,saved_at").eq("user_id", data.user.id); (sv || []).forEach(s => { saved[s.job_id] = { date: s.saved_at }; }); } catch (e) {}
-        const profData = { ...((profile && profile.data) ? profile.data : (profile || {})), email_verified: !!(profile && profile.email_verified), plan: (profile && profile.plan) || "basic" };
-        onLogin({ id: data.user.id, email, name: profile?.name || profData.name || email, applied, saved, profile: profData });
+        try{ const { data:aal }=await supabase.auth.mfa.getAuthenticatorAssuranceLevel(); if(aal&&aal.nextLevel==="aal2"&&aal.currentLevel!=="aal2"){ const { data:facs }=await supabase.auth.mfa.listFactors(); const totp=((facs&&facs.totp)||[]).find(f=>f.status==="verified"); if(totp){ setMfaFactor(totp.id); setMfaUid(data.user.id); setMfaStep(true); setLoading(false); return; } } }catch(e){}
+        await completeLogin(data.user.id);
       }
     } catch (e) {
       setErr("Something went wrong. Please try again.");
@@ -3307,6 +3328,16 @@ function Auth({onLogin,onGuest}) {
             Don't have an account? <a href="/join" style={{color:"#c9a84c",fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,textDecoration:"none"}}>Create one →</a>
           </p>
           {mode==="login"&&<p style={{textAlign:"center",margin:"6px 0 0"}}><button onClick={sendReset} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",fontSize:11.5}}>Forgot password?</button></p>}
+          {mfaStep&&<div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(4,3,5,.92)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div style={{maxWidth:360,width:"100%",background:"linear-gradient(160deg,#140e0a,#0a0608)",border:"1px solid rgba(201,168,76,.3)",borderRadius:16,padding:"28px 24px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:18,color:"#f0d080",fontWeight:800,marginBottom:8}}>Two-Factor Verification</div>
+              <p style={{fontSize:12.5,color:"rgba(244,237,216,.6)",lineHeight:1.5,marginBottom:16}}>Enter the 6-digit code from your authenticator app.</p>
+              <input value={mfaCode} onChange={e=>setMfaCode(e.target.value)} onKeyDown={e=>e.key==="Enter"&&verifyMfa()} placeholder="000000" inputMode="numeric" maxLength={6} autoFocus style={{width:"100%",boxSizing:"border-box",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.25)",color:"#f4edd8",colorScheme:"dark",borderRadius:9,padding:"12px",fontSize:18,letterSpacing:6,textAlign:"center",outline:"none",marginBottom:12}}/>
+              {err&&<div style={{fontSize:11.5,color:"#e07060",marginBottom:12}}>{err}</div>}
+              <button onClick={verifyMfa} disabled={loading} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:loading?.7:1}}>{loading?"Verifying…":"Verify →"}</button>
+              <button onClick={()=>{setMfaStep(false);setMfaCode("");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",fontSize:11.5,marginTop:10}}>← Back to sign in</button>
+            </div>
+          </div>}
           {/* Continue as Guest */}
           <button onClick={()=>onGuest&&onGuest()} style={{width:"100%",marginTop:4,background:"transparent",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.6)",cursor:"pointer",borderRadius:10,padding:"11px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,.06)";e.currentTarget.style.color="#f0d080";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(244,237,216,.6)";}}>Continue as Guest →</button>
           <p style={{textAlign:"center",fontSize:10.5,color:"rgba(244,237,216,.3)",margin:"8px 0 0",lineHeight:1.4}}>Browse all postings without an account. Sign in any time to unlock match scores, tracking, and alerts.</p>
