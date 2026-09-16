@@ -2,7 +2,7 @@
 // Authenticated (Bearer session token). Sends account/security emails and tracks
 // known devices so a new-device sign-in triggers an alert.
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { sendWelcomeEmail, sendPasswordChangedEmail, sendNewDeviceEmail } from "../../../lib/resend";
+import { sendPasswordChangedEmail, sendNewDeviceEmail } from "../../../lib/resend";
 import crypto from "crypto";
 
 function deviceLabel(ua) {
@@ -36,13 +36,6 @@ export default async function handler(req, res) {
     const { data: prof } = await supabaseAdmin.from("profiles").select("name,data").eq("id", uid).single();
     const name = (prof && prof.name) || "";
     const data = (prof && prof.data) || {};
-
-    if (type === "welcome") {
-      if (data.welcomeSent) return res.status(200).json({ ok: true, skipped: true });
-      await sendWelcomeEmail(email, name).catch(() => {});
-      await supabaseAdmin.from("profiles").update({ data: { ...data, welcomeSent: true } }).eq("id", uid);
-      return res.status(200).json({ ok: true });
-    }
 
     if (type === "password-changed") {
       await sendPasswordChangedEmail(email, name).catch(() => {});

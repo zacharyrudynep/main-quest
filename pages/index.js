@@ -5965,7 +5965,7 @@ export default function App() {
   useEffect(()=>{refreshTimer.current=setInterval(()=>setLastRefresh(new Date()),300000);return()=>clearInterval(refreshTimer.current);},[]);
 
   const login=u=>setUser(u);
-  useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("welcome"); notifyEmail("device-check"); },[user&&user.id,guest]);
+  useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("device-check"); },[user&&user.id,guest]);
   const guestLogin=u=>{setUser(u);setGuest(false);setShowLoginPopup(false);};
   // Lock page scroll while Journey Mode (full-screen globe) is active.
   useEffect(()=>{
