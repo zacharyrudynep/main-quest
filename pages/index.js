@@ -5981,12 +5981,21 @@ export default function App() {
   const inboxUnread=inbox.filter(n=>!n.read).length;
   // Merge a patch into the user's profile in state AND persist to Supabase.
   const patchProfile=async(patch)=>{
-    setUser(u=>{
-      if(!u) return u;
-      const merged={...(u.profile||{}),...patch};
-      if(u.id){ try{ supabase.from("profiles").upsert({id:u.id,name:u.name,data:merged},{onConflict:"id"}).then(()=>{}); }catch(e){} }
-      return {...u,profile:merged};
-    });
+    let uid=null,uname=null;
+    setUser(u=>{ if(!u) return u; uid=u.id; uname=u.name; return {...u,profile:{...(u.profile||{}),...patch}}; }); // optimistic
+    if(!uid) return;
+    try{
+      // Merge over the LATEST server data so we never clobber cron-managed fields
+      // (inbox additions, seenInboxKeys) with a stale local copy.
+      const { data:cur }=await supabase.from("profiles").select("data").eq("id",uid).single();
+      const server=(cur&&cur.data)||{};
+      const merged={...server,...patch};
+      // seenInboxKeys must only GROW: union server + patch + every current inbox item
+      // key, so a job that has been surfaced is never re-added as “new”.
+      const inboxKeys=((merged.inbox)||[]).map(n=>n&&n.jobKey).filter(Boolean);
+      merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys])].slice(-2000);
+      await supabase.from("profiles").upsert({id:uid,name:uname,data:merged},{onConflict:"id"});
+    }catch(e){}
   };
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
