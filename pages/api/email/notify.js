@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       const isFirst = known.length === 0; // don't alert on the user's very first seen device
       const next = [...known, key].slice(-12);
       await supabaseAdmin.from("profiles").update({ data: { ...data, knownDevices: next } }).eq("id", uid);
-      if (!isFirst) {
+      if (!isFirst && data.newDeviceAlerts !== false) {
         await sendNewDeviceEmail(email, name, { device: deviceLabel(ua) }).catch(() => {});
         return res.status(200).json({ ok: true, alerted: true });
       }

@@ -2834,7 +2834,7 @@ function MfaSection(){
   );
 }
 
-function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
+function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch}) {
   const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
   const mobile = useIsMobile();
@@ -3053,18 +3053,47 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade}) {
               <button onClick={()=>setShowDelete(false)} disabled={delBusy} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"rgba(244,237,216,.45)",fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Never mind, keep my account</button>
             </div>
           </div>}
-          {/* Security — change password */}
+          {/* Notifications */}
           <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
-            <button onClick={()=>{setPwOpen(o=>!o);setPwMsg("");}} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.7)",cursor:"pointer",fontSize:12,padding:"11px 13px",borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600}}><span>Change Password</span><span style={{opacity:.6,fontSize:15}}>{pwOpen?"–":"+"}</span></button>
-            {pwOpen&&<div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-              <input type="password" value={pwOld} onChange={e=>setPwOld(e.target.value)} placeholder="Current password" style={pwInp}/>
-              <input type="password" value={pwNew} onChange={e=>setPwNew(e.target.value)} placeholder="New password" style={pwInp}/>
-              <input type="password" value={pwNew2} onChange={e=>setPwNew2(e.target.value)} placeholder="Confirm new password" style={pwInp}/>
-              {pwMsg&&<div style={{fontSize:11.5,color:pwMsg.indexOf("✓")===0?"#7ecfb3":"#e07060",lineHeight:1.4}}>{pwMsg}</div>}
-              <button onClick={changePassword} disabled={pwBusy} style={{background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:pwBusy?.7:1}}>{pwBusy?"Updating…":"Update Password"}</button>
-            </div>}
+            <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Notifications</div>
+            {[
+              {k:"notifications",label:"In-app notifications",desc:"New matching postings appear in your inbox",boolOn:true},
+              {k:"emailJobAlerts",label:"Job match emails",desc:"Email me when new postings match my alerts",boolOn:true},
+              {k:"newDeviceAlerts",label:"New sign-in alerts",desc:"Email me when my account is used on a new device",boolOn:true},
+              {k:"weeklyDigest",label:"Weekly email digest",desc:"A weekly summary of new roles for me",boolOn:false},
+            ].map(row=>{
+              const raw=user&&user.profile?user.profile[row.k]:undefined;
+              const cur=row.boolOn?(raw!==false):(!!raw);
+              return <div key={row.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"8px 0"}}>
+                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>{row.label}</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2,lineHeight:1.35}}>{row.desc}</div></div>
+                <button onClick={()=>onPatch&&onPatch({[row.k]:!cur})} style={{width:42,height:24,background:cur?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:cur?"translateX(18px)":"none"}}/></button>
+              </div>;
+            })}
           </div>
-          <MfaSection/>
+
+          {/* Security */}
+          <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
+            <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Security</div>
+            <MfaSection/>
+            <button onClick={()=>{setPwOpen(true);setPwMsg("");setPwOld("");setPwNew("");setPwNew2("");}} style={{marginTop:12,background:"none",border:"none",color:"rgba(201,168,76,.65)",cursor:"pointer",fontSize:12,fontFamily:"'Cinzel',serif",textDecoration:"underline",padding:0}}>Change password</button>
+          </div>
+
+          {/* Change-password modal */}
+          {pwOpen&&<div onClick={()=>setPwOpen(false)} style={{position:"fixed",inset:0,zIndex:3000,background:"rgba(4,3,5,.82)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div onClick={e=>e.stopPropagation()} style={{maxWidth:360,width:"100%",background:"linear-gradient(160deg,#1a120c,#0a0608)",border:"1px solid rgba(201,168,76,.3)",borderRadius:16,padding:"24px 22px",boxShadow:"0 30px 80px rgba(0,0,0,.7)"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:14}}>Change Password</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <input type="password" value={pwOld} onChange={e=>setPwOld(e.target.value)} placeholder="Current password" style={pwInp}/>
+                <input type="password" value={pwNew} onChange={e=>setPwNew(e.target.value)} placeholder="New password" style={pwInp}/>
+                <input type="password" value={pwNew2} onChange={e=>setPwNew2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&changePassword()} placeholder="Confirm new password" style={pwInp}/>
+                {pwMsg&&<div style={{fontSize:11.5,color:pwMsg.indexOf("\u2713")===0?"#7ecfb3":"#e07060",lineHeight:1.4}}>{pwMsg}</div>}
+                <div style={{display:"flex",gap:8,marginTop:4}}>
+                  <button onClick={()=>setPwOpen(false)} style={{flex:"0 0 auto",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.25)",color:"rgba(244,237,216,.7)",borderRadius:9,padding:"10px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>Close</button>
+                  <button onClick={changePassword} disabled={pwBusy} style={{flex:1,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:9,padding:"10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:pwBusy?.7:1}}>{pwBusy?"Updating\u2026":"Update Password"}</button>
+                </div>
+              </div>
+            </div>
+          </div>}
           <button onClick={onLogout} style={{width:"100%",marginTop:10,background:"rgba(244,237,216,.04)",border:"1px solid rgba(201,168,76,.14)",color:"rgba(244,237,216,.5)",cursor:"pointer",fontSize:12,padding:10,borderRadius:10,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.5}}>Sign Out of Main Quest</button>
         </div>}
       </div>
@@ -5291,7 +5320,7 @@ export default function App() {
       </button>
       </div>
     </header>
-    {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
+    {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onPatch={patchProfile} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appIsPlus} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPlus={appIsPlus} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
