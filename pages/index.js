@@ -1375,6 +1375,14 @@ function titleMatchesFilter(jobTitle, filterTitle){
     return toks.length>0 && toks.every(tk=>jt.includes(" "+tk+" ")); // every role word present
   });
 }
+
+// Precompiled form of a title filter (expanded once, not per job) + a fast per-job test.
+function _compileTitleFilter(filterTitle){
+  return _mqExpandSlash(filterTitle).map(alt=>({ phrase:_mqStrip(_mqNorm(alt)).trim(), tokens:_mqTokens(alt) })).filter(a=>a.phrase);
+}
+function _titleMatchesCompiled(jtNorm, alts){
+  return alts.some(a=>{ if(jtNorm.includes(" "+a.phrase+" ")) return true; return a.tokens.length>0 && a.tokens.every(tk=>jtNorm.includes(" "+tk+" ")); });
+}
 function jobMatchesOneAlert(job,a){
   const title=(job.title||"").toLowerCase();
   const comp=(job.company||"").toLowerCase();
@@ -4785,10 +4793,11 @@ export default function App() {
 
   const toggle=k=>setExpanded(e=>({...e,[k]:!e[k]}));
 
+  const compiledTitleFilters=useMemo(()=>(filters.titles||[]).map(_compileTitleFilter),[filters.titles]);
   const matches=job=>{
     const f=filters;
     if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false; // talent-community / general-application signups aren't real roles
-    if(f.titles.length>0){if(!f.titles.some(t=>titleMatchesFilter(job.title,t)))return false;}
+    if(compiledTitleFilters.length>0){const jt=_mqStrip(_mqNorm(job.title||""));if(!compiledTitleFilters.some(alts=>_titleMatchesCompiled(jt,alts)))return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
       const okR=f.remote.includes("Remote OK")&&job.isRemote;
@@ -4810,7 +4819,7 @@ export default function App() {
   const matchesExceptSearch=job=>{
     const f=filters;
     if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false;
-    if(f.titles.length>0){if(!f.titles.some(t=>titleMatchesFilter(job.title,t)))return false;}
+    if(compiledTitleFilters.length>0){const jt=_mqStrip(_mqNorm(job.title||""));if(!compiledTitleFilters.some(alts=>_titleMatchesCompiled(jt,alts)))return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
       const okR=f.remote.includes("Remote OK")&&job.isRemote;
@@ -5143,13 +5152,14 @@ export default function App() {
   const treeCounts=useMemo(()=>{
     const cc={},sc={};
     for(const [country,states] of Object.entries(displayTree)){
-      let cAll=[];
+      let cMatched=[];
       for(const [state,companies] of Object.entries(states)){
         const sAll=Object.entries(companies).flatMap(([nm,co])=>getDisplayJobs(nm,co.jobs,state));
-        sc[`${country}|${state}`]={total:sAll.filter(matches).length,hasNew:sAll.some(j=>j.isNew&&matches(j))};
-        cAll=cAll.concat(sAll);
+        const sMatched=sAll.filter(matches);   // run matches() ONCE per job, reuse for both counts
+        sc[`${country}|${state}`]={total:sMatched.length,hasNew:sMatched.some(j=>j.isNew)};
+        cMatched=cMatched.concat(sMatched);    // accumulate already-matched jobs (no re-matching)
       }
-      cc[country]={total:cAll.filter(matches).length,hasNew:cAll.some(j=>j.isNew&&matches(j))};
+      cc[country]={total:cMatched.length,hasNew:cMatched.some(j=>j.isNew)};
     }
     return {country:cc,state:sc};
   },[displayTree,liveJobs,filters,user]);
