@@ -1574,14 +1574,7 @@ function InboxPanel({items,onClose,onMarkRead,onMarkAllRead,onClear,onDismiss,on
                       </div>)}
                   </div>}
               </div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10}}>
-                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>In-app notifications</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>New postings from followed companies and your alerts appear in your inbox</div></div>
-                <button onClick={()=>onPatch&&onPatch({notifications:P.notifications===false?true:false})} style={{width:42,height:24,background:P.notifications!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.notifications!==false?"translateX(18px)":"none"}}/></button>
-              </div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:12,background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.1)",borderRadius:10,marginTop:8}}>
-                <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Email me job matches</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2}}>Daily email with new postings from followed companies and your alerts</div></div>
-                <button onClick={()=>onPatch&&onPatch({emailJobAlerts:P.emailJobAlerts===false?true:false})} style={{width:42,height:24,background:P.emailJobAlerts!==false?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:P.emailJobAlerts!==false?"translateX(18px)":"none"}}/></button>
-              </div>
+              
             </div>
           </>
         }
