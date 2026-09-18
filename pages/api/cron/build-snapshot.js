@@ -5,6 +5,7 @@
 import zlib from "zlib";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { buildJobMap } from "../../../lib/board";
+import { heartbeat } from "../../../lib/heartbeat";
 
 export const config = { maxDuration: 120 };
 
@@ -34,6 +35,7 @@ export default async function handler(req, res) {
     const companies = Object.keys(map).length;
     // Guard against a thin/broken build overwriting a good snapshot.
     if (companies < 40) {
+      await heartbeat("build-snapshot", false, `thin: ${companies} companies`);
       return res.status(200).json({ ok: false, skipped: true, note: `only ${companies} companies — not caching`, ms: Date.now() - started });
     }
 
@@ -43,8 +45,10 @@ export default async function handler(req, res) {
       .upsert({ id: "live", data: { gz }, updated_at: new Date().toISOString() }, { onConflict: "id" });
     if (error) return res.status(500).json({ ok: false, error: error.message });
 
+    await heartbeat("build-snapshot", true, `${companies} companies`);
     return res.status(200).json({ ok: true, companies, bytes: gz.length, ms: Date.now() - started });
   } catch (e) {
+    await heartbeat("build-snapshot", false, e.message);
     return res.status(500).json({ ok: false, error: e.message });
   }
 }

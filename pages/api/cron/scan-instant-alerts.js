@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { fetchAllJobs } from "../../../lib/atsLite";
 import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib/matchAlert";
 import { sendJobAlertEmail } from "../../../lib/resend";
+import { heartbeat } from "../../../lib/heartbeat";
 
 // Frequent scan (every ~15 min via crontab) for PREMIUM personalized job alerts
 // only. Because the job cache refreshes on user traffic, this pings a user close
@@ -26,6 +27,7 @@ export default async function handler(req, res){
       (p.plan === "plus" || p.plan === "premium") && alertHasCriteria((p.data || {}).jobAlerts)
     );
     if(candidates.length === 0){
+      await heartbeat("scan-instant-alerts", true, "no premium users with alerts");
       return res.status(200).json({ ok: true, users: 0, note: "no premium users with alerts" });
     }
 
@@ -91,8 +93,10 @@ export default async function handler(req, res){
       }
     }
 
+    await heartbeat("scan-instant-alerts", true, `emailed ${emailedUsers}`);
     return res.status(200).json({ ok: true, users: candidates.length, jobs: jobs.length, emailedUsers, newMatches: totalNew, ms: Date.now() - started });
   }catch(e){
+    await heartbeat("scan-instant-alerts", false, e.message);
     return res.status(500).json({ ok: false, error: e.message });
   }
 }

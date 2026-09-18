@@ -6,6 +6,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { fetchAllJobs } from "../../../lib/atsLite";
 import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib/matchAlert";
 import { sendWeeklyDigest } from "../../../lib/resend";
+import { heartbeat } from "../../../lib/heartbeat";
 
 export const config = { maxDuration: 60 };
 
@@ -22,7 +23,8 @@ export default async function handler(req, res) {
     if (error) throw error;
     const candidates = (profiles || []).filter(p => (p.data || {}).weeklyDigest === true);
     if (candidates.length === 0) {
-      return res.status(200).json({ ok: true, users: 0, note: "no users opted into the weekly digest" });
+      await heartbeat("weekly-digest", true, "no opt-ins");
+    return res.status(200).json({ ok: true, users: 0, note: "no users opted into the weekly digest" });
     }
 
     const jobs = await fetchAllJobs(base);
@@ -63,8 +65,10 @@ export default async function handler(req, res) {
       await supabaseAdmin.from("profiles").upsert({ id: p.id, name: p.name, data: nextData }, { onConflict: "id" });
     }
 
+    await heartbeat("weekly-digest", true, `sent ${sent}`);
     return res.status(200).json({ ok: true, users: candidates.length, jobs: jobs.length, sent, ms: Date.now() - started });
   } catch (e) {
+    await heartbeat("weekly-digest", false, e.message);
     return res.status(500).json({ ok: false, error: e.message });
   }
 }

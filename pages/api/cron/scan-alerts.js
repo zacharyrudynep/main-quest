@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { fetchAllJobs } from "../../../lib/atsLite";
 import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib/matchAlert";
 import { sendJobAlertEmail } from "../../../lib/resend";
+import { heartbeat } from "../../../lib/heartbeat";
 
 // Runs once a day (see vercel.json). For each premium user with job alerts, finds
 // newly-matching postings, emails them, and drops the matches into their on-site
@@ -29,6 +30,7 @@ export default async function handler(req, res){
       return hasFollows;
     });
     if(candidates.length === 0){
+      await heartbeat("scan-alerts", true, "no users with company follows");
       return res.status(200).json({ ok: true, users: 0, note: "no users with company follows" });
     }
 
@@ -93,8 +95,10 @@ export default async function handler(req, res){
       await supabaseAdmin.from("profiles").upsert({ id: p.id, name: p.name, data: nextData }, { onConflict: "id" });
     }
 
+    await heartbeat("scan-alerts", true, `emailed ${emailedUsers}`);
     return res.status(200).json({ ok: true, users: candidates.length, jobs: jobs.length, emailedUsers, newMatches: totalNew, ms: Date.now() - started });
   }catch(e){
+    await heartbeat("scan-alerts", false, e.message);
     return res.status(500).json({ ok: false, error: e.message });
   }
 }
