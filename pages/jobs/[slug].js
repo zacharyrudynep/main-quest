@@ -3,7 +3,8 @@
 // widget. Resolved from the cached snapshot; if the posting has dropped out of the
 // snapshot (closed) we return HTTP 410 Gone so Google de-indexes it cleanly.
 import Head from "next/head";
-import { findJobBySlug, jobSlug } from "../../lib/snapshot";
+import { findJobBySlug, jobSlug, companySlug } from "../../lib/snapshot";
+import { classifyRole, roleSlug } from "../../lib/salary";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
 
@@ -105,7 +106,13 @@ export default function JobPage({ job }) {
         </div>
         <a href={applyUrl} target="_blank" rel="noopener nofollow" style={{ ...btn, display: "inline-block", marginBottom: 26 }}>Apply for this role &rarr;</a>
         <div style={{ fontSize: 14.5, color: "rgba(244,237,216,.82)", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: descHtml(job) }} />
-        <div style={{ marginTop: 34, paddingTop: 22, borderTop: "1px solid rgba(201,168,76,.14)", textAlign: "center" }}>
+        {(() => { const roleName = classifyRole(job.title); return (
+          <div style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 9 }}>
+            <a href={`/companies/${companySlug(job.company)}`} style={xlink}>More roles at {job.company} &rarr;</a>
+            {roleName !== "Other" && <a href={`/roles/${roleSlug(roleName)}`} style={xlink}>More {roleName} jobs &rarr;</a>}
+          </div>
+        ); })()}
+        <div style={{ marginTop: 26, paddingTop: 22, borderTop: "1px solid rgba(201,168,76,.14)", textAlign: "center" }}>
           <p style={{ fontSize: 13, color: "rgba(244,237,216,.55)", marginBottom: 14 }}>Find more roles like this — with match scores, alerts, and AI tools — on Main Quest.</p>
           <a href="/" style={btn}>Open the job board &rarr;</a>
         </div>
@@ -115,6 +122,7 @@ export default function JobPage({ job }) {
 }
 
 const btn = { background: "linear-gradient(135deg,#c9a84c,#e8613a)", color: "#0a0608", textDecoration: "none", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 800, fontFamily: "'Cinzel',serif" };
+const xlink = { background: "rgba(201,168,76,.08)", border: "1px solid rgba(201,168,76,.2)", color: "rgba(244,237,216,.8)", textDecoration: "none", padding: "9px 15px", borderRadius: 9, fontSize: 12.5, fontFamily: "'Cinzel',serif" };
 
 function Shell({ title, desc, canonical, noindex, children }) {
   return (
