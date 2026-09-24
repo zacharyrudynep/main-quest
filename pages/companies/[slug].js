@@ -1,7 +1,7 @@
 // /companies/[slug] — all open roles at one studio. Server-rendered, crawlable,
 // ranks for "<studio> careers / jobs". Links each role to its /jobs page.
 import Head from "next/head";
-import { getCompanyJobs, jobSlug } from "../../lib/snapshot";
+import { getCompanyJobs, jobSlug, companySlug } from "../../lib/snapshot";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
 
@@ -21,7 +21,7 @@ export default function CompanyPage({ company, jobs }) {
     itemListElement: jobs.slice(0, 100).map((j, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE}/jobs/${jobSlug(j)}`, name: j.title })),
   };
   return (
-    <Shell title={title} desc={desc} canonical={`${SITE}/companies/${company.toLowerCase().replace(/[^\w]+/g, "-").replace(/^-|-$/g, "")}`}>
+    <Shell title={title} desc={desc} canonical={`${SITE}/companies/${companySlug(company)}`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 20px 60px" }}>
         <a href="/" style={{ fontSize: 12.5, color: "rgba(201,168,76,.7)", textDecoration: "none", fontFamily: "'Cinzel',serif" }}>&larr; All studios</a>

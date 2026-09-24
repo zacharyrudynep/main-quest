@@ -12,6 +12,8 @@ import { normalizeATSJob } from "../lib/normalize";
 import { COMPANIES_DATA } from "../lib/companiesData";
 
 // Fire an account/security email (welcome, password-changed, device-check) for the current user.
+// Slug for /companies/[slug] links — must match slugify() in lib/snapshot.js.
+function _companySlug(name){ return String(name||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w\s-]/g,"").trim().replace(/[\s_]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,120); }
 async function notifyEmail(type){ try{ const { data }=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk) return; await fetch("/api/email/notify",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({type})}); }catch(e){} }
 // Journey Mode globe is client-only (Three.js needs window), so load it without SSR.
 const JourneyGlobe = dynamic(() => import("../components/JourneyGlobe"), { ssr: false });
@@ -3747,7 +3749,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     <div style={{flex:1,minWidth:0}}>
     {/* Company + site */}
     {job.company&&<div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4,flexWrap:"wrap"}}>
-      <span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase"}}>{job.company}</span>
+      <a href={`/companies/${_companySlug(job.company)}`} target="_blank" rel="noopener" onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}} title={`See all roles at ${job.company}`}><span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase",cursor:"pointer",borderBottom:"1px dotted rgba(201,168,76,.4)"}}>{job.company}</span></a>
       {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
       {flatView&&user&&job.company&&<span onClick={e=>{e.stopPropagation();onToggleNotify&&onToggleNotify(job.company);}} title={_unver?"Verify your email from the Account tab to use alerts":(notifyOn?`Alerts on for all ${job.company} jobs — click to turn off`:`Get alerts for new ${job.company} jobs`)} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",background:notifyOn?"rgba(201,168,76,.14)":"rgba(201,168,76,.05)",border:`1px solid ${notifyOn?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,borderRadius:6,padding:"2px 7px",opacity:_unver?.4:1}}><I.Bell s={10} c={notifyOn?"#c9a84c":"rgba(244,237,216,.55)"} fill={notifyOn?"#c9a84c":"none"}/></span>}
       <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>{job.isNew&&<I.Alert s={16}/>}
