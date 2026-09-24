@@ -4963,7 +4963,7 @@ export default function App() {
     const last=prof.lastAlertScan||0;
     if(Date.now()-last < 24*3600*1000) return;      // once a day
     const existing=prof.inbox||[];
-    const keys=new Set(existing.map(n=>n.jobKey));
+    const keys=new Set([...(prof.seenInboxKeys||[]),...existing.map(n=>n.jobKey)]);  // include the persistent seen-set so cleared/read jobs are never re-added
     const matched=allJobs.filter(j=>{
       const followHit=followed.length&&followed.includes((j.company||"").toLowerCase())&&j.isNew; // new postings from followed companies
       const wizardHit=wizardOn&&jobMatchesAnyAlert(j,alerts);
