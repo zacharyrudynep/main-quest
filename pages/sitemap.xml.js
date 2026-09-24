@@ -2,6 +2,7 @@
 // and crawls them. Regenerated per request from the cached snapshot (cheap, since
 // the snapshot itself is cached in memory), lightly HTTP-cached for an hour.
 import { allJobEntries } from "../lib/snapshot";
+import { getSalaryStats, roleSlug } from "../lib/salary";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
 
@@ -12,8 +13,17 @@ function xmlEsc(s) {
 export async function getServerSideProps({ res }) {
   let jobs = [];
   try { jobs = await allJobEntries(); } catch (e) { jobs = []; }
+  let salary = [];
+  try {
+    const stats = await getSalaryStats();
+    salary = [
+      { loc: `${SITE}/salaries`, changefreq: "weekly", priority: "0.8" },
+      ...Object.keys(stats.roles).map(r => ({ loc: `${SITE}/salaries/${roleSlug(r)}`, changefreq: "weekly", priority: "0.7" })),
+    ];
+  } catch (e) { salary = []; }
   const urls = [
     { loc: `${SITE}/`, changefreq: "hourly", priority: "1.0" },
+    ...salary,
     ...jobs.map(j => ({ loc: `${SITE}/jobs/${j.slug}`, changefreq: "daily", priority: "0.7" })),
   ];
   const xml =
