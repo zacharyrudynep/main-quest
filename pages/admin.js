@@ -89,13 +89,13 @@ export default function Admin() {
               {tab === "overview" && (
                 <>
                   <Kpis items={[
-                    ["Active Users", s.activeUsers], ["Lifetime Users", s.lifetimeUsers, "all-time signups", "#e8a070"], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
+                    ["Active Users", s.activeUsers, null, null, "Accounts that currently exist — drops when someone deletes their account."], ["Lifetime Users", s.lifetimeUsers, "never decreases", "#e8a070", "The most accounts you’ve ever had. Tracks Active Users but never drops when someone deletes their account."], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
                     ["Applications", s.totalApplications], ["Saves", s.totalSaves, null, "#e8a070"],
                     ["Job Views", s.totalViews, null, "#e8a070"], ["Apply Clicks", s.totalClicks, null, "#e8a070"], ["Shares", s.totalShares, null, "#e8a070"],
                   ]} />
                   <TwoCol>
-                    <Panel title="Signups (last 30 days)"><LineChart data={s.signupSeries} color="#c9a84c" /></Panel>
-                    <Panel title="Applications (last 30 days)"><LineChart data={s.appSeries} color="#7ecfb3" /></Panel>
+                    <Panel title="Signups"><LineChart series={s.signupSeries} color="#c9a84c" /></Panel>
+                    <Panel title="Applications"><LineChart series={s.appSeries} color="#7ecfb3" /></Panel>
                   </TwoCol>
                   <TwoCol>
                     <Panel title="Share methods"><BarList rows={s.shareMethods} empty="No shares yet." plain /></Panel>
@@ -135,7 +135,7 @@ export default function Admin() {
                   ]} />
                   <TwoCol>
                     <Panel title="Application status distribution"><BarList rows={s.statusDist} empty="No applications yet." plain /></Panel>
-                    <Panel title="Applications (last 30 days)"><LineChart data={s.appSeries} color="#7ecfb3" /></Panel>
+                    <Panel title="Applications"><LineChart series={s.appSeries} color="#7ecfb3" /></Panel>
                   </TwoCol>
                   <Panel title="Premium vs Free — outcome rates"><TierCompare a={s.outcomeByTier.premium} b={s.outcomeByTier.free} /></Panel>
                   <div style={{ marginTop: 16 }}><Panel title="Most-applied companies"><BarList rows={s.topAppliedCompanies} empty="No applications yet." plain /></Panel></div>
@@ -145,10 +145,10 @@ export default function Admin() {
               {tab === "users" && (
                 <>
                   <Kpis items={[
-                    ["Active Users", s.activeUsers], ["Lifetime Users", s.lifetimeUsers, "all-time signups", "#e8a070"], ["Free", s.freeUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
+                    ["Active Users", s.activeUsers, null, null, "Accounts that currently exist — drops when someone deletes their account."], ["Lifetime Users", s.lifetimeUsers, "never decreases", "#e8a070", "The most accounts you’ve ever had. Tracks Active Users but never drops when someone deletes their account."], ["Free", s.freeUsers], ["Premium", s.premiumUsers, `${s.premiumPct}% of users`, "#7ecfb3"],
                     ["Resumes Uploaded", s.resumesUploaded], ["Complete Profiles", s.completeProfiles],
                   ]} />
-                  <Panel title="Signups (last 30 days)"><LineChart data={s.signupSeries} color="#c9a84c" /></Panel>
+                  <Panel title="Signups"><LineChart series={s.signupSeries} color="#c9a84c" /></Panel>
                 </>
               )}
 
@@ -159,11 +159,15 @@ export default function Admin() {
                   {engStatus === "ready" && eng && (
                     <>
                       <Kpis items={[
-                        ["DAU (today)", eng.dau], ["Avg DAU", eng.avgDau], ["WAU", eng.wau], ["MAU", eng.mau],
-                        ["Stickiness", `${eng.stickiness}%`, "DAU / MAU", "#7ecfb3"],
-                        ["Sessions / Visitor", eng.sessionsPerVisitor], ["Avg Session", `${eng.avgSessionMin}m`],
+                        ["DAU (today)", eng.dau, null, null, "Daily Active Users — unique visitors on the site today."],
+                        ["Avg DAU", eng.avgDau, null, null, "Average Daily Active Users across the last 30 days."],
+                        ["WAU", eng.wau, null, null, "Weekly Active Users — unique visitors in the last 7 days."],
+                        ["MAU", eng.mau, null, null, "Monthly Active Users — unique visitors in the last 30 days."],
+                        ["Stickiness", `${eng.stickiness}%`, "DAU / MAU", "#7ecfb3", "How habitually people return: average DAU ÷ MAU. Higher means a larger share of your monthly users show up on a typical day."],
+                        ["Sessions / Visitor", eng.sessionsPerVisitor, null, null, "Average number of separate visit-days per unique visitor. Higher = people coming back repeatedly."],
+                        ["Avg Session", `${eng.avgSessionMin}m`, null, null, "Rough average minutes between a visitor’s first and last action within a day."],
                       ]} />
-                      <Panel title="Daily active visitors (last 30 days)"><LineChart data={eng.dauSeries} color="#7ecfb3" /></Panel>
+                      <Panel title="Active visitors"><LineChart series={eng.dauSeries} color="#7ecfb3" /></Panel>
                       <TwoCol>
                         <Panel title="New vs returning (last 30 days)">
                           <NRChart data={eng.newReturning} />
@@ -200,7 +204,7 @@ export default function Admin() {
               )}
 
               <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.3)", marginTop: 18, lineHeight: 1.6 }}>
-                Generated {new Date(s.generatedAt).toLocaleString()} · all computed natively from your Supabase data. Traffic & active users: Vercel Analytics.
+                Generated {new Date(s.generatedAt).toLocaleString()} · all computed natively from your Supabase data. Traffic via PostHog; engagement computed from your own Supabase events.
               </div>
             </>
           )}
@@ -216,16 +220,26 @@ function Note({ children }) {
 function TwoCol({ children }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 16, marginBottom: 16 }}>{children}</div>;
 }
+function KpiBox({ label, value, sub, accent, tip }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative", background: "rgba(16,10,22,.6)", border: "1px solid rgba(201,168,76,.16)", borderRadius: 12, padding: "16px 18px" }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.5)", textTransform: "uppercase", letterSpacing: .6, fontFamily: "'Cinzel',serif", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+        {label}{tip && <span style={{ fontSize: 11, opacity: .55, cursor: "help", border: "1px solid rgba(244,237,216,.3)", borderRadius: "50%", width: 13, height: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>i</span>}
+      </div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: accent || "#c9a84c", fontFamily: "'Cinzel',serif", lineHeight: 1 }}>{(value ?? 0).toLocaleString()}</div>
+      {sub && <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginTop: 6 }}>{sub}</div>}
+      {tip && show && (
+        <div style={{ position: "absolute", bottom: "100%", left: 10, right: 10, marginBottom: 6, background: "#140e0a", border: "1px solid rgba(201,168,76,.4)", borderRadius: 8, padding: "8px 11px", fontSize: 11, color: "rgba(244,237,216,.88)", lineHeight: 1.45, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,.55)" }}>{tip}</div>
+      )}
+    </div>
+  );
+}
 function Kpis({ items }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 20 }}>
-      {items.map(([label, value, sub, accent], i) => (
-        <div key={i} style={{ background: "rgba(16,10,22,.6)", border: "1px solid rgba(201,168,76,.16)", borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.5)", textTransform: "uppercase", letterSpacing: .6, fontFamily: "'Cinzel',serif", marginBottom: 8 }}>{label}</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: accent || "#c9a84c", fontFamily: "'Cinzel',serif", lineHeight: 1 }}>{(value ?? 0).toLocaleString()}</div>
-          {sub && <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginTop: 6 }}>{sub}</div>}
-        </div>
-      ))}
+      {items.map((it, i) => <KpiBox key={i} label={it[0]} value={it[1]} sub={it[2]} accent={it[3]} tip={it[4]} />)}
     </div>
   );
 }
@@ -295,23 +309,57 @@ function Events({ e }) {
     </div>
   );
 }
-function LineChart({ data, color = "#c9a84c" }) {
+function LineChart({ data, series, color = "#c9a84c", money }) {
+  // Accepts a plain array (data) OR a ranged object (series = {weekly,monthly,annually,lifetime}).
+  const ranged = series && typeof series === "object" && !Array.isArray(series);
+  const [range, setRange] = useState("monthly");
+  const pts0 = ranged ? (series[range] || series.monthly || []) : (data || []);
+  const [hi, setHi] = useState(null);
   const W = 460, H = 150, pad = 6;
-  const vals = (data || []).map(d => d.count);
+  const vals = pts0.map(d => d.count);
   const max = Math.max(1, ...vals);
-  const n = data.length || 1;
+  const n = pts0.length || 1;
   const x = (i) => pad + (i / (n - 1 || 1)) * (W - pad * 2);
   const y = (v) => H - pad - (v / max) * (H - pad * 2 - 14);
-  const pts = (data || []).map((d, i) => `${x(i)},${y(d.count)}`).join(" ");
+  const pts = pts0.map((d, i) => `${x(i)},${y(d.count)}`).join(" ");
   const area = `${pad},${H - pad} ${pts} ${x(n - 1)},${H - pad}`;
+  const fmt = (v) => money ? `$${(v || 0).toLocaleString()}` : (v || 0).toLocaleString();
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const rx = ((e.clientX - r.left) / r.width) * W;
+    let idx = Math.round(((rx - pad) / (W - pad * 2)) * (n - 1));
+    idx = Math.max(0, Math.min(n - 1, idx));
+    setHi({ idx, mx: e.clientX - r.left });
+  };
+  const tabs = [["weekly", "1W"], ["monthly", "1M"], ["annually", "1Y"], ["lifetime", "All"]];
+  const p = hi && pts0[hi.idx];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-      <polygon points={area} fill={color} opacity="0.08" />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <text x={pad} y={12} fill="rgba(244,237,216,.4)" fontSize="10">max {max}</text>
-      <text x={pad} y={H - 1} fill="rgba(244,237,216,.35)" fontSize="9">{data[0] && data[0].date.slice(5)}</text>
-      <text x={W - pad} y={H - 1} fill="rgba(244,237,216,.35)" fontSize="9" textAnchor="end">{data[n - 1] && data[n - 1].date.slice(5)}</text>
-    </svg>
+    <div style={{ position: "relative" }}>
+      <div style={{ position: "relative" }} onMouseMove={onMove} onMouseLeave={() => setHi(null)}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+          <polygon points={area} fill={color} opacity="0.08" />
+          <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <text x={pad} y={12} fill="rgba(244,237,216,.4)" fontSize="10">max {fmt(max)}</text>
+          <text x={pad} y={H - 1} fill="rgba(244,237,216,.35)" fontSize="9">{pts0[0] && (pts0[0].date || "").slice(5)}</text>
+          <text x={W - pad} y={H - 1} fill="rgba(244,237,216,.35)" fontSize="9" textAnchor="end">{pts0[n - 1] && (pts0[n - 1].date || "").slice(5)}</text>
+          {p && <line x1={x(hi.idx)} y1={pad} x2={x(hi.idx)} y2={H - pad} stroke="rgba(244,237,216,.2)" strokeWidth="1" />}
+          {p && <circle cx={x(hi.idx)} cy={y(p.count)} r="3.5" fill={color} stroke="#0a0608" strokeWidth="1.5" />}
+        </svg>
+        {p && (
+          <div style={{ position: "absolute", left: `${Math.min(Math.max((x(hi.idx) / W) * 100, 8), 92)}%`, top: 0, transform: "translateX(-50%)", pointerEvents: "none", background: "#140e0a", border: "1px solid rgba(201,168,76,.4)", borderRadius: 8, padding: "5px 10px", fontSize: 11.5, color: "#f4edd8", whiteSpace: "nowrap", boxShadow: "0 6px 20px rgba(0,0,0,.55)", zIndex: 5 }}>
+            <div style={{ color: "rgba(244,237,216,.5)", fontSize: 10 }}>{p.date}</div>
+            <div style={{ fontWeight: 800, color }}>{fmt(p.count)}</div>
+          </div>
+        )}
+      </div>
+      {ranged && (
+        <div style={{ display: "flex", gap: 4, marginTop: 8, justifyContent: "center" }}>
+          {tabs.map(([k, lbl]) => (
+            <button key={k} onClick={() => { setRange(k); setHi(null); }} style={{ background: range === k ? "rgba(201,168,76,.2)" : "transparent", border: "1px solid rgba(201,168,76,.2)", color: range === k ? "#f0d080" : "rgba(244,237,216,.5)", borderRadius: 7, padding: "3px 12px", fontSize: 11, cursor: "pointer", fontFamily: "'Cinzel',serif", fontWeight: range === k ? 700 : 400 }}>{lbl}</button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 function BarList({ rows, empty, color = "linear-gradient(90deg,#c9a84c,#e8613a)", plain }) {

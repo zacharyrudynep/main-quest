@@ -3,6 +3,15 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 const addDays = (dayStr, n) => { const d = new Date(dayStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const pct = (n, d) => d ? Math.round((n / d) * 1000) / 10 : 0;
+function dauRanges(dayVisitors) {
+  const dayStr = (d) => d.toISOString().slice(0, 10);
+  const daily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dayStr(new Date(Date.now() - i * 86400000)); out.push({ date: k, count: (dayVisitors[k] && dayVisitors[k].size) || 0 }); } return out; };
+  const now = new Date();
+  const monthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); const set = new Set(); for (const day in dayVisitors) if (day.slice(0, 7) === key) for (const v of dayVisitors[day]) set.add(v); out.push({ date: key, count: set.size }); } return out; };
+  const keys = Object.keys(dayVisitors).sort(); let lifeMonths = 12;
+  if (keys.length) { const f = new Date(keys[0] + "T00:00:00Z"); lifeMonths = Math.max(1, (now.getUTCFullYear() - f.getUTCFullYear()) * 12 + (now.getUTCMonth() - f.getUTCMonth()) + 1); }
+  return { weekly: daily(7), monthly: daily(30), annually: monthly(12), lifetime: monthly(Math.min(lifeMonths, 120)) };
+}
 
 // Owner-only engagement metrics, computed natively from the events table.
 export default async function handler(req, res) {
@@ -87,7 +96,7 @@ export default async function handler(req, res) {
       totalVisitors, totalSessions,
       sessionsPerVisitor: totalVisitors ? Math.round((totalSessions / totalVisitors) * 10) / 10 : 0,
       avgSessionMin: durN ? Math.round((durSum / durN) * 10) / 10 : 0,
-      dauSeries, newReturning, retention,
+      dauSeries: dauRanges(dayVisitors), newReturning, retention,
     });
   } catch (e) {
     res.status(500).json({ error: "server error", detail: String((e && e.message) || e) });

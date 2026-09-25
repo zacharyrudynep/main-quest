@@ -3,6 +3,15 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 const top = (o, n = 10) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n).map(([label, count]) => ({ label, count }));
 const rate = (num, den) => den ? Math.round((num / den) * 1000) / 10 : 0;
+function buildRanges(byDay) {
+  const dayStr = (d) => d.toISOString().slice(0, 10);
+  const daily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dayStr(new Date(Date.now() - i * 86400000)); out.push({ date: k, count: byDay[k] || 0 }); } return out; };
+  const now = new Date();
+  const monthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); let c = 0; for (const day in byDay) if (day.slice(0, 7) === key) c += byDay[day]; out.push({ date: key, count: c }); } return out; };
+  const keys = Object.keys(byDay).sort(); let lifeMonths = 12;
+  if (keys.length) { const f = new Date(keys[0] + "T00:00:00Z"); lifeMonths = Math.max(1, (now.getUTCFullYear() - f.getUTCFullYear()) * 12 + (now.getUTCMonth() - f.getUTCMonth()) + 1); }
+  return { weekly: daily(7), monthly: daily(30), annually: monthly(12), lifetime: monthly(Math.min(lifeMonths, 120)) };
+}
 
 // Owner-only dashboard data, all computed natively from your own Supabase data.
 export default async function handler(req, res) {
@@ -89,12 +98,14 @@ export default async function handler(req, res) {
       }
     } catch (e) {}
 
-    // ── Lifetime signups (persistent counter, survives deletions) ──
-    let lifetimeUsers = 0;
+    // ── Lifetime users: high-water-mark of active accounts (never decreases on deletion) ──
+    let lifetimeUsers = activeUsers;
     try {
       const { data: c } = await supabaseAdmin.from("app_counters").select("value").eq("key", "lifetime_signups").maybeSingle();
-      if (c && typeof c.value !== "undefined") lifetimeUsers = Number(c.value) || 0;
-    } catch (e) {}
+      const stored = (c && Number(c.value)) || 0;
+      lifetimeUsers = Math.max(stored, activeUsers);
+      if (lifetimeUsers > stored) await supabaseAdmin.from("app_counters").upsert({ key: "lifetime_signups", value: lifetimeUsers }, { onConflict: "key" });
+    } catch (e) { lifetimeUsers = activeUsers; }
 
     // ── 30-day series ──
     const days = [];
@@ -119,8 +130,8 @@ export default async function handler(req, res) {
       totalShares: eventTotals["job_share"] || 0,
       totalSearches: eventTotals["search"] || 0,
       // Series
-      signupSeries: days.map((d) => ({ date: d, count: signupsByDay[d] || 0 })),
-      appSeries: days.map((d) => ({ date: d, count: appsByDay[d] || 0 })),
+      signupSeries: buildRanges(signupsByDay),
+      appSeries: buildRanges(appsByDay),
       // Top lists
       topViewed: top(views),
       topClicked: top(clicks),
