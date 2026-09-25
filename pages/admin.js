@@ -166,8 +166,11 @@ export default function Admin() {
                         ["Stickiness", `${eng.stickiness}%`, "DAU / MAU", "#7ecfb3", "How habitually people return: average DAU ÷ MAU. Higher means a larger share of your monthly users show up on a typical day."],
                         ["Sessions / Visitor", eng.sessionsPerVisitor, null, null, "Average number of separate visit-days per unique visitor. Higher = people coming back repeatedly."],
                         ["Avg Session", `${eng.avgSessionMin}m`, null, null, "Rough average minutes between a visitor’s first and last action within a day."],
+                        ["Signed-in (30d)", eng.signedInVisitors, null, "#c9a84c", "Distinct signed-in visitors in the last 30 days."],
+                        ["Guest (30d)", eng.guestVisitors, null, "#7f8fa0", "Distinct visitors in the last 30 days who were not signed in."],
                       ]} />
                       <Panel title="Active visitors"><LineChart series={eng.dauSeries} color="#7ecfb3" /></Panel>
+                      <Panel title="Signed-in vs guest visitors"><VisitorChart series={eng.visitorSplit} /></Panel>
                       <TwoCol>
                         <Panel title="New vs returning (last 30 days)">
                           <NRChart data={eng.newReturning} />
@@ -359,6 +362,49 @@ function LineChart({ data, series, color = "#c9a84c", money }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+function VisitorChart({ series }) {
+  const [range, setRange] = useState("monthly");
+  const pts0 = (series && series[range]) || (series && series.monthly) || [];
+  const [hi, setHi] = useState(null);
+  const W = 460, H = 150, pad = 6;
+  const max = Math.max(1, ...pts0.map(d => Math.max(d.authed || 0, d.guest || 0)));
+  const n = pts0.length || 1;
+  const x = (i) => pad + (i / (n - 1 || 1)) * (W - pad * 2);
+  const y = (v) => H - pad - (v / max) * (H - pad * 2 - 14);
+  const line = (key) => pts0.map((d, i) => `${x(i)},${y(d[key] || 0)}`).join(" ");
+  const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); const rx = ((e.clientX - r.left) / r.width) * W; let idx = Math.round(((rx - pad) / (W - pad * 2)) * (n - 1)); idx = Math.max(0, Math.min(n - 1, idx)); setHi({ idx }); };
+  const p = hi && pts0[hi.idx];
+  const A = "#c9a84c", G = "#7f8fa0";
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 6, fontSize: 11, fontFamily: "'Cinzel',serif" }}>
+        <span style={{ color: A }}>&#9679; Signed-in</span><span style={{ color: G }}>&#9679; Guest</span>
+      </div>
+      <div style={{ position: "relative" }} onMouseMove={onMove} onMouseLeave={() => setHi(null)}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+          <polyline points={line("guest")} fill="none" stroke={G} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <polyline points={line("authed")} fill="none" stroke={A} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <text x={pad} y={12} fill="rgba(244,237,216,.4)" fontSize="10">max {max}</text>
+          {p && <line x1={x(hi.idx)} y1={pad} x2={x(hi.idx)} y2={H - pad} stroke="rgba(244,237,216,.2)" strokeWidth="1" />}
+          {p && <circle cx={x(hi.idx)} cy={y(p.authed || 0)} r="3.5" fill={A} stroke="#0a0608" strokeWidth="1.5" />}
+          {p && <circle cx={x(hi.idx)} cy={y(p.guest || 0)} r="3.5" fill={G} stroke="#0a0608" strokeWidth="1.5" />}
+        </svg>
+        {p && (
+          <div style={{ position: "absolute", left: `${Math.min(Math.max((x(hi.idx) / W) * 100, 8), 92)}%`, top: 0, transform: "translateX(-50%)", pointerEvents: "none", background: "#140e0a", border: "1px solid rgba(201,168,76,.4)", borderRadius: 8, padding: "6px 10px", fontSize: 11, color: "#f4edd8", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 20px rgba(0,0,0,.55)" }}>
+            <div style={{ color: "rgba(244,237,216,.5)", fontSize: 10 }}>{p.date}</div>
+            <div style={{ color: A }}>Signed-in: {p.authed || 0}</div>
+            <div style={{ color: G }}>Guest: {p.guest || 0}</div>
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 4, marginTop: 8, justifyContent: "center" }}>
+        {[["weekly", "1W"], ["monthly", "1M"], ["annually", "1Y"], ["lifetime", "All"]].map(([k, lbl]) => (
+          <button key={k} onClick={() => { setRange(k); setHi(null); }} style={{ background: range === k ? "rgba(201,168,76,.2)" : "transparent", border: "1px solid rgba(201,168,76,.2)", color: range === k ? "#f0d080" : "rgba(244,237,216,.5)", borderRadius: 7, padding: "3px 12px", fontSize: 11, cursor: "pointer", fontFamily: "'Cinzel',serif", fontWeight: range === k ? 700 : 400 }}>{lbl}</button>
+        ))}
+      </div>
     </div>
   );
 }

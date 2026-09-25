@@ -25,17 +25,19 @@ export default async function handler(req, res) {
     if (ue || !em || em !== ADMIN_EMAIL) return res.status(403).json({ error: "forbidden" });
 
     // Pull events that carry a visitor id.
-    const { data: evs } = await supabaseAdmin.from("events").select("visitor,created_at").not("visitor", "is", null).limit(200000);
+    const { data: evs } = await supabaseAdmin.from("events").select("visitor,created_at,meta").not("visitor", "is", null).limit(200000);
 
     const visitorDays = {};   // visitor -> Set(day)
     const dayVisitors = {};   // day -> Set(visitor)
     const sessions = {};      // `${visitor}|${day}` -> { min, max }
+    const dayAuthed = {};     // day -> Set(visitor) who had a signed-in event
     for (const e of evs || []) {
       const v = e.visitor; if (!v || !e.created_at) continue;
       const day = e.created_at.slice(0, 10);
       const ts = new Date(e.created_at).getTime();
       (visitorDays[v] = visitorDays[v] || new Set()).add(day);
       (dayVisitors[day] = dayVisitors[day] || new Set()).add(v);
+      if (e.meta && e.meta.authed) (dayAuthed[day] = dayAuthed[day] || new Set()).add(v);
       const key = v + "|" + day;
       const s = sessions[key] || (sessions[key] = { min: ts, max: ts });
       if (ts < s.min) s.min = ts; if (ts > s.max) s.max = ts;
@@ -67,6 +69,14 @@ export default async function handler(req, res) {
     };
     const wau = distinctIn(7), mau = distinctIn(30);
     const avgDau = Math.round(dauSeries.reduce((a, b) => a + b.count, 0) / 30 * 10) / 10;
+    // Signed-in vs guest visitor split (a visitor is "signed in" on a day if any of their events that day were authed).
+    const dS = (d) => d.toISOString().slice(0, 10); const nowD = new Date();
+    const splitDaily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dS(new Date(Date.now() - i * 86400000)); const a = (dayAuthed[k] && dayAuthed[k].size) || 0; const tot = (dayVisitors[k] && dayVisitors[k].size) || 0; out.push({ date: k, authed: a, guest: Math.max(0, tot - a) }); } return out; };
+    const splitMonthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); const aSet = new Set(), tSet = new Set(); for (const day in dayVisitors) { if (day.slice(0, 7) !== key) continue; for (const v of dayVisitors[day]) tSet.add(v); if (dayAuthed[day]) for (const v of dayAuthed[day]) aSet.add(v); } out.push({ date: key, authed: aSet.size, guest: Math.max(0, tSet.size - aSet.size) }); } return out; };
+    const sKeys = Object.keys(dayVisitors).sort(); let sLM = 12; if (sKeys.length) { const f = new Date(sKeys[0] + "T00:00:00Z"); sLM = Math.max(1, (nowD.getUTCFullYear() - f.getUTCFullYear()) * 12 + (nowD.getUTCMonth() - f.getUTCMonth()) + 1); }
+    const visitorSplit = { weekly: splitDaily(7), monthly: splitDaily(30), annually: splitMonthly(12), lifetime: splitMonthly(Math.min(sLM, 120)) };
+    const from30 = addDays(today, -29); const authed30 = new Set(); for (const d in dayAuthed) if (d >= from30 && d <= today) for (const v of dayAuthed[d]) authed30.add(v);
+    const signedInVisitors = authed30.size; const guestVisitors = Math.max(0, mau - signedInVisitors);
 
     // Retention curve: of visitors first seen on day X, % active X+offset (only cohorts old enough)
     const offsets = [1, 3, 7, 14, 30];
@@ -97,6 +107,7 @@ export default async function handler(req, res) {
       sessionsPerVisitor: totalVisitors ? Math.round((totalSessions / totalVisitors) * 10) / 10 : 0,
       avgSessionMin: durN ? Math.round((durSum / durN) * 10) / 10 : 0,
       dauSeries: dauRanges(dayVisitors), newReturning, retention,
+      visitorSplit, signedInVisitors, guestVisitors,
     });
   } catch (e) {
     res.status(500).json({ error: "server error", detail: String((e && e.message) || e) });

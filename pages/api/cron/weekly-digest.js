@@ -18,6 +18,8 @@ export default async function handler(req, res) {
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
   const started = Date.now();
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const month = new Date().toISOString().slice(0, 7);
   try {
     const { data: profiles, error } = await supabaseAdmin.from("profiles").select("id,name,data");
     if (error) throw error;
@@ -57,7 +59,14 @@ export default async function handler(req, res) {
       catch (e) { /* no email → skip */ }
       if (!email) continue;
 
-      try { await sendWeeklyDigest(email, p.name || "", top); sent++; }
+      let acctStats = { applied: 0, saved: 0, aiUses: 0 };
+      try {
+        const { count: ac } = await supabaseAdmin.from("applications").select("id", { count: "exact", head: true }).eq("user_id", p.id).gte("applied_at", weekAgo);
+        const { count: sc } = await supabaseAdmin.from("saved_jobs").select("id", { count: "exact", head: true }).eq("user_id", p.id).gte("saved_at", weekAgo);
+        const { data: aiu } = await supabaseAdmin.from("ai_tailor_usage").select("count").eq("user_id", p.id).eq("month", month).maybeSingle();
+        acctStats = { applied: ac || 0, saved: sc || 0, aiUses: (aiu && aiu.count) || 0 };
+      } catch (e) {}
+      try { await sendWeeklyDigest(email, p.name || "", top, acctStats); sent++; }
       catch (e) { continue; } // send failed → don't record keys, try again next week
 
       top.forEach(m => digestedKeys.add(m.jobKey));

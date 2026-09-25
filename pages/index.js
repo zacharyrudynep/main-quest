@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
 import { encodeJob } from "../lib/shareJob.js";
-import { track } from "../lib/track";
+import { track, setAuthed } from "../lib/track";
 import { downloadResumeDocx } from "../lib/resumeDocx";
 import dynamic from "next/dynamic";
 import { normalizeATSJob } from "../lib/normalize";
@@ -4636,6 +4636,7 @@ export default function App() {
 
   const login=u=>setUser(u);
   useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("device-check"); },[user&&user.id,guest]);
+  useEffect(()=>{ setAuthed(!!(user&&user.id&&!guest)); },[user&&user.id,guest]);
   const guestLogin=u=>{setUser(u);setGuest(false);setShowLoginPopup(false);};
   // Lock page scroll while Journey Mode (full-screen globe) is active.
   useEffect(()=>{
