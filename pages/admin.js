@@ -48,7 +48,7 @@ export default function Admin() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       const token = data && data.session && data.session.access_token;
-      if (!token) { setStatus("denied"); return; }
+      if (!token) { setStatus("login"); return; }
       try {
         const r = await fetch("/api/admin/stats", { headers: { Authorization: `Bearer ${token}` } });
         if (r.status === 401 || r.status === 403) { setStatus("denied"); return; }
@@ -75,7 +75,8 @@ export default function Admin() {
           </div>
 
           {status === "loading" && <Note>Loading…</Note>}
-          {status === "denied" && <Note>Access denied. This page is for the site owner only. <a href="/" style={{ color: GOLD }}>Sign in</a> with the owner account first.</Note>}
+          {status === "login" && <AdminLogin />}
+          {status === "denied" && <Note>You’re signed in, but this dashboard is for the owner account only. <a href="/" style={{ color: GOLD }}>Back to the board</a>.</Note>}
           {status === "error" && <Note>Couldn't load stats. Check that the <code>events</code> / <code>saved_jobs</code> tables exist and <code>ADMIN_EMAIL</code> is set.</Note>}
 
           {status === "ready" && s && (
@@ -219,6 +220,32 @@ export default function Admin() {
 
 function Note({ children }) {
   return <div style={{ background: "rgba(16,10,22,.6)", border: "1px solid rgba(201,168,76,.2)", borderRadius: 12, padding: "20px 22px", fontSize: 13, color: "rgba(244,237,216,.7)", lineHeight: 1.6 }}>{children}</div>;
+}
+
+function AdminLogin() {
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const inp = { width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", colorScheme: "dark", borderRadius: 9, padding: "11px 13px", fontSize: 14, outline: "none" };
+  const submit = async () => {
+    setErr(""); setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) { setErr("Invalid email or password."); setBusy(false); return; }
+      window.location.reload();
+    } catch (e) { setErr("Something went wrong."); setBusy(false); }
+  };
+  return (
+    <div style={{ maxWidth: 360, margin: "50px auto", background: "rgba(16,10,22,.6)", border: "1px solid rgba(201,168,76,.2)", borderRadius: 14, padding: "26px 24px" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 16, color: "#f0d080", fontWeight: 800, marginBottom: 6, textAlign: "center" }}>Owner Sign-In</div>
+      <p style={{ fontSize: 12, color: "rgba(244,237,216,.5)", textAlign: "center", marginBottom: 18, lineHeight: 1.5 }}>Sign in with the owner account to view the dashboard.</p>
+      <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" onKeyDown={e => e.key === "Enter" && submit()} />
+      <input style={{ ...inp, marginTop: 10 }} type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Password" onKeyDown={e => e.key === "Enter" && submit()} />
+      {err && <div style={{ fontSize: 11.5, color: "#e07060", marginTop: 10 }}>{err}</div>}
+      <button onClick={submit} disabled={busy} style={{ width: "100%", marginTop: 14, background: G, border: "none", color: "#0a0608", borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Cinzel',serif", opacity: busy ? .7 : 1 }}>{busy ? "Signing in…" : "Sign In"}</button>
+    </div>
+  );
 }
 function TwoCol({ children }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 16, marginBottom: 16 }}>{children}</div>;
