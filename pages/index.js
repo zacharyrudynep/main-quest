@@ -4637,6 +4637,13 @@ export default function App() {
   const login=u=>setUser(u);
   useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("device-check"); },[user&&user.id,guest]);
   useEffect(()=>{ setAuthed(!!(user&&user.id&&!guest)); },[user&&user.id,guest]);
+  const pageFiredRef=useRef(new Set());
+  useEffect(()=>{
+    if(user||guest){ if(!pageFiredRef.current.has("board")){ pageFiredRef.current.add("board"); track("pageview",{meta:{page:"board"}}); } return; }
+    // landing shown; wait a beat so a returning user’s loading flash isn’t counted as a landing view
+    const id=setTimeout(()=>{ if(!pageFiredRef.current.has("landing")){ pageFiredRef.current.add("landing"); track("pageview",{meta:{page:"landing"}}); } }, 1200);
+    return ()=>clearTimeout(id);
+  },[!!user,guest]);
   const guestLogin=u=>{setUser(u);setGuest(false);setShowLoginPopup(false);};
   // Lock page scroll while Journey Mode (full-screen globe) is active.
   useEffect(()=>{

@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     const dayVisitors = {};   // day -> Set(visitor)
     const sessions = {};      // `${visitor}|${day}` -> { min, max }
     const dayAuthed = {};     // day -> Set(visitor) who had a signed-in event
+    const dayLanding = {}, dayBoard = {};  // day -> Set(visitor) per page
     for (const e of evs || []) {
       const v = e.visitor; if (!v || !e.created_at) continue;
       const day = e.created_at.slice(0, 10);
@@ -38,6 +39,8 @@ export default async function handler(req, res) {
       (visitorDays[v] = visitorDays[v] || new Set()).add(day);
       (dayVisitors[day] = dayVisitors[day] || new Set()).add(v);
       if (e.meta && e.meta.authed) (dayAuthed[day] = dayAuthed[day] || new Set()).add(v);
+      if (e.meta && e.meta.page === "landing") (dayLanding[day] = dayLanding[day] || new Set()).add(v);
+      if (e.meta && e.meta.page === "board") (dayBoard[day] = dayBoard[day] || new Set()).add(v);
       const key = v + "|" + day;
       const s = sessions[key] || (sessions[key] = { min: ts, max: ts });
       if (ts < s.min) s.min = ts; if (ts > s.max) s.max = ts;
@@ -77,6 +80,14 @@ export default async function handler(req, res) {
     const visitorSplit = { weekly: splitDaily(7), monthly: splitDaily(30), annually: splitMonthly(12), lifetime: splitMonthly(Math.min(sLM, 120)) };
     const from30 = addDays(today, -29); const authed30 = new Set(); for (const d in dayAuthed) if (d >= from30 && d <= today) for (const v of dayAuthed[d]) authed30.add(v);
     const signedInVisitors = authed30.size; const guestVisitors = Math.max(0, mau - signedInVisitors);
+    // Landing vs job-board page views (distinct visitors per page per day).
+    const pgDaily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dS(new Date(Date.now() - i * 86400000)); out.push({ date: k, landing: (dayLanding[k] && dayLanding[k].size) || 0, board: (dayBoard[k] && dayBoard[k].size) || 0 }); } return out; };
+    const pgMonthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); const lSet = new Set(), bSet = new Set(); for (const day in dayLanding) if (day.slice(0, 7) === key) for (const v of dayLanding[day]) lSet.add(v); for (const day in dayBoard) if (day.slice(0, 7) === key) for (const v of dayBoard[day]) bSet.add(v); out.push({ date: key, landing: lSet.size, board: bSet.size }); } return out; };
+    const pageSplit = { weekly: pgDaily(7), monthly: pgDaily(30), annually: pgMonthly(12), lifetime: pgMonthly(Math.min(sLM, 120)) };
+    const lSet30 = new Set(), bSet30 = new Set();
+    for (const d in dayLanding) if (d >= from30 && d <= today) for (const v of dayLanding[d]) lSet30.add(v);
+    for (const d in dayBoard) if (d >= from30 && d <= today) for (const v of dayBoard[d]) bSet30.add(v);
+    const landingVisitors = lSet30.size, boardVisitors = bSet30.size;
 
     // Retention curve: of visitors first seen on day X, % active X+offset (only cohorts old enough)
     const offsets = [1, 3, 7, 14, 30];
@@ -108,6 +119,7 @@ export default async function handler(req, res) {
       avgSessionMin: durN ? Math.round((durSum / durN) * 10) / 10 : 0,
       dauSeries: dauRanges(dayVisitors), newReturning, retention,
       visitorSplit, signedInVisitors, guestVisitors,
+      pageSplit, landingVisitors, boardVisitors,
     });
   } catch (e) {
     res.status(500).json({ error: "server error", detail: String((e && e.message) || e) });

@@ -169,9 +169,12 @@ export default function Admin() {
                         ["Avg Session", `${eng.avgSessionMin}m`, null, null, "Rough average minutes between a visitor’s first and last action within a day."],
                         ["Signed-in (30d)", eng.signedInVisitors, null, "#c9a84c", "Distinct signed-in visitors in the last 30 days."],
                         ["Guest (30d)", eng.guestVisitors, null, "#7f8fa0", "Distinct visitors in the last 30 days who were not signed in."],
+                        ["Viewed landing (30d)", eng.landingVisitors, null, "#7ecfb3", "Distinct visitors who saw the landing page in the last 30 days."],
+                        ["Viewed board (30d)", eng.boardVisitors, null, "#c9a84c", "Distinct visitors who reached the job board in the last 30 days."],
                       ]} />
                       <Panel title="Active visitors"><LineChart series={eng.dauSeries} color="#7ecfb3" /></Panel>
                       <Panel title="Signed-in vs guest visitors"><VisitorChart series={eng.visitorSplit} /></Panel>
+                      <Panel title="Landing page vs job board"><VisitorChart series={eng.pageSplit} keys={["landing","board"]} labels={["Landing page","Job board"]} colors={["#7ecfb3","#c9a84c"]} /></Panel>
                       <TwoCol>
                         <Panel title="New vs returning (last 30 days)">
                           <NRChart data={eng.newReturning} />
@@ -392,38 +395,38 @@ function LineChart({ data, series, color = "#c9a84c", money }) {
     </div>
   );
 }
-function VisitorChart({ series }) {
+function VisitorChart({ series, keys, labels, colors }) {
+  const K = keys || ["authed", "guest"]; const L = labels || ["Signed-in", "Guest"]; const C = colors || ["#c9a84c", "#7f8fa0"];
   const [range, setRange] = useState("monthly");
   const pts0 = (series && series[range]) || (series && series.monthly) || [];
   const [hi, setHi] = useState(null);
   const W = 460, H = 150, pad = 6;
-  const max = Math.max(1, ...pts0.map(d => Math.max(d.authed || 0, d.guest || 0)));
+  const max = Math.max(1, ...pts0.map(d => Math.max(d[K[0]] || 0, d[K[1]] || 0)));
   const n = pts0.length || 1;
   const x = (i) => pad + (i / (n - 1 || 1)) * (W - pad * 2);
   const y = (v) => H - pad - (v / max) * (H - pad * 2 - 14);
   const line = (key) => pts0.map((d, i) => `${x(i)},${y(d[key] || 0)}`).join(" ");
   const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); const rx = ((e.clientX - r.left) / r.width) * W; let idx = Math.round(((rx - pad) / (W - pad * 2)) * (n - 1)); idx = Math.max(0, Math.min(n - 1, idx)); setHi({ idx }); };
   const p = hi && pts0[hi.idx];
-  const A = "#c9a84c", G = "#7f8fa0";
   return (
     <div style={{ position: "relative" }}>
       <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 6, fontSize: 11, fontFamily: "'Cinzel',serif" }}>
-        <span style={{ color: A }}>&#9679; Signed-in</span><span style={{ color: G }}>&#9679; Guest</span>
+        <span style={{ color: C[0] }}>&#9679; {L[0]}</span><span style={{ color: C[1] }}>&#9679; {L[1]}</span>
       </div>
       <div style={{ position: "relative" }} onMouseMove={onMove} onMouseLeave={() => setHi(null)}>
         <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-          <polyline points={line("guest")} fill="none" stroke={G} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          <polyline points={line("authed")} fill="none" stroke={A} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <polyline points={line(K[1])} fill="none" stroke={C[1]} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <polyline points={line(K[0])} fill="none" stroke={C[0]} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
           <text x={pad} y={12} fill="rgba(244,237,216,.4)" fontSize="10">max {max}</text>
           {p && <line x1={x(hi.idx)} y1={pad} x2={x(hi.idx)} y2={H - pad} stroke="rgba(244,237,216,.2)" strokeWidth="1" />}
-          {p && <circle cx={x(hi.idx)} cy={y(p.authed || 0)} r="3.5" fill={A} stroke="#0a0608" strokeWidth="1.5" />}
-          {p && <circle cx={x(hi.idx)} cy={y(p.guest || 0)} r="3.5" fill={G} stroke="#0a0608" strokeWidth="1.5" />}
+          {p && <circle cx={x(hi.idx)} cy={y(p[K[0]] || 0)} r="3.5" fill={C[0]} stroke="#0a0608" strokeWidth="1.5" />}
+          {p && <circle cx={x(hi.idx)} cy={y(p[K[1]] || 0)} r="3.5" fill={C[1]} stroke="#0a0608" strokeWidth="1.5" />}
         </svg>
         {p && (
           <div style={{ position: "absolute", left: `${Math.min(Math.max((x(hi.idx) / W) * 100, 8), 92)}%`, top: 0, transform: "translateX(-50%)", pointerEvents: "none", background: "#140e0a", border: "1px solid rgba(201,168,76,.4)", borderRadius: 8, padding: "6px 10px", fontSize: 11, color: "#f4edd8", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 20px rgba(0,0,0,.55)" }}>
             <div style={{ color: "rgba(244,237,216,.5)", fontSize: 10 }}>{p.date}</div>
-            <div style={{ color: A }}>Signed-in: {p.authed || 0}</div>
-            <div style={{ color: G }}>Guest: {p.guest || 0}</div>
+            <div style={{ color: C[0] }}>{L[0]}: {p[K[0]] || 0}</div>
+            <div style={{ color: C[1] }}>{L[1]}: {p[K[1]] || 0}</div>
           </div>
         )}
       </div>
@@ -435,6 +438,7 @@ function VisitorChart({ series }) {
     </div>
   );
 }
+
 function BarList({ rows, empty, color = "linear-gradient(90deg,#c9a84c,#e8613a)", plain }) {
   if (!rows || rows.length === 0) return <div style={{ color: "rgba(244,237,216,.4)", fontSize: 12, fontStyle: "italic" }}>{empty}</div>;
   const max = Math.max(1, ...rows.map(r => r.count));
