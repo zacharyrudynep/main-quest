@@ -1,7 +1,5 @@
 import Head from "next/head";
-import Link from "next/link";
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
 
 const REASONS = [
   "General Inquiry",
@@ -14,16 +12,14 @@ const REASONS = [
 ];
 
 const FAQS = [
-  { q: "Is Main Quest free to use?", a: "Yes. The Basic tier is free forever and gives you full access to the job board, application tracking, and company alerts. Premium adds the Job Match Score Breakdown, the AI Resume Tailor, reusable email templates, and personalized job alerts \u2014 with a price-lock guarantee that your rate never rises." },
-  { q: "Do I need to verify my email?", a: "Yes. When you sign up we email you a verification link \u2014 click it to unlock the site\u2019s features. You can browse the job board right away, but tracking, alerts, match scores, AI tools, and upgrading require a verified email. Didn\u2019t get the email? Check your spam/junk folder, or resend it from the Account tab (it can take a minute to arrive)." },
-  { q: "Where do the job listings come from?", a: "We aggregate publicly available listings directly from game studios\u2019 official hiring platforms. Always verify the details on the employer\u2019s own site before applying \u2014 postings can change or close at any time." },
-  { q: "How often are listings updated?", a: "Live listings refresh regularly throughout the day, pulled straight from each studio\u2019s careers page. Main Quest is in early development, so we\u2019re continually adding new studios and roles \u2014 if a company is missing, it\u2019s likely coming soon." },
-  { q: "What exactly does Premium include?", a: "The Job Match Score Breakdown (a per-factor look at why a role fits \u2014 skills, experience, seniority, and keywords), the AI Resume Tailor (rewrites your resume to fit a specific posting), reusable email templates with auto-fill for email applications, and personalized job alerts by role, location, company, and seniority. Your price is locked in \u2014 it never rises, even as we add features." },
-  { q: "How do job alerts work?", a: "There are two kinds. Company alerts (free): tap the bell on any studio and we\u2019ll notify you of new roles there, checked once a day. Personalized alerts (Premium): set criteria by role, location, and seniority, and we\u2019ll ping you \u2014 by email and in your on-site inbox \u2014 soon after a matching role is posted, usually within about 15 minutes." },
-  { q: "Can I cancel my subscription?", a: "Anytime \u2014 use Manage or Cancel Subscription in your account. Monthly and yearly plans stop renewing at the end of the current period. Lifetime is a one-time purchase and is never billed again." },
-  { q: "Is the AI accurate (match score, resume tailor)?", a: "The Job Match Score is an estimated guide comparing your profile to a posting\u2019s listed requirements \u2014 a rough signal, not a guarantee, so don\u2019t let a lower score stop you from applying. The AI Resume Tailor suggests edits you should always review before sending. AI can make mistakes; treat its output as a starting point." },
-  { q: "I\u2019m a studio \u2014 how do I get listed or partner with you?", a: "Send us a note through the form on this page with \"Partnerships / Business\" selected, and we\u2019ll get back to you." },
-  { q: "Is my data safe?", a: "We only store what\u2019s needed to run your account, track your applications, and power your alerts. We use trusted processors (Supabase for data, Stripe for payments, Resend for email) and don\u2019t sell your data. See our Privacy Policy and Terms for the full details." },
+  { q: "Is Main Quest free to use?", a: "Yes. The Basic tier is free forever and gives you full access to the job board, application tracking, and company alerts. Premium adds Job Match Scores, one-click email autofill, and targeted job alerts — with a price-lock guarantee." },
+  { q: "Where do the job listings come from?", a: "We aggregate publicly available listings directly from game studios' official hiring platforms. Always verify the details on the employer's own site before applying — postings can change or close at any time." },
+  { q: "How often are listings updated?", a: "Live listings refresh regularly throughout the day, pulled straight from each studio's careers page. The board only reveals once everything has loaded, so you're seeing the current set." },
+  { q: "What exactly does Premium include?", a: "Job Match Score on every listing, one-click email autofill for applications, and specific job alerts by role, location, company, and seniority. Your price is locked in — it never rises, even as we add new features." },
+  { q: "How do job alerts work?", a: "Set up alerts in your inbox (a Premium feature). We check for new matching roles once a day and drop them into your on-site inbox — tap one to jump straight to it on the board. Email delivery is rolling out too." },
+  { q: "Can I cancel my subscription?", a: "Anytime — use Manage Subscription in your account. Monthly and yearly plans stop renewing at the end of the current period. Lifetime is a one-time purchase and is never billed again." },
+  { q: "I'm a studio — how do I get listed or partner with you?", a: "Send us a note through the form on this page with \"Partnerships / Business\" selected, and we'll get back to you." },
+  { q: "Is my data safe?", a: "We only store what's needed to run your account and track your applications. See our Privacy Policy for the full details." },
 ];
 
 export default function Support() {
@@ -46,12 +42,10 @@ export default function Support() {
     if (!message.trim()) return setErr("Please enter a message.");
     setBusy(true);
     try {
-      let token = null;
-      try { const { data } = await supabase.auth.getSession(); token = (data && data.session && data.session.access_token) || null; } catch (e) {}
       const r = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, reason, message, token }),
+        body: JSON.stringify({ name, email, reason, message }),
       });
       const j = await r.json();
       if (j.ok) { setSent(true); }
@@ -71,11 +65,11 @@ export default function Support() {
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
       </Head>
       <style>{`
-        .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}.sgrid>*{min-width:0;}
+        .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
         @media(max-width:820px){.sgrid{grid-template-columns:1fr;}}
       `}</style>
 
-      <div style={{ minHeight: "100vh", overflowX: "hidden", maxWidth: "100%", backgroundColor: "#080608", backgroundImage: "linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px),radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.14), transparent)", backgroundSize: "56px 56px,56px 56px,100% 100%", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
+      <div style={{ minHeight: "100vh", background: "radial-gradient(1200px 600px at 50% -10%, rgba(139,32,32,.14), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "40px 18px 60px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
           {/* Header */}
@@ -87,6 +81,13 @@ export default function Support() {
             </div>
           </div>
           <div style={{ textAlign: "center", fontSize: 12, color: "rgba(201,168,76,.7)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 30 }}>Support</div>
+
+          <div style={{ maxWidth: 760, margin: "0 auto 26px", background: "rgba(232,97,58,.08)", border: "1px solid rgba(232,97,58,.3)", borderRadius: 12, padding: "14px 18px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>&#9888;</span>
+            <div style={{ fontSize: 12.5, color: "rgba(244,237,216,.75)", lineHeight: 1.55 }}>
+              <strong style={{ color: "#f0d080" }}>Beware of scams.</strong> Main Quest only ever emails you from <strong style={{ color: "#f0d080" }}>@mainquestjobs.com</strong> addresses. We will <strong>never</strong> ask for your password, payment details, or sensitive information by email, and we don’t contact you from Gmail, Outlook, or any other domain. If you receive a message claiming to be from Main Quest from a different address, treat it as a scam and do not reply.
+            </div>
+          </div>
 
           <div className="sgrid">
             {/* LEFT — Support ticket */}
@@ -137,18 +138,9 @@ export default function Support() {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 30, fontSize: 12 }}>
-            <Link href="/" style={{ color: "#c9a84c", fontFamily: "'Cinzel',serif", fontWeight: 700, textDecoration: "none" }}>← Back to the job board</Link>
+            <a href="/" style={{ color: "#c9a84c", fontFamily: "'Cinzel',serif", fontWeight: 700, textDecoration: "none" }}>← Back to the job board</a>
           </div>
         </div>
-        <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:40,display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,maxWidth:1000,margin:"40px auto 0"}}>
-          <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>Main Quest aggregates publicly available job listings and is not affiliated with any studio listed. Job data may be inaccurate — always verify on the employer's official site. Trademarks belong to their respective owners.</div>
-          <div style={{display:"flex",gap:16,alignItems:"center",flexShrink:0}}>
-            <a href="/support" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Support</a>
-            <a href="/privacy" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Privacy Policy</a>
-            <a href="/terms" style={{fontSize:11,color:"#c9a84c",textDecoration:"none",fontFamily:"'Cinzel',serif"}}>Terms of Service</a>
-            <span style={{fontSize:11,color:"rgba(244,237,216,.25)"}}>© 2026 Main Quest. All rights reserved.</span>
-          </div>
-        </footer>
       </div>
     </>
   );
