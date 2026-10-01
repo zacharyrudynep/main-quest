@@ -2829,11 +2829,83 @@ function MfaSection(){
   );
 }
 
-function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch}) {
+function OnboardingCard({user,isPlus,onOpenAccount,onOpenInbox,onDismiss,onFollowHint}){
+  const prof=(user&&user.profile)||{};
+  const mobile=useIsMobile();
+  const [openProfile,setOpenProfile]=useState(true);
+  const sub=[
+    {key:"role",label:"Add your target role",done:!!String(prof.role||"").trim(),tab:"profile"},
+    {key:"exp",label:"Set your experience level",done:!!String(prof.experience||prof.yearsExp||"").trim(),tab:"profile"},
+    {key:"skills",label:"List your key skills",done:!!String(prof.skills||"").trim(),tab:"profile"},
+    {key:"work",label:"Add your work history",done:((prof.workBlocks||[]).some(b=>b&&(b.company||b.role||b.description||b.project)))||!!String(prof.workHistory||"").trim(),tab:"profile"},
+    {key:"resume",label:"Upload your résumé",done:!!String(prof.resumeText||"").trim(),tab:"resume"},
+    {key:"links",label:"Add a portfolio or LinkedIn link",done:!!(prof.linkedin||prof.portfolio||prof.github||prof.artstation||prof.behance),tab:"links"},
+  ];
+  const profileDone=sub.every(s=>s.done);
+  const subDoneN=sub.filter(s=>s.done).length;
+  const verifyDone=!!prof.email_verified;
+  const alert=isPlus
+    ?{key:"alert",label:"Set a job alert",hint:"Get pinged the moment a matching role goes live.",done:alertHasCriteria(prof.jobAlerts),cta:"Set alert",act:onOpenInbox}
+    :{key:"follow",label:"Follow a studio",hint:"Tap the 🔔 on any studio to hear about new roles. Upgrade to Plus for role-based alerts.",done:(prof.notifyCompanies||[]).length>0,cta:"Show me how",act:onFollowHint};
+  const total=1+sub.length+1;
+  const complete=(verifyDone?1:0)+subDoneN+(alert.done?1:0);
+  if(complete>=total) return null;
+  const pct=Math.round((complete/total)*100);
+  const G="#c9a84c", GB="#f0d080";
+  const dot=(done)=> done
+    ? <span style={{flexShrink:0,width:20,height:20,borderRadius:"50%",background:"rgba(126,207,179,.18)",border:"1px solid rgba(126,207,179,.5)",display:"flex",alignItems:"center",justifyContent:"center"}}><I.Check s={11} c="#7ecfb3"/></span>
+    : <span style={{flexShrink:0,width:20,height:20,borderRadius:"50%",background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.3)"}}/>;
+  const ctaBtn=(label,act)=><button onClick={act} style={{flexShrink:0,background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:GB,cursor:"pointer",borderRadius:7,padding:"4px 11px",fontSize:10.5,fontWeight:700,fontFamily:"'Cinzel',serif",letterSpacing:.3,whiteSpace:"nowrap"}}>{label} →</button>;
+  const row=(done,label,right)=>(
+    <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0"}}>
+      {dot(done)}
+      <span style={{flex:1,fontSize:12.5,color:done?"rgba(244,237,216,.45)":"#f4edd8",textDecoration:done?"line-through":"none",fontWeight:done?400:500}}>{label}</span>
+      {!done&&right}
+    </div>
+  );
+  return (
+    <div style={{background:"linear-gradient(135deg,rgba(201,168,76,.07),rgba(16,10,22,.5))",border:"1px solid rgba(201,168,76,.22)",borderRadius:14,padding:mobile?"14px 15px":"16px 20px",marginBottom:16,position:"relative"}}>
+      <button onClick={onDismiss} title="Dismiss" style={{position:"absolute",top:12,right:12,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",color:"rgba(244,237,216,.5)",cursor:"pointer",width:26,height:26,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center"}}><I.X s={11} c="currentColor"/></button>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,paddingRight:30}}>
+        <I.Sparkle s={16} c={GB}/>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:15,fontWeight:700,color:"#f4edd8",letterSpacing:.5}}>Finish setting up your account</span>
+      </div>
+      <div style={{fontSize:11.5,color:"rgba(244,237,216,.5)",marginBottom:12}}>A complete profile means sharper match scores and better job alerts.</div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+        <div style={{flex:1,height:6,borderRadius:4,background:"rgba(244,237,216,.08)",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${G},#e8613a)`,borderRadius:4,transition:"width .3s"}}/></div>
+        <span style={{fontSize:11,color:GB,fontWeight:700,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>{complete}/{total}</span>
+      </div>
+      <div style={{borderTop:"1px solid rgba(201,168,76,.1)",marginTop:6}}>
+        {row(verifyDone,"Verify your email",ctaBtn("Verify",()=>onOpenAccount("account")))}
+        <div style={{borderTop:"1px solid rgba(201,168,76,.06)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",cursor:"pointer"}} onClick={()=>setOpenProfile(o=>!o)}>
+            {dot(profileDone)}
+            <span style={{flex:1,fontSize:12.5,color:profileDone?"rgba(244,237,216,.45)":"#f4edd8",textDecoration:profileDone?"line-through":"none",fontWeight:profileDone?400:500}}>Complete your profile</span>
+            <span style={{fontSize:10.5,color:"rgba(201,168,76,.7)",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{subDoneN}/{sub.length}</span>
+            <span style={{display:"flex",transform:openProfile?"rotate(90deg)":"none",transition:"transform .15s"}}><I.Chevron s={13} c="rgba(244,237,216,.5)"/></span>
+          </div>
+          {openProfile&&<div style={{paddingLeft:14,marginLeft:9,borderLeft:"1px solid rgba(201,168,76,.12)",marginBottom:4}}>
+            {sub.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:9,padding:"5px 0"}}>
+              {dot(s.done)}
+              <span style={{flex:1,fontSize:11.5,color:s.done?"rgba(244,237,216,.4)":"rgba(244,237,216,.85)",textDecoration:s.done?"line-through":"none"}}>{s.label}</span>
+              {!s.done&&<button onClick={()=>onOpenAccount(s.tab)} style={{flexShrink:0,background:"none",border:"none",color:GB,cursor:"pointer",fontSize:10.5,fontWeight:700,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>Add →</button>}
+            </div>)}
+          </div>}
+        </div>
+        <div style={{borderTop:"1px solid rgba(201,168,76,.06)"}}>
+          {row(alert.done,alert.label,ctaBtn(alert.cta,alert.act))}
+          {!alert.done&&<div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",paddingLeft:30,paddingBottom:6,marginTop:-4}}>{alert.hint}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialTab}) {
   const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
   const mobile = useIsMobile();
-  const [tab,setTab]=useState("profile");
+  const [tab,setTab]=useState(initialTab||"profile");
   const [p,setP]=useState({name:user.name||"",bio:user.profile?.bio||"",location:user.profile?.location||"",country:user.profile?.country||"",linkedin:user.profile?.linkedin||"",portfolio:user.profile?.portfolio||"",github:user.profile?.github||"",role:user.profile?.role||"",experience:user.profile?.experience||user.profile?.yearsExp||"",openTo:user.profile?.openTo||[],skills:user.profile?.skills||"",education:user.profile?.education||"",workHistory:user.profile?.workHistory||"",workBlocks:user.profile?.workBlocks||(user.profile?.workHistory?[{id:"legacy",company:"",role:"",project:"",timeframe:"",description:user.profile.workHistory,achievements:""}]:[]),achievements:user.profile?.achievements||"",targetSalary:user.profile?.targetSalary||"",resumeText:user.profile?.resumeText||"",emailAddress:user.profile?.emailAddress||"",emailProvider:user.profile?.emailProvider||"gmail",emailTemplate:user.profile?.emailTemplate||"",emailTemplateMap:user.profile?.emailTemplateMap||[],autoAttachResume:user.profile?.autoAttachResume||false,resumeFileName:user.profile?.resumeFileName||"",artstation:user.profile?.artstation||"",behance:user.profile?.behance||"",otherWebsite:user.profile?.otherWebsite||"",notifyCompanies:user.profile?.notifyCompanies||[],alertAll:user.profile?.alertAll||false,notifications:user.profile?.notifications!==false,emailAlerts:user.profile?.emailAlerts||false,jobAlerts:user.profile?.jobAlerts||{roles:[],seniority:[],companies:"",locations:"",matchAll:false,emailEnabled:true},customLinks:user.profile?.customLinks||[]});
   const [saved,setSaved]=useState(false);
   const [pwOpen,setPwOpen]=useState(false),[pwOld,setPwOld]=useState(""),[pwNew,setPwNew]=useState(""),[pwNew2,setPwNew2]=useState(""),[pwMsg,setPwMsg]=useState(""),[pwBusy,setPwBusy]=useState(false);
@@ -3648,13 +3720,14 @@ function ATSPill({ats,onClick}){
 }
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
-const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPlus,isPremium,onToggleSave,activeBreakdown,flatView,notifyOn,onToggleNotify}) {
+const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,onShowBreakdown,isPlus,isPremium,onToggleSave,activeBreakdown,flatView,notifyOn,onToggleNotify,applyCounts}) {
   const [flipped,setFlipped]=useState(false);
   const smallBreak=useIsMobile(1024); // on small screens flip the card instead of the cut-off side panel
   const mobile = useIsMobile();
   const [prompt,setPrompt]=useState(false);
   const [expanded,setExpanded]=useState(false);
   const isApplied=user?.applied?.[job.id];
+  const appliedCount=(applyCounts&&applyCounts[`${job.company}|${job.title}|${job.location||""}`])||0;
   const _unver=!!(user&&user.profile&&user.profile.email_verified===false);
   const hasResume=!!(user&&user.profile&&(user.profile.resumeText||"").trim());
   const match=hasResume?computeMatchScore(job,user?.profile):null;
@@ -3674,7 +3747,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
   const isSaved=!!user?.saved?.[job.id];
   const secBtn={textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.2)",color:"#c9a84c",cursor:"pointer",borderRadius:7,padding:mobile?"8px 12px":"7px 13px",fontSize:10.5,fontWeight:600,fontFamily:"'Cinzel',serif",letterSpacing:.3};
   const onApply=()=>{
-    track("job_apply_click",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company});
+    track("job_apply_click",{jobKey:`${job.company}|${job.title}|${job.location||""}`,company:job.company,meta:{uid:(user&&user.id)||null}});
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
       const prof=user?.profile||{};
@@ -3752,7 +3825,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <a href={`/companies/${_companySlug(job.company)}`} target="_blank" rel="noopener" onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}} title={`See all roles at ${job.company}`}><span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase",cursor:"pointer",borderBottom:"1px dotted rgba(201,168,76,.4)"}}>{job.company}</span></a>
       {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
       {flatView&&user&&job.company&&<span onClick={e=>{e.stopPropagation();onToggleNotify&&onToggleNotify(job.company);}} title={_unver?"Verify your email from the Account tab to use alerts":(notifyOn?`Alerts on for all ${job.company} jobs — click to turn off`:`Get alerts for new ${job.company} jobs`)} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",background:notifyOn?"rgba(201,168,76,.14)":"rgba(201,168,76,.05)",border:`1px solid ${notifyOn?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,borderRadius:6,padding:"2px 7px",opacity:_unver?.4:1}}><I.Bell s={10} c={notifyOn?"#c9a84c":"rgba(244,237,216,.55)"} fill={notifyOn?"#c9a84c":"none"}/></span>}
-      <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>{job.isNew&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(232,97,58,.16)",border:"1px solid rgba(232,97,58,.4)",color:"#e8a070",borderRadius:20,fontSize:9,fontWeight:800,padding:"2px 7px",letterSpacing:.6,fontFamily:"'Cinzel',serif"}}><I.Alert s={10}/>NEW</span>}
+      <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>{job.isNew&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(232,97,58,.16)",border:"1px solid rgba(232,97,58,.4)",color:"#e8a070",borderRadius:20,fontSize:9,fontWeight:800,padding:"2px 7px",letterSpacing:.6,fontFamily:"'Cinzel',serif"}}><I.Alert s={10}/>NEW</span>}{appliedCount>0&&<span title={`${appliedCount} ${appliedCount===1?"person has":"people have"} clicked Apply on this role`} style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(126,207,179,.10)",border:"1px solid rgba(126,207,179,.28)",color:"#7ecfb3",borderRadius:20,fontSize:9,fontWeight:700,padding:"2px 7px",letterSpacing:.4,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}><I.Person s={9} c="#7ecfb3"/>{appliedCount} applied</span>}
         <button onClick={e=>{e.stopPropagation(); if(!user){onRequestLogin&&onRequestLogin();return;} onToggleSave&&onToggleSave(job);}} title={_unver?"Verify your email from the Account tab to save jobs":(isSaved?"Remove from saved":"Save this job")} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:isSaved?"rgba(201,168,76,.16)":"rgba(201,168,76,.06)",border:`1px solid ${isSaved?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:_unver?"not-allowed":"pointer",opacity:_unver?.4:1}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={isSaved?"#c9a84c":"none"} stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         </button>
@@ -4373,6 +4446,9 @@ export default function App() {
   useEffect(()=>{ try{ sessionStorage.setItem("mq_expanded",JSON.stringify(expanded)); }catch{} },[expanded]);
   const [lastRefresh,setLastRefresh]=useState(new Date());
   const [showAcct,setShowAcct]=useState(false);
+  const [acctInitTab,setAcctInitTab]=useState(null);
+  const openAccount=(tb)=>{ setAcctInitTab(tb||"profile"); setShowAcct(true); };
+  const followHint=()=>{ setTab("jobs"); setToast("Tap the 🔔 on any studio card to follow it and hear about new roles."); };
   const [pricingDismissed,setPricingDismissed]=useState(false);
   const [guest,setGuest]=useState(()=>!!(__mqAuthCache&&__mqAuthCache.guest));
   const [showLoginPopup,setShowLoginPopup]=useState(false);
@@ -4700,6 +4776,8 @@ export default function App() {
     if(v==="success"){ (async()=>{ try{ await supabase.auth.refreshSession(); }catch(e){} setUser(u=>u&&u.id?{...u,profile:{...(u.profile||{}),email_verified:true}}:u); })(); }
   },[]);
   const [breakdownJob,setBreakdownJob]=useState(null);
+  const [applyCounts,setApplyCounts]=useState({});
+  useEffect(()=>{ let on=true; fetch("/api/jobs/apply-counts").then(r=>r.json()).then(j=>{ if(on&&j&&j.counts)setApplyCounts(j.counts); }).catch(()=>{}); return ()=>{on=false;}; },[]);
   const [showUpgrade,setShowUpgrade]=useState(false);
   useEffect(()=>{ const h=()=>setShowUpgrade(true); window.addEventListener("mq-open-upgrade",h); return ()=>window.removeEventListener("mq-open-upgrade",h); },[]);
   // Reset the board to its default look whenever the signed-in user changes (sign out / sign in),
@@ -5323,7 +5401,7 @@ export default function App() {
       </button>
       </div>
     </header>
-    {showAcct&&user&&<AccountPanel user={user} onClose={()=>setShowAcct(false)} onUpdate={updateUser} onPatch={patchProfile} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
+    {showAcct&&user&&<AccountPanel key={acctInitTab||"profile"} initialTab={acctInitTab} user={user} onClose={()=>{setShowAcct(false);setAcctInitTab(null);}} onUpdate={updateUser} onPatch={patchProfile} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appIsPlus} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPlus={appIsPlus} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
     {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
@@ -5334,6 +5412,7 @@ export default function App() {
 
     <main style={{position:"relative",zIndex:1,maxWidth:1100,width:"100%",margin:(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"0 calc(min(46vw,720px) + 40px) 0 24px":(resumePanel&&!mobile&&tab==="saved")?"0 calc(50vw + 24px) 0 24px":(prepJob&&!mobile&&tab==="applied")?"0 calc(50vw + 24px) 0 24px":"0 auto",transition:"margin .35s ease",padding:mobile?"14px 12px":"24px 18px",flex:1}}>
       {tab==="jobs"&&<>
+        {user&&!user.profile?.onbDismissed&&<OnboardingCard user={user} isPlus={appIsPlus} onOpenAccount={openAccount} onOpenInbox={()=>setShowInbox(true)} onFollowHint={followHint} onDismiss={()=>patchProfile({onbDismissed:true})}/>}
         <BetaDisclaimer/>
         {/* Pricing banner for guests (dismissible) */}
         {/* Stats */}
@@ -5420,7 +5499,7 @@ export default function App() {
             :<>
               <div style={{fontSize:10.5,color:"rgba(201,168,76,.6)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginBottom:2}}>Showing {Math.min(flatLimit,flatJobs.length)} of {flatJobs.length} jobs</div>
               {flatJobs.slice(0,flatLimit).map(j=>
-                <div key={`${j.company}|${j.title}|${j.location||""}`} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify}/></div>)}
+                <div key={`${j.company}|${j.title}|${j.location||""}`} id={`mqjob-${j.company}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} flatView={true} notifyOn={((user&&user.profile&&user.profile.notifyCompanies)||[]).includes(j.company)} onToggleNotify={toggleNotify} applyCounts={applyCounts}/></div>)}
               {flatLimit<flatJobs.length&&<button onClick={()=>setFlatLimit(l=>l+200)} style={{marginTop:6,alignSelf:"center",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.3)",color:"#f0d080",cursor:"pointer",borderRadius:10,padding:"10px 22px",fontSize:12,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>Show more ({flatJobs.length-flatLimit} left)</button>}
             </>
           ):Object.entries(displayTree)
@@ -5556,7 +5635,7 @@ export default function App() {
                                         return groups[b].length-groups[a].length;
                                       });
                                       const multi=keys.length>1;
-                                      const renderJob=j=><div key={`${name}|${j.title}|${j.location||""}|${j.id}`} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/></div>;
+                                      const renderJob=j=><div key={`${name}|${j.title}|${j.location||""}|${j.id}`} id={`mqjob-${name}|${j.title}|${j.location||""}`} style={{borderRadius:10}}><JobCard job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} applyCounts={applyCounts}/></div>;
                                       if(!multi) return fJobs.map(renderJob);
                                       return keys.map(k=>{
                                         const locKey=`loc-${country}-${state}-${name}-${k}`;
@@ -5595,7 +5674,7 @@ export default function App() {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,.5)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <p style={{color:"rgba(244,237,216,.55)",fontSize:14,fontFamily:"'Cinzel',serif"}}>No saved jobs yet.</p><p style={{color:"rgba(244,237,216,.4)",fontSize:12}}>Tap the bookmark icon on any posting to save it here.</p>
         </div>:<div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {savedJobs.map(j=><JobCard key={`${j.company}|${j.title}|${j.location||""}|${j.id}`} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)}/>)}
+          {savedJobs.map(j=><JobCard key={`${j.company}|${j.title}|${j.location||""}|${j.id}`} job={j} user={user} guest={guest} onRequestLogin={requestLogin} onApplied={markApplied} onShowBreakdown={showBreakdown} isPlus={appIsPlus} isPremium={appPremium} onToggleSave={toggleSaved} activeBreakdown={breakdownJob&&(breakdownJob.id||breakdownJob.title)===(j.id||j.title)} applyCounts={applyCounts}/>)}
         </div>}
       </div>}
 

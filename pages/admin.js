@@ -4,6 +4,13 @@ import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
 const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"]];
+const COUNTRY_NAMES = { US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", NL:"Netherlands", SE:"Sweden", FI:"Finland", NO:"Norway", DK:"Denmark", PL:"Poland", ES:"Spain", IT:"Italy", IE:"Ireland", PT:"Portugal", BE:"Belgium", CH:"Switzerland", AT:"Austria", CZ:"Czechia", RO:"Romania", UA:"Ukraine", RU:"Russia", TR:"Turkey", JP:"Japan", KR:"South Korea", CN:"China", IN:"India", SG:"Singapore", PH:"Philippines", ID:"Indonesia", MY:"Malaysia", TH:"Thailand", VN:"Vietnam", AU:"Australia", NZ:"New Zealand", BR:"Brazil", MX:"Mexico", AR:"Argentina", CL:"Chile", CO:"Colombia", ZA:"South Africa", NG:"Nigeria", EG:"Egypt", KE:"Kenya", IL:"Israel", AE:"UAE", SA:"Saudi Arabia", PK:"Pakistan", BD:"Bangladesh", HK:"Hong Kong", TW:"Taiwan", GR:"Greece", HU:"Hungary", BG:"Bulgaria", HR:"Croatia", RS:"Serbia", SK:"Slovakia", SI:"Slovenia", LT:"Lithuania", LV:"Latvia", EE:"Estonia", IS:"Iceland", LU:"Luxembourg" };
+function countryLabel(code) {
+  const cc = String(code || "").toUpperCase();
+  const flag = /^[A-Z]{2}$/.test(cc) ? cc.replace(/./g, (ch) => String.fromCodePoint(127397 + ch.charCodeAt(0))) : "";
+  return `${flag} ${COUNTRY_NAMES[cc] || cc}`.trim();
+}
+
 
 export default function Admin() {
   const [status, setStatus] = useState("loading");
@@ -13,6 +20,10 @@ export default function Admin() {
   const [revStatus, setRevStatus] = useState("idle");
   const [eng, setEng] = useState(null);
   const [engStatus, setEngStatus] = useState("idle");
+  const [usersData, setUsersData] = useState(null);
+  const [usersStatus, setUsersStatus] = useState("idle");
+  const [uq, setUq] = useState("");
+  const [selUser, setSelUser] = useState(null);
 
   useEffect(() => {
     if (tab !== "engagement" || engStatus !== "idle") return;
@@ -43,6 +54,21 @@ export default function Admin() {
       } catch (e) { setRevStatus("error"); }
     })();
   }, [tab, revStatus]);
+
+  useEffect(() => {
+    if (tab !== "users" || usersStatus !== "idle") return;
+    setUsersStatus("loading");
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { setUsersStatus("error"); return; }
+        setUsersData(await r.json());
+        setUsersStatus("ready");
+      } catch (e) { setUsersStatus("error"); }
+    })();
+  }, [tab, usersStatus]);
 
   useEffect(() => {
     (async () => {
@@ -150,6 +176,7 @@ export default function Admin() {
                     ["Resumes Uploaded", s.resumesUploaded], ["Complete Profiles", s.completeProfiles],
                   ]} />
                   <Panel title="Signups"><LineChart series={s.signupSeries} color="#c9a84c" /></Panel>
+                  <UserDirectory data={usersData} status={usersStatus} q={uq} setQ={setUq} sel={selUser} setSel={setSelUser} />
                 </>
               )}
 
@@ -175,6 +202,7 @@ export default function Admin() {
                       <Panel title="Active visitors"><LineChart series={eng.dauSeries} color="#7ecfb3" /></Panel>
                       <Panel title="Signed-in vs guest visitors"><VisitorChart series={eng.visitorSplit} /></Panel>
                       <Panel title="Landing page vs job board"><VisitorChart series={eng.pageSplit} keys={["landing","board"]} labels={["Landing page","Job board"]} colors={["#7ecfb3","#c9a84c"]} /></Panel>
+                      <Panel title="Visitors by country"><BarList rows={(eng.topCountries||[]).map((c)=>({label:countryLabel(c.country),count:c.count}))} empty="No location data yet — new visits will populate this once the Cloudflare country header is flowing." plain /></Panel>
                       <TwoCol>
                         <Panel title="New vs returning (last 30 days)">
                           <NRChart data={eng.newReturning} />
@@ -459,5 +487,128 @@ function BarList({ rows, empty, color = "linear-gradient(90deg,#c9a84c,#e8613a)"
         );
       })}
     </div>
+  );
+}
+
+function tierBadge(tier) {
+  const t = String(tier || "basic").toLowerCase();
+  const map = { premium: ["#e8a070", "rgba(232,160,112,.15)", "rgba(232,160,112,.4)"], plus: ["#7ecfb3", "rgba(126,207,179,.15)", "rgba(126,207,179,.4)"] };
+  const [c, bg, bd] = map[t] || ["rgba(244,237,216,.6)", "rgba(244,237,216,.06)", "rgba(244,237,216,.18)"];
+  return <span style={{ color: c, background: bg, border: `1px solid ${bd}`, borderRadius: 20, fontSize: 9, fontWeight: 800, padding: "2px 8px", textTransform: "uppercase", letterSpacing: .6, fontFamily: "'Cinzel',serif" }}>{t}</span>;
+}
+function fmtDate(d) { if (!d) return "—"; try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return "—"; } }
+
+function Field({ label, value }) {
+  if (value == null || value === "") return null;
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 12.5, color: "#f4edd8", lineHeight: 1.5, wordBreak: "break-word" }}>{value}</div>
+    </div>
+  );
+}
+
+function UserDetail({ u, onBack }) {
+  const L = u.links || {};
+  const links = Object.entries(L).filter(([, v]) => v);
+  const asList = (x) => Array.isArray(x) ? x.filter(Boolean) : (x ? String(x).split(/[,;]+/).map(s => s.trim()).filter(Boolean) : []);
+  const alertArr = Array.isArray(u.jobAlerts) ? u.jobAlerts : (u.jobAlerts && typeof u.jobAlerts === "object" ? [u.jobAlerts] : []);
+  const alerts = alertArr.filter(a => a && [a.roles, a.seniority, a.locations, a.companies].some(x => asList(x).length));
+  return (
+    <div style={{ background: "rgba(16,10,22,.55)", border: "1px solid rgba(201,168,76,.18)", borderRadius: 12, padding: 18 }}>
+      <button onClick={onBack} style={{ background: "rgba(201,168,76,.08)", border: "1px solid rgba(201,168,76,.22)", color: "#f0d080", cursor: "pointer", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, marginBottom: 14 }}>← All users</button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#f4edd8" }}>{u.name || "(no name)"}</span>
+        {tierBadge(u.tier)}
+        {u.emailVerified ? <span style={{ color: "#7ecfb3", fontSize: 10, fontWeight: 700 }}>✓ Verified</span> : <span style={{ color: "#e07060", fontSize: 10, fontWeight: 700 }}>✗ Unverified</span>}
+      </div>
+      <div style={{ fontSize: 12.5, color: "rgba(244,237,216,.65)", marginBottom: 2 }}>{u.email || "—"}</div>
+      <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>Joined {fmtDate(u.created)} · Last seen {fmtDate(u.lastSignIn)} · {u.appliedCount} application{u.appliedCount === 1 ? "" : "s"} · ID {u.id}</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+        <Field label="Target Role" value={u.role} />
+        <Field label="Experience" value={u.experience} />
+        <Field label="Location" value={[u.location, u.country].filter(Boolean).join(" · ")} />
+        <Field label="Target Salary" value={u.targetSalary} />
+        <Field label="Education" value={u.education} />
+        <Field label="Open To" value={(u.openTo || []).join(", ")} />
+      </div>
+      <Field label="Skills" value={u.skills} />
+      <Field label="Bio" value={u.bio} />
+      <Field label="Achievements" value={u.achievements} />
+
+      {links.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 4 }}>Links</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {links.map(([k, v]) => <a key={k} href={v} target="_blank" rel="noreferrer" style={{ fontSize: 11.5, color: "#7ecfb3", background: "rgba(126,207,179,.07)", border: "1px solid rgba(126,207,179,.2)", borderRadius: 6, padding: "3px 9px", textDecoration: "none" }}>{k}</a>)}
+          </div>
+        </div>
+      )}
+
+      {(u.workBlocks || []).some(b => b && (b.company || b.role || b.description)) && (
+        <div style={{ marginTop: 6, marginBottom: 10 }}>
+          <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 6 }}>Work History</div>
+          {u.workBlocks.map((b, i) => (b && (b.company || b.role || b.description || b.project)) ? (
+            <div key={i} style={{ borderLeft: "2px solid rgba(201,168,76,.2)", paddingLeft: 10, marginBottom: 8 }}>
+              <div style={{ fontSize: 12.5, color: "#f4edd8", fontWeight: 600 }}>{[b.role, b.company].filter(Boolean).join(" · ") || b.project || "Role"}</div>
+              {(b.project || b.timeframe) && <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.45)" }}>{[b.project, b.timeframe].filter(Boolean).join(" · ")}</div>}
+              {b.description && <div style={{ fontSize: 11.5, color: "rgba(244,237,216,.7)", marginTop: 2, whiteSpace: "pre-wrap" }}>{b.description}</div>}
+              {b.achievements && <div style={{ fontSize: 11.5, color: "rgba(126,207,179,.75)", marginTop: 2, whiteSpace: "pre-wrap" }}>{b.achievements}</div>}
+            </div>
+          ) : null)}
+        </div>
+      )}
+      {!(u.workBlocks || []).length && u.workHistory && <Field label="Work History" value={<span style={{ whiteSpace: "pre-wrap" }}>{u.workHistory}</span>} />}
+
+      {alerts && alerts.length > 0 && (
+        <Field label="Job Alerts" value={alerts.map((a, i) => {
+          const parts = [asList(a.roles).join(", "), asList(a.seniority).join(", "), asList(a.locations).join(", "), asList(a.companies).join(", ")].filter(Boolean);
+          return <div key={i} style={{ fontSize: 11.5 }}>• {parts.join(" / ") || "any"}{a.matchAll ? " (match all)" : ""}</div>;
+        })} />
+      )}
+      {(u.notifyCompanies || []).length > 0 && <Field label={`Followed Studios (${u.notifyCompanies.length})`} value={u.notifyCompanies.join(", ")} />}
+
+      <div style={{ marginTop: 8 }}>
+        <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 4 }}>Résumé {u.resumeFileName ? `· ${u.resumeFileName}` : ""}</div>
+        {u.resumeText
+          ? <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11.5, color: "rgba(244,237,216,.78)", background: "rgba(10,6,14,.5)", border: "1px solid rgba(201,168,76,.12)", borderRadius: 8, padding: 12, maxHeight: 420, overflow: "auto", fontFamily: "ui-monospace,Menlo,Consolas,monospace", lineHeight: 1.5, margin: 0 }}>{u.resumeText}</pre>
+          : <div style={{ fontSize: 12, color: "rgba(244,237,216,.4)", fontStyle: "italic" }}>No résumé on file.</div>}
+      </div>
+    </div>
+  );
+}
+
+function UserDirectory({ data, status, q, setQ, sel, setSel }) {
+  if (status === "loading" || status === "idle") return <Panel title="Users"><div style={{ color: "rgba(244,237,216,.5)", fontSize: 13 }}>Loading users…</div></Panel>;
+  if (status === "error") return <Panel title="Users"><div style={{ color: "#e07060", fontSize: 13 }}>Couldn’t load users.</div></Panel>;
+  const all = (data && data.users) || [];
+  const selU = sel ? all.find(u => u.id === sel) : null;
+  if (selU) return <Panel title="User detail"><UserDetail u={selU} onBack={() => setSel(null)} /></Panel>;
+  const needle = q.trim().toLowerCase();
+  const rows = needle
+    ? all.filter(u => [u.name, u.email, u.role, u.skills, u.location].some(f => String(f || "").toLowerCase().includes(needle)))
+    : all;
+  return (
+    <Panel title={`All users (${all.length})`}>
+      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, email, role, skills…"
+        style={{ width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 9, padding: "9px 12px", fontSize: 12.5, outline: "none", marginBottom: 12 }} />
+      {rows.length === 0 ? <div style={{ color: "rgba(244,237,216,.4)", fontSize: 12, fontStyle: "italic" }}>No matches.</div> : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 560, overflow: "auto" }}>
+          {rows.map(u => (
+            <div key={u.id} onClick={() => setSel(u.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, cursor: "pointer", borderBottom: "1px solid rgba(201,168,76,.06)" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(201,168,76,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, color: "#f4edd8", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name || "(no name)"} {!u.emailVerified && <span title="Email unverified" style={{ color: "#e07060", fontSize: 10 }}>✗</span>}</div>
+                <div style={{ fontSize: 11, color: "rgba(244,237,216,.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}{u.role ? ` · ${u.role}` : ""}</div>
+              </div>
+              <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", whiteSpace: "nowrap" }}>{u.appliedCount > 0 ? `${u.appliedCount} app${u.appliedCount === 1 ? "" : "s"}` : ""}</span>
+              {tierBadge(u.tier)}
+              <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.35)", whiteSpace: "nowrap", minWidth: 62, textAlign: "right" }}>{fmtDate(u.created)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
   );
 }

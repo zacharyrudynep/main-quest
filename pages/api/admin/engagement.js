@@ -32,6 +32,7 @@ export default async function handler(req, res) {
     const sessions = {};      // `${visitor}|${day}` -> { min, max }
     const dayAuthed = {};     // day -> Set(visitor) who had a signed-in event
     const dayLanding = {}, dayBoard = {};  // day -> Set(visitor) per page
+    const countryVisitors = {};  // country -> Set(visitor)
     for (const e of evs || []) {
       const v = e.visitor; if (!v || !e.created_at) continue;
       const day = e.created_at.slice(0, 10);
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
       if (e.meta && e.meta.authed) (dayAuthed[day] = dayAuthed[day] || new Set()).add(v);
       if (e.meta && e.meta.page === "landing") (dayLanding[day] = dayLanding[day] || new Set()).add(v);
       if (e.meta && e.meta.page === "board") (dayBoard[day] = dayBoard[day] || new Set()).add(v);
+      if (e.meta && e.meta.country) (countryVisitors[e.meta.country] = countryVisitors[e.meta.country] || new Set()).add(v);
       const key = v + "|" + day;
       const s = sessions[key] || (sessions[key] = { min: ts, max: ts });
       if (ts < s.min) s.min = ts; if (ts > s.max) s.max = ts;
@@ -109,10 +111,15 @@ export default async function handler(req, res) {
     let durSum = 0, durN = 0;
     for (const k of sessKeys) { const d = (sessions[k].max - sessions[k].min) / 60000; if (d > 0) { durSum += d; durN++; } }
 
+        const topCountries = Object.keys(countryVisitors)
+      .map((c) => ({ country: c, count: countryVisitors[c].size }))
+      .sort((a, b) => b.count - a.count).slice(0, 30);
+    const geoKnown = topCountries.reduce((s, x) => s + x.count, 0);
     res.status(200).json({
       generatedAt: new Date().toISOString(),
       dau: dauSeries.length ? dauSeries[dauSeries.length - 1].count : 0,
       avgDau, wau, mau,
+      topCountries, geoKnown,
       stickiness: pct(avgDau, mau),           // DAU/MAU %
       totalVisitors, totalSessions,
       sessionsPerVisitor: totalVisitors ? Math.round((totalSessions / totalVisitors) * 10) / 10 : 0,
