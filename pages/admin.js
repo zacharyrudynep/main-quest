@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"]];
+const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"], ["tools", "Tools"]];
 const COUNTRY_NAMES = { US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", NL:"Netherlands", SE:"Sweden", FI:"Finland", NO:"Norway", DK:"Denmark", PL:"Poland", ES:"Spain", IT:"Italy", IE:"Ireland", PT:"Portugal", BE:"Belgium", CH:"Switzerland", AT:"Austria", CZ:"Czechia", RO:"Romania", UA:"Ukraine", RU:"Russia", TR:"Turkey", JP:"Japan", KR:"South Korea", CN:"China", IN:"India", SG:"Singapore", PH:"Philippines", ID:"Indonesia", MY:"Malaysia", TH:"Thailand", VN:"Vietnam", AU:"Australia", NZ:"New Zealand", BR:"Brazil", MX:"Mexico", AR:"Argentina", CL:"Chile", CO:"Colombia", ZA:"South Africa", NG:"Nigeria", EG:"Egypt", KE:"Kenya", IL:"Israel", AE:"UAE", SA:"Saudi Arabia", PK:"Pakistan", BD:"Bangladesh", HK:"Hong Kong", TW:"Taiwan", GR:"Greece", HU:"Hungary", BG:"Bulgaria", HR:"Croatia", RS:"Serbia", SK:"Slovakia", SI:"Slovenia", LT:"Lithuania", LV:"Latvia", EE:"Estonia", IS:"Iceland", LU:"Luxembourg" };
 function countryLabel(code) {
   const cc = String(code || "").toUpperCase();
@@ -235,6 +235,12 @@ export default function Admin() {
                       </TwoCol>
                     </>
                   )}
+                </>
+              )}
+
+              {tab === "tools" && (
+                <>
+                  <PolicyEmailPanel />
                 </>
               )}
 
@@ -607,6 +613,88 @@ function UserDirectory({ data, status, q, setQ, sel, setSel }) {
               <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.35)", whiteSpace: "nowrap", minWidth: 62, textAlign: "right" }}>{fmtDate(u.created)}</span>
             </div>
           ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function PolicyEmailPanel() {
+  const [policy, setPolicy] = useState("both");
+  const [version, setVersion] = useState("");
+  const [summary, setSummary] = useState("");
+  const [busy, setBusy] = useState("");
+  const [result, setResult] = useState(null);
+  const [err, setErr] = useState("");
+
+  async function post(payload) {
+    const { data } = await supabase.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    const r = await fetch("/api/admin/send-policy-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || j.detail || `HTTP ${r.status}`);
+    return j;
+  }
+  async function sendTest() {
+    setErr(""); setResult(null); setBusy("test");
+    try { const j = await post({ policy, version, summary, test: true }); setResult({ test: true, to: j.to }); }
+    catch (e) { setErr(String(e.message || e)); }
+    finally { setBusy(""); }
+  }
+  async function sendAll() {
+    setErr(""); setResult(null);
+    if (!version.trim()) { setErr("Enter an effective date / version first."); return; }
+    const label = policy === "terms" ? "Terms of Service" : policy === "privacy" ? "Privacy Policy" : "Terms of Service and Privacy Policy";
+    if (!window.confirm(`Email EVERY user about the updated ${label} (effective ${version})?\n\nThis is a one-time legal notice and will send to all accounts that haven't received this version yet.`)) return;
+    setBusy("all");
+    try { const j = await post({ policy, version, summary }); setResult(j); }
+    catch (e) { setErr(String(e.message || e)); }
+    finally { setBusy(""); }
+  }
+
+  const lbl = { fontSize: 10, color: "rgba(201,168,76,.7)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 5, display: "block" };
+  const inp = { width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 9, padding: "9px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" };
+  const btn = (bg, bd, c) => ({ background: bg, border: `1px solid ${bd}`, color: c, cursor: "pointer", borderRadius: 9, padding: "9px 16px", fontSize: 12, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3, opacity: busy ? .6 : 1 });
+
+  return (
+    <Panel title="Policy update email">
+      <div style={{ fontSize: 12, color: "rgba(244,237,216,.6)", lineHeight: 1.6, marginBottom: 16 }}>
+        Sends a legal notice to <strong style={{ color: "#f0d080" }}>all users</strong> that the Terms and/or Privacy Policy changed. It ignores marketing opt-outs (required notice), and won't double-send: each account only receives a given version once. Update the policy text + its "Last updated" date in <code style={{ color: "#7ecfb3" }}>terms.js</code>/<code style={{ color: "#7ecfb3" }}>privacy.js</code> and deploy <em>first</em>, then send this.
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div>
+          <label style={lbl}>Which policy changed</label>
+          <select value={policy} onChange={e => setPolicy(e.target.value)} style={inp}>
+            <option value="both">Terms &amp; Privacy</option>
+            <option value="terms">Terms of Service</option>
+            <option value="privacy">Privacy Policy</option>
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Effective date / version</label>
+          <input value={version} onChange={e => setVersion(e.target.value)} placeholder="e.g. October 2026" style={inp} />
+        </div>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={lbl}>What changed (optional summary, shown in the email)</label>
+        <textarea value={summary} onChange={e => setSummary(e.target.value)} rows={4} placeholder="e.g. Clarified how résumé data is stored and added a section on AI feature usage." style={{ ...inp, resize: "vertical", lineHeight: 1.5 }} />
+      </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={sendTest} disabled={!!busy} style={btn("rgba(126,207,179,.1)", "rgba(126,207,179,.35)", "#7ecfb3")}>{busy === "test" ? "Sending…" : "Send test to me"}</button>
+        <button onClick={sendAll} disabled={!!busy} style={btn("rgba(232,97,58,.12)", "rgba(232,97,58,.4)", "#e8a070")}>{busy === "all" ? "Sending…" : "Send to all users"}</button>
+      </div>
+
+      {err && <div style={{ marginTop: 14, color: "#e07060", fontSize: 12.5 }}>⚠ {err}</div>}
+      {result && result.test && <div style={{ marginTop: 14, color: "#7ecfb3", fontSize: 12.5 }}>✓ Test sent to {result.to}. Check your inbox.</div>}
+      {result && !result.test && (
+        <div style={{ marginTop: 14, color: "#7ecfb3", fontSize: 12.5, lineHeight: 1.7 }}>
+          ✓ Done. Sent <strong>{result.sent}</strong> · already had this version: {result.skipped} · no email on file: {result.noEmail}{result.failed ? ` · failed: ${result.failed} (re-run to retry those)` : ""}.
         </div>
       )}
     </Panel>
