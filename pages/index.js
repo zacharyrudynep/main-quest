@@ -816,8 +816,14 @@ const I={
   Clipboard:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="10" height="11.5" rx="1.5"/><path d="M5.6 3V2.2a.8.8 0 0 1 .8-.8h3.2a.8.8 0 0 1 .8.8V3"/><line x1="5.6" y1="6.6" x2="10.4" y2="6.6"/><line x1="5.6" y1="9" x2="10.4" y2="9"/><line x1="5.6" y1="11.4" x2="8.6" y2="11.4"/></svg>,
   Eye:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1.5 8S3.8 3.8 8 3.8 14.5 8 14.5 8 12.2 12.2 8 12.2 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>,
   EyeOff:({s=16,c="currentColor"})=><svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M6.3 3.9A6.3 6.3 0 0 1 8 3.8C12.2 3.8 14.5 8 14.5 8a11 11 0 0 1-2 2.4M4 4.7A11 11 0 0 0 1.5 8S3.8 12.2 8 12.2a6 6 0 0 0 2.4-.5"/><line x1="2" y1="2" x2="14" y2="14"/></svg>,
-  Alert:({s=18})=><svg width={s} height={s} viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#c0321a"/><line x1="9" y1="5" x2="9" y2="10" stroke="white" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="13" r="1" fill="white"/></svg>,
+  Alert:({s=18,c="#c0321a"})=><svg width={s} height={s} viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill={c}/><line x1="9" y1="5" x2="9" y2="10" stroke="white" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="13" r="1" fill="white"/></svg>,
 };
+
+function NewBadge({float}={}){
+  const base={display:"inline-flex",alignItems:"center",gap:3,background:"linear-gradient(135deg,#4ade80,#16a34a)",border:"1px solid rgba(74,222,128,.55)",color:"#052e16",boxShadow:"0 0 10px rgba(74,222,128,.45)",borderRadius:20,fontSize:9,fontWeight:800,padding:"2px 7px",letterSpacing:.6,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"};
+  const st=float?{...base,position:"absolute",top:-9,right:-8}:base;
+  return <span style={st}><I.Alert s={10} c="#065f46"/>NEW</span>;
+}
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
 // Centered login/signup modal for guests to upgrade to a full account.
@@ -2928,21 +2934,19 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialT
   const upd=(k,v)=>setP(prev=>({...prev,[k]:v}));
   const toggleOt=(v)=>setP(prev=>({...prev,openTo:prev.openTo.includes(v)?prev.openTo.filter(x=>x!==v):[...prev.openTo,v]}));
   const save = async () => {
-    // Merge onto the existing profile so fields we don't edit here (e.g. tosVersion)
-    // are preserved rather than wiped out on save.
-    const merged = { ...(user.profile||{}), ...p };
+    // Route through patchProfile so the write MERGES over the latest server data and
+    // preserves cron-managed fields (inbox, seenInboxKeys, ...) instead of overwriting
+    // them with this panel's login-time snapshot.
     if (user?.id) {
-      const { error } = await supabase.from("profiles").upsert({ id: user.id, name: p.name, data: merged }, { onConflict: "id" });
-      if (error) {
-        // Surface the failure instead of showing a false "Saved!". The most common
-        // cause is a Supabase RLS policy that allows INSERT but not UPDATE.
-        console.error("Profile save error:", error.message);
-        setSaveErr(error.message || "Save failed — please try again.");
+      const r = await onPatch({ ...p }, { name: p.name });
+      if (!r || !r.ok) {
+        const msg = (r && r.error && (r.error.message || r.error)) || "Save failed — please try again.";
+        console.error("Profile save error:", msg);
+        setSaveErr(typeof msg === "string" ? msg : "Save failed — please try again.");
         setTimeout(() => setSaveErr(""), 5000);
         return;
       }
     }
-    onUpdate({ ...user, name: p.name, profile: merged });
     setSaveErr("");
     setSaved(true);
   };
@@ -3825,7 +3829,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
       <a href={`/companies/${_companySlug(job.company)}`} target="_blank" rel="noopener" onClick={e=>e.stopPropagation()} style={{textDecoration:"none"}} title={`See all roles at ${job.company}`}><span style={{fontSize:11,fontWeight:700,color:"#c9a84c",fontFamily:"'Cinzel',serif",letterSpacing:.5,textTransform:"uppercase",cursor:"pointer",borderBottom:"1px dotted rgba(201,168,76,.4)"}}>{job.company}</span></a>
       {cmeta.url&&<a href={cmeta.url} target="_blank" rel="noreferrer" title="Open the company's site / careers page" onClick={e=>e.stopPropagation()} style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.22)",color:"#c9a84c",borderRadius:6,padding:"1px 8px",fontSize:9,fontFamily:"'Cinzel',serif",fontWeight:600,letterSpacing:.3}}><I.Globe s={9} c="#c9a84c"/>Site</a>}
       {flatView&&user&&job.company&&<span onClick={e=>{e.stopPropagation();onToggleNotify&&onToggleNotify(job.company);}} title={_unver?"Verify your email from the Account tab to use alerts":(notifyOn?`Alerts on for all ${job.company} jobs — click to turn off`:`Get alerts for new ${job.company} jobs`)} style={{display:"inline-flex",alignItems:"center",cursor:"pointer",background:notifyOn?"rgba(201,168,76,.14)":"rgba(201,168,76,.05)",border:`1px solid ${notifyOn?"rgba(201,168,76,.45)":"rgba(201,168,76,.18)"}`,borderRadius:6,padding:"2px 7px",opacity:_unver?.4:1}}><I.Bell s={10} c={notifyOn?"#c9a84c":"rgba(244,237,216,.55)"} fill={notifyOn?"#c9a84c":"none"}/></span>}
-      <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>{job.isNew&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"linear-gradient(135deg,#4ade80,#16a34a)",border:"1px solid rgba(74,222,128,.55)",color:"#052e16",boxShadow:"0 0 10px rgba(74,222,128,.45)",borderRadius:20,fontSize:9,fontWeight:800,padding:"2px 7px",letterSpacing:.6,fontFamily:"'Cinzel',serif"}}><I.Alert s={10} c="#052e16"/>NEW</span>}{appliedCount>0&&<span title={`${appliedCount} ${appliedCount===1?"person has":"people have"} clicked Apply on this role`} style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(126,207,179,.10)",border:"1px solid rgba(126,207,179,.28)",color:"#7ecfb3",borderRadius:20,fontSize:9,fontWeight:700,padding:"2px 7px",letterSpacing:.4,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}><I.Person s={9} c="#7ecfb3"/>{appliedCount} applied</span>}
+      <span style={{position:"relative",marginLeft:"auto",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>{job.isNew&&<NewBadge/>}{appliedCount>0&&<span title={`${appliedCount} ${appliedCount===1?"person has":"people have"} clicked Apply on this role`} style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(126,207,179,.10)",border:"1px solid rgba(126,207,179,.28)",color:"#7ecfb3",borderRadius:20,fontSize:9,fontWeight:700,padding:"2px 7px",letterSpacing:.4,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}><I.Person s={9} c="#7ecfb3"/>{appliedCount} applied</span>}
         <button onClick={e=>{e.stopPropagation(); if(!user){onRequestLogin&&onRequestLogin();return;} onToggleSave&&onToggleSave(job);}} title={_unver?"Verify your email from the Account tab to save jobs":(isSaved?"Remove from saved":"Save this job")} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:7,background:isSaved?"rgba(201,168,76,.16)":"rgba(201,168,76,.06)",border:`1px solid ${isSaved?"rgba(201,168,76,.5)":"rgba(201,168,76,.18)"}`,color:"#c9a84c",cursor:_unver?"not-allowed":"pointer",opacity:_unver?.4:1}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={isSaved?"#c9a84c":"none"} stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         </button>
@@ -4734,11 +4738,11 @@ export default function App() {
   const inbox=(user&&user.profile&&user.profile.inbox)||[];
   const inboxUnread=inbox.filter(n=>!n.read).length;
   // Merge a patch into the user's profile in state AND persist to Supabase.
-  const patchProfile=async(patch)=>{
+  const patchProfile=async(patch,opts={})=>{
     // Optimistic local update.
-    setUser(u=>u?{...u,profile:{...(u.profile||{}),...patch}}:u);
-    const uid=user&&user.id; if(!uid) return;
-    const uname=(user&&user.name)||null;
+    setUser(u=>u?{...u,...(opts.name!=null?{name:opts.name}:{}),profile:{...(u.profile||{}),...patch}}:u);
+    const uid=user&&user.id; if(!uid) return {ok:false,error:"no-user"};
+    const uname=opts.name!=null?opts.name:((user&&user.name)||null);
     try{
       // Merge over the LATEST server data so we never clobber cron-managed fields.
       const { data:cur }=await supabase.from("profiles").select("data").eq("id",uid).single();
@@ -4748,8 +4752,10 @@ export default function App() {
       // so a surfaced/read/cleared job is never re-added as new.
       const inboxKeys=((merged.inbox)||[]).map(n=>n&&n.jobKey).filter(Boolean);
       merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys])].slice(-2000);
-      await supabase.from("profiles").upsert({id:uid,name:uname,data:merged},{onConflict:"id"});
-    }catch(e){}
+      const { error }=await supabase.from("profiles").upsert({id:uid,name:uname,data:merged},{onConflict:"id"});
+      if(error) return {ok:false,error};
+      return {ok:true};
+    }catch(e){ return {ok:false,error:e}; }
   };
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
@@ -4865,13 +4871,8 @@ export default function App() {
         return;
       }
     }
-    setUser(prev => {
-      const cur = prev?.profile?.notifyCompanies || [];
-      const next = cur.includes(companyName) ? cur.filter(c => c !== companyName) : [...cur, companyName];
-      const newProfile = { ...(prev?.profile||{}), notifyCompanies: next };
-      if (prev?.id) { supabase.from("profiles").upsert({ id: prev.id, name: prev.name, data: newProfile }, { onConflict: "id" }).then(()=>{}); }
-      return { ...prev, profile: newProfile };
-    });
+    const next = cur.includes(companyName) ? cur.filter(c => c !== companyName) : [...cur, companyName];
+    patchProfile({ notifyCompanies: next });
   },[user,appAdmin,appPremium,appIsPlus]);
   const removeApplied = async (jobId) => {
     setUser(prev => { const na = { ...prev.applied }; delete na[jobId]; return { ...prev, applied: na }; });
@@ -5419,7 +5420,7 @@ export default function App() {
         <div style={{display:"grid",gridTemplateColumns:mobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:16}}>
           {[[totalJobs,"Open Positions",false],[newJobs,"New (48h)",true],[totalCos,"Companies",false],[allCountries.length,"Regions",false]].map(([n,lbl,hi])=>
             <div key={lbl} style={{position:"relative",background:hi?"rgba(232,97,58,.07)":"rgba(201,168,76,.05)",border:`1px solid ${hi?"rgba(232,97,58,.3)":"rgba(201,168,76,.15)"}`,borderRadius:10,padding:mobile?"8px 10px":"10px 18px",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              {hi&&n>0&&<span title={`${n} new in the last 48 hours`} style={{position:"absolute",top:-7,right:-7,display:"inline-flex"}}><I.Alert s={18}/></span>}
+              {hi&&n>0&&<span title={`${n} new in the last 48 hours`}><NewBadge float/></span>}
               <span style={{fontFamily:"'Cinzel',serif",fontSize:mobile?18:20,fontWeight:700,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{n}</span>
               <span style={{fontSize:mobile?8:9,color:"rgba(244,237,216,.4)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",textAlign:"center"}}>{lbl}</span>
             </div>)}
@@ -5726,7 +5727,7 @@ export default function App() {
     {/* Terms update notice — shows if the user agreed to an older version */}
     {user&&user.profile&&user.profile.tosVersion&&user.profile.tosVersion!==TOS_VERSION&&<div style={{position:"sticky",bottom:0,zIndex:50,background:"rgba(20,14,10,.98)",borderTop:"2px solid rgba(201,168,76,.4)",padding:"14px 24px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"center",gap:14,boxShadow:"0 -8px 30px rgba(0,0,0,.5)"}}>
       <span style={{fontSize:13,color:"#f4edd8",lineHeight:1.5,textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexWrap:"wrap"}}><I.Scroll s={13} c="#c9a84c"/>Our <a href="/terms" target="_blank" style={{color:"#c9a84c"}}>Terms of Service</a> and <a href="/privacy" target="_blank" style={{color:"#c9a84c"}}>Privacy Policy</a> have been updated. Please review and agree to continue.</span>
-      <button onClick={async()=>{const np={...user.profile,tosVersion:TOS_VERSION};setUser(u=>({...u,profile:np}));if(user?.id){try{await supabase.from("profiles").upsert({id:user.id,name:user.name,data:np},{onConflict:"id"});}catch(e){console.error(e);}}}} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:8,padding:"8px 22px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,flexShrink:0}}>I Agree</button>
+      <button onClick={()=>{patchProfile({tosVersion:TOS_VERSION});}} style={{background:G,border:"none",color:"#0a0608",cursor:"pointer",borderRadius:8,padding:"8px 22px",fontSize:12,fontWeight:800,fontFamily:"'Cinzel',serif",letterSpacing:.5,flexShrink:0}}>I Agree</button>
     </div>}
 
     {/* Journey Mode — full-screen 3D globe overlay (scroll-locked) */}
