@@ -191,9 +191,9 @@ export default function Personalize() {
         .qnav{transition:transform .15s, box-shadow .2s}
         .qnav:hover{transform:translateY(-2px)}
         .qnav:active{transform:translateY(0)}
-        .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch;max-width:880px;margin:0 auto;}
-        @media(max-width:820px){.qgrid{grid-template-columns:1fr;gap:16px;max-width:420px;}}
-        .qcard{position:relative;background:#0e0a12;border:1px solid rgba(201,168,76,.18);border-radius:16px;padding:24px 18px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .3s;display:flex;flex-direction:column;text-align:center;}
+        .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:stretch;max-width:960px;margin:0 auto;}
+        @media(max-width:860px){.qgrid{grid-template-columns:1fr;gap:16px;max-width:440px;}}
+        .qcard{position:relative;background:#0e0a12;border:1px solid rgba(201,168,76,.18);border-radius:18px;padding:32px 26px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .3s;display:flex;flex-direction:column;text-align:center;}
         .qcard:hover{transform:translateY(-4px);}
         .qprem{background:linear-gradient(165deg,rgba(201,168,76,.1),rgba(16,10,22,.9));border-color:rgba(201,168,76,.36);}
         .qglow{background:linear-gradient(160deg,rgba(232,140,58,.16),rgba(16,10,22,.92));border-color:rgba(240,160,80,.5);box-shadow:0 0 30px rgba(232,120,58,.22);}
@@ -215,7 +215,7 @@ export default function Personalize() {
           <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#c9a84c,#f0d080)", borderRadius: 4, transition: "width .4s" }} />
         </div>
 
-        <div style={{ flex: 1, width: "100%", maxWidth: 640, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ flex: 1, width: "100%", maxWidth: view === "tier" ? 1000 : 640, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <div key={view + scodeStep} className="qstep" style={{ textAlign: "center" }}>
 
             {/* ── SEGMENT ── */}
