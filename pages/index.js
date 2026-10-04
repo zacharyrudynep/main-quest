@@ -10,6 +10,7 @@ import { downloadResumeDocx } from "../lib/resumeDocx";
 import dynamic from "next/dynamic";
 import { normalizeATSJob } from "../lib/normalize";
 import { COMPANIES_DATA } from "../lib/companiesData";
+import { onboardingComplete } from "../lib/entitlements";
 
 // Fire an account/security email (welcome, password-changed, device-check) for the current user.
 // Slug for /companies/[slug] links — must match slugify() in lib/snapshot.js.
@@ -2914,6 +2915,8 @@ function StudentTrialSection({ user, premium }) {
   const stripePrem = premium && premium.isPremium && !trialActive;
   const redeemed = !!prof.studentTrialRedeemed;
 
+  if (prof.segment !== "student") return null; // only shown to self-identified students
+
   const [step, setStep] = useState("ask"); // ask|code|email|otp|done
   const [code, setCode] = useState("");
   const [schoolEmail, setSchoolEmail] = useState("");
@@ -3575,6 +3578,12 @@ async function _ungzB64(b64){
 function openUpgrade(){ if(typeof window!=="undefined") window.dispatchEvent(new Event("mq-open-upgrade")); }
 
 // Glowy gold "Upgrade" link — shown in the top bar and under every premium lock (free tier only).
+function OnboardingReopenButton({onClick}){
+  return <button onClick={(e)=>{e.stopPropagation();onClick&&onClick();}} title="Finish your setup tasks" style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.1)",border:"1px solid rgba(201,168,76,.32)",cursor:"pointer",color:"#f0d080",fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:11,letterSpacing:.3,borderRadius:20,padding:"4px 10px"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.18)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"}><I.Sparkle s={11} c="#f0d080"/>Finish setup</button>;
+}
+function FreeCreditPill({credits}){
+  return <span title="Use it on any AI feature" style={{display:"inline-flex",alignItems:"center",gap:5,background:"linear-gradient(135deg,rgba(126,207,179,.14),rgba(201,168,76,.1))",border:"1px solid rgba(126,207,179,.4)",color:"#7ecfb3",fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:11,letterSpacing:.3,borderRadius:20,padding:"4px 10px"}}><I.Sparkle s={11} c="#7ecfb3"/>{credits} free AI {credits===1?"use":"uses"}</span>;
+}
 function UpgradeLink({label,size,mt}){
   return <button onClick={(e)=>{e.stopPropagation();openUpgrade();}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:"#f0d080",fontFamily:"'Cinzel',serif",fontWeight:700,fontSize:size||12,letterSpacing:.4,padding:0,marginTop:mt||0,animation:"mqglow 2.4s ease-in-out infinite"}} onMouseEnter={e=>e.currentTarget.style.color="#ffe6ad"} onMouseLeave={e=>e.currentTarget.style.color="#f0d080"}>
     <svg width={(size||12)+1} height={(size||12)+1} viewBox="0 0 24 24" fill="#f0d080"><path d="M3 7l4.5 3L12 4l4.5 6L21 7l-1.6 11H4.6L3 7zm3 13h12v1.5H6V20z"/></svg>
@@ -4833,6 +4842,22 @@ export default function App() {
   const [appPlan,setAppPlan]=useState("basic");
   const [appAdmin,setAppAdmin]=useState(false);
   const appIsPlus = appAdmin || appPremium || planRank(appPlan) >= 1; // Plus tier or above
+  const appFreeCredits = (user && user.profile && Number(user.profile.freeAiCredits)) || 0;
+  const onbStatus = onboardingComplete((user && user.profile) || {}, appIsPlus);
+  useEffect(() => {
+    if (!user || !user.id) return;
+    if (!onbStatus.complete || (user.profile && user.profile.onboardingRewarded)) return;
+    (async () => {
+      try {
+        const { data: sx } = await supabase.auth.getSession();
+        const tk = sx && sx.session && sx.session.access_token; if (!tk) return;
+        const r = await fetch("/api/onboarding/claim-reward", { method: "POST", headers: { Authorization: `Bearer ${tk}` } });
+        const j = await r.json().catch(() => ({}));
+        if (j && j.granted) setUser(u => u ? { ...u, profile: { ...u.profile, onboardingRewarded: true, freeAiCredits: j.freeCredits } } : u);
+        else if (j && j.alreadyClaimed) setUser(u => u ? { ...u, profile: { ...u.profile, onboardingRewarded: true } } : u);
+      } catch (e) {}
+    })();
+  }, [onbStatus.complete, user && user.id]);
   const [toast,setToast]=useState("");
   useEffect(()=>{ if(!toast)return; const t=setTimeout(()=>setToast(""),3500); return ()=>clearTimeout(t); },[toast]);
   // React to the ?verify=... flag the verification link redirects back with.
@@ -5456,8 +5481,8 @@ export default function App() {
       </div>
       {/* RIGHT: Inbox + Profile */}
       <div style={{display:"flex",alignItems:"center",gap:8,flex:mobile?"0 0 auto":"1 1 0",justifyContent:"flex-end"}}>
-      {user&&!appPremium&&<UpgradeLink label="Upgrade"/>}
-      {user&&(appPremium||appAdmin)&&<AiUsageBar/>}
+      {user&&user.profile&&user.profile.onbDismissed&&!onbStatus.complete&&<OnboardingReopenButton onClick={()=>patchProfile({onbDismissed:false})}/>}
+      {user&&(appPremium||appAdmin)?<AiUsageBar/>:user?(appFreeCredits>0?<FreeCreditPill credits={appFreeCredits}/>:<UpgradeLink label="Upgrade for AI"/>):null}
       {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <I.Bell s={16} c="#c9a84c"/>
         {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}

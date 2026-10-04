@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
@@ -48,9 +49,10 @@ export default async function handler(req, res) {
 
     if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
       return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin,plan").eq("id", uid).single();
-    const isAdmin = !!(prof && prof.is_admin);
-    if (!isAdmin && !(prof && prof.plan === "premium")) return res.status(403).json({ error: "Interview prep is a Premium feature." });
+    const access = await aiAccess(supabaseAdmin, uid);
+    const isAdmin = access.isAdmin;
+    if (!access.ok) return res.status(403).json({ error: "Interview prep is a Premium feature." });
+    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const jobKey = String(b.jobKey || "").slice(0, 400);
@@ -69,7 +71,7 @@ export default async function handler(req, res) {
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
-    if (!isAdmin && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} interview preps this month.`, remaining: 0 });
+    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} interview preps this month.`, remaining: 0 });
 
     const siteText = await fetchSiteText(url);
 
@@ -98,8 +100,8 @@ export default async function handler(req, res) {
     if (!prep) return res.status(503).json({ error: "Could not generate right now. Please try again." });
 
     await supabaseAdmin.from("interview_preps").upsert({ user_id: uid, job_key: jobKey, company, title, location, url, prep_text: prep }, { onConflict: "user_id,job_key" });
-    if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
-    return res.status(200).json({ prep, remaining: isAdmin ? null : Math.max(0, LIMIT - (used + 1)) });
+    if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
+    return res.status(200).json({ prep, remaining: isAdmin ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }

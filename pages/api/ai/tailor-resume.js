@@ -1,8 +1,9 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { tailorDocx } from "../../../lib/docxTailor";
+import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+const CANDIDATES = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
 let cachedModel = null;
 
 const SYSTEM = `You are a professional resume editor helping a candidate tailor their existing resume to a specific job posting.
@@ -71,35 +72,26 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: "Please sign in." });
     const { data: u, error: ue } = await supabaseAdmin.auth.getUser(token);
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in." });
-    if (!(u.user.app_metadata && u.user.app_metadata.email_verified)) return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin,plan").eq("id", u.user.id).single();
-    const isAdmin = !!(prof && prof.is_admin);
-    if (!prof || (prof.plan !== "premium" && !isAdmin)) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
+    const access = await aiAccess(supabaseAdmin, u.user.id);
+    const isAdmin = access.isAdmin;
+    if (!access.ok) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
+    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
 
     // ── Monthly usage limit (retries included) ──
-    const LIMIT = 40; // shared monthly AI pool (ai_usage)
+    const LIMIT = 15;
     const month = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-    const readUsed = async () => { const { data } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", u.user.id).eq("month", month).single(); return (data && data.count) || 0; };
+    const readUsed = async () => { const { data } = await supabaseAdmin.from("ai_tailor_usage").select("count").eq("user_id", u.user.id).eq("month", month).single(); return (data && data.count) || 0; };
     if (req.method === "GET") { const used = await readUsed(); return res.status(200).json({ limit: LIMIT, used, remaining: isAdmin ? null : Math.max(0, LIMIT - used), unlimited: isAdmin }); }
     if (req.method !== "POST") return res.status(405).json({ error: "GET or POST only" });
     const used = await readUsed();
-    if (!isAdmin && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your resume tailors this month — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
-    const bumpUsage = async () => { if (isAdmin) return null; await supabaseAdmin.from("ai_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" }); return Math.max(0, LIMIT - (used + 1)); };
+    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your resume tailors this month — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
+    const bumpUsage = async () => { if (isAdmin) return null; await supabaseAdmin.from("ai_tailor_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" }); return Math.max(0, LIMIT - (used + 1)); };
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const resumeText = String(b.resumeText || "").slice(0, 24000);
     const resumeDocxB64 = typeof b.resumeDocxB64 === "string" ? b.resumeDocxB64 : "";
     const keywords = Array.isArray(b.keywords) ? b.keywords.slice(0, 40).map((k) => String(k).slice(0, 60)) : [];
     const job = b.job || {};
-    const saveResume = async (resumeText) => {
-      try {
-        const company = String(job.company || "").slice(0,200);
-        const title = String(job.title || "").slice(0,300);
-        if (!company || !title || !resumeText) return;
-        const location = String(job.location || "").slice(0,200);
-        await supabaseAdmin.from("generated_resumes").insert({ user_id: u.user.id, job_key: `${company}|${title}|${location}`, company, title, location, url: String(job.url || "").slice(0,800), resume_text: String(resumeText).slice(0,60000) });
-      } catch (e) {}
-    };
     if (!resumeText.trim() && !resumeDocxB64) return res.status(400).json({ error: "No resume found — upload a resume in your profile first." });
 
     const jobReqs = [].concat(job.requirements || [], job.responsibilities || []).filter(Boolean).map(String).slice(0, 40);
@@ -121,7 +113,7 @@ export default async function handler(req, res) {
       try {
         const result = await tailorDocx(resumeDocxB64, rewriteFn);
         if (busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
-        if (result) { await saveResume(result.plain); const remaining = await bumpUsage(); return res.status(200).json({ resume: result.plain, docxB64: result.base64, remaining }); }
+        if (result) { const remaining = usingFree ? await consumeFreeCredit(supabaseAdmin, u.user.id) : await bumpUsage(); return res.status(200).json({ resume: result.plain, docxB64: result.base64, remaining }); }
         // result null → fall through to markdown mode below
       } catch (e) { /* invalid docx or parse issue → fall through to markdown */ }
     }
@@ -131,7 +123,7 @@ export default async function handler(req, res) {
     if (g.busy) return res.status(429).json({ error: "The AI is busy right now — please try again in a moment." });
     if (!g.ok) return res.status(502).json({ error: `Couldn't generate the resume — ${g.error}` });
     const clean = g.text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
-    { await saveResume(clean); const remaining = await bumpUsage(); return res.status(200).json({ resume: clean, remaining }); }
+    { const remaining = usingFree ? await consumeFreeCredit(supabaseAdmin, u.user.id) : await bumpUsage(); return res.status(200).json({ resume: clean, remaining }); }
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }

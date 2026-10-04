@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
@@ -17,14 +18,15 @@ export default async function handler(req, res) {
     const uid = u.user.id;
     if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
       return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin,plan").eq("id", uid).single();
-    const isAdmin = !!(prof && prof.is_admin);
-    if (!isAdmin && !(prof && prof.plan === "premium")) return res.status(403).json({ error: "AI template generation is a Premium feature." });
+    const access = await aiAccess(supabaseAdmin, uid);
+    const isAdmin = access.isAdmin;
+    if (!access.ok) return res.status(403).json({ error: "AI template generation is a Premium feature." });
+    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
 
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
-    if (!isAdmin && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} template generations this month.`, remaining: 0 });
+    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} template generations this month.`, remaining: 0 });
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const name = String(b.name || "").slice(0, 80).trim();
@@ -53,8 +55,8 @@ export default async function handler(req, res) {
     }
     if (!text) return res.status(503).json({ error: "Could not generate right now. Please try again." });
 
-    if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
-    return res.status(200).json({ text, remaining: isAdmin ? null : Math.max(0, LIMIT - (used + 1)) });
+    if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
+    return res.status(200).json({ text, remaining: isAdmin ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }

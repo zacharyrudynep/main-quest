@@ -4,6 +4,13 @@ import { useRouter } from "next/router";
 import { supabase } from "../lib/supabase";
 
 const PLUS_M = 3.99, PLUS_Y = 39.99, PREM_M = 7.99, PREM_Y = 79.99, LIFETIME = 189.99;
+const PCT_OFF_PLUS = Math.round((1 - PLUS_Y / (PLUS_M * 12)) * 100);
+const PCT_OFF_PREM = Math.round((1 - PREM_Y / (PREM_M * 12)) * 100);
+const FEATURES = {
+  basic: ["Full job board access", "Apply & track applications", "Match score on every listing", "Follow up to 5 studios"],
+  plus: ["Everything in Basic", "Full match breakdown", "Email autofill templates", "Targeted alerts", "Follow up to 15 studios"],
+  premium: ["Everything in Plus", "AI resume tailoring", "AI interview prep", "AI email generation", "40 AI uses / month"],
+};
 
 const ROLES = ["Game Designer","Systems Designer","Level Designer","UI/UX Designer","Narrative Designer","Combat Designer","Quest Designer","Economy Designer","Technical Designer","Software Engineer","Gameplay Programmer","Engine Programmer","Graphics Engineer","AI Programmer","Network Programmer","Backend Engineer","DevOps Engineer","Mobile Developer","Tools Programmer","Build Engineer","Concept Artist","3D Artist","2D Artist","Character Artist","Environment Artist","Technical Artist","VFX Artist","Animator","Rigging Artist","Audio Designer","Sound Designer","SFX Artist","Composer","Audio Engineer","Music Composer","Producer","Project Manager","Scrum Master","Product Manager","QA Tester","QA Analyst","QA Lead","Community Manager","Marketing Specialist","PR Manager","HR Manager","Recruiter","Finance Analyst","Business Analyst","Data Analyst","Data Scientist","IT Support","System Administrator"];
 const OPEN_TO = ["Full-time","Contract","Remote","Hybrid","On-site","Relocation"];
@@ -184,6 +191,14 @@ export default function Personalize() {
         .qnav{transition:transform .15s, box-shadow .2s}
         .qnav:hover{transform:translateY(-2px)}
         .qnav:active{transform:translateY(0)}
+        .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch;max-width:880px;margin:0 auto;}
+        @media(max-width:820px){.qgrid{grid-template-columns:1fr;gap:16px;max-width:420px;}}
+        .qcard{position:relative;background:#0e0a12;border:1px solid rgba(201,168,76,.18);border-radius:16px;padding:24px 18px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .3s;display:flex;flex-direction:column;text-align:center;}
+        .qcard:hover{transform:translateY(-4px);}
+        .qprem{background:linear-gradient(165deg,rgba(201,168,76,.1),rgba(16,10,22,.9));border-color:rgba(201,168,76,.36);}
+        .qglow{background:linear-gradient(160deg,rgba(232,140,58,.16),rgba(16,10,22,.92));border-color:rgba(240,160,80,.5);box-shadow:0 0 30px rgba(232,120,58,.22);}
+        .qcard.qsel{border-color:#c9a84c;box-shadow:inset 0 0 42px rgba(201,168,76,.16),0 0 24px rgba(201,168,76,.32);}
+        .qbadge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;z-index:2;}
       `}</style>
 
       <div style={{ minHeight: "100vh", background: "radial-gradient(1100px 620px at 50% -12%, rgba(139,32,32,.16), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", display: "flex", flexDirection: "column", alignItems: "center", padding: "34px 20px 48px" }}>
@@ -216,7 +231,7 @@ export default function Personalize() {
                     </button>
                   ); })}
                 </div>
-                <Nav left={navBtn("Skip", goBoard)} right={navBtn("Next →", afterSegment, true, !segment)} />
+                <Nav left={null} right={navBtn("Next →", afterSegment, true, !segment)} />
               </>
             )}
 
@@ -279,10 +294,10 @@ export default function Personalize() {
               <>
                 <H>Choose your path</H>
                 <Sub>Pick a plan to continue. You can upgrade or change this anytime.</Sub>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440, margin: "0 auto" }}>
-                  <TierCard name="Basic" price="$0" unit="free forever" on={tier === "basic"} onPick={() => setTier("basic")} feats={["Full job board access", "Apply & track applications", "Follow up to 5 studios"]} />
-                  <TierCard name="Plus" price={`$${plusCycle === "yearly" ? PLUS_Y : PLUS_M}`} unit={plusCycle === "yearly" ? "/yr" : "/mo"} on={tier === "plus"} onPick={() => setTier("plus")} gold cycle={<CycleToggle opts={["monthly", "yearly"]} val={plusCycle} set={setPlusCycle} />} feats={["Full match breakdown", "Email autofill templates", "Targeted alerts", "Follow up to 15 studios"]} />
-                  <TierCard name="Premium" price={`$${premCycle === "lifetime" ? LIFETIME : premCycle === "yearly" ? PREM_Y : PREM_M}`} unit={premCycle === "lifetime" ? " once" : premCycle === "yearly" ? "/yr" : "/mo"} on={tier === "premium"} onPick={() => setTier("premium")} gold glow cycle={<CycleToggle opts={["monthly", "yearly", "lifetime"]} val={premCycle} set={setPremCycle} />} feats={["Everything in Plus", "AI resume tailoring", "AI interview prep", "40 AI uses / month"]} />
+                <div className="qgrid">
+                  <TierCard tone="basic" name="Basic" price={0} unit=" free" note="No credit card" on={tier === "basic"} onPick={() => setTier("basic")} feats={FEATURES.basic} />
+                  <TierCard tone="plus" name="Plus" price={plusCycle === "yearly" ? PLUS_Y : PLUS_M} unit={plusCycle === "yearly" ? "/yr" : "/mo"} note={plusCycle === "yearly" ? `Save ${PCT_OFF_PLUS}% vs monthly` : "Billed monthly"} on={tier === "plus"} onPick={() => setTier("plus")} cycle={<CycleToggle opts={["monthly", "yearly"]} val={plusCycle} set={setPlusCycle} />} feats={FEATURES.plus} />
+                  <TierCard tone="premium" name="Premium" badge="Most Popular" price={premCycle === "lifetime" ? LIFETIME : premCycle === "yearly" ? PREM_Y : PREM_M} unit={premCycle === "lifetime" ? " once" : premCycle === "yearly" ? "/yr" : "/mo"} note={premCycle === "lifetime" ? "Pay once — yours forever" : premCycle === "yearly" ? `Save ${PCT_OFF_PREM}% vs monthly` : "Billed monthly"} on={tier === "premium"} onPick={() => setTier("premium")} cycle={<CycleToggle opts={["monthly", "yearly", "lifetime"]} val={premCycle} set={setPremCycle} />} feats={FEATURES.premium} />
                 </div>
                 {tierErr && <div style={{ color: "#e8a070", fontSize: 12, marginTop: 14 }}>{tierErr}</div>}
                 <Nav left={navBtn("‹ Back", () => setView("segment"))} right={navBtn(tier === "basic" ? "Continue →" : tier ? "Continue to Payment →" : "Select a plan", goCheckout, true, !tier || tierBusy)} />
@@ -300,7 +315,7 @@ export default function Personalize() {
                   ); })}
                 </div>
                 {heard === "other" && <input style={{ ...inp, maxWidth: 400, margin: "18px auto 0", display: "block", textAlign: "center" }} value={heardOther} onChange={e => setHeardOther(e.target.value)} placeholder="Where did you hear about us?" />}
-                <Nav left={navBtn("Skip", finish)} right={navBtn("Next →", () => setView("roles"), true)} />
+                <Nav left={null} right={navBtn("Next →", () => setView("roles"), true, !heard || (heard === "other" && !heardOther.trim()))} />
               </>
             )}
 
@@ -317,6 +332,7 @@ export default function Personalize() {
                   {roles.map(r => <span key={r} style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(201,168,76,.16)", border: "1px solid rgba(201,168,76,.4)", borderRadius: 18, padding: "6px 12px", fontSize: 13, color: "#f0d080", fontFamily: "'Cinzel',serif" }}>{r}<span onClick={() => setRoles(roles.filter(x => x !== r))} style={{ cursor: "pointer", color: "rgba(232,97,58,.9)", fontSize: 13, lineHeight: 1 }}>✕</span></span>)}
                 </div>}
                 <Nav left={navBtn("‹ Back", () => setView("heard"))} right={navBtn("Next →", () => setView("openTo"), true)} />
+                <SkipRest onClick={finish} />
               </>
             )}
 
@@ -329,6 +345,7 @@ export default function Personalize() {
                   {OPEN_TO.map(o => { const on = openTo.includes(o); return <button key={o} className="qopt" onClick={() => setOpenTo(v => v.includes(o) ? v.filter(x => x !== o) : [...v, o])} style={{ background: on ? "linear-gradient(135deg,rgba(201,168,76,.28),rgba(240,208,128,.18))" : "rgba(244,237,216,.04)", border: `1px solid ${on ? "rgba(201,168,76,.6)" : "rgba(244,237,216,.12)"}`, color: on ? "#f0d080" : "rgba(244,237,216,.6)", cursor: "pointer", borderRadius: 22, fontSize: 14, padding: "11px 24px", fontFamily: "'Cinzel',serif", fontWeight: 600 }}>{o}</button>; })}
                 </div>
                 <Nav left={navBtn("‹ Back", () => setView("roles"))} right={navBtn("Next →", () => setView("country"), true)} />
+                <SkipRest onClick={finish} />
               </>
             )}
 
@@ -357,6 +374,9 @@ const primaryStyle = { width: "100%", border: "none", borderRadius: 11, padding:
 
 function H({ children }) { return <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(22px, 5vw, 34px)", fontWeight: 700, color: "#f4edd8", lineHeight: 1.2, margin: "0 0 12px", letterSpacing: .3 }}>{children}</h1>; }
 function Sub({ children }) { return <p style={{ fontSize: 14, color: "rgba(244,237,216,.5)", margin: "0 auto 30px", maxWidth: 460, lineHeight: 1.55 }}>{children}</p>; }
+function SkipRest({ onClick }) {
+  return <div style={{ textAlign: "center", marginTop: 12 }}><button onClick={onClick} style={{ background: "none", border: "none", color: "rgba(201,168,76,.6)", cursor: "pointer", fontSize: 11.5, fontFamily: "'Cinzel',serif", textDecoration: "underline" }}>Skip the rest →</button></div>;
+}
 function Nav({ left, right }) {
   return (
     <div style={{ width: "100%", maxWidth: 420, margin: "36px auto 0", display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -365,17 +385,23 @@ function Nav({ left, right }) {
   );
 }
 
-function TierCard({ name, price, unit, on, onPick, feats, gold, glow, cycle }) {
+function TierCard({ tone, name, price, unit, note, badge, on, onPick, feats, cycle }) {
+  const accent = tone === "premium" ? "#f7d98a" : tone === "plus" ? "#f0d080" : "rgba(244,237,216,.75)";
+  const cls = "qcard" + (tone === "plus" ? " qprem" : "") + (tone === "premium" ? " qprem qglow" : "") + (on ? " qsel" : "");
   return (
-    <div onClick={onPick} style={{ textAlign: "left", cursor: "pointer", borderRadius: 14, padding: "16px 18px", background: on ? "linear-gradient(135deg,rgba(201,168,76,.26),rgba(16,10,22,.9))" : glow ? "linear-gradient(160deg,rgba(232,140,58,.12),rgba(16,10,22,.9))" : "rgba(244,237,216,.04)", border: `1px solid ${on ? "#c9a84c" : glow ? "rgba(240,160,80,.45)" : "rgba(244,237,216,.12)"}`, boxShadow: on ? "0 0 22px rgba(201,168,76,.28)" : "none" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 15, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", color: gold ? "#f0d080" : "rgba(244,237,216,.75)" }}>{name}</span>
-        <span><span style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 800, color: gold ? "#f0d080" : "#f4edd8" }}>{price}</span><span style={{ fontSize: 12, color: "rgba(244,237,216,.45)" }}>{unit}</span></span>
+    <div className={cls} onClick={onPick}>
+      {badge && <div className="qbadge" style={{ background: "linear-gradient(135deg,#f0d080,#e8613a)", color: "#1a0e06", boxShadow: "0 4px 16px rgba(232,120,58,.5)" }}>{badge}</div>}
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 800, color: accent }}>{name}</div>
+      <div style={{ margin: "10px 0 2px" }}>
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: accent }}>{typeof price === "number" ? "$" + price : price}</span>
+        <span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{unit}</span>
       </div>
-      {cycle && <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>{cycle}</div>}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", marginTop: 10 }}>
-        {feats.map((f, i) => <span key={i} style={{ fontSize: 11.5, color: "rgba(244,237,216,.6)", display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ color: gold ? "#f0d080" : "#7ecfb3" }}>✦</span>{f}</span>)}
+      <div style={{ fontSize: 10.5, color: tone === "basic" ? "rgba(244,237,216,.4)" : "#7ecfb3", minHeight: 14, marginBottom: 14, fontWeight: 600 }}>{note || ""}</div>
+      {cycle && <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>{cycle}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 9, flex: 1, textAlign: "left" }}>
+        {feats.map((f, i) => <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "rgba(244,237,216,.72)", lineHeight: 1.4 }}><span style={{ color: accent, flexShrink: 0, marginTop: 1 }}>✦</span>{f}</div>)}
       </div>
+      <div style={{ marginTop: 18, fontSize: 11, fontFamily: "'Cinzel',serif", letterSpacing: .5, color: on ? "#0a0608" : "rgba(244,237,216,.5)", background: on ? "linear-gradient(135deg,#c9a84c,#f0d080)" : "rgba(201,168,76,.06)", border: `1px solid ${on ? "transparent" : "rgba(201,168,76,.2)"}`, borderRadius: 9, padding: "10px", fontWeight: 700 }}>{on ? "✓ Selected" : "Select"}</div>
     </div>
   );
 }

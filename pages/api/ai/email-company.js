@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
@@ -20,9 +21,10 @@ export default async function handler(req, res) {
     if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
       return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
 
-    const { data: prof } = await supabaseAdmin.from("profiles").select("is_premium,is_admin,plan").eq("id", u.user.id).single();
-    const isAdmin = !!(prof && prof.is_admin);
-    if (!isAdmin && !(prof && prof.plan === "premium")) return res.status(403).json({ error: "AI company info is a Premium feature." });
+    const access = await aiAccess(supabaseAdmin, u.user.id);
+    const isAdmin = access.isAdmin;
+    if (!access.ok) return res.status(403).json({ error: "AI company info is a Premium feature." });
+    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
 
     const company = String((req.body && req.body.company) || "").trim().slice(0, 120);
     if (!company) return res.status(400).json({ error: "Missing company." });
@@ -30,7 +32,7 @@ export default async function handler(req, res) {
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", u.user.id).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
-    if (!isAdmin && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} AI company lookups this month.`, remaining: 0 });
+    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} AI company lookups this month.`, remaining: 0 });
 
     const sys = "You write one or two concise, professional sentences a job applicant can drop into a cover email, describing what the named game company is known for — their games, focus, or reputation. Be specific and factual where you can; if unsure, stay general and never invent details. Output only the sentence(s): no preamble, no quotes, no salutation.";
     const prompt = `Company: ${company}\n\nWrite 1-2 sentences about this game company to use in a job application email.`;
@@ -61,8 +63,8 @@ export default async function handler(req, res) {
     }
     if (!text) return res.status(503).json({ error: "Could not generate right now. Please try again." });
 
-    if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" });
-    return res.status(200).json({ text, remaining: isAdmin ? null : Math.max(0, LIMIT - (used + 1)) });
+    if (usingFree) await consumeFreeCredit(supabaseAdmin, u.user.id); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: u.user.id, month, count: used + 1 }, { onConflict: "user_id,month" });
+    return res.status(200).json({ text, remaining: isAdmin ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }

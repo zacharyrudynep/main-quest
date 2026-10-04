@@ -11,17 +11,19 @@ export default function Join() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [show, setShow] = useState(false);
+  const [pass2, setPass2] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const validForm = name.trim() && /\S+@\S+\.\S+/.test(email) && pass.length >= 6 && agreed;
+  const validForm = name.trim() && /\S+@\S+\.\S+/.test(email) && pass.length >= 6 && pass === pass2 && agreed;
 
   async function proceed() {
     setErr("");
     if (!name.trim()) return setErr("Enter your name.");
     if (!/\S+@\S+\.\S+/.test(email)) return setErr("Enter a valid email.");
     if (pass.length < 6) return setErr("Password must be at least 6 characters.");
+    if (pass !== pass2) return setErr("Passwords don't match.");
     if (!agreed) return setErr("Please agree to the Terms and Privacy Policy.");
     setBusy(true);
     try {
@@ -76,6 +78,8 @@ export default function Join() {
               <input style={{ ...inp, paddingRight: 62 }} value={pass} onChange={e => setPass(e.target.value)} placeholder="Password (min 6 characters)" type={show ? "text" : "password"} onKeyDown={e => { if (e.key === "Enter" && validForm && !busy) proceed(); }} />
               <button onClick={() => setShow(s => !s)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(201,168,76,.7)", cursor: "pointer", fontSize: 11, fontFamily: "'Cinzel',serif" }}>{show ? "Hide" : "Show"}</button>
             </div>
+            <input style={{ ...inp, border: `1px solid ${pass2 && pass !== pass2 ? "rgba(232,97,58,.5)" : "rgba(201,168,76,.2)"}` }} value={pass2} onChange={e => setPass2(e.target.value)} placeholder="Re-enter password" type={show ? "text" : "password"} onKeyDown={e => { if (e.key === "Enter" && validForm && !busy) proceed(); }} />
+            {pass2 && pass !== pass2 ? <div style={{ fontSize: 10.5, color: "#e8a070", marginTop: -4 }}>Passwords don't match.</div> : null}
             <label onClick={() => setAgreed(a => !a)} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 11, color: "rgba(244,237,216,.55)", lineHeight: 1.4, marginTop: 2 }}>
               <div style={{ width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${agreed ? "#c9a84c" : "rgba(201,168,76,.3)"}`, background: agreed ? "#c9a84c" : "transparent", flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#0a0608", fontSize: 11, fontWeight: 900 }}>{agreed ? "✓" : ""}</div>
               <span>I agree to the <a href="/terms" target="_blank" style={{ color: "#c9a84c" }}>Terms</a> and <a href="/privacy" target="_blank" style={{ color: "#c9a84c" }}>Privacy Policy</a>.</span>
