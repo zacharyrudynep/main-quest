@@ -5,6 +5,8 @@ import { supabase } from "../lib/supabase";
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
 const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"], ["tools", "Tools"]];
 const COUNTRY_NAMES = { US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", NL:"Netherlands", SE:"Sweden", FI:"Finland", NO:"Norway", DK:"Denmark", PL:"Poland", ES:"Spain", IT:"Italy", IE:"Ireland", PT:"Portugal", BE:"Belgium", CH:"Switzerland", AT:"Austria", CZ:"Czechia", RO:"Romania", UA:"Ukraine", RU:"Russia", TR:"Turkey", JP:"Japan", KR:"South Korea", CN:"China", IN:"India", SG:"Singapore", PH:"Philippines", ID:"Indonesia", MY:"Malaysia", TH:"Thailand", VN:"Vietnam", AU:"Australia", NZ:"New Zealand", BR:"Brazil", MX:"Mexico", AR:"Argentina", CL:"Chile", CO:"Colombia", ZA:"South Africa", NG:"Nigeria", EG:"Egypt", KE:"Kenya", IL:"Israel", AE:"UAE", SA:"Saudi Arabia", PK:"Pakistan", BD:"Bangladesh", HK:"Hong Kong", TW:"Taiwan", GR:"Greece", HU:"Hungary", BG:"Bulgaria", HR:"Croatia", RS:"Serbia", SK:"Slovakia", SI:"Slovenia", LT:"Lithuania", LV:"Latvia", EE:"Estonia", IS:"Iceland", LU:"Luxembourg" };
+const SEGMENT_LABELS = { student: "Student", grad: "Post Grad", veteran: "Industry Veteran" };
+const HEARD_LABELS = { linkedin: "LinkedIn", google: "Google / Search", word_of_mouth: "Word of mouth", school: "School / University", other: "Other" };
 function countryLabel(code) {
   const cc = String(code || "").toUpperCase();
   const flag = /^[A-Z]{2}$/.test(cc) ? cc.replace(/./g, (ch) => String.fromCodePoint(127397 + ch.charCodeAt(0))) : "";
@@ -176,6 +178,10 @@ export default function Admin() {
                     ["Resumes Uploaded", s.resumesUploaded], ["Complete Profiles", s.completeProfiles],
                   ]} />
                   <Panel title="Signups"><LineChart series={s.signupSeries} color="#c9a84c" /></Panel>
+                  <TwoCol>
+                    <Panel title="Who's signing up"><BarList rows={(s.segmentSplit||[]).map((x)=>({label:SEGMENT_LABELS[x.key]||x.key,count:x.count}))} empty="No segment data yet." plain /></Panel>
+                    <Panel title="How they heard about us"><BarList rows={(s.heardSplit||[]).map((x)=>({label:HEARD_LABELS[x.key]||x.key,count:x.count}))} empty="No referral data yet." plain /></Panel>
+                  </TwoCol>
                   <UserDirectory data={usersData} status={usersStatus} q={uq} setQ={setUq} sel={selUser} setSel={setSelUser} />
                 </>
               )}
@@ -241,6 +247,7 @@ export default function Admin() {
               {tab === "tools" && (
                 <>
                   <PolicyEmailPanel />
+                  <StudentCodePanel />
                 </>
               )}
 
@@ -697,6 +704,86 @@ function PolicyEmailPanel() {
           ✓ Done. Sent <strong>{result.sent}</strong> · already had this version: {result.skipped} · no email on file: {result.noEmail}{result.failed ? ` · failed: ${result.failed} (re-run to retry those)` : ""}.
         </div>
       )}
+    </Panel>
+  );
+}
+
+function StudentCodePanel() {
+  const [codes, setCodes] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [form, setForm] = useState({ code: "", active: true, daysGranted: 30, maxRedemptions: "", expiresAt: "" });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  async function load() {
+    setStatus("loading");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      const r = await fetch("/api/admin/student-code", { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json();
+      setCodes(j.codes || []);
+      setStatus("ready");
+    } catch (e) { setStatus("error"); }
+  }
+  useEffect(() => { load(); }, []);
+
+  async function save() {
+    setErr(""); setMsg("");
+    if (!form.code.trim()) { setErr("Enter a code."); return; }
+    setBusy(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      const r = await fetch("/api/admin/student-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: form.code.trim(), active: form.active, daysGranted: Number(form.daysGranted) || 30, maxRedemptions: form.maxRedemptions === "" ? null : Number(form.maxRedemptions), expiresAt: form.expiresAt || null }),
+      });
+      const j = await r.json();
+      if (!r.ok) { setErr(j.error || "Save failed."); }
+      else { setMsg("Saved."); setForm({ code: "", active: true, daysGranted: 30, maxRedemptions: "", expiresAt: "" }); load(); }
+    } catch (e) { setErr("Save failed."); }
+    finally { setBusy(false); }
+  }
+  const edit = (c) => setForm({ code: c.code, active: c.active !== false, daysGranted: c.days_granted || 30, maxRedemptions: c.max_redemptions == null ? "" : c.max_redemptions, expiresAt: c.expires_at ? String(c.expires_at).slice(0, 10) : "" });
+
+  const lbl = { fontSize: 10, color: "rgba(201,168,76,.7)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 5, display: "block" };
+  const inp = { width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 9, padding: "9px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" };
+
+  return (
+    <Panel title="Student codes (Breaking In)">
+      <div style={{ fontSize: 12, color: "rgba(244,237,216,.6)", lineHeight: 1.6, marginBottom: 14 }}>
+        Codes students redeem (with a verified school email) for a free Premium trial. Each account and each school email can redeem once.
+      </div>
+
+      {status === "ready" && (codes || []).length > 0 && (
+        <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+          {codes.map((c) => (
+            <div key={c.code} onClick={() => edit(c)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, cursor: "pointer", border: "1px solid rgba(201,168,76,.12)" }}>
+              <span style={{ fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#f0d080", fontSize: 13 }}>{c.code}</span>
+              <span style={{ fontSize: 10.5, color: c.active !== false ? "#7ecfb3" : "rgba(244,237,216,.4)", border: `1px solid ${c.active !== false ? "rgba(126,207,179,.4)" : "rgba(244,237,216,.18)"}`, borderRadius: 20, padding: "1px 8px", fontWeight: 700 }}>{c.active !== false ? "Active" : "Off"}</span>
+              <span style={{ flex: 1 }} />
+              <span style={{ fontSize: 11, color: "rgba(244,237,216,.5)" }}>{c.days_granted || 30}d · {c.redeemed_count || 0} redeemed{c.max_redemptions != null ? ` / ${c.max_redemptions}` : ""}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {status === "loading" && <div style={{ color: "rgba(244,237,216,.5)", fontSize: 12, marginBottom: 14 }}>Loading…</div>}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Code</label><input style={inp} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="BREAKINGIN" /></div>
+        <div><label style={lbl}>Days granted</label><input style={inp} type="number" value={form.daysGranted} onChange={e => setForm(f => ({ ...f, daysGranted: e.target.value }))} /></div>
+        <div><label style={lbl}>Max redemptions (blank = ∞)</label><input style={inp} type="number" value={form.maxRedemptions} onChange={e => setForm(f => ({ ...f, maxRedemptions: e.target.value }))} placeholder="∞" /></div>
+        <div><label style={lbl}>Expires (blank = never)</label><input style={inp} type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} /></div>
+        <div><label style={lbl}>Status</label>
+          <button onClick={() => setForm(f => ({ ...f, active: !f.active }))} style={{ ...inp, cursor: "pointer", textAlign: "left", color: form.active ? "#7ecfb3" : "rgba(244,237,216,.5)" }}>{form.active ? "● Active" : "○ Off"}</button>
+        </div>
+      </div>
+      {err && <div style={{ color: "#e07060", fontSize: 12.5, marginBottom: 8 }}>⚠ {err}</div>}
+      {msg && <div style={{ color: "#7ecfb3", fontSize: 12.5, marginBottom: 8 }}>✓ {msg}</div>}
+      <button onClick={save} disabled={busy} style={{ background: "rgba(201,168,76,.12)", border: "1px solid rgba(201,168,76,.3)", color: "#f0d080", cursor: "pointer", borderRadius: 9, padding: "9px 16px", fontSize: 12, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3, opacity: busy ? .6 : 1 }}>{busy ? "Saving…" : "Save code"}</button>
     </Panel>
   );
 }

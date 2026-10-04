@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     // ── Profiles: premium, resumes, completion ──
     let premiumUsers = 0, resumesUploaded = 0, completeProfiles = 0, activeUsers = 0;
     const premMap = {};
+    const segmentCounts = {}, heardCounts = {}, studentTrialUsers = { count: 0 };
     try {
       const { data: profs } = await supabaseAdmin.from("profiles").select("id,data,is_premium").limit(100000);
       activeUsers = (profs || []).length;
@@ -51,6 +52,9 @@ export default async function handler(req, res) {
         const d = p.data || {};
         if (d.resumeFileName || d.resumeText) resumesUploaded++;
         if (d.role && d.experience && (d.skills || d.resumeText)) completeProfiles++;
+        if (d.segment) segmentCounts[d.segment] = (segmentCounts[d.segment] || 0) + 1;
+        if (d.heardAbout) heardCounts[d.heardAbout] = (heardCounts[d.heardAbout] || 0) + 1;
+        if (d.studentTrialRedeemed) studentTrialUsers.count++;
       }
     } catch (e) {}
 
@@ -122,6 +126,9 @@ export default async function handler(req, res) {
       premiumPct: totalUsers ? Math.round((premiumUsers / totalUsers) * 1000) / 10 : 0,
       resumesUploaded,
       completeProfiles,
+      segmentSplit: Object.keys(segmentCounts).map((k) => ({ key: k, count: segmentCounts[k] })).sort((a, b) => b.count - a.count),
+      heardSplit: Object.keys(heardCounts).map((k) => ({ key: k, count: heardCounts[k] })).sort((a, b) => b.count - a.count),
+      studentTrials: studentTrialUsers.count,
       // Activity
       totalApplications,
       totalSaves,

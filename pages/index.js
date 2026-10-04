@@ -2907,6 +2907,71 @@ function OnboardingCard({user,isPlus,onOpenAccount,onOpenInbox,onDismiss,onFollo
   );
 }
 
+function StudentTrialSection({ user, premium }) {
+  const prof = (user && user.profile) || {};
+  const until = prof.premiumUntil ? Number(prof.premiumUntil) : 0;
+  const trialActive = until && until > Date.now();
+  const stripePrem = premium && premium.isPremium && !trialActive;
+  const redeemed = !!prof.studentTrialRedeemed;
+
+  const [step, setStep] = useState("ask"); // ask|code|email|otp|done
+  const [code, setCode] = useState("");
+  const [schoolEmail, setSchoolEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function token() { const { data } = await supabase.auth.getSession(); return data && data.session && data.session.access_token; }
+  async function validateCode() {
+    setErr(""); setBusy(true);
+    try { const r = await fetch("/api/student/validate-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code.trim() }) }); const j = await r.json(); if (j.valid) setStep("email"); else setErr(j.reason || "That code isn't valid."); }
+    catch (e) { setErr("Couldn't check that code."); } finally { setBusy(false); }
+  }
+  async function sendOtp() {
+    setErr(""); setBusy(true);
+    try { const t = await token(); const r = await fetch("/api/student/send-otp", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` }, body: JSON.stringify({ email: schoolEmail.trim() }) }); const j = await r.json(); if (r.ok) setStep("otp"); else setErr(j.error || "Couldn't send a code."); }
+    catch (e) { setErr("Couldn't send a code."); } finally { setBusy(false); }
+  }
+  async function redeem() {
+    setErr(""); setBusy(true);
+    try { const t = await token(); const r = await fetch("/api/student/redeem", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` }, body: JSON.stringify({ email: schoolEmail.trim(), otp: otp.trim(), code: code.trim() }) }); const j = await r.json(); if (r.ok) setStep("done"); else setErr(j.error || "Couldn't verify that code."); }
+    catch (e) { setErr("Something went wrong."); } finally { setBusy(false); }
+  }
+
+  const head = <div style={{ fontSize: 10, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .8, fontFamily: "'Cinzel',serif", marginBottom: 8, marginTop: 20 }}>Student Trial</div>;
+  const inp = { width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.25)", color: "#f4edd8", borderRadius: 9, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" };
+  const btn = { width: "100%", marginTop: 10, border: "none", borderRadius: 9, padding: "10px", fontSize: 12.5, fontWeight: 800, fontFamily: "'Cinzel',serif", background: "linear-gradient(135deg,#c9a84c,#f0d080)", color: "#0a0608", cursor: "pointer" };
+  const box = { padding: 14, background: "rgba(201,168,76,.05)", border: "1px solid rgba(201,168,76,.18)", borderRadius: 10, fontSize: 12.5, color: "rgba(244,237,216,.7)", lineHeight: 1.6 };
+
+  if (trialActive) return <>{head}<div style={box}>🎓 <b style={{ color: "#f0d080" }}>Student Premium active</b> — ends {new Date(until).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. After that you'll move to Basic, no charge.</div></>;
+  if (stripePrem) return <>{head}<div style={box}>You already have Premium — no student trial needed.</div></>;
+  if (redeemed) return <>{head}<div style={box}>Your student trial has been used. Reach out to <a href="/support" style={{ color: "#c9a84c" }}>support</a> if you think this is a mistake.</div></>;
+
+  return (
+    <>
+      {head}
+      <div style={box}>
+        <div style={{ marginBottom: 10 }}>Are you a student? Redeem a <b style={{ color: "#f0d080" }}>Breaking In</b> code for 30 days of Premium, free.</div>
+        {step === "ask" && <button style={btn} onClick={() => setStep("code")}>I have a code</button>}
+        {step === "code" && <><input style={inp} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Enter your student code" /><button style={{ ...btn, opacity: (!code.trim() || busy) ? .6 : 1 }} disabled={!code.trim() || busy} onClick={validateCode}>{busy ? "Checking…" : "Continue"}</button></>}
+        {step === "email" && <>
+          <div style={{ fontSize: 11.5, marginBottom: 8 }}>Enter your <b style={{ color: "#f0d080" }}>school email</b> — this only verifies you're a student, it's not your login.</div>
+          <input style={inp} value={schoolEmail} onChange={e => setSchoolEmail(e.target.value)} placeholder="you@university.edu" type="email" />
+          <button style={{ ...btn, opacity: (!schoolEmail.trim() || busy) ? .6 : 1 }} disabled={!schoolEmail.trim() || busy} onClick={sendOtp}>{busy ? "Sending…" : "Send code"}</button>
+          <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", marginTop: 8 }}>Standard university email required (.edu, .ac.uk, etc.). Trouble? <a href="/support" style={{ color: "#c9a84c" }}>Contact support</a>.</div>
+        </>}
+        {step === "otp" && <>
+          <div style={{ fontSize: 11.5, marginBottom: 8 }}>Code sent to <b style={{ color: "#f0d080" }}>{schoolEmail}</b>.</div>
+          <input style={{ ...inp, textAlign: "center", letterSpacing: 6, fontSize: 18 }} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="______" inputMode="numeric" />
+          <button style={{ ...btn, opacity: (otp.length < 6 || busy) ? .6 : 1 }} disabled={otp.length < 6 || busy} onClick={redeem}>{busy ? "Verifying…" : "Verify & unlock Premium"}</button>
+        </>}
+        {step === "done" && <div style={{ textAlign: "center" }}><div style={{ fontSize: 30, marginBottom: 4 }}>🎉</div><div style={{ color: "#f0d080", fontWeight: 700, fontFamily: "'Cinzel',serif", marginBottom: 6 }}>Premium unlocked for 30 days!</div><button style={btn} onClick={() => window.location.reload()}>Reload to see your features</button></div>}
+        {err && <div style={{ color: "#e8a070", fontSize: 11.5, marginTop: 8 }}>{err}</div>}
+      </div>
+    </>
+  );
+}
+
 function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialTab}) {
   const compact = useIsMobile(1000);
   useEffect(()=>{ if(typeof document==="undefined")return; const b=document.body.style.overflow,h=document.documentElement.style.overflow; document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; return ()=>{ document.body.style.overflow=b; document.documentElement.style.overflow=h; }; },[]);
@@ -3126,6 +3191,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialT
           </div>}
           {/* Notifications */}
           <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
+            <StudentTrialSection user={user} premium={premium}/>
             <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Notifications</div>
             {[
               {k:"notifications",label:"In-app notifications",desc:"New matching postings appear in your inbox",boolOn:true},
