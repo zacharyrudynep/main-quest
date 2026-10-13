@@ -1,15 +1,13 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
+import { generateText, aiErrorResponse } from "../../../lib/gemini";
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const CANDIDATES = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
 const LIMIT = 40; // shared monthly AI pool (ai_usage)
 
 // POST -> a reusable email-application template using {company} and {position} markers.
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
-    if (!GEMINI_KEY) return res.status(503).json({ error: "AI is not configured." });
     const authz = req.headers.authorization || "";
     const tok = authz.startsWith("Bearer ") ? authz.slice(7) : "";
     if (!tok) return res.status(401).json({ error: "Please sign in." });
@@ -34,26 +32,9 @@ export default async function handler(req, res) {
     const sys = "You write a single, reusable, professional email template a candidate sends when applying to game-industry jobs by email. Use exactly the markers {company} and {position} where the company name and the role title belong (they are auto-filled per job). Do NOT invent a company or role. Structure: a greeting, one or two short paragraphs expressing genuine interest and a concise, credible reason they'd be a good fit for game development, and a professional sign-off. Warm but professional, about 120-160 words. End the sign-off with the applicant's name if provided, otherwise with [Your Name]. Output ONLY the email body text — no subject line, no commentary, no markdown.";
     const prompt = `Applicant name: ${name || "(not provided)"}\n\nWrite the reusable email application template now, using {company} and {position} markers.`;
 
-    let text = null;
-    for (const model of CANDIDATES) {
-      try {
-        const ctl = new AbortController();
-        const tmo = setTimeout(() => ctl.abort(), 25000);
-        let r;
-        try {
-          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_KEY)}`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 1200, thinkingConfig: { thinkingBudget: 0 } } }),
-            signal: ctl.signal,
-          });
-        } finally { clearTimeout(tmo); }
-        const data = await r.json().catch(() => ({}));
-        const cand = data && data.candidates && data.candidates[0];
-        const out = cand && cand.content && cand.content.parts && cand.content.parts.map((x) => x.text || "").join("").trim();
-        if (out) { text = out; break; }
-      } catch (e) { /* next model */ }
-    }
-    if (!text) return res.status(503).json({ error: "Could not generate right now. Please try again." });
+    const g = await generateText({ system: sys, user: prompt, temperature: 0.7, maxOutputTokens: 1200, timeoutMs: 25000, generationExtras: { thinkingConfig: { thinkingBudget: 0 } } });
+    if (!g.ok) return aiErrorResponse(res, g);
+    const text = g.text.trim();
 
     if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
     return res.status(200).json({ text, remaining: isAdmin ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
