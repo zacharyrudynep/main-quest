@@ -1,6 +1,7 @@
-// GET/POST /api/admin/student-code  (owner only)
-// GET  -> { codes: [...] } every student code with its redemption count.
-// POST { code, active, expiresAt, daysGranted, maxRedemptions } -> upsert one code.
+// GET/POST/DELETE /api/admin/student-code  (owner only)
+// GET    -> { codes: [...] } every student code with its redemption count.
+// POST   { code, active, expiresAt, daysGranted, maxRedemptions } -> upsert one code.
+// DELETE ?code=XYZ (or { code }) -> remove one code.
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
@@ -41,7 +42,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    return res.status(405).json({ error: "GET or POST only" });
+    if (req.method === "DELETE") {
+      const code = String((req.query && req.query.code) || (req.body && req.body.code) || "").trim();
+      if (!code) return res.status(400).json({ error: "code required" });
+      const { error } = await supabaseAdmin.from("student_codes").delete().eq("code", code);
+      if (error) return res.status(500).json({ error: error.message || "delete failed" });
+      return res.status(200).json({ ok: true });
+    }
+
+    return res.status(405).json({ error: "GET, POST or DELETE only" });
   } catch (e) {
     return res.status(500).json({ error: "server error" });
   }

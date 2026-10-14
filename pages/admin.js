@@ -104,7 +104,7 @@ export default function Admin() {
 
           {status === "loading" && <Note>Loading…</Note>}
           {status === "login" && <AdminLogin />}
-          {status === "denied" && <Note>You’re signed in, but this dashboard is for the owner account only. <a href="/" style={{ color: GOLD }}>Back to the board</a>.</Note>}
+          {status === "denied" && <Note>You’re signed in with an account that isn’t the owner. <button onClick={async () => { try { await supabase.auth.signOut(); } catch (e) {} setStatus("login"); }} style={{ background: "none", border: "none", padding: 0, color: GOLD, cursor: "pointer", font: "inherit", textDecoration: "underline" }}>Sign out &amp; sign in as the owner</button>, or go <a href="/" style={{ color: GOLD }}>back to the board</a>.</Note>}
           {status === "error" && <Note>Couldn't load stats. Check that the <code>events</code> / <code>saved_jobs</code> tables exist and <code>ADMIN_EMAIL</code> is set.</Note>}
 
           {status === "ready" && s && (
@@ -715,6 +715,7 @@ function StudentCodePanel() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [editingCode, setEditingCode] = useState(null);
 
   async function load() {
     setStatus("loading");
@@ -743,11 +744,31 @@ function StudentCodePanel() {
       });
       const j = await r.json();
       if (!r.ok) { setErr(j.error || "Save failed."); }
-      else { setMsg("Saved."); setForm({ code: "", active: true, daysGranted: 30, maxRedemptions: "", expiresAt: "" }); load(); }
+      else {
+        const original = editingCode;
+        const newCode = form.code.trim().toUpperCase();
+        if (original && original !== newCode) {
+          try { await fetch("/api/admin/student-code?code=" + encodeURIComponent(original), { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }); } catch (e) {}
+        }
+        setMsg(original ? "Updated." : "Saved."); resetForm(); load();
+      }
     } catch (e) { setErr("Save failed."); }
     finally { setBusy(false); }
   }
-  const edit = (c) => setForm({ code: c.code, active: c.active !== false, daysGranted: c.days_granted || 30, maxRedemptions: c.max_redemptions == null ? "" : c.max_redemptions, expiresAt: c.expires_at ? String(c.expires_at).slice(0, 10) : "" });
+  function resetForm() { setForm({ code: "", active: true, daysGranted: 30, maxRedemptions: "", expiresAt: "" }); setEditingCode(null); }
+  const edit = (c) => { setEditingCode(c.code); setErr(""); setMsg(""); setForm({ code: c.code, active: c.active !== false, daysGranted: c.days_granted || 30, maxRedemptions: c.max_redemptions == null ? "" : c.max_redemptions, expiresAt: c.expires_at ? String(c.expires_at).slice(0, 10) : "" }); if (typeof window !== "undefined") { try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {} } };
+  async function del(c) {
+    if (typeof window !== "undefined" && !window.confirm(`Delete code "${c.code}"? This can't be undone.`)) return;
+    setErr(""); setMsg("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      const r = await fetch("/api/admin/student-code?code=" + encodeURIComponent(c.code), { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) { const j = await r.json().catch(() => ({})); setErr(j.error || "Delete failed."); return; }
+      if (editingCode === c.code) resetForm();
+      setMsg("Deleted."); load();
+    } catch (e) { setErr("Delete failed."); }
+  }
 
   const lbl = { fontSize: 10, color: "rgba(201,168,76,.7)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 5, display: "block" };
   const inp = { width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 9, padding: "9px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" };
@@ -761,11 +782,13 @@ function StudentCodePanel() {
       {status === "ready" && (codes || []).length > 0 && (
         <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
           {codes.map((c) => (
-            <div key={c.code} onClick={() => edit(c)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, cursor: "pointer", border: "1px solid rgba(201,168,76,.12)" }}>
+            <div key={c.code} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, border: `1px solid ${editingCode === c.code ? "rgba(201,168,76,.45)" : "rgba(201,168,76,.12)"}`, background: editingCode === c.code ? "rgba(201,168,76,.08)" : "transparent" }}>
               <span style={{ fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#f0d080", fontSize: 13 }}>{c.code}</span>
               <span style={{ fontSize: 10.5, color: c.active !== false ? "#7ecfb3" : "rgba(244,237,216,.4)", border: `1px solid ${c.active !== false ? "rgba(126,207,179,.4)" : "rgba(244,237,216,.18)"}`, borderRadius: 20, padding: "1px 8px", fontWeight: 700 }}>{c.active !== false ? "Active" : "Off"}</span>
               <span style={{ flex: 1 }} />
               <span style={{ fontSize: 11, color: "rgba(244,237,216,.5)" }}>{c.days_granted || 30}d · {c.redeemed_count || 0} redeemed{c.max_redemptions != null ? ` / ${c.max_redemptions}` : ""}</span>
+              <button onClick={() => edit(c)} title="Edit this code" style={{ background: "rgba(201,168,76,.1)", border: "1px solid rgba(201,168,76,.3)", color: "#f0d080", cursor: "pointer", borderRadius: 7, padding: "4px 11px", fontSize: 11, fontWeight: 700, fontFamily: "'Cinzel',serif", flexShrink: 0 }}>Edit</button>
+              <button onClick={() => del(c)} title="Delete this code" style={{ background: "rgba(224,112,96,.1)", border: "1px solid rgba(224,112,96,.35)", color: "#e07060", cursor: "pointer", borderRadius: 7, width: 28, height: 28, fontSize: 14, fontWeight: 700, lineHeight: 1, flexShrink: 0 }}>✕</button>
             </div>
           ))}
         </div>
@@ -783,7 +806,11 @@ function StudentCodePanel() {
       </div>
       {err && <div style={{ color: "#e07060", fontSize: 12.5, marginBottom: 8 }}>⚠ {err}</div>}
       {msg && <div style={{ color: "#7ecfb3", fontSize: 12.5, marginBottom: 8 }}>✓ {msg}</div>}
-      <button onClick={save} disabled={busy} style={{ background: "rgba(201,168,76,.12)", border: "1px solid rgba(201,168,76,.3)", color: "#f0d080", cursor: "pointer", borderRadius: 9, padding: "9px 16px", fontSize: 12, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3, opacity: busy ? .6 : 1 }}>{busy ? "Saving…" : "Save code"}</button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <button onClick={save} disabled={busy} style={{ background: "rgba(201,168,76,.12)", border: "1px solid rgba(201,168,76,.3)", color: "#f0d080", cursor: "pointer", borderRadius: 9, padding: "9px 16px", fontSize: 12, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3, opacity: busy ? .6 : 1 }}>{busy ? "Saving…" : editingCode ? "Update code" : "Save code"}</button>
+        {editingCode && <button onClick={resetForm} disabled={busy} style={{ background: "transparent", border: "1px solid rgba(244,237,216,.2)", color: "rgba(244,237,216,.6)", cursor: "pointer", borderRadius: 9, padding: "9px 16px", fontSize: 12, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3 }}>Cancel</button>}
+        {editingCode && <span style={{ fontSize: 11, color: "rgba(244,237,216,.45)" }}>Editing <strong style={{ color: "#f0d080" }}>{editingCode}</strong> — changing the Code field renames it.</span>}
+      </div>
     </Panel>
   );
 }
