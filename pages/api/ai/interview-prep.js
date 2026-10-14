@@ -24,7 +24,7 @@ async function fetchSiteText(url) {
 }
 
 async function processInterviewJob(jobId, ctx) {
-  const { uid, jobKey, company, title, location, url, requirements, usingFree, isAdmin, used } = ctx;
+  const { uid, jobKey, company, title, location, url, requirements, usingFree, unlimited, used } = ctx;
   try {
     const month = new Date().toISOString().slice(0, 7);
     const siteText = await fetchSiteText(url);
@@ -36,7 +36,7 @@ async function processInterviewJob(jobId, ctx) {
     const prep = g.text.trim();
 
     try { await supabaseAdmin.from("interview_preps").upsert({ user_id: uid, job_key: jobKey, company, title, location, url, prep_text: prep }, { onConflict: "user_id,job_key" }); } catch (e) {}
-    try { if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" }); } catch (e) {}
+    try { if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!unlimited) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" }); } catch (e) {}
     await supabaseAdmin.from("ai_jobs").update({ status: "done", result: {}, error: null, updated_at: nowIso() }).eq("id", jobId);
   } catch (e) {
     await setJobError(jobId, "Something went wrong.");
@@ -60,12 +60,15 @@ export default async function handler(req, res) {
     }
     if (req.method !== "POST") { res.setHeader("Allow", "GET, POST"); return res.status(405).json({ error: "Method not allowed" }); }
 
-    if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
-      return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
     const access = await aiAccess(supabaseAdmin, uid);
     const isAdmin = access.isAdmin;
+    const unlimited = access.unlimited; // admin or active student trial — no cap
     if (!access.ok) return res.status(403).json({ error: "Interview prep is a Premium feature." });
-    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
+    // Students verified a school email when redeeming, so they skip the account-email gate.
+    const emailVerified = !!(u.user.app_metadata && u.user.app_metadata.email_verified);
+    if (!emailVerified && !access.isStudent)
+      return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
+    const usingFree = !unlimited && !access.isPremium && access.freeCredits > 0;
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const jobKey = String(b.jobKey || "").slice(0, 400);
@@ -83,7 +86,7 @@ export default async function handler(req, res) {
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
-    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} interview preps this month.`, remaining: 0 });
+    if (!unlimited && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} interview preps this month.`, remaining: 0 });
 
     // De-dupe in-flight.
     const { data: inflight } = await supabaseAdmin.from("ai_jobs").select("id").eq("user_id", uid).eq("kind", "interview").eq("job_key", jobKey).eq("status", "pending").maybeSingle();
@@ -93,7 +96,7 @@ export default async function handler(req, res) {
     if (cErr || !created) return res.status(500).json({ error: "Couldn't start the job — please try again." });
 
     res.status(202).json({ jobId: created.id, pending: true });
-    processInterviewJob(created.id, { uid, jobKey, company, title, location, url, requirements, usingFree, isAdmin, used })
+    processInterviewJob(created.id, { uid, jobKey, company, title, location, url, requirements, usingFree, isAdmin, unlimited, used })
       .catch((e) => setJobError(created.id, "Something went wrong."));
     return;
   } catch (e) {

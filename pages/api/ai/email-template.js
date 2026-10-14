@@ -14,17 +14,19 @@ export default async function handler(req, res) {
     const { data: u, error: ue } = await supabaseAdmin.auth.getUser(tok);
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in." });
     const uid = u.user.id;
-    if (!(u.user.app_metadata && u.user.app_metadata.email_verified))
-      return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
     const access = await aiAccess(supabaseAdmin, uid);
-    const isAdmin = access.isAdmin;
+    const unlimited = access.unlimited; // admin or active student trial — no cap
     if (!access.ok) return res.status(403).json({ error: "AI template generation is a Premium feature." });
-    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
+    // Students verified a school email when redeeming, so they skip the account-email gate.
+    const emailVerified = !!(u.user.app_metadata && u.user.app_metadata.email_verified);
+    if (!emailVerified && !access.isStudent)
+      return res.status(403).json({ error: "Please verify your email from the Account tab to use this feature.", needVerify: true });
+    const usingFree = !unlimited && !access.isPremium && access.freeCredits > 0;
 
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
-    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} template generations this month.`, remaining: 0 });
+    if (!unlimited && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} template generations this month.`, remaining: 0 });
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const name = String(b.name || "").slice(0, 80).trim();
@@ -36,8 +38,8 @@ export default async function handler(req, res) {
     if (!g.ok) return aiErrorResponse(res, g);
     const text = g.text.trim();
 
-    if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
-    return res.status(200).json({ text, remaining: isAdmin ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
+    if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!unlimited) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
+    return res.status(200).json({ text, remaining: unlimited ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
   } catch (e) {
     return res.status(500).json({ error: "Something went wrong." });
   }

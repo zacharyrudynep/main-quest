@@ -3,7 +3,7 @@ import { tailorDocx } from "../../../lib/docxTailor";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 import { generateText, aiErrText } from "../../../lib/gemini";
 
-const LIMIT = 15;
+const LIMIT = 40; // shared monthly AI pool (ai_usage) — same currency as every other AI feature
 
 const SYSTEM = `You are a professional resume editor helping a candidate tailor their existing resume to a specific job posting.
 
@@ -31,7 +31,7 @@ async function setJobError(id, msg) {
 // Node server (Coolify) the process stays alive, so this finishes even though the
 // user's request already returned. Never touches `res`.
 async function processResumeJob(jobId, ctx) {
-  const { uid, resumeText, resumeDocxB64, keywords, job, usingFree, isAdmin, used } = ctx;
+  const { uid, resumeText, resumeDocxB64, keywords, job, usingFree, unlimited, used } = ctx;
   try {
     const month = new Date().toISOString().slice(0, 7);
     const jobReqs = [].concat(job.requirements || [], job.responsibilities || []).filter(Boolean).map(String).slice(0, 40);
@@ -77,7 +77,7 @@ async function processResumeJob(jobId, ctx) {
     } catch (e) {}
 
     // Spend the use only now that it succeeded.
-    try { if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_tailor_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" }); } catch (e) {}
+    try { if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!unlimited) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" }); } catch (e) {}
 
     await supabaseAdmin.from("ai_jobs").update({ status: "done", result: { resumeId, resume: resumeMd, docxB64: docxB64 || null }, error: null, updated_at: nowIso() }).eq("id", jobId);
   } catch (e) {
@@ -95,18 +95,18 @@ export default async function handler(req, res) {
     const uid = u.user.id;
 
     const access = await aiAccess(supabaseAdmin, uid);
-    const isAdmin = access.isAdmin;
+    const unlimited = access.unlimited; // admin or active student trial — no cap
     if (!access.ok) return res.status(403).json({ error: "Resume tailoring is a Premium feature." });
-    const usingFree = !isAdmin && !access.isPremium && access.freeCredits > 0;
+    const usingFree = !unlimited && !access.isPremium && access.freeCredits > 0;
 
     const month = new Date().toISOString().slice(0, 7);
-    const readUsed = async () => { const { data } = await supabaseAdmin.from("ai_tailor_usage").select("count").eq("user_id", uid).eq("month", month).single(); return (data && data.count) || 0; };
+    const readUsed = async () => { const { data } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single(); return (data && data.count) || 0; };
 
-    if (req.method === "GET") { const used = await readUsed(); return res.status(200).json({ limit: LIMIT, used, remaining: isAdmin ? null : Math.max(0, LIMIT - used), unlimited: isAdmin }); }
+    if (req.method === "GET") { const used = await readUsed(); return res.status(200).json({ limit: LIMIT, used, remaining: unlimited ? null : Math.max(0, LIMIT - used), unlimited }); }
     if (req.method !== "POST") return res.status(405).json({ error: "GET or POST only" });
 
     const used = await readUsed();
-    if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your resume tailors this month — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
+    if (!unlimited && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} of your monthly AI credits — your limit resets on the 1st.`, limitReached: true, limit: LIMIT, used, remaining: 0 });
 
     const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const resumeText = String(b.resumeText || "").slice(0, 24000);
@@ -119,14 +119,14 @@ export default async function handler(req, res) {
 
     // De-dupe: reuse an in-flight job for the same posting instead of starting another.
     const { data: inflight } = await supabaseAdmin.from("ai_jobs").select("id").eq("user_id", uid).eq("kind", "resume").eq("job_key", jobKey).eq("status", "pending").maybeSingle();
-    if (inflight) return res.status(202).json({ jobId: inflight.id, pending: true, reused: true, remaining: isAdmin ? null : Math.max(0, LIMIT - used) });
+    if (inflight) return res.status(202).json({ jobId: inflight.id, pending: true, reused: true, remaining: unlimited ? null : Math.max(0, LIMIT - used) });
 
     const { data: created, error: cErr } = await supabaseAdmin.from("ai_jobs").insert({ user_id: uid, kind: "resume", job_key: jobKey.slice(0, 400), status: "pending" }).select("id").single();
     if (cErr || !created) return res.status(500).json({ error: "Couldn't start the job — please try again." });
 
     // Return immediately; finish in the background.
-    res.status(202).json({ jobId: created.id, pending: true, remaining: isAdmin ? null : Math.max(0, LIMIT - (used + 1)) });
-    processResumeJob(created.id, { uid, resumeText, resumeDocxB64, keywords, job, usingFree, isAdmin, used })
+    res.status(202).json({ jobId: created.id, pending: true, remaining: unlimited ? null : Math.max(0, LIMIT - (used + 1)) });
+    processResumeJob(created.id, { uid, resumeText, resumeDocxB64, keywords, job, usingFree, unlimited, used })
       .catch((e) => setJobError(created.id, "Something went wrong."));
     return;
   } catch (e) {

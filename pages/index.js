@@ -3024,6 +3024,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialT
   // ── Premium subscription ──
   const [premium,setPremium]=useState(null);      // null = still loading
   const [billingBusy,setBillingBusy]=useState(false);
+  const studentUntil=(user&&user.profile&&user.profile.studentTrialRedeemed&&user.profile.premiumUntil)?Number(user.profile.premiumUntil):0;
+  const isStudent=studentUntil>Date.now();
   useEffect(()=>{
     if(!user?.id){ setPremium({isPremium:false}); return; }
     let alive=true;
@@ -3148,10 +3150,10 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialT
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <span style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5}}>{premium.status==="lifetime"?"Lifetime":"Premium"}</span>
                 <span style={{background:premium.status==="past_due"?"rgba(232,97,58,.16)":"rgba(126,207,179,.14)",border:`1px solid ${premium.status==="past_due"?"rgba(232,97,58,.4)":"rgba(126,207,179,.35)"}`,color:premium.status==="past_due"?"#e8613a":"#7ecfb3",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.5}}>{(premium.status||"active").toUpperCase().replace("_"," ")}</span>
-                {premium.isAdmin&&<span style={{background:"rgba(255,140,26,.18)",border:"1px solid rgba(255,140,26,.7)",color:"#ff8c1a",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.7,boxShadow:"0 0 10px rgba(255,140,26,.35)"}}>★ ADMIN</span>}
+                {premium.isAdmin&&<span style={{background:"rgba(255,140,26,.18)",border:"1px solid rgba(255,140,26,.7)",color:"#ff8c1a",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.7,boxShadow:"0 0 10px rgba(255,140,26,.35)"}}>★ ADMIN</span>}{isStudent&&<span style={{background:"rgba(126,207,179,.16)",border:"1px solid rgba(126,207,179,.55)",color:"#7ecfb3",borderRadius:20,fontSize:9,padding:"2px 9px",fontFamily:"'Cinzel',serif",fontWeight:800,letterSpacing:.7}}>🎓 STUDENT</span>}
               </div>
-              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:premium.status==="lifetime"?0:12,lineHeight:1.5}}>Thanks for supporting Main Quest.{premium.status==="lifetime"?" You have lifetime access — no renewals, ever.":premium.periodEnd?` Renews ${new Date(premium.periodEnd).toLocaleDateString()}.`:""}</div>
-              {premium.status!=="lifetime"&&<button onClick={managePlan} disabled={billingBusy} style={{width:"100%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:700,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:billingBusy?.6:1}}>{billingBusy?"Opening…":"Manage or Cancel Subscription"}</button>}
+              <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:(premium.status==="lifetime"||isStudent)?0:12,lineHeight:1.5}}>{isStudent?`Student Premium — your trial ends ${new Date(studentUntil).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}. After that you’ll move to Basic, no charge.`:<>Thanks for supporting Main Quest.{premium.status==="lifetime"?" You have lifetime access — no renewals, ever.":premium.periodEnd?` Renews ${new Date(premium.periodEnd).toLocaleDateString()}.`:""}</>}</div>
+              {premium.status!=="lifetime"&&!isStudent&&<button onClick={managePlan} disabled={billingBusy} style={{width:"100%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.35)",color:"#f0d080",cursor:billingBusy?"default":"pointer",fontSize:12,fontWeight:700,padding:11,borderRadius:10,fontFamily:"'Cinzel',serif",letterSpacing:.5,opacity:billingBusy?.6:1}}>{billingBusy?"Opening…":"Manage or Cancel Subscription"}</button>}
             </div>
           :
             <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.06))",border:"1px solid rgba(201,168,76,.3)",borderRadius:12,marginBottom:18}}>
@@ -3730,10 +3732,7 @@ function TailorResume({job,profile,missingSkills,wide}){
       <div style={{fontSize:10.5,color:"#f0d080",fontFamily:"'Cinzel',serif",marginBottom:8,lineHeight:1.5}}>Pick keywords to weave in — the AI only uses ones your real experience can honestly support:</div>
       {kws.length?<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{kws.map(chip)}</div>:<div style={{fontSize:10,color:"rgba(244,237,216,.4)",marginBottom:12}}>No missing keywords — your resume already covers this role well.</div>}
       {err&&<div style={{color:"#e0705a",fontSize:10.5,marginBottom:8}}>{err}</div>}
-      {remaining!==null&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:8,marginBottom:6}}>
-        <span style={{fontSize:10,color:remaining===0?"#e0705a":"rgba(244,237,216,.5)",lineHeight:1.4}}>{remaining===0?"You've used all 15 tailors this month — resets on the 1st.":"Adjusting & retrying also uses an attempt."}</span>
-        <span title="Tailors left this month" style={{fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap",color:(()=>{const f=Math.max(0,Math.min(1,remaining/15));const r=Math.round(126+(224-126)*(1-f)),g=Math.round(207+(112-207)*(1-f)),bl=Math.round(179+(90-179)*(1-f));return `rgb(${r},${g},${bl})`;})()}}>{remaining}/15</span>
-      </div>}
+      {remaining===0&&<div style={{fontSize:10,color:"#e0705a",lineHeight:1.4,marginBottom:6}}>You've used all your monthly AI credits — resets on the 1st.</div>}
       <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,position:"relative",opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:<>{`Tailor with AI${sel.size?` (${sel.size})`:""}`}{remaining!==null&&remaining>0&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"inline-flex",alignItems:"center",gap:1,fontSize:9.5,fontWeight:800,opacity:.85}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#0a0608"><path d="M13 2L4 14h6l-1 8 10-12h-6l0-8z"/></svg>-1</span>}</>}</button>
       {busy&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",textAlign:"center",marginTop:8,lineHeight:1.5,fontStyle:"italic"}}>You can keep browsing while this runs — your tailored resume saves to Generated Resumes automatically, and the Saved tab pulses when it’s ready.</div>}
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
@@ -4418,17 +4417,17 @@ function AiUsageBar(){
   useEffect(()=>{ load(); const onVis=()=>{ if(!document.hidden) load(); }; document.addEventListener("visibilitychange",onVis); return ()=>document.removeEventListener("visibilitychange",onVis); },[]);
   useEffect(()=>{ if(!open)return; load(); const t=setInterval(()=>setNow(n=>n+1),1000); return ()=>clearInterval(t); },[open]);
   if(!data) return null;
-  const isAdmin=data.isAdmin;
+  const unlimited=!!(data.unlimited||data.isAdmin);
   const limit=data.limit||40;
-  const remaining=isAdmin?limit:Math.max(0,limit-(data.used||0));
-  const pct=isAdmin?100:Math.round((remaining/limit)*100);
-  const barColor=isAdmin?"linear-gradient(90deg,#7ecfb3,#c9a84c)":pct>50?"linear-gradient(90deg,#c9a84c,#f0d080)":pct>20?"#e8a070":"#c0703a";
+  const remaining=unlimited?limit:Math.max(0,limit-(data.used||0));
+  const pct=unlimited?100:Math.round((remaining/limit)*100);
+  const barColor=unlimited?"linear-gradient(90deg,#7ecfb3,#c9a84c)":pct>50?"linear-gradient(90deg,#c9a84c,#f0d080)":pct>20?"#e8a070":"#c0703a";
   const cd=()=>{ const d=new Date(); const next=new Date(d.getFullYear(),d.getMonth()+1,1,0,0,0,0); let ms=next-d; const days=Math.floor(ms/86400000); ms-=days*86400000; const hrs=Math.floor(ms/3600000); ms-=hrs*3600000; const mins=Math.floor(ms/60000); ms-=mins*60000; const secs=Math.floor(ms/1000); return `${days}d ${hrs}h ${mins}m ${secs}s`; };
   return <div style={{position:"relative",flexShrink:0}} onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
     <button onClick={()=>setOpen(o=>!o)} title="AI uses this month" style={{display:"flex",alignItems:"center",gap:8,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",borderRadius:20,padding:"6px 12px",cursor:"pointer"}}>
       <I.Lightning s={13} c="#c9a84c"/>
       <div style={{width:60,height:6,background:"rgba(201,168,76,.14)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:barColor,borderRadius:4,transition:"width .45s ease"}}/></div>
-      <span style={{fontSize:11,fontWeight:700,color:"#f0d080",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>{isAdmin?"\u221e":`${remaining}/${limit}`}</span>
+      <span style={{fontSize:11,fontWeight:700,color:"#f0d080",fontFamily:"'Cinzel',serif",whiteSpace:"nowrap"}}>{unlimited?"\u221e":`${remaining}/${limit}`}</span>
     </button>
     {open&&<div style={{position:"absolute",top:44,right:0,width:216,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:10,padding:12,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
       <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:800,color:"#f0d080",marginBottom:6,letterSpacing:.5}}>AI Uses</div>
