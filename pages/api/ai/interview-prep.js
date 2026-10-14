@@ -1,11 +1,14 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
-import { generateText, aiErrorResponse } from "../../../lib/gemini";
+import { generateText, aiErrText } from "../../../lib/gemini";
 
 const LIMIT = 40; // shared monthly AI pool (ai_usage)
 
-// Best-effort: fetch the company site and strip to plain text so the model can use
-// any hiring/interview-process info. Fails silently (site may block or omit it).
+function nowIso() { return new Date().toISOString(); }
+async function setJobError(id, msg) {
+  try { await supabaseAdmin.from("ai_jobs").update({ status: "error", error: String(msg || "error").slice(0, 300), updated_at: nowIso() }).eq("id", id); } catch (e) {}
+}
+
 async function fetchSiteText(url) {
   if (!url) return "";
   try {
@@ -16,15 +19,28 @@ async function fetchSiteText(url) {
     finally { clearTimeout(tmo); }
     if (!r || !r.ok) return "";
     const html = await r.text();
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&[a-z]+;/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return text.slice(0, 6000);
+    return html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/\s+/g, " ").trim().slice(0, 6000);
   } catch (e) { return ""; }
+}
+
+async function processInterviewJob(jobId, ctx) {
+  const { uid, jobKey, company, title, location, url, requirements, usingFree, isAdmin, used } = ctx;
+  try {
+    const month = new Date().toISOString().slice(0, 7);
+    const siteText = await fetchSiteText(url);
+    const sys = "You are an expert game-industry career coach preparing a candidate for a specific interview. Produce a focused, practical interview prep guide in clean markdown with clear section headers. Include: (1) a short profile of the company and what they are known for; (2) 6-10 likely interview questions for THIS role, each with a concise suggested angle/approach tailored to a game-industry candidate; (3) role-specific technical or portfolio topics to review; (4) smart questions the candidate should ask the interviewer; (5) general game-industry interview tips. If the provided company website text mentions their hiring or interview process, incorporate it explicitly and call it out. Be specific and useful, but never invent facts about the company you cannot support.";
+    const prompt = `Role: ${title}\nCompany: ${company}\nLocation: ${location || "n/a"}\nKey requirements: ${requirements || "n/a"}\n\nCompany website text (may be empty or irrelevant):\n"""${siteText || "(none available)"}"""\n\nWrite the interview prep guide now.`;
+
+    const g = await generateText({ system: sys, user: prompt, temperature: 0.6, maxOutputTokens: 2600, timeoutMs: 55000 });
+    if (!g.ok) { await setJobError(jobId, aiErrText(g)); return; }
+    const prep = g.text.trim();
+
+    try { await supabaseAdmin.from("interview_preps").upsert({ user_id: uid, job_key: jobKey, company, title, location, url, prep_text: prep }, { onConflict: "user_id,job_key" }); } catch (e) {}
+    try { if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" }); } catch (e) {}
+    await supabaseAdmin.from("ai_jobs").update({ status: "done", result: {}, error: null, updated_at: nowIso() }).eq("id", jobId);
+  } catch (e) {
+    await setJobError(jobId, "Something went wrong.");
+  }
 }
 
 export default async function handler(req, res) {
@@ -36,7 +52,6 @@ export default async function handler(req, res) {
     if (ue || !u || !u.user) return res.status(401).json({ error: "Please sign in." });
     const uid = u.user.id;
 
-    // GET: return existing prep for a job (used to open an already-generated prep)
     if (req.method === "GET") {
       const jobKey = String((req.query && req.query.jobKey) || "");
       if (!jobKey) return res.status(400).json({ error: "Missing jobKey." });
@@ -61,29 +76,27 @@ export default async function handler(req, res) {
     const requirements = (Array.isArray(b.requirements) ? b.requirements.join(" ") : String(b.requirements || "")).slice(0, 2500);
     if (!jobKey || !company || !title) return res.status(400).json({ error: "Missing job info." });
 
-    // Already generated? return it (view-only, no regen, no usage spent)
+    // Already generated → return instantly, no job, no usage.
     const { data: existing } = await supabaseAdmin.from("interview_preps").select("prep_text").eq("user_id", uid).eq("job_key", jobKey).maybeSingle();
     if (existing && existing.prep_text) return res.status(200).json({ prep: existing.prep_text, already: true });
 
-    // Usage cap
     const month = new Date().toISOString().slice(0, 7);
     const { data: usageRow } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", uid).eq("month", month).single();
     const used = (usageRow && usageRow.count) || 0;
     if (!isAdmin && !usingFree && used >= LIMIT) return res.status(429).json({ error: `You've used all ${LIMIT} interview preps this month.`, remaining: 0 });
 
-    const siteText = await fetchSiteText(url);
+    // De-dupe in-flight.
+    const { data: inflight } = await supabaseAdmin.from("ai_jobs").select("id").eq("user_id", uid).eq("kind", "interview").eq("job_key", jobKey).eq("status", "pending").maybeSingle();
+    if (inflight) return res.status(202).json({ jobId: inflight.id, pending: true, reused: true });
 
-    const sys = "You are an expert game-industry career coach preparing a candidate for a specific interview. Produce a focused, practical interview prep guide in clean markdown with clear section headers. Include: (1) a short profile of the company and what they are known for; (2) 6-10 likely interview questions for THIS role, each with a concise suggested angle/approach tailored to a game-industry candidate; (3) role-specific technical or portfolio topics to review; (4) smart questions the candidate should ask the interviewer; (5) general game-industry interview tips. If the provided company website text mentions their hiring or interview process, incorporate it explicitly and call it out. Be specific and useful, but never invent facts about the company you cannot support.";
-    const prompt = `Role: ${title}\nCompany: ${company}\nLocation: ${location || "n/a"}\nKey requirements: ${requirements || "n/a"}\n\nCompany website text (may be empty or irrelevant):\n"""${siteText || "(none available)"}"""\n\nWrite the interview prep guide now.`;
+    const { data: created, error: cErr } = await supabaseAdmin.from("ai_jobs").insert({ user_id: uid, kind: "interview", job_key: jobKey, status: "pending" }).select("id").single();
+    if (cErr || !created) return res.status(500).json({ error: "Couldn't start the job — please try again." });
 
-    const g = await generateText({ system: sys, user: prompt, temperature: 0.6, maxOutputTokens: 2600, timeoutMs: 45000 });
-    if (!g.ok) return aiErrorResponse(res, g);
-    const prep = g.text.trim();
-
-    await supabaseAdmin.from("interview_preps").upsert({ user_id: uid, job_key: jobKey, company, title, location, url, prep_text: prep }, { onConflict: "user_id,job_key" });
-    if (usingFree) await consumeFreeCredit(supabaseAdmin, uid); else if (!isAdmin) await supabaseAdmin.from("ai_usage").upsert({ user_id: uid, month, count: used + 1 }, { onConflict: "user_id,month" });
-    return res.status(200).json({ prep, remaining: isAdmin ? null : (usingFree ? Math.max(0, access.freeCredits - 1) : Math.max(0, LIMIT - (used + 1))) });
+    res.status(202).json({ jobId: created.id, pending: true });
+    processInterviewJob(created.id, { uid, jobKey, company, title, location, url, requirements, usingFree, isAdmin, used })
+      .catch((e) => setJobError(created.id, "Something went wrong."));
+    return;
   } catch (e) {
-    return res.status(500).json({ error: "Something went wrong." });
+    try { return res.status(500).json({ error: "Something went wrong." }); } catch (e2) {}
   }
 }

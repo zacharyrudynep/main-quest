@@ -3675,6 +3675,32 @@ function TailorResume({job,profile,missingSkills,wide}){
   const base=computeMatchScore(job,profile);
   const after=md?computeMatchScore(job,{...profile,resumeText:md}):null;
   const kws=(missingSkills||[]).slice(0,12);
+  // Poll the background job until the tailored resume is ready (works even if the
+  // request returned 202 and the heavy work is still running on the server).
+  const jobPollRef=useRef(null);
+  useEffect(()=>()=>{ if(jobPollRef.current)clearInterval(jobPollRef.current); },[]);
+  const pollJob=(jobId)=>{
+    if(jobPollRef.current)clearInterval(jobPollRef.current);
+    const tick=async()=>{
+      try{
+        const {data}=await supabase.auth.getSession();
+        const token=data&&data.session&&data.session.access_token; if(!token)return;
+        const r=await fetch("/api/ai/jobs?id="+encodeURIComponent(jobId),{headers:{Authorization:`Bearer ${token}`}});
+        const j=await r.json().catch(()=>({})); const aj=j&&j.job; if(!aj)return;
+        if(aj.status==="done"){
+          if(jobPollRef.current){clearInterval(jobPollRef.current);jobPollRef.current=null;}
+          const rez=aj.result||{};
+          setMd(rez.resume||"");if(rez.docxB64)setDocxB64(rez.docxB64);setBusy(false);
+          track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!rez.docxB64}});
+        } else if(aj.status==="error"){
+          if(jobPollRef.current){clearInterval(jobPollRef.current);jobPollRef.current=null;}
+          setErr(aj.error||"Something went wrong. Try again.");setBusy(false);
+        }
+      }catch(e){}
+    };
+    tick();
+    jobPollRef.current=setInterval(tick,4000);
+  };
   const run=async()=>{
     setBusy(true);setErr("");setMd(null);setDocxB64(null);
     try{
@@ -3683,6 +3709,7 @@ function TailorResume({job,profile,missingSkills,wide}){
       if(!token){setErr("Please sign in.");setBusy(false);return;}
       const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,location:job.location||"",url:job.url||"",requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
+      if(r.status===202&&j.jobId){ if(typeof j.remaining==="number")setRemaining(j.remaining); pollJob(j.jobId); return; }
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
       setMd(j.resume);if(j.docxB64)setDocxB64(j.docxB64);if(typeof j.remaining==="number")setRemaining(j.remaining);track("resume_tailor",{company:job.company,meta:{keywords:[...sel].length,formatted:!!j.docxB64}});
     }catch(e){setErr("Something went wrong. Try again.");}
@@ -3708,7 +3735,7 @@ function TailorResume({job,profile,missingSkills,wide}){
         <span title="Tailors left this month" style={{fontSize:13,fontWeight:800,fontFamily:"'Cinzel',serif",whiteSpace:"nowrap",color:(()=>{const f=Math.max(0,Math.min(1,remaining/15));const r=Math.round(126+(224-126)*(1-f)),g=Math.round(207+(112-207)*(1-f)),bl=Math.round(179+(90-179)*(1-f));return `rgb(${r},${g},${bl})`;})()}}>{remaining}/15</span>
       </div>}
       <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,position:"relative",opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:<>{`Tailor with AI${sel.size?` (${sel.size})`:""}`}{remaining!==null&&remaining>0&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"inline-flex",alignItems:"center",gap:1,fontSize:9.5,fontWeight:800,opacity:.85}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#0a0608"><path d="M13 2L4 14h6l-1 8 10-12h-6l0-8z"/></svg>-1</span>}</>}</button>
-      {busy&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",textAlign:"center",marginTop:8,lineHeight:1.5,fontStyle:"italic"}}>This can take up to a minute — please don’t refresh. Your tailored resume saves to Generated Resumes even if you navigate away.</div>}
+      {busy&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",textAlign:"center",marginTop:8,lineHeight:1.5,fontStyle:"italic"}}>You can keep browsing while this runs — your tailored resume saves to Generated Resumes automatically, and the Saved tab pulses when it’s ready.</div>}
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
     </div>}
     {md&&<div>
@@ -4479,8 +4506,31 @@ function InterviewPrepPanel({ job, onClose }){
   const [st,setSt]=useState("loading"); const [text,setText]=useState(""); const [err,setErr]=useState("");
   const jobKey=`${job.company}|${job.title}|${job.location||""}`;
   const tokenOf=async()=>{ const {data}=await supabase.auth.getSession(); return data&&data.session&&data.session.access_token; };
+  // Poll the background job, then pull the finished prep from its permanent store.
+  const ipRef=useRef(null);
+  useEffect(()=>()=>{ if(ipRef.current)clearInterval(ipRef.current); },[]);
+  const pollPrep=(jobId)=>{
+    if(ipRef.current)clearInterval(ipRef.current);
+    const tick=async()=>{
+      try{
+        const tk=await tokenOf();
+        const r=await fetch("/api/ai/jobs?id="+encodeURIComponent(jobId),{headers:{Authorization:`Bearer ${tk}`}});
+        const j=await r.json().catch(()=>({})); const aj=j&&j.job; if(!aj)return;
+        if(aj.status==="done"){
+          if(ipRef.current){clearInterval(ipRef.current);ipRef.current=null;}
+          try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ setText(pj.prep); setSt("ready"); return; } }catch(e){}
+          setErr("Could not load the finished prep. Please reopen this panel."); setSt("empty");
+        } else if(aj.status==="error"){
+          if(ipRef.current){clearInterval(ipRef.current);ipRef.current=null;}
+          setErr(aj.error||"Could not generate. Please try again."); setSt("empty");
+        }
+      }catch(e){}
+    };
+    tick();
+    ipRef.current=setInterval(tick,4000);
+  };
   useEffect(()=>{ let alive=true; (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(!alive)return; if(j.prep){ setText(j.prep); setSt("ready"); } else setSt("empty"); }catch(e){ if(alive)setSt("empty"); } })(); return ()=>{alive=false;}; },[]);
-  const gen=async()=>{ setSt("generating"); setErr(""); try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]})}); const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ setText(j.prep); setSt("ready"); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } }catch(e){ setErr("Something went wrong."); setSt("empty"); } };
+  const gen=async()=>{ setSt("generating"); setErr(""); try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]})}); const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ setText(j.prep); setSt("ready"); } else if(r.status===202&&j.jobId){ pollPrep(j.jobId); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } }catch(e){ setErr("Something went wrong."); setSt("empty"); } };
   const dl=()=>{ const clean=String(text||"").replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1"); const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(clean,`${safe(job.company)}_${safe(job.title)}_interview_prep.docx`.slice(0,90)); };
   return <div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:"calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 90px)",overflowY:"auto",WebkitOverflowScrolling:"touch"}:{position:"fixed",top:96,right:16,width:"50vw",maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:12,borderBottom:"1px solid rgba(201,168,76,.15)",paddingBottom:10,position:mobile?"sticky":"static",top:0,zIndex:5,background:mobile?"rgba(10,7,10,.98)":"transparent",marginLeft:mobile?-16:0,marginRight:mobile?-16:0,paddingLeft:mobile?16:0,paddingRight:mobile?16:0}}>
@@ -4493,7 +4543,7 @@ function InterviewPrepPanel({ job, onClose }){
       {err&&<div style={{fontSize:12,color:"#e07060",marginBottom:10}}>{err}</div>}
       <button onClick={gen} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>✦ Generate Interview Prep</button>
     </div>}
-    {st==="generating"&&<div style={{padding:"44px 0",textAlign:"center"}}><div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:14,marginBottom:8}}>Generating your interview prep…</div><div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Reviewing the company and tailoring questions. This can take up to a minute.</div></div>}
+    {st==="generating"&&<div style={{padding:"44px 0",textAlign:"center"}}><div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:14,marginBottom:8}}>Generating your interview prep…</div><div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Reviewing the company and tailoring questions. You can keep browsing — the Applications tab pulses when your prep is ready.</div></div>}
     {st==="ready"&&<><PrepMarkdown text={text}/><button onClick={dl} style={{width:"100%",marginTop:14,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>⤓ Download (.docx)</button></>}
   </div>;
 }
@@ -4860,6 +4910,32 @@ export default function App() {
   }, [onbStatus.complete, user && user.id]);
   const [toast,setToast]=useState("");
   useEffect(()=>{ if(!toast)return; const t=setTimeout(()=>setToast(""),3500); return ()=>clearTimeout(t); },[toast]);
+  // ── AI background jobs: pulse the Applications/Saved tab when a backgrounded
+  //    interview prep or tailored resume finishes while the user browses elsewhere. ──
+  const [aiPulse,setAiPulse]=useState({resume:false,interview:false});
+  const aiPollRef=useRef(null);
+  useEffect(()=>{
+    if(!user||!user.id){ if(aiPollRef.current){clearInterval(aiPollRef.current);aiPollRef.current=null;} setAiPulse({resume:false,interview:false}); return; }
+    let alive=true;
+    const check=async()=>{
+      try{
+        const {data}=await supabase.auth.getSession();
+        const tk=data&&data.session&&data.session.access_token; if(!tk)return;
+        const r=await fetch("/api/ai/jobs",{headers:{Authorization:`Bearer ${tk}`}});
+        const j=await r.json().catch(()=>({})); if(!alive||!Array.isArray(j.jobs))return;
+        const done=j.jobs.filter(x=>x.status==="done"&&!x.seen);
+        setAiPulse({resume:done.some(x=>x.kind==="resume"),interview:done.some(x=>x.kind==="interview")});
+      }catch(e){}
+    };
+    check();
+    aiPollRef.current=setInterval(check,7000);
+    return ()=>{ alive=false; if(aiPollRef.current){clearInterval(aiPollRef.current);aiPollRef.current=null;} };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[user&&user.id]);
+  const markAiSeen=async(kind)=>{
+    setAiPulse(p=>({...p,[kind]:false}));
+    try{ const {data}=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk)return; await fetch("/api/ai/jobs",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({seenKind:kind})}); }catch(e){}
+  };
   // React to the ?verify=... flag the verification link redirects back with.
   useEffect(()=>{
     if(typeof window==="undefined")return;
@@ -5474,7 +5550,7 @@ export default function App() {
       <div style={{display:"flex",justifyContent:"center",flex:mobile?"0 0 100%":"0 0 auto",order:mobile?3:0,minWidth:0}}>
         <nav style={{display:"flex",gap:3,background:"rgba(201,168,76,.05)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,padding:3}}>
           {[["jobs",<><I.Map s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Jobs":"Job Board"}</span>{totalJobs>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{totalJobs}</span>}</>],["applied",<><I.Scroll s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Applied":"Applications"}</span>{(()=>{const activeApps=appliedJobs.filter(j=>STAGE_OF(user.applied[j.id]&&user.applied[j.id].status)!=="denied").length;return activeApps>0&&<span style={{background:"#7ecfb3",color:"#080608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{activeApps}</span>;})()}</>],["saved",<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span style={{whiteSpace:"nowrap"}}>Saved</span>{savedJobs.length>0&&<span style={{background:"#c9a84c",color:"#0a0608",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:800}}>{savedJobs.length}</span>}</>]].map(([id,cnt])=>
-            <button key={id} onClick={()=>{if((id==="applied"||id==="saved")&&guest){setShowLoginPopup(true);return;}setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{(id==="applied"||id==="saved")&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}</button>)}
+            <button key={id} onClick={()=>{if((id==="applied"||id==="saved")&&guest){setShowLoginPopup(true);return;}if(id==="saved"&&aiPulse.resume)markAiSeen("resume");if(id==="applied"&&aiPulse.interview)markAiSeen("interview");setTab(id);}} style={{background:tab===id?gBg:"none",border:tab===id?"1px solid rgba(201,168,76,.25)":"1px solid transparent",cursor:"pointer",color:tab===id?"#f0d080":"rgba(244,237,216,.45)",fontSize:11,fontWeight:600,padding:mobile?"7px 8px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative"}}>{cnt}{(id==="applied"||id==="saved")&&guest&&<I.Lock s={10} c="rgba(244,237,216,.35)"/>}{((id==="saved"&&aiPulse.resume)||(id==="applied"&&aiPulse.interview))&&<span title="Ready" style={{position:"absolute",top:-2,right:-2,width:10,height:10,borderRadius:"50%",background:"#c0321a",border:"2px solid #080608",animation:"pnew 1.5s ease-in-out infinite"}}/>}</button>)}
             {/* Journey Mode — special glowing tab (hidden while SHOW_JOURNEY_MODE is false) */}
             {SHOW_JOURNEY_MODE&&<button onClick={()=>{if(guest){setShowLoginPopup(true);return;}setTab("journey");}} style={{background:tab==="journey"?"linear-gradient(135deg,rgba(240,208,128,.25),rgba(232,97,58,.2))":"rgba(232,97,58,.06)",border:tab==="journey"?"1px solid rgba(240,208,128,.7)":"1px solid rgba(240,208,128,.4)",cursor:"pointer",color:tab==="journey"?"#ffe1a6":"#f0d080",fontSize:11,fontWeight:700,padding:mobile?"7px 9px":"6px 14px",borderRadius:8,display:"flex",alignItems:"center",gap:5,fontFamily:"'Cinzel',serif",letterSpacing:.3,transition:"all .2s",position:"relative",boxShadow:tab==="journey"?"0 0 14px rgba(240,208,128,.45)":"0 0 10px rgba(240,208,128,.25)",animation:"journeyGlow 2.6s ease-in-out infinite"}}><I.Compass s={12} c="currentColor"/><span style={{whiteSpace:"nowrap"}}>{compactBar?"Journey":"Journey Mode"}</span>{guest&&<I.Lock s={10} c="rgba(244,237,216,.4)"/>}</button>}
         </nav>
