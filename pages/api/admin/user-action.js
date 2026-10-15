@@ -11,7 +11,12 @@
 //   unban                               remove from banned_users
 //   scheduleDelete                      start the 14-day deletion window
 //   cancelDelete                        cancel a pending deletion
+//   resendVerification                  email an unverified user a fresh verify link + code (reminder)
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { sendVerificationEmail } from "../../../lib/resend";
+import crypto from "crypto";
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 
@@ -98,6 +103,32 @@ export default async function handler(req, res) {
       const { error } = await supabaseAdmin.from("profiles").update({ deletion_requested_at: null }).eq("id", userId);
       if (error) return res.status(500).json({ error: error.message || "update failed" });
       return res.status(200).json({ ok: true, cancelled: true });
+    }
+
+    if (action === "resendVerification") {
+      // Pull the user's email + current verified state from Supabase Auth.
+      let au;
+      try { au = await supabaseAdmin.auth.admin.getUserById(userId); } catch (e) {}
+      const user = au && au.data && au.data.user;
+      const email = user && user.email;
+      if (!email) return res.status(400).json({ error: "No email on file for this user." });
+      if (user.app_metadata && user.app_metadata.email_verified)
+        return res.status(200).json({ ok: true, already: true });
+
+      const d = await getData();
+      const name = d.name || "";
+      const token = crypto.randomUUID();
+      const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+      try {
+        await supabaseAdmin.from("email_verifications").insert({
+          token, code, user_id: userId, email,
+          expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        });
+        await sendVerificationEmail(email, name, `${SITE}/api/auth/verify-email?token=${token}`, code, true);
+      } catch (e) {
+        return res.status(500).json({ error: "Couldn't send the email: " + String((e && e.message) || e).slice(0, 180) });
+      }
+      return res.status(200).json({ ok: true, sent: true });
     }
 
     return res.status(400).json({ error: "Unknown action." });

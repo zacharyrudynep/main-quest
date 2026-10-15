@@ -35,11 +35,12 @@ export default async function handler(req, res) {
     const name = (prof && prof.name) || "";
 
     const token = crypto.randomUUID();
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
     await supabaseAdmin.from("email_verifications").insert({
-      token, user_id: uid, email,
+      token, code, user_id: uid, email,
       expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     });
-    await sendVerificationEmail(email, name, `${SITE}/api/auth/verify-email?token=${token}`);
+    await sendVerificationEmail(email, name, `${SITE}/api/auth/verify-email?token=${token}`, code);
 
     return res.status(200).json({ ok: true });
   } catch (e) {

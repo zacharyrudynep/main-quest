@@ -715,6 +715,8 @@ function AdminActions({ u, onChanged }) {
         {u.emailVerified
           ? <button disabled={busy} onClick={() => run("verifyEmail", { value: false })} style={btn(false)}>Un-verify</button>
           : <button disabled={busy} onClick={() => run("verifyEmail", { value: true })} style={btn(false)}>Mark verified</button>}
+        {!u.emailVerified &&
+          <button disabled={busy} onClick={() => run("resendVerification")} style={btn(false)} title="Email this user a verification reminder with a fresh link and code">Send verification reminder</button>}
       </div>
 
       <div style={sct}>

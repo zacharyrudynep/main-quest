@@ -895,7 +895,7 @@ function LoginPopup({onClose,onLogin}) {
         if(!_r.ok){setErr(_j.error||"Could not create account.");setLoading(false);return;}
         const {data,error}=await supabase.auth.signInWithPassword({email,password:pass});
         if(error){setErr("Account created - please sign in.");setLoading(false);return;}
-        onLogin({id:data.user.id,email,name,applied:{},profile:{tosVersion:TOS_VERSION,email_verified:false}});
+        window.location.href="/verify-email";return;
       }else{
         const _v=await fetch("/api/auth/verify-turnstile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:tsToken})}).then(r=>r.json()).catch(()=>({ok:true}));
         if(!_v.ok){setErr("Verification failed — please try again.");setLoading(false);return;}
@@ -1825,7 +1825,7 @@ function Auth({onLogin,onGuest}) {
         if (!_r.ok) { setErr(_j.error || "Could not create account."); setLoading(false); return; }
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) { setErr("Account created - please sign in."); setLoading(false); return; }
-        onLogin({ id: data.user.id, email, name, applied: {}, profile: { tosVersion: TOS_VERSION, email_verified: false } });
+        window.location.href = "/verify-email"; return;
       } else {
         const _v=await fetch("/api/auth/verify-turnstile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:tsToken})}).then(r=>r.json()).catch(()=>({ok:true}));
         if(!_v.ok){setErr("Verification failed — please try again.");setLoading(false);return;}
