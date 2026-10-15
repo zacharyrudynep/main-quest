@@ -28,7 +28,7 @@ async function lookupAccount({ token, email }) {
     email: authUser.email,
     created_at: authUser.created_at,
     last_sign_in_at: authUser.last_sign_in_at,
-    email_confirmed: !!(authUser.email_confirmed_at),
+    email_confirmed: !!(authUser.app_metadata && authUser.app_metadata.email_verified),
     profile,
   };
 }

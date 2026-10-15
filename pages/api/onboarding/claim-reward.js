@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const d = (prof && prof.data && typeof prof.data === "object") ? prof.data : {};
     if (d.onboardingRewarded) return res.status(200).json({ ok: true, alreadyClaimed: true, freeCredits: Number(d.freeAiCredits) || 0 });
 
-    const emailVerified = !!(u.user.email_confirmed_at || (u.user.app_metadata && u.user.app_metadata.email_verified) || d.email_verified);
+    const emailVerified = !!(u.user.app_metadata && u.user.app_metadata.email_verified);
     const isPlus = !!(prof && (prof.is_admin || prof.is_premium || prof.plan === "plus" || prof.plan === "premium" || (d.premiumUntil && Number(d.premiumUntil) > Date.now())));
     const status = onboardingComplete({ ...d, email_verified: emailVerified }, isPlus);
     if (!status.complete) return res.status(200).json({ ok: true, granted: false, reason: "not-complete", completeN: status.completeN, total: status.total });

@@ -23,7 +23,7 @@ export default async function handler(req, res) {
           email: au.email || "",
           created: au.created_at || null,
           lastSignIn: au.last_sign_in_at || null,
-          emailVerified: !!(au.email_confirmed_at || (au.app_metadata && au.app_metadata.email_verified)),
+          emailVerified: !!(au.app_metadata && au.app_metadata.email_verified),
         };
       }
       if (list.length < 1000) break;
