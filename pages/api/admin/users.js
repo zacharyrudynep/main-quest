@@ -66,6 +66,8 @@ export default async function handler(req, res) {
         notifyCompanies: Array.isArray(d.notifyCompanies) ? d.notifyCompanies : [],
         jobAlerts: d.jobAlerts || null,
         appliedCount: appliedBy[p.id] || 0,
+        student: !!(d.studentTrialRedeemed && d.premiumUntil && Number(d.premiumUntil) > Date.now()),
+        premiumUntil: d.premiumUntil || null,
       };
     });
 

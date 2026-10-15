@@ -182,7 +182,7 @@ export default function Admin() {
                     <Panel title="Who's signing up"><BarList rows={(s.segmentSplit||[]).map((x)=>({label:SEGMENT_LABELS[x.key]||x.key,count:x.count}))} empty="No segment data yet." plain /></Panel>
                     <Panel title="How they heard about us"><BarList rows={(s.heardSplit||[]).map((x)=>({label:HEARD_LABELS[x.key]||x.key,count:x.count}))} empty="No referral data yet." plain /></Panel>
                   </TwoCol>
-                  <UserDirectory data={usersData} status={usersStatus} q={uq} setQ={setUq} sel={selUser} setSel={setSelUser} />
+                  <UserDirectory data={usersData} status={usersStatus} q={uq} setQ={setUq} sel={selUser} setSel={setSelUser} onChanged={() => setUsersStatus("idle")} />
                 </>
               )}
 
@@ -521,7 +521,51 @@ function Field({ label, value }) {
   );
 }
 
-function UserDetail({ u, onBack }) {
+function PlanControl({ u, onChanged }) {
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+  const [days, setDays] = useState(30);
+  const current = u.student ? "student" : String(u.tier || "basic").toLowerCase();
+  async function setPlan(plan) {
+    setErr(""); setMsg(""); setBusy(plan);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      const r = await fetch("/api/admin/set-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: u.id, plan, days: plan === "student" ? (Number(days) || 30) : undefined }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { setErr(j.error || "Couldn't update plan."); return; }
+      setMsg(plan === "student" ? `Set to Student for ${j.days} days.` : `Set to ${plan.charAt(0).toUpperCase() + plan.slice(1)}.`);
+      if (onChanged) onChanged();
+    } catch (e) { setErr("Couldn't update plan."); }
+    finally { setBusy(""); }
+  }
+  const opts = [["basic", "Basic"], ["plus", "Plus"], ["premium", "Premium"], ["student", "Student"]];
+  const btn = (active) => ({ cursor: "pointer", borderRadius: 8, padding: "6px 13px", fontSize: 11.5, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3,
+    background: active ? "rgba(201,168,76,.2)" : "rgba(201,168,76,.06)",
+    border: `1px solid ${active ? "rgba(201,168,76,.6)" : "rgba(201,168,76,.2)"}`,
+    color: active ? "#f0d080" : "rgba(244,237,216,.6)" });
+  return (
+    <div style={{ margin: "14px 0 18px", padding: 14, background: "rgba(201,168,76,.04)", border: "1px solid rgba(201,168,76,.18)", borderRadius: 10 }}>
+      <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.7)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 8 }}>Admin — set plan</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center" }}>
+        {opts.map(([id, lbl]) => <button key={id} disabled={!!busy} onClick={() => setPlan(id)} style={{ ...btn(current === id), opacity: (busy && busy !== id) ? .5 : 1 }}>{busy === id ? "Saving…" : (current === id ? `● ${lbl}` : lbl)}</button>)}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 4 }}>
+          <input type="number" min="1" value={days} onChange={e => setDays(e.target.value)} title="Student trial length (days)" style={{ width: 56, background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 7, padding: "5px 8px", fontSize: 11.5, outline: "none" }} />
+          <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)" }}>days (Student)</span>
+        </span>
+      </div>
+      {u.student && u.premiumUntil ? <div style={{ fontSize: 10.5, color: "#7ecfb3", marginTop: 8 }}>🎓 Student trial active — ends {fmtDate(u.premiumUntil)}.</div> : null}
+      {err && <div style={{ fontSize: 11, color: "#e07060", marginTop: 8 }}>⚠ {err}</div>}
+      {msg && <div style={{ fontSize: 11, color: "#7ecfb3", marginTop: 8 }}>✓ {msg} The list will refresh.</div>}
+    </div>
+  );
+}
+function UserDetail({ u, onBack, onChanged }) {
   const L = u.links || {};
   const links = Object.entries(L).filter(([, v]) => v);
   const asList = (x) => Array.isArray(x) ? x.filter(Boolean) : (x ? String(x).split(/[,;]+/).map(s => s.trim()).filter(Boolean) : []);
@@ -537,6 +581,8 @@ function UserDetail({ u, onBack }) {
       </div>
       <div style={{ fontSize: 12.5, color: "rgba(244,237,216,.65)", marginBottom: 2 }}>{u.email || "—"}</div>
       <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>Joined {fmtDate(u.created)} · Last seen {fmtDate(u.lastSignIn)} · {u.appliedCount} application{u.appliedCount === 1 ? "" : "s"} · ID {u.id}</div>
+
+      <PlanControl u={u} onChanged={onChanged} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
         <Field label="Target Role" value={u.role} />
@@ -592,12 +638,12 @@ function UserDetail({ u, onBack }) {
   );
 }
 
-function UserDirectory({ data, status, q, setQ, sel, setSel }) {
+function UserDirectory({ data, status, q, setQ, sel, setSel, onChanged }) {
   if (status === "loading" || status === "idle") return <Panel title="Users"><div style={{ color: "rgba(244,237,216,.5)", fontSize: 13 }}>Loading users…</div></Panel>;
   if (status === "error") return <Panel title="Users"><div style={{ color: "#e07060", fontSize: 13 }}>Couldn’t load users.</div></Panel>;
   const all = (data && data.users) || [];
   const selU = sel ? all.find(u => u.id === sel) : null;
-  if (selU) return <Panel title="User detail"><UserDetail u={selU} onBack={() => setSel(null)} /></Panel>;
+  if (selU) return <Panel title="User detail"><UserDetail u={selU} onBack={() => setSel(null)} onChanged={onChanged} /></Panel>;
   const needle = q.trim().toLowerCase();
   const rows = needle
     ? all.filter(u => [u.name, u.email, u.role, u.skills, u.location].some(f => String(f || "").toLowerCase().includes(needle)))
