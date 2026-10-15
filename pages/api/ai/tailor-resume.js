@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { tailorDocx } from "../../../lib/docxTailor";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 import { generateText, aiErrText } from "../../../lib/gemini";
+import { logAiTxn } from "../../../lib/aiTxn";
 
 const LIMIT = 40; // shared monthly AI pool (ai_usage) — same currency as every other AI feature
 
@@ -45,6 +46,7 @@ async function processResumeJob(jobId, ctx) {
       const rewriteFn = async (mds) => {
         const numbered = mds.map((md, i) => `[${i + 1}] ${md}`).join("\n");
         const g = await generateText({ system: DOCX_SYSTEM, user: `${jobBlock}\n\nRESUME PARAGRAPHS:\n${numbered}\n\nReturn the same numbered lines, reworded per the rules.`, temperature: 0.4, maxOutputTokens: 8192, timeoutMs: 60000 });
+        await logAiTxn(supabaseAdmin, { userId: uid, kind: "resume", g });
         if (!g.ok) { fail = aiErrText(g); return null; }
         const map = {};
         for (const line of g.text.split(/\r?\n/)) { const m = line.match(/^\s*\[(\d+)\]\s?([\s\S]*)$/); if (m) map[+m[1]] = m[2].trim(); }
@@ -59,6 +61,7 @@ async function processResumeJob(jobId, ctx) {
     // Fallback: clean Markdown.
     if (!resumeMd) {
       const g = await generateText({ system: SYSTEM, user: `${jobBlock}\n\nCURRENT RESUME:\n"""\n${resumeText}\n"""\n\nReturn the tailored resume in clean Markdown only.`, temperature: 0.4, maxOutputTokens: 8192, timeoutMs: 60000 });
+      await logAiTxn(supabaseAdmin, { userId: uid, kind: "resume", g });
       if (!g.ok) { await setJobError(jobId, aiErrText(g)); return; }
       resumeMd = g.text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/i, "").trim();
       docxB64 = null;

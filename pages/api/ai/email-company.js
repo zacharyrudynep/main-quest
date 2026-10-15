@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 import { generateText, aiErrorResponse } from "../../../lib/gemini";
+import { logAiTxn } from "../../../lib/aiTxn";
 
 const LIMIT = 40; // shared monthly AI pool (ai_usage)
 
@@ -37,6 +38,7 @@ export default async function handler(req, res) {
     const prompt = `Company: ${company}\n\nWrite 1-2 sentences about this game company to use in a job application email.`;
 
     const g = await generateText({ system: sys, user: prompt, temperature: 0.5, maxOutputTokens: 800, timeoutMs: 20000 });
+    await logAiTxn(supabaseAdmin, { userId: u.user.id, kind: "email_company", g });
     if (!g.ok) return aiErrorResponse(res, g);
     const text = g.text.trim();
 

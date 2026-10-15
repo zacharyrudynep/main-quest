@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 import { generateText, aiErrorResponse } from "../../../lib/gemini";
+import { logAiTxn } from "../../../lib/aiTxn";
 
 const LIMIT = 40; // shared monthly AI pool (ai_usage)
 
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
     const prompt = `Applicant name: ${name || "(not provided)"}\n\nWrite the reusable email application template now, using {company} and {position} markers.`;
 
     const g = await generateText({ system: sys, user: prompt, temperature: 0.7, maxOutputTokens: 1200, timeoutMs: 25000, generationExtras: { thinkingConfig: { thinkingBudget: 0 } } });
+    await logAiTxn(supabaseAdmin, { userId: uid, kind: "email_template", g });
     if (!g.ok) return aiErrorResponse(res, g);
     const text = g.text.trim();
 

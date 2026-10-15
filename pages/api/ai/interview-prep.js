@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { aiAccess, consumeFreeCredit } from "../../../lib/entitlements";
 import { generateText, aiErrText } from "../../../lib/gemini";
+import { logAiTxn } from "../../../lib/aiTxn";
 
 const LIMIT = 40; // shared monthly AI pool (ai_usage)
 
@@ -32,6 +33,7 @@ async function processInterviewJob(jobId, ctx) {
     const prompt = `Role: ${title}\nCompany: ${company}\nLocation: ${location || "n/a"}\nKey requirements: ${requirements || "n/a"}\n\nCompany website text (may be empty or irrelevant):\n"""${siteText || "(none available)"}"""\n\nWrite the interview prep guide now.`;
 
     const g = await generateText({ system: sys, user: prompt, temperature: 0.6, maxOutputTokens: 2600, timeoutMs: 55000 });
+    await logAiTxn(supabaseAdmin, { userId: uid, kind: "interview", g });
     if (!g.ok) { await setJobError(jobId, aiErrText(g)); return; }
     const prep = g.text.trim();
 

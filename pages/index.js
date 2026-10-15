@@ -3623,6 +3623,20 @@ function UpgradeModal({user,onClose,plan}){
       if(d.url){window.location.href=d.url;}else{alert(d.error||"Couldn't start checkout.");setBusy("");}
     }catch(e){alert("Couldn't start checkout — please try again.");setBusy("");}
   };
+  const downgrade=async()=>{
+    if(!user||!user.id){onClose&&onClose();return;}
+    if(typeof window!=="undefined"&&!window.confirm("Downgrade to the free Basic plan? A paid subscription stays active until the end of your current billing period.")) return;
+    setBusy("downgrade");
+    try{
+      const {data}=await supabase.auth.getSession();
+      const token=data&&data.session&&data.session.access_token;
+      const r=await fetch("/api/stripe/downgrade",{method:"POST",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({userId:user.id})});
+      const d=await r.json();
+      if(d.url){window.location.href=d.url;return;}
+      if(d.ok){if(typeof window!=="undefined")window.location.reload();return;}
+      alert(d.error||"Couldn't downgrade.");setBusy("");
+    }catch(e){alert("Couldn't downgrade — please try again.");setBusy("");}
+  };
   const gold="linear-gradient(135deg,#c9a84c,#e8613a)";
   const plusPrices={monthly:"$3.99",yearly:"$39.99"};
   const premPrices={monthly:"$7.99",yearly:"$79.99",lifetime:"$189.99"};
@@ -3644,7 +3658,7 @@ function UpgradeModal({user,onClose,plan}){
           <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:800,color:"#f0d080",marginBottom:6}}>Basic</div>
           <div style={{marginBottom:14}}><span style={{fontSize:26,fontWeight:800,color:"#f4edd8",fontFamily:"'Cinzel',serif"}}>Free</span></div>
           <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18,flex:1}}>{["Full job board access","Apply & track applications","Follow 5 companies for alerts","Job match score"].map((f,i)=><div key={i} style={{display:"flex",gap:7,fontSize:12,color:"rgba(244,237,216,.72)",lineHeight:1.4}}><span style={{color:"#7ecfb3",flexShrink:0}}>✓</span>{f}</div>)}</div>
-          <div style={{textAlign:"center",padding:"10px",fontSize:11,color:"rgba(244,237,216,.4)",border:"1px solid rgba(201,168,76,.12)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>{isCur?"Current plan":"Included"}</div>
+          {isCur?<div style={{textAlign:"center",padding:"10px",fontSize:12,fontWeight:700,color:"rgba(244,237,216,.5)",border:"1px solid rgba(201,168,76,.15)",borderRadius:10,fontFamily:"'Cinzel',serif"}}>Current plan</div>:<button onClick={downgrade} disabled={!!busy} style={{width:"100%",background:"rgba(244,237,216,.06)",border:"1px solid rgba(244,237,216,.25)",color:"rgba(244,237,216,.75)",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",opacity:busy?.7:1}}>{busy==="downgrade"?"…":"Downgrade"}</button>}
         </div>;})()}
         {/* PLUS */}
         {(()=>{const isCur=currentPlan==="plus";const canBuy=rank.plus>rank[currentPlan];return <div style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.4)",borderRadius:14,padding:"22px 18px 18px",display:"flex",flexDirection:"column"}}>
@@ -5603,7 +5617,7 @@ export default function App() {
     {showAcct&&user&&<AccountPanel key={acctInitTab||"profile"} initialTab={acctInitTab} user={user} onClose={()=>{setShowAcct(false);setAcctInitTab(null);}} onUpdate={updateUser} onPatch={patchProfile} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appIsPlus} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPlus={appIsPlus} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
-    {showUpgrade&&!appPremium&&<UpgradeModal user={user} plan={appPlan} onClose={()=>setShowUpgrade(false)}/>}
+    {showUpgrade&&<UpgradeModal user={user} plan={appPlan} onClose={()=>setShowUpgrade(false)}/>}
     {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}

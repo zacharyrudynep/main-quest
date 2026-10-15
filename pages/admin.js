@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"], ["tools", "Tools"]];
+const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"], ["aitx", "AI Transactions"], ["tools", "Tools"]];
 const COUNTRY_NAMES = { US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", NL:"Netherlands", SE:"Sweden", FI:"Finland", NO:"Norway", DK:"Denmark", PL:"Poland", ES:"Spain", IT:"Italy", IE:"Ireland", PT:"Portugal", BE:"Belgium", CH:"Switzerland", AT:"Austria", CZ:"Czechia", RO:"Romania", UA:"Ukraine", RU:"Russia", TR:"Turkey", JP:"Japan", KR:"South Korea", CN:"China", IN:"India", SG:"Singapore", PH:"Philippines", ID:"Indonesia", MY:"Malaysia", TH:"Thailand", VN:"Vietnam", AU:"Australia", NZ:"New Zealand", BR:"Brazil", MX:"Mexico", AR:"Argentina", CL:"Chile", CO:"Colombia", ZA:"South Africa", NG:"Nigeria", EG:"Egypt", KE:"Kenya", IL:"Israel", AE:"UAE", SA:"Saudi Arabia", PK:"Pakistan", BD:"Bangladesh", HK:"Hong Kong", TW:"Taiwan", GR:"Greece", HU:"Hungary", BG:"Bulgaria", HR:"Croatia", RS:"Serbia", SK:"Slovakia", SI:"Slovenia", LT:"Lithuania", LV:"Latvia", EE:"Estonia", IS:"Iceland", LU:"Luxembourg" };
 const SEGMENT_LABELS = { student: "Student", grad: "Post Grad", veteran: "Industry Veteran" };
 const HEARD_LABELS = { linkedin: "LinkedIn", google: "Google / Search", word_of_mouth: "Word of mouth", school: "School / University", other: "Other" };
@@ -22,6 +22,8 @@ export default function Admin() {
   const [revStatus, setRevStatus] = useState("idle");
   const [eng, setEng] = useState(null);
   const [engStatus, setEngStatus] = useState("idle");
+  const [aitx, setAitx] = useState(null);
+  const [aitxStatus, setAitxStatus] = useState("idle");
   const [usersData, setUsersData] = useState(null);
   const [usersStatus, setUsersStatus] = useState("idle");
   const [uq, setUq] = useState("");
@@ -41,6 +43,21 @@ export default function Admin() {
       } catch (e) { setEngStatus("error"); }
     })();
   }, [tab, engStatus]); // idle | loading | ready | error
+
+  useEffect(() => {
+    if (tab !== "aitx" || aitxStatus !== "idle") return;
+    setAitxStatus("loading");
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/ai-transactions", { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { setAitxStatus("error"); return; }
+        setAitx(await r.json());
+        setAitxStatus("ready");
+      } catch (e) { setAitxStatus("error"); }
+    })();
+  }, [tab, aitxStatus]);
 
   useEffect(() => {
     if (tab !== "revenue" || revStatus !== "idle") return;
@@ -244,6 +261,8 @@ export default function Admin() {
                 </>
               )}
 
+              {tab === "aitx" && <AiTransactionsPanel data={aitx} status={aitxStatus} />}
+
               {tab === "tools" && (
                 <>
                   <PolicyEmailPanel />
@@ -258,6 +277,93 @@ export default function Admin() {
           )}
         </div>
       </div>
+    </>
+  );
+}
+
+function AiTransactionsPanel({ data, status }) {
+  if (status === "loading" || status === "idle") return <Panel title="AI Transactions"><div style={{ color: "rgba(244,237,216,.5)", fontSize: 13 }}>Loading AI transactions…</div></Panel>;
+  if (status === "error") return <Panel title="AI Transactions"><Note>Couldn't load AI transactions. Make sure the <code>ai_transactions</code> table exists (run its migration).</Note></Panel>;
+  const st = (data && data.stats) || {};
+  const kinds = (st.byKind) || {};
+  const KLBL = { resume: "Resume tailor", interview: "Interview prep", email_company: "Company blurb", email_template: "Email template", other: "Other" };
+  const money = (n) => "$" + (Number(n || 0)).toFixed(Number(n || 0) < 1 ? 4 : 2);
+  const txns = (data && data.transactions) || [];
+  const topUsers = (data && data.topUsers) || [];
+  const fmtTime = (d) => { try { return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch { return "—"; } };
+  const th = { fontSize: 9.5, color: "rgba(201,168,76,.7)", textTransform: "uppercase", letterSpacing: .5, fontFamily: "'Cinzel',serif", textAlign: "left", padding: "6px 8px", whiteSpace: "nowrap" };
+  const td = { fontSize: 11.5, color: "rgba(244,237,216,.8)", padding: "6px 8px", borderTop: "1px solid rgba(201,168,76,.07)", whiteSpace: "nowrap" };
+  return (
+    <>
+      <TwoCol>
+        <KpiBox label="Attempts" value={st.total || 0} sub={`last ${st.window || 0} logged`} />
+        <KpiBox label="Success rate" value={(st.successRate || 0) + "%"} sub={`${st.success || 0} ok · ${st.failed || 0} failed`} accent="#7ecfb3" />
+        <KpiBox label="Est. API cost" value={money(st.totalCost)} sub="Google API — estimated" accent="#f0a050" />
+        <KpiBox label="Tokens used" value={(st.totalTokens || 0).toLocaleString()} sub="prompt + output" />
+      </TwoCol>
+
+      <Panel title="By feature">
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr><th style={th}>Feature</th><th style={th}>Attempts</th><th style={th}>Success</th><th style={th}>Failed</th><th style={th}>Tokens</th><th style={th}>Est. cost</th></tr></thead>
+            <tbody>
+              {Object.keys(kinds).filter(k => kinds[k].count > 0).sort((a, b) => kinds[b].count - kinds[a].count).map(k => (
+                <tr key={k}>
+                  <td style={{ ...td, color: "#f0d080", fontWeight: 600 }}>{KLBL[k] || k}</td>
+                  <td style={td}>{kinds[k].count}</td>
+                  <td style={{ ...td, color: "#7ecfb3" }}>{kinds[k].success}</td>
+                  <td style={{ ...td, color: kinds[k].failed ? "#e07060" : "rgba(244,237,216,.4)" }}>{kinds[k].failed}</td>
+                  <td style={td}>{(kinds[k].tokens || 0).toLocaleString()}</td>
+                  <td style={td}>{money(kinds[k].cost)}</td>
+                </tr>
+              ))}
+              {Object.keys(kinds).filter(k => kinds[k].count > 0).length === 0 && <tr><td style={td} colSpan={6}>No AI transactions yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      {topUsers.length > 0 && (
+        <Panel title="Top users by AI usage">
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr><th style={th}>User</th><th style={th}>Attempts</th><th style={th}>Failed</th><th style={th}>Est. cost</th></tr></thead>
+              <tbody>
+                {topUsers.map(u => (
+                  <tr key={u.userId}>
+                    <td style={{ ...td, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>{u.email || u.userId.slice(0, 8) + "…"}</td>
+                    <td style={td}>{u.count}</td>
+                    <td style={{ ...td, color: u.failed ? "#e07060" : "rgba(244,237,216,.4)" }}>{u.failed}</td>
+                    <td style={td}>{money(u.cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
+
+      <Panel title={`Recent transactions (${txns.length})`}>
+        <div style={{ overflowX: "auto", maxHeight: 520, overflowY: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr><th style={th}>Time</th><th style={th}>User</th><th style={th}>Feature</th><th style={th}>Status</th><th style={th}>Tokens</th><th style={th}>Est. cost</th></tr></thead>
+            <tbody>
+              {txns.map(t => (
+                <tr key={t.id} title={t.error || ""}>
+                  <td style={{ ...td, color: "rgba(244,237,216,.5)" }}>{fmtTime(t.created)}</td>
+                  <td style={{ ...td, maxWidth: 190, overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</td>
+                  <td style={{ ...td, color: "#f0d080" }}>{KLBL[t.kind] || t.kind}</td>
+                  <td style={td}>{t.success ? <span style={{ color: "#7ecfb3", fontWeight: 700 }}>✓ Success</span> : <span style={{ color: "#e07060", fontWeight: 700 }}>✗ Failed</span>}</td>
+                  <td style={td}>{(t.tokens || 0).toLocaleString()}</td>
+                  <td style={td}>{money(t.cost)}</td>
+                </tr>
+              ))}
+              {txns.length === 0 && <tr><td style={td} colSpan={6}>No AI transactions yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontSize: 10, color: "rgba(244,237,216,.35)", marginTop: 8, lineHeight: 1.5 }}>Cost is estimated from Gemini-reported tokens × your configured per-token price (GEMINI_PRICE_IN_PER_M / GEMINI_PRICE_OUT_PER_M). Each row is one billed generation attempt; a single resume tailor may log two attempts if it falls back from the formatted path.</div>
+      </Panel>
     </>
   );
 }
@@ -750,7 +856,7 @@ function UserDirectory({ data, status, q, setQ, sel, setSel, onChanged }) {
             <div key={u.id} onClick={() => setSel(u.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, cursor: "pointer", borderBottom: "1px solid rgba(201,168,76,.06)" }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(201,168,76,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, color: "#f4edd8", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name || "(no name)"} {!u.emailVerified && <span title="Email unverified" style={{ color: "#e07060", fontSize: 10 }}>✗</span>}</div>
+                <div style={{ fontSize: 12.5, color: "#f4edd8", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name || "(no name)"} {u.emailVerified ? <span title="Email verified" style={{ color: "#7ecfb3", fontSize: 10 }}>✓</span> : <span title="Email unverified" style={{ color: "#e07060", fontSize: 10 }}>✗</span>}</div>
                 <div style={{ fontSize: 11, color: "rgba(244,237,216,.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}{u.role ? ` · ${u.role}` : ""}</div>
               </div>
               <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", whiteSpace: "nowrap" }}>{u.appliedCount > 0 ? `${u.appliedCount} app${u.appliedCount === 1 ? "" : "s"}` : ""}</span>
