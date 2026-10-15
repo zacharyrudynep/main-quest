@@ -31,6 +31,14 @@ export default async function handler(req, res) {
     if (recent && Date.now() - new Date(recent.created_at).getTime() < 60000)
       return res.status(429).json({ error: "Please wait a minute before requesting another email." });
 
+    // Accounts created outside the admin signup path (e.g. the /join flow uses
+    // supabase.auth.signUp directly) have no email_verified flag yet. Normalize it to
+    // false so the feature gate + admin list treat them as unverified until they confirm.
+    try {
+      if (!(u.user.app_metadata && u.user.app_metadata.email_verified === true))
+        await supabaseAdmin.auth.admin.updateUserById(uid, { app_metadata: { email_verified: false } });
+    } catch (e) {}
+
     const { data: prof } = await supabaseAdmin.from("profiles").select("name").eq("id", uid).maybeSingle();
     const name = (prof && prof.name) || "";
 
