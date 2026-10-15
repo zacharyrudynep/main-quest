@@ -319,26 +319,26 @@ const FOREIGN_COUNTRIES = new Set(["thailand","ireland","united kingdom","uk","u
 // then continents; each continent expands into its countries.
 const COUNTRY_CONTINENT = {
   "Cameroon":"Africa","Mauritius":"Africa","Rwanda":"Africa",
-  "Albania":"Europe","Algeria":"Africa","Argentina":"South America","Armenia":"Asia","Australia":"Oceania",
+  "Albania":"Europe","Algeria":"Africa","Argentina":"Latin/South America","Armenia":"Asia","Australia":"Oceania",
   "Austria":"Europe","Azerbaijan":"Asia","Bahrain":"Asia","Bangladesh":"Asia","Belarus":"Europe","Belgium":"Europe",
-  "Bolivia":"South America","Bosnia and Herzegovina":"Europe","Brazil":"South America","Bulgaria":"Europe",
-  "Cambodia":"Asia","Chile":"South America","China":"Asia","Colombia":"South America","Costa Rica":"Latin America","El Salvador":"Latin America",
-  "Croatia":"Europe","Cyprus":"Europe","Czechia":"Europe","Denmark":"Europe","Ecuador":"South America",
+  "Bolivia":"Latin/South America","Bosnia and Herzegovina":"Europe","Brazil":"Latin/South America","Bulgaria":"Europe",
+  "Cambodia":"Asia","Chile":"Latin/South America","China":"Asia","Colombia":"Latin/South America","Costa Rica":"Latin/South America","El Salvador":"Latin/South America",
+  "Croatia":"Europe","Cyprus":"Europe","Czechia":"Europe","Denmark":"Europe","Ecuador":"Latin/South America",
   "Egypt":"Africa","Estonia":"Europe","Ethiopia":"Africa","Finland":"Europe","France":"Europe",
-  "Georgia (country)":"Asia","Germany":"Europe","Ghana":"Africa","Greece":"Europe","Guatemala":"Latin America",
+  "Georgia (country)":"Asia","Germany":"Europe","Ghana":"Africa","Greece":"Europe","Guatemala":"Latin/South America",
   "Hong Kong":"Asia","Hungary":"Europe","Iceland":"Europe","India":"Asia","Indonesia":"Asia","Ireland":"Europe",
   "Israel":"Asia","Italy":"Europe","Japan":"Asia","Jordan":"Asia","Kazakhstan":"Asia","Kenya":"Africa",
   "Kuwait":"Asia","Laos":"Asia","Latvia":"Europe","Lebanon":"Asia","Lithuania":"Europe","Luxembourg":"Europe",
-  "Macau":"Asia","Malaysia":"Asia","Malta":"Europe","Mexico":"Latin America","Moldova":"Europe","Mongolia":"Asia",
+  "Macau":"Asia","Malaysia":"Asia","Malta":"Europe","Mexico":"Latin/South America","Moldova":"Europe","Mongolia":"Asia",
   "Montenegro":"Europe","Morocco":"Africa","Myanmar":"Asia","Nepal":"Asia","Netherlands":"Europe",
   "New Zealand":"Oceania","Nigeria":"Africa","North Korea":"Asia","North Macedonia":"Europe","Norway":"Europe",
-  "Oman":"Asia","Pakistan":"Asia","Panama":"Latin America","Paraguay":"South America","Peru":"South America",
+  "Oman":"Asia","Pakistan":"Asia","Panama":"Latin/South America","Paraguay":"Latin/South America","Peru":"Latin/South America",
   "Philippines":"Asia","Poland":"Europe","Portugal":"Europe","Qatar":"Asia","Romania":"Europe","Russia":"Europe",
   "Saudi Arabia":"Asia","Serbia":"Europe","Singapore":"Asia","Slovakia":"Europe","Slovenia":"Europe",
   "South Africa":"Africa","South Korea":"Asia","Spain":"Europe","Sri Lanka":"Asia","Sweden":"Europe",
   "Switzerland":"Europe","Taiwan":"Asia","Tanzania":"Africa","Thailand":"Asia","Tunisia":"Africa","Turkey":"Asia",
   "Uganda":"Africa","Ukraine":"Europe","United Arab Emirates":"Asia","United Kingdom":"Europe",
-  "Uruguay":"South America","Uzbekistan":"Asia","Venezuela":"South America","Vietnam":"Asia",
+  "Uruguay":"Latin/South America","Uzbekistan":"Asia","Venezuela":"Latin/South America","Vietnam":"Asia",
 };
 // Raw country tokens (and spellings/abbreviations) seen in job locations,
 // normalised to the canonical country name used above.
@@ -449,8 +449,8 @@ const CITY_COUNTRY = {
   "łódź":"Poland",
 };
 // Order the top-level tabs are rendered in, and their short badge label.
-const REGION_ORDER = ["United States","Canada","Remote","Europe","Asia","South America","Latin America","Oceania","Africa"];
-const REGION_BADGE = {"United States":"US","Canada":"CA","Remote":"RM","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","South America":"SA","Latin America":"LA"};
+const REGION_ORDER = ["United States","Canada","Remote","Europe","Asia","Latin/South America","Oceania","Africa"];
+const REGION_BADGE = {"United States":"US","Canada":"CA","Remote":"RM","Europe":"EU","Asia":"AS","Africa":"AF","Oceania":"OC","Latin/South America":"LAT"};
 // Is this top-level key a continent (vs. United States / Canada)?
 const isContinent = (k)=>k!=="United States"&&k!=="Canada";
 // Country options for the profile — US/Canada first, then every country the app knows.

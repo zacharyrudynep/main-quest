@@ -928,7 +928,7 @@ function StudentCodePanel() {
       {status === "loading" && <div style={{ color: "rgba(244,237,216,.5)", fontSize: 12, marginBottom: 14 }}>Loading…</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-        <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Code</label><input style={inp} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="BREAKINGIN" /></div>
+        <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Code</label><input style={{ ...inp, textTransform: "uppercase" }} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="BREAKINGIN" /></div>
         <div><label style={lbl}>Days granted</label><input style={inp} type="number" value={form.daysGranted} onChange={e => setForm(f => ({ ...f, daysGranted: e.target.value }))} /></div>
         <div><label style={lbl}>Max redemptions (blank = ∞)</label><input style={inp} type="number" value={form.maxRedemptions} onChange={e => setForm(f => ({ ...f, maxRedemptions: e.target.value }))} placeholder="∞" /></div>
         <div><label style={lbl}>Expires (blank = never)</label><input style={inp} type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} /></div>
