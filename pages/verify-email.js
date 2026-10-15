@@ -141,10 +141,6 @@ export default function VerifyEmail() {
             Waiting for verification…
           </div>
 
-          <button onClick={manualCheck} disabled={checking} style={{ width: "100%", border: "none", borderRadius: 11, padding: 14, fontSize: 13.5, fontWeight: 800, fontFamily: "'Cinzel',serif", letterSpacing: .5, background: "linear-gradient(135deg,#c9a84c,#f0d080)", color: "#0a0608", cursor: checking ? "default" : "pointer", boxShadow: "0 6px 22px rgba(201,168,76,.3)", opacity: checking ? .7 : 1, marginBottom: 10 }}>
-            {checking ? "Checking…" : "I've verified — continue"}
-          </button>
-
           <button onClick={resend} disabled={cooldown > 0} style={{ width: "100%", background: "rgba(244,237,216,.05)", border: "1px solid rgba(201,168,76,.22)", color: cooldown > 0 ? "rgba(244,237,216,.4)" : "#f0d080", cursor: cooldown > 0 ? "default" : "pointer", borderRadius: 11, padding: 12, fontSize: 12.5, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3 }}>
             {cooldown > 0 ? `Resend email (${cooldown}s)` : "Resend email"}
           </button>

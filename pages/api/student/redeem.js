@@ -2,7 +2,7 @@
 // Verifies the school-email OTP + the student code, enforces one-per-account and
 // one-per-school-email, then grants a Premium trial for `days_granted` days.
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { normEmail } from "../../../lib/entitlements";
+import { normEmail, isAcademicEmail } from "../../../lib/entitlements";
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -18,7 +18,16 @@ export default async function handler(req, res) {
     const email = normEmail(req.body && req.body.email);
     const otp = String((req.body && req.body.otp) || "").trim();
     const code = String((req.body && req.body.code) || "").trim();
-    if (!email || !otp || !code) return res.status(400).json({ error: "Missing code, email, or verification code." });
+
+    // If the school email they're redeeming with IS the account's own email, and that
+    // account is already email-verified and the address is academic, the main email
+    // verification has already proven ownership — so we skip the separate OTP step.
+    const acctEmail = normEmail(u.user.email);
+    const selfVerified = !!email && email === acctEmail && isAcademicEmail(email) &&
+      !!(u.user.app_metadata && u.user.app_metadata.email_verified === true);
+
+    if (!email || !code) return res.status(400).json({ error: "Missing code or email." });
+    if (!selfVerified && !otp) return res.status(400).json({ error: "Missing verification code." });
 
     // ── verify the student code is still valid ──
     const { data: cr } = await supabaseAdmin.from("student_codes").select("*").ilike("code", code).maybeSingle();
@@ -26,15 +35,17 @@ export default async function handler(req, res) {
     if (cr.expires_at && new Date(cr.expires_at) < new Date()) return res.status(400).json({ error: "That code has expired." });
     if (cr.max_redemptions != null && (cr.redeemed_count || 0) >= cr.max_redemptions) return res.status(400).json({ error: "That code has reached its redemption limit." });
 
-    // ── verify the OTP ──
-    const { data: otpRow } = await supabaseAdmin.from("student_email_otps").select("*").eq("email", email).maybeSingle();
-    if (!otpRow) return res.status(400).json({ error: "No code on file for that email — request a new one." });
-    if (new Date(otpRow.expires_at) < new Date()) return res.status(400).json({ error: "That verification code has expired — request a new one." });
-    if ((otpRow.attempts || 0) >= 5) return res.status(429).json({ error: "Too many attempts — request a new code." });
-    const hash = crypto.createHash("sha256").update(otp + "|" + (process.env.CRON_SECRET || "mq")).digest("hex");
-    if (hash !== otpRow.code_hash) {
-      await supabaseAdmin.from("student_email_otps").update({ attempts: (otpRow.attempts || 0) + 1 }).eq("email", email);
-      return res.status(400).json({ error: "That verification code is incorrect." });
+    // ── verify the OTP (skipped when the account's own verified email is the school email) ──
+    if (!selfVerified) {
+      const { data: otpRow } = await supabaseAdmin.from("student_email_otps").select("*").eq("email", email).maybeSingle();
+      if (!otpRow) return res.status(400).json({ error: "No code on file for that email — request a new one." });
+      if (new Date(otpRow.expires_at) < new Date()) return res.status(400).json({ error: "That verification code has expired — request a new one." });
+      if ((otpRow.attempts || 0) >= 5) return res.status(429).json({ error: "Too many attempts — request a new code." });
+      const hash = crypto.createHash("sha256").update(otp + "|" + (process.env.CRON_SECRET || "mq")).digest("hex");
+      if (hash !== otpRow.code_hash) {
+        await supabaseAdmin.from("student_email_otps").update({ attempts: (otpRow.attempts || 0) + 1 }).eq("email", email);
+        return res.status(400).json({ error: "That verification code is incorrect." });
+      }
     }
 
     // ── re-check eligibility right before granting ──

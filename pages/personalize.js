@@ -31,6 +31,14 @@ const HEARD = [
 
 const PROGRESS = { segment: 12, student: 30, tier: 30, heard: 50, roles: 68, openTo: 84, country: 96 };
 
+// Mirrors lib/entitlements.isAcademicEmail (kept inline so this stays a pure client file).
+// If the account was created with a school email, the main email verification already
+// proved they own it — so the student school-email OTP step is redundant.
+const isAcademicEmail = (e) => {
+  const d = String(e || "").toLowerCase().trim().split("@")[1] || "";
+  return /(^|\.)edu$/.test(d) || /\.edu\.[a-z]{2,3}$/.test(d) || /\.ac\.[a-z]{2,3}$/.test(d);
+};
+
 export default function Personalize() {
   const router = useRouter();
   const [view, setView] = useState("segment"); // segment|student|tier|heard|roles|openTo|country
@@ -123,10 +131,30 @@ export default function Personalize() {
     try {
       const r = await fetch("/api/student/validate-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code.trim() }) });
       const j = await r.json();
-      if (j.valid) setScodeStep("email");
-      else setScodeErr(j.reason || "That code isn't valid.");
+      if (j.valid) {
+        // If they signed up with a (now-verified) school email, skip the redundant
+        // school-email OTP and redeem straight away using that address.
+        if (isAcademicEmail(userEmail)) { await redeemSelf(); }
+        else setScodeStep("email");
+      } else setScodeErr(j.reason || "That code isn't valid.");
     } catch (e) { setScodeErr("Couldn't check that code — try again."); }
     finally { setScodeBusy(false); }
+  }
+  // Redeem using the account's own verified school email — no separate OTP needed.
+  async function redeemSelf() {
+    setScodeErr("");
+    try {
+      const token = await getToken();
+      const r = await fetch("/api/student/redeem", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ email: userEmail, code: code.trim() }) });
+      const j = await r.json();
+      if (r.ok) { setSchoolEmail(userEmail); setGranted(true); setScodeStep("done"); }
+      else {
+        // Couldn't auto-verify (e.g. email already used elsewhere) — fall back to the
+        // manual school-email step so they can use a different address.
+        setScodeErr(j.error || "");
+        setScodeStep("email");
+      }
+    } catch (e) { setScodeStep("email"); }
   }
   async function sendOtp() {
     setScodeErr(""); setScodeBusy(true);

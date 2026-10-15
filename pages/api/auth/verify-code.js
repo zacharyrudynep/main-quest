@@ -23,19 +23,25 @@ export default async function handler(req, res) {
     const code = String(b.code || "").trim().replace(/\s+/g, "");
     if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: "Enter the 6-digit code from your email." });
 
-    // Match an unused, unexpired code for this user.
-    const { data: row } = await supabaseAdmin
+    // Pull this user's unused verification rows and match the code in JS. We do NOT
+    // order by created_at here — that column may not exist on the table, and ordering by
+    // a missing column makes PostgREST error and return nothing, which would make EVERY
+    // code look wrong while the link still works. Normalizing with padStart also makes
+    // the match immune to the `code` column being numeric (which would drop a leading 0).
+    const { data: rows, error: qErr } = await supabaseAdmin
       .from("email_verifications")
-      .select("id,expires_at,used_at")
+      .select("id,code,expires_at,used_at")
       .eq("user_id", uid)
-      .eq("code", code)
       .is("used_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(100);
+    if (qErr) return res.status(500).json({ error: "Could not verify the code. Please try again." });
 
-    if (!row) return res.status(400).json({ error: "That code is incorrect. Double-check it, or resend a new one." });
-    if (row.expires_at && new Date(row.expires_at).getTime() < Date.now())
+    const norm = (v) => String(v == null ? "" : v).trim().padStart(6, "0");
+    const matches = (rows || []).filter((r) => norm(r.code) === code);
+    if (matches.length === 0)
+      return res.status(400).json({ error: "That code is incorrect. Double-check it, or resend a new one." });
+    const row = matches.find((r) => !r.expires_at || new Date(r.expires_at).getTime() > Date.now());
+    if (!row)
       return res.status(400).json({ error: "That code has expired. Resend a new one and try again." });
 
     // Flip the authoritative flag + the profile mirror.
