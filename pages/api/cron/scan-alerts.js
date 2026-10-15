@@ -1,59 +1,48 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { effectiveTier } from "../../../lib/entitlements";
 import { fetchAllJobs } from "../../../lib/atsLite";
-import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib/matchAlert";
 import { sendJobAlertEmail } from "../../../lib/resend";
 import { heartbeat } from "../../../lib/heartbeat";
 
-// Runs once a day (see vercel.json). For each premium user with job alerts, finds
-// newly-matching postings, emails them, and drops the matches into their on-site
-// inbox. De-dups via a per-user `emailedKeys` list so nobody is pinged twice.
+// Daily scan: company-follow (bell) alerts for every tier.
+//
+// EGRESS NOTE: reads ONLY the follow/delivery/dedup keys from each profile's `data`
+// (never resumeText / work history). Writes re-read the one user's full data first so
+// nothing else is overwritten.
 export default async function handler(req, res){
-  // Vercel Cron sends "Authorization: Bearer <CRON_SECRET>" automatically when the
-  // CRON_SECRET env var is set. We also accept ?key= for manual test runs.
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.authorization || "";
   const authorized = secret && (auth === `Bearer ${secret}` || req.query.key === secret);
   if(secret && !authorized) return res.status(401).json({ error: "unauthorized" });
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://main-quest-beta.vercel.app";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://mainquestjobs.com";
   const started = Date.now();
 
   try{
-    // 1) Users who have followed companies (any tier) OR a premium alert wizard.
+    // Lightweight read: just the keys needed to decide and dedup.
     const { data: profiles, error } = await supabaseAdmin
-      .from("profiles").select("id,name,data,is_premium,plan");
+      .from("profiles")
+      .select("id,name,notifyCompanies:data->notifyCompanies,emailJobAlerts:data->emailJobAlerts,notifications:data->notifications,emailedKeys:data->emailedKeys,seenInboxKeys:data->seenInboxKeys,inbox:data->inbox");
     if(error) throw error;
-    const candidates = (profiles || []).filter(p => {
-      const d = p.data || {};
-      const hasFollows = Array.isArray(d.notifyCompanies) && d.notifyCompanies.length > 0;
-      const hasWizard = effectiveTier(p).isPremium && alertHasCriteria(d.jobAlerts);
-      return hasFollows;
-    });
+    const candidates = (profiles || []).filter(p => Array.isArray(p.notifyCompanies) && p.notifyCompanies.length > 0);
     if(candidates.length === 0){
       await heartbeat("scan-alerts", true, "no users with company follows");
       return res.status(200).json({ ok: true, users: 0, note: "no users with company follows" });
     }
 
-    // 2) Fetch all current jobs once (shared across users).
     const jobs = await fetchAllJobs(base);
 
     let emailedUsers = 0, totalNew = 0;
     for(const p of candidates){
-      const d = p.data || {};
-      const emailOn = d.emailJobAlerts !== false;   // email delivery toggle (default on)
-      const inAppOn = d.notifications !== false;     // inbox delivery toggle (default on)
-      if(!emailOn && !inAppOn) continue;             // both channels off — nothing to deliver
+      const emailOn = p.emailJobAlerts !== false;   // email delivery toggle (default on)
+      const inAppOn = p.notifications !== false;     // inbox delivery toggle (default on)
+      if(!emailOn && !inAppOn) continue;
 
-      const alerts = asAlertArray(d.jobAlerts);
-      const wizardOn = effectiveTier(p).isPremium && alertHasCriteria(alerts);
-      const followed = (d.notifyCompanies || []).map(c => String(c).toLowerCase());
-      const emailedKeys = new Set(d.emailedKeys || []);
-      const inbox = d.inbox || [];
-      const seenKeys = new Set(d.seenInboxKeys || []);
+      const followed = (p.notifyCompanies || []).map(c => String(c).toLowerCase());
+      const emailedKeys = new Set(p.emailedKeys || []);
+      const inbox = p.inbox || [];
+      const seenKeys = new Set(p.seenInboxKeys || []);
       inbox.forEach(n => n.jobKey && seenKeys.add(n.jobKey));
 
-      // Every current posting that matches a followed company or the premium wizard.
       const allMatches = [];
       for(const j of jobs){
         const followHit = followed.length && followed.includes((j.company || "").toLowerCase());
@@ -63,22 +52,20 @@ export default async function handler(req, res){
       }
       if(allMatches.length === 0) continue;
 
-      // Email: only postings not emailed to this user before (capped), if the toggle is on.
       if(emailOn){
         const toEmail = allMatches.filter(m => !emailedKeys.has(m.jobKey)).slice(0, 25);
         if(toEmail.length){
           toEmail.forEach(m => emailedKeys.add(m.jobKey));
           let email = null;
           try{ const u = await supabaseAdmin.auth.admin.getUserById(p.id); email = (u && u.data && u.data.user && u.data.user.email) || null; }
-          catch(e){ /* no email → skip send */ }
+          catch(e){}
           if(email){
             try{ await sendJobAlertEmail(email, p.name || "", toEmail); emailedUsers++; }
-            catch(e){ /* send failed → keys still recorded, continue */ }
+            catch(e){}
           }
         }
       }
 
-      // Inbox: only postings not already in the inbox, if the toggle is on.
       const newInboxItems = inAppOn
         ? allMatches.filter(m => !seenKeys.has(m.jobKey))
             .map(m => ({ id: m.jobKey, jobKey: m.jobKey, title: m.title, company: m.company, location: m.location, ts: Date.now(), read: false }))
@@ -86,14 +73,20 @@ export default async function handler(req, res){
       newInboxItems.forEach(m => seenKeys.add(m.jobKey));
       totalNew += allMatches.length;
 
-      const nextData = {
-        ...d,
-        emailedKeys: [...emailedKeys].slice(-800),
-        seenInboxKeys: [...seenKeys].slice(-1500),
-        inbox: [...newInboxItems, ...inbox].slice(0, 100),
-        lastEmailScan: Date.now(),
-      };
-      await supabaseAdmin.from("profiles").upsert({ id: p.id, name: p.name, data: nextData }, { onConflict: "id" });
+      const changedEmail = emailOn && [...emailedKeys].length !== (p.emailedKeys || []).length;
+      const changedSeen = seenKeys.size !== (p.seenInboxKeys || []).length;
+      if(changedEmail || newInboxItems.length || changedSeen){
+        const { data: fr } = await supabaseAdmin.from("profiles").select("data").eq("id", p.id).single();
+        const fd = (fr && fr.data && typeof fr.data === "object") ? fr.data : {};
+        const nextData = {
+          ...fd,
+          emailedKeys: [...emailedKeys].slice(-800),
+          seenInboxKeys: [...seenKeys].slice(-1500),
+          inbox: [...newInboxItems, ...(fd.inbox || inbox)].slice(0, 100),
+          lastEmailScan: Date.now(),
+        };
+        await supabaseAdmin.from("profiles").update({ data: nextData }).eq("id", p.id);
+      }
     }
 
     await heartbeat("scan-alerts", true, `emailed ${emailedUsers}`);
@@ -104,5 +97,4 @@ export default async function handler(req, res){
   }
 }
 
-// This route fans out to ~200 upstream fetches; give it room to finish.
 export const config = { maxDuration: 60 };
