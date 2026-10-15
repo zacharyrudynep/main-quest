@@ -21,9 +21,11 @@ export default async function handler(req, res) {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
   const month = new Date().toISOString().slice(0, 7);
   try {
-    const { data: profiles, error } = await supabaseAdmin.from("profiles").select("id,name,data");
+    // Lightweight read — only the keys the digest needs (not resumeText etc.).
+    const { data: profiles, error } = await supabaseAdmin.from("profiles")
+      .select("id,name,weeklyDigest:data->weeklyDigest,jobAlerts:data->jobAlerts,notifyCompanies:data->notifyCompanies,digestedKeys:data->digestedKeys");
     if (error) throw error;
-    const candidates = (profiles || []).filter(p => (p.data || {}).weeklyDigest === true);
+    const candidates = (profiles || []).filter(p => p.weeklyDigest === true);
     if (candidates.length === 0) {
       await heartbeat("weekly-digest", true, "no opt-ins");
     return res.status(200).json({ ok: true, users: 0, note: "no users opted into the weekly digest" });
@@ -33,7 +35,7 @@ export default async function handler(req, res) {
 
     let sent = 0;
     for (const p of candidates) {
-      const d = p.data || {};
+      const d = { jobAlerts: p.jobAlerts, notifyCompanies: p.notifyCompanies, digestedKeys: p.digestedKeys };
       const alerts = asAlertArray(d.jobAlerts);
       const hasAlerts = alertHasCriteria(alerts);
       const followed = (d.notifyCompanies || []).map(c => String(c).toLowerCase());
@@ -63,15 +65,18 @@ export default async function handler(req, res) {
       try {
         const { count: ac } = await supabaseAdmin.from("applications").select("id", { count: "exact", head: true }).eq("user_id", p.id).gte("applied_at", weekAgo);
         const { count: sc } = await supabaseAdmin.from("saved_jobs").select("id", { count: "exact", head: true }).eq("user_id", p.id).gte("saved_at", weekAgo);
-        const { data: aiu } = await supabaseAdmin.from("ai_tailor_usage").select("count").eq("user_id", p.id).eq("month", month).maybeSingle();
+        const { data: aiu } = await supabaseAdmin.from("ai_usage").select("count").eq("user_id", p.id).eq("month", month).maybeSingle();
         acctStats = { applied: ac || 0, saved: sc || 0, aiUses: (aiu && aiu.count) || 0 };
       } catch (e) {}
       try { await sendWeeklyDigest(email, p.name || "", top, acctStats); sent++; }
       catch (e) { continue; } // send failed → don't record keys, try again next week
 
       top.forEach(m => digestedKeys.add(m.jobKey));
-      const nextData = { ...d, digestedKeys: [...digestedKeys].slice(-1500), lastDigestAt: Date.now() };
-      await supabaseAdmin.from("profiles").upsert({ id: p.id, name: p.name, data: nextData }, { onConflict: "id" });
+      // Re-read this one user's full data so the write preserves everything else.
+      const { data: fr } = await supabaseAdmin.from("profiles").select("data").eq("id", p.id).single();
+      const fd = (fr && fr.data && typeof fr.data === "object") ? fr.data : {};
+      const nextData = { ...fd, digestedKeys: [...digestedKeys].slice(-1500), lastDigestAt: Date.now() };
+      await supabaseAdmin.from("profiles").update({ data: nextData }).eq("id", p.id);
     }
 
     await heartbeat("weekly-digest", true, `sent ${sent}`);

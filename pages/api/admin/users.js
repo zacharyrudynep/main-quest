@@ -30,9 +30,13 @@ export default async function handler(req, res) {
       if (list.length < 1000) break;
     }
 
-    // 2) Profiles (the JSONB `data` holds every profile field).
+    // 2) Profiles — project ONLY the keys the admin UI uses, NOT the big ones
+    //    (resumeText, and the emailedKeys/seenInboxKeys/inbox dedup arrays). résumé text is
+    //    fetched lazily per user via /api/admin/user-detail. This slashes egress on the list.
     const { data: profs } = await supabaseAdmin
-      .from("profiles").select("id,data,is_premium,plan,created_at,deletion_requested_at").limit(100000);
+      .from("profiles")
+      .select("id,is_premium,plan,created_at,deletion_requested_at,name:data->name,emailAddress:data->emailAddress,email_verified:data->email_verified,location:data->location,country:data->country,role:data->role,experience:data->experience,yearsExp:data->yearsExp,skills:data->skills,education:data->education,targetSalary:data->targetSalary,openTo:data->openTo,bio:data->bio,achievements:data->achievements,workBlocks:data->workBlocks,workHistory:data->workHistory,linkedin:data->linkedin,portfolio:data->portfolio,github:data->github,artstation:data->artstation,behance:data->behance,otherWebsite:data->otherWebsite,resumeFileName:data->resumeFileName,notifyCompanies:data->notifyCompanies,jobAlerts:data->jobAlerts,premiumUntil:data->premiumUntil,studentTrialRedeemed:data->studentTrialRedeemed,freeAiCredits:data->freeAiCredits")
+      .limit(100000);
 
     // 3) Applied counts per user.
     const appliedBy = {};
@@ -46,37 +50,35 @@ export default async function handler(req, res) {
     try { const month = new Date().toISOString().slice(0, 7); const { data: usage } = await supabaseAdmin.from("ai_usage").select("user_id,count").eq("month", month).limit(100000); for (const r of usage || []) if (r.user_id) usedBy[r.user_id] = r.count || 0; } catch (e) {}
 
     const users = (profs || []).map((p) => {
-      const d = (p.data && typeof p.data === "object") ? p.data : {};
       const a = authById[p.id] || {};
-      const t = effectiveTier(p); // correct, trial-aware tier
-      const plan = t.plan;
+      const t = effectiveTier({ is_premium: p.is_premium, plan: p.plan, data: { premiumUntil: p.premiumUntil, studentTrialRedeemed: p.studentTrialRedeemed } });
       return {
         id: p.id,
-        email: a.email || d.emailAddress || "",
-        name: d.name || "",
-        tier: plan,
+        email: a.email || p.emailAddress || "",
+        name: p.name || "",
+        tier: t.plan,
         isPremium: t.isPremium,
         created: a.created || p.created_at || null,
         lastSignIn: a.lastSignIn || null,
-        emailVerified: a.emailVerified != null ? a.emailVerified : !!d.email_verified,
-        location: d.location || "", country: d.country || "",
-        role: d.role || "", experience: d.experience || d.yearsExp || "",
-        skills: d.skills || "", education: d.education || "",
-        targetSalary: d.targetSalary || "", openTo: d.openTo || [],
-        bio: d.bio || "", achievements: d.achievements || "",
-        workBlocks: Array.isArray(d.workBlocks) ? d.workBlocks : [],
-        workHistory: d.workHistory || "",
+        emailVerified: a.emailVerified != null ? a.emailVerified : !!p.email_verified,
+        location: p.location || "", country: p.country || "",
+        role: p.role || "", experience: p.experience || p.yearsExp || "",
+        skills: p.skills || "", education: p.education || "",
+        targetSalary: p.targetSalary || "", openTo: p.openTo || [],
+        bio: p.bio || "", achievements: p.achievements || "",
+        workBlocks: Array.isArray(p.workBlocks) ? p.workBlocks : [],
+        workHistory: p.workHistory || "",
         links: {
-          linkedin: d.linkedin || "", portfolio: d.portfolio || "", github: d.github || "",
-          artstation: d.artstation || "", behance: d.behance || "", otherWebsite: d.otherWebsite || "",
+          linkedin: p.linkedin || "", portfolio: p.portfolio || "", github: p.github || "",
+          artstation: p.artstation || "", behance: p.behance || "", otherWebsite: p.otherWebsite || "",
         },
-        resumeText: d.resumeText || "", resumeFileName: d.resumeFileName || "",
-        notifyCompanies: Array.isArray(d.notifyCompanies) ? d.notifyCompanies : [],
-        jobAlerts: d.jobAlerts || null,
+        resumeText: "", resumeFileName: p.resumeFileName || "", // résumé text fetched lazily per user
+        notifyCompanies: Array.isArray(p.notifyCompanies) ? p.notifyCompanies : [],
+        jobAlerts: p.jobAlerts || null,
         appliedCount: appliedBy[p.id] || 0,
         student: t.isStudent,
-        premiumUntil: d.premiumUntil || null,
-        freeCredits: Number(d.freeAiCredits) || 0,
+        premiumUntil: p.premiumUntil || null,
+        freeCredits: Number(p.freeAiCredits) || 0,
         banned: bannedSet.has(p.id),
         deletionRequestedAt: p.deletion_requested_at || null,
         aiUsed: usedBy[p.id] || 0,

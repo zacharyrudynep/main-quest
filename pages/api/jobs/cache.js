@@ -4,13 +4,19 @@ import { rateLimit, getClientIp } from "../../../lib/rateLimit";
 
 // Raise Next.js's default 1MB API body limit — the compressed snapshot can be a few MB.
 // (Stays under Vercel's hard 4.5MB request cap.)
-export const config = { api: { bodyParser: { sizeLimit: "16mb" } } };
+export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
 // Shared 15-minute snapshot of the whole job board, stored gzip-compressed (base64) so it
 // stays well under Vercel's 4.5MB request/response limit. The client compresses before POST
 // and decompresses after GET; this route just stores/returns the compressed blob. Cache
 // errors never break the board — the client falls back to a normal live fetch.
 const TTL_MS = 15 * 60 * 1000;
+
+// In-memory snapshot cache. On a persistent Node server this serves the (multi-MB) blob
+// to every visitor from RAM and reads Supabase at most once per MEM_TTL — a major egress
+// cut, since otherwise each board load re-downloaded the whole snapshot from the database.
+let MEM = { gz: null, updatedAt: 0, fetchedAt: 0 };
+const MEM_TTL = 60 * 1000;
 
 // Validate an incoming compressed snapshot before we store it, so a bad actor can't
 // poison the shared cache. Layered + safe:
@@ -40,12 +46,24 @@ function looksLikeSnapshot(gz) {
 export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
-      const { data, error } = await supabaseAdmin.from("job_cache").select("data,updated_at").eq("id", "live").single();
-      if (error && error.code !== "PGRST116") return res.status(200).json({ fresh: false, note: error.message });
-      const gz = data && data.data && data.data.gz;
-      if (data && data.updated_at && gz) {
-        const ageMs = Date.now() - new Date(data.updated_at).getTime();
-        if (ageMs < TTL_MS) return res.status(200).json({ fresh: true, gz, ageMs });
+      // Let browsers (and any CDN in front) cache briefly too.
+      res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
+      const now = Date.now();
+      if (!MEM.gz || (now - MEM.fetchedAt) > MEM_TTL) {
+        try {
+          const { data, error } = await supabaseAdmin.from("job_cache").select("data,updated_at").eq("id", "live").single();
+          if (!error || error.code === "PGRST116") {
+            MEM = {
+              gz: (data && data.data && data.data.gz) || null,
+              updatedAt: (data && data.updated_at) ? new Date(data.updated_at).getTime() : 0,
+              fetchedAt: now,
+            };
+          }
+        } catch (e) { /* keep whatever we had in memory */ }
+      }
+      if (MEM.gz && MEM.updatedAt) {
+        const ageMs = Date.now() - MEM.updatedAt;
+        if (ageMs < TTL_MS) return res.status(200).json({ fresh: true, gz: MEM.gz, ageMs });
         return res.status(200).json({ fresh: false, note: `stale (${Math.round(ageMs / 1000)}s)` });
       }
       return res.status(200).json({ fresh: false, note: "no snapshot yet" });
@@ -64,6 +82,8 @@ export default async function handler(req, res) {
       if (cur && cur.updated_at && (Date.now() - new Date(cur.updated_at).getTime()) < TTL_MS) return res.status(200).json({ ok: true, skipped: true });
       const { error: upErr } = await supabaseAdmin.from("job_cache").upsert({ id: "live", data: { gz }, updated_at: new Date().toISOString() }, { onConflict: "id" });
       if (upErr) return res.status(500).json({ error: "save failed: " + upErr.message });
+      // Reflect the new snapshot in the in-memory cache immediately.
+      MEM = { gz, updatedAt: Date.now(), fetchedAt: Date.now() };
       return res.status(200).json({ ok: true, savedBytes: gz.length });
     }
     return res.status(405).json({ error: "GET or POST only" });

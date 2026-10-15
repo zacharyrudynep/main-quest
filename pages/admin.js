@@ -763,6 +763,22 @@ function AdminActions({ u, onChanged }) {
   );
 }
 function UserDetail({ u, onBack, onChanged }) {
+  const [resumeText, setResumeText] = useState("");
+  const [resumeLoading, setResumeLoading] = useState(true);
+  useEffect(() => {
+    let alive = true; setResumeLoading(true); setResumeText("");
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const tk = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/user-detail?id=" + encodeURIComponent(u.id), { headers: { Authorization: `Bearer ${tk}` } });
+        const j = await r.json().catch(() => ({}));
+        if (alive) setResumeText(j.resumeText || "");
+      } catch (e) {}
+      if (alive) setResumeLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [u.id]);
   const L = u.links || {};
   const links = Object.entries(L).filter(([, v]) => v);
   const asList = (x) => Array.isArray(x) ? x.filter(Boolean) : (x ? String(x).split(/[,;]+/).map(s => s.trim()).filter(Boolean) : []);
@@ -828,9 +844,11 @@ function UserDetail({ u, onBack, onChanged }) {
 
       <div style={{ marginTop: 8 }}>
         <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 4 }}>Résumé {u.resumeFileName ? `· ${u.resumeFileName}` : ""}</div>
-        {u.resumeText
-          ? <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11.5, color: "rgba(244,237,216,.78)", background: "rgba(10,6,14,.5)", border: "1px solid rgba(201,168,76,.12)", borderRadius: 8, padding: 12, maxHeight: 420, overflow: "auto", fontFamily: "ui-monospace,Menlo,Consolas,monospace", lineHeight: 1.5, margin: 0 }}>{u.resumeText}</pre>
-          : <div style={{ fontSize: 12, color: "rgba(244,237,216,.4)", fontStyle: "italic" }}>No résumé on file.</div>}
+        {resumeLoading
+          ? <div style={{ fontSize: 12, color: "rgba(244,237,216,.4)", fontStyle: "italic" }}>Loading résumé…</div>
+          : resumeText
+            ? <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11.5, color: "rgba(244,237,216,.78)", background: "rgba(10,6,14,.5)", border: "1px solid rgba(201,168,76,.12)", borderRadius: 8, padding: 12, maxHeight: 420, overflow: "auto", fontFamily: "ui-monospace,Menlo,Consolas,monospace", lineHeight: 1.5, margin: 0 }}>{resumeText}</pre>
+            : <div style={{ fontSize: 12, color: "rgba(244,237,216,.4)", fontStyle: "italic" }}>No résumé on file.</div>}
       </div>
     </div>
   );
