@@ -4431,7 +4431,7 @@ function AiUsageBar(){
     </button>
     {open&&<div style={{position:"absolute",top:44,right:0,width:216,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:10,padding:12,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
       <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:800,color:"#f0d080",marginBottom:6,letterSpacing:.5}}>AI Uses</div>
-      <div style={{fontSize:12,color:"rgba(244,237,216,.72)",marginBottom:7}}>{isAdmin?"Unlimited (admin)":`${remaining} of ${limit} left this month`}</div>
+      <div style={{fontSize:12,color:"rgba(244,237,216,.72)",marginBottom:7}}>{unlimited?"Unlimited":`${remaining} of ${limit} left this month`}</div>
       <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>Resets in <span style={{color:"#c9a84c",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{cd()}</span></div>
       <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:6,lineHeight:1.4}}>Shared across resume tailoring, company info, interview prep &amp; templates.</div>
     </div>}
