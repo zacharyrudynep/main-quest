@@ -55,8 +55,8 @@ export default function Personalize() {
 
   // tier
   const [tier, setTier] = useState(null); // basic|plus|premium
-  const [plusCycle, setPlusCycle] = useState("yearly");
-  const [premCycle, setPremCycle] = useState("yearly");
+  const [plusCycle, setPlusCycle] = useState("monthly");
+  const [premCycle, setPremCycle] = useState("monthly");
   const [tierErr, setTierErr] = useState("");
   const [tierBusy, setTierBusy] = useState(false);
 
@@ -116,7 +116,7 @@ export default function Personalize() {
     if (segment === "student") { setScodeStep("ask"); setView("student"); }
     else setView("tier");
   };
-  const studentSkip = () => setView("tier");
+  const studentSkip = () => setView("heard"); // skip the tier page; stays on free Basic
 
   async function validateCode() {
     setScodeErr(""); setScodeBusy(true);
@@ -239,7 +239,7 @@ export default function Personalize() {
             {view === "student" && (
               <>
                 <H>Student free trial</H>
-                <Sub>Have a Breaking In student code? Redeem it for <b style={{ color: "#f0d080" }}>30 days of Premium, free</b>. You can also do this later in Settings.</Sub>
+                <Sub>Have a student code? Redeem it for <b style={{ color: "#f0d080" }}>30 days of Premium, free</b>. You can also do this later in Settings.</Sub>
 
                 {scodeStep === "ask" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 380, margin: "0 auto" }}>
@@ -296,8 +296,8 @@ export default function Personalize() {
                 <Sub>Pick a plan to continue. You can upgrade or change this anytime.</Sub>
                 <div className="qgrid">
                   <TierCard tone="basic" name="Basic" price={0} unit=" free" note="No credit card" on={tier === "basic"} onPick={() => setTier("basic")} feats={FEATURES.basic} />
-                  <TierCard tone="plus" name="Plus" price={plusCycle === "yearly" ? PLUS_Y : PLUS_M} unit={plusCycle === "yearly" ? "/yr" : "/mo"} note={plusCycle === "yearly" ? `Save ${PCT_OFF_PLUS}% vs monthly` : "Billed monthly"} on={tier === "plus"} onPick={() => setTier("plus")} cycle={<CycleToggle opts={["monthly", "yearly"]} val={plusCycle} set={setPlusCycle} />} feats={FEATURES.plus} />
-                  <TierCard tone="premium" name="Premium" badge="Most Popular" price={premCycle === "lifetime" ? LIFETIME : premCycle === "yearly" ? PREM_Y : PREM_M} unit={premCycle === "lifetime" ? " once" : premCycle === "yearly" ? "/yr" : "/mo"} note={premCycle === "lifetime" ? "Pay once — yours forever" : premCycle === "yearly" ? `Save ${PCT_OFF_PREM}% vs monthly` : "Billed monthly"} on={tier === "premium"} onPick={() => setTier("premium")} cycle={<CycleToggle opts={["monthly", "yearly", "lifetime"]} val={premCycle} set={setPremCycle} />} feats={FEATURES.premium} />
+                  <TierCard tone="plus" name="Plus" price={plusCycle === "yearly" ? PLUS_Y : PLUS_M} unit={plusCycle === "yearly" ? "/yr" : "/mo"} note={plusCycle === "yearly" ? `Save ${PCT_OFF_PLUS}% vs monthly` : "Billed monthly"} on={tier === "plus"} onPick={() => setTier("plus")} cycle={<CycleToggle opts={["monthly", "yearly"]} val={plusCycle} set={setPlusCycle} />} feats={FEATURES.plus} strike={plusCycle === "yearly" ? (PLUS_M * 12).toFixed(2) : null} />
+                  <TierCard tone="premium" name="Premium" badge="Most Popular" price={premCycle === "lifetime" ? LIFETIME : premCycle === "yearly" ? PREM_Y : PREM_M} unit={premCycle === "lifetime" ? " once" : premCycle === "yearly" ? "/yr" : "/mo"} note={premCycle === "lifetime" ? "Pay once — yours forever" : premCycle === "yearly" ? `Save ${PCT_OFF_PREM}% vs monthly` : "Billed monthly"} on={tier === "premium"} onPick={() => setTier("premium")} cycle={<CycleToggle opts={["monthly", "yearly", "lifetime"]} val={premCycle} set={setPremCycle} />} feats={FEATURES.premium} strike={premCycle === "yearly" ? (PREM_M * 12).toFixed(2) : null} />
                 </div>
                 {tierErr && <div style={{ color: "#e8a070", fontSize: 12, marginTop: 14 }}>{tierErr}</div>}
                 <Nav left={navBtn("‹ Back", () => setView("segment"))} right={navBtn(tier === "basic" ? "Continue →" : tier ? "Continue to Payment →" : "Select a plan", goCheckout, true, !tier || tierBusy)} />
@@ -315,7 +315,7 @@ export default function Personalize() {
                   ); })}
                 </div>
                 {heard === "other" && <input style={{ ...inp, maxWidth: 400, margin: "18px auto 0", display: "block", textAlign: "center" }} value={heardOther} onChange={e => setHeardOther(e.target.value)} placeholder="Where did you hear about us?" />}
-                <Nav left={null} right={navBtn("Next →", () => setView("roles"), true, !heard || (heard === "other" && !heardOther.trim()))} />
+                <Nav left={navBtn("‹ Back", () => setView("tier"))} right={navBtn("Next →", () => setView("roles"), true, !heard || (heard === "other" && !heardOther.trim()))} />
               </>
             )}
 
@@ -385,7 +385,7 @@ function Nav({ left, right }) {
   );
 }
 
-function TierCard({ tone, name, price, unit, note, badge, on, onPick, feats, cycle }) {
+function TierCard({ tone, name, price, unit, note, badge, on, onPick, feats, cycle, strike }) {
   const accent = tone === "premium" ? "#f7d98a" : tone === "plus" ? "#f0d080" : "rgba(244,237,216,.75)";
   const cls = "qcard" + (tone === "plus" ? " qprem" : "") + (tone === "premium" ? " qprem qglow" : "") + (on ? " qsel" : "");
   return (
@@ -393,6 +393,7 @@ function TierCard({ tone, name, price, unit, note, badge, on, onPick, feats, cyc
       {badge && <div className="qbadge" style={{ background: "linear-gradient(135deg,#f0d080,#e8613a)", color: "#1a0e06", boxShadow: "0 4px 16px rgba(232,120,58,.5)" }}>{badge}</div>}
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 800, color: accent }}>{name}</div>
       <div style={{ margin: "10px 0 2px" }}>
+        {strike && <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "rgba(244,237,216,.4)", textDecoration: "line-through", marginRight: 8, verticalAlign: "middle" }}>${strike}</span>}
         <span style={{ fontFamily: "'Cinzel',serif", fontSize: 40, fontWeight: 800, color: accent }}>{typeof price === "number" ? "$" + price : price}</span>
         <span style={{ fontSize: 13, color: "rgba(244,237,216,.45)", fontWeight: 600 }}>{unit}</span>
       </div>

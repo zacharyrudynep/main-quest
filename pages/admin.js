@@ -906,7 +906,7 @@ function StudentCodePanel() {
   const inp = { width: "100%", boxSizing: "border-box", background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 9, padding: "9px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" };
 
   return (
-    <Panel title="Student codes (Breaking In)">
+    <Panel title="Student codes">
       <div style={{ fontSize: 12, color: "rgba(244,237,216,.6)", lineHeight: 1.6, marginBottom: 14 }}>
         Codes students redeem (with a verified school email) for a free Premium trial. Each account and each school email can redeem once.
       </div>
