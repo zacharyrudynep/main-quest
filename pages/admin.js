@@ -565,6 +565,91 @@ function PlanControl({ u, onChanged }) {
     </div>
   );
 }
+function AdminActions({ u, onChanged }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+  const [credits, setCredits] = useState(String(u.freeCredits || 0));
+  const [trialDays, setTrialDays] = useState(30);
+  const [reason, setReason] = useState("");
+  async function run(action, extra) {
+    setErr(""); setMsg(""); setBusy(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      const r = await fetch("/api/admin/user-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: u.id, action, ...(extra || {}) }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { setErr(j.error || "Action failed."); return; }
+      setMsg("Done — the list will refresh.");
+      if (onChanged) onChanged();
+    } catch (e) { setErr("Action failed."); }
+    finally { setBusy(false); }
+  }
+  const sct = { marginBottom: 13 };
+  const lbl = { fontSize: 9.5, color: "rgba(201,168,76,.6)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 5, display: "block" };
+  const inp = { background: "rgba(201,168,76,.06)", border: "1px solid rgba(201,168,76,.22)", color: "#f4edd8", borderRadius: 7, padding: "5px 9px", fontSize: 11.5, outline: "none" };
+  const btn = (danger) => ({ cursor: "pointer", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: .3, opacity: busy ? .6 : 1,
+    background: danger ? "rgba(224,112,96,.1)" : "rgba(201,168,76,.1)", border: `1px solid ${danger ? "rgba(224,112,96,.4)" : "rgba(201,168,76,.3)"}`, color: danger ? "#e07060" : "#f0d080" });
+  return (
+    <div style={{ margin: "0 0 18px", padding: 14, background: "rgba(201,168,76,.04)", border: "1px solid rgba(201,168,76,.18)", borderRadius: 10 }}>
+      <div style={{ fontSize: 9.5, color: "rgba(201,168,76,.7)", textTransform: "uppercase", letterSpacing: .7, fontFamily: "'Cinzel',serif", marginBottom: 10 }}>Admin — account actions</div>
+
+      <div style={{ ...sct, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 11.5, color: "rgba(244,237,216,.6)" }}>Email: {u.emailVerified ? <b style={{ color: "#7ecfb3" }}>verified</b> : <b style={{ color: "#e07060" }}>unverified</b>}</span>
+        {u.emailVerified
+          ? <button disabled={busy} onClick={() => run("verifyEmail", { value: false })} style={btn(false)}>Un-verify</button>
+          : <button disabled={busy} onClick={() => run("verifyEmail", { value: true })} style={btn(false)}>Mark verified</button>}
+      </div>
+
+      <div style={sct}>
+        <label style={lbl}>Free AI credits</label>
+        <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+          <input type="number" min="0" value={credits} onChange={e => setCredits(e.target.value)} style={{ ...inp, width: 70 }} />
+          <button disabled={busy} onClick={() => run("setCredits", { credits: Number(credits) || 0 })} style={btn(false)}>Set credits</button>
+        </div>
+      </div>
+
+      <div style={{ ...sct, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 11.5, color: "rgba(244,237,216,.6)" }}>AI used this month: <b style={{ color: "#f0d080" }}>{u.aiUsed || 0}</b></span>
+        <button disabled={busy} onClick={() => run("resetUsage")} style={btn(false)}>Reset usage</button>
+      </div>
+
+      <div style={sct}>
+        <label style={lbl}>Student trial {u.premiumUntil ? `(ends ${fmtDate(u.premiumUntil)})` : ""}</label>
+        <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
+          <input type="number" value={trialDays} onChange={e => setTrialDays(e.target.value)} style={{ ...inp, width: 70 }} />
+          <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)" }}>days</span>
+          <button disabled={busy} onClick={() => run("extendTrial", { days: Number(trialDays) || 0 })} style={btn(false)}>Extend</button>
+          <span style={{ fontSize: 10, color: "rgba(244,237,216,.35)" }}>(negative shortens)</span>
+        </div>
+      </div>
+
+      <div style={sct}>
+        <label style={lbl}>Moderation {u.banned ? "— currently BANNED" : ""}</label>
+        {u.banned
+          ? <button disabled={busy} onClick={() => run("unban")} style={btn(false)}>Unban account</button>
+          : <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
+              <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Reason (optional)" style={{ ...inp, flex: 1, minWidth: 140 }} />
+              <button disabled={busy} onClick={() => run("ban", { reason })} style={btn(true)}>Ban account</button>
+            </div>}
+      </div>
+
+      <div style={{ marginBottom: 2 }}>
+        <label style={lbl}>Account deletion {u.deletionRequestedAt ? `— scheduled ${fmtDate(u.deletionRequestedAt)}` : ""}</label>
+        {u.deletionRequestedAt
+          ? <button disabled={busy} onClick={() => run("cancelDelete")} style={btn(false)}>Cancel deletion</button>
+          : <button disabled={busy} onClick={() => { if (typeof window !== "undefined" && window.confirm(`Schedule ${u.email || "this account"} for deletion (14-day grace)?`)) run("scheduleDelete"); }} style={btn(true)}>Schedule deletion</button>}
+      </div>
+
+      {err && <div style={{ fontSize: 11, color: "#e07060", marginTop: 10 }}>⚠ {err}</div>}
+      {msg && <div style={{ fontSize: 11, color: "#7ecfb3", marginTop: 10 }}>✓ {msg}</div>}
+    </div>
+  );
+}
 function UserDetail({ u, onBack, onChanged }) {
   const L = u.links || {};
   const links = Object.entries(L).filter(([, v]) => v);
@@ -583,6 +668,7 @@ function UserDetail({ u, onBack, onChanged }) {
       <div style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginBottom: 16 }}>Joined {fmtDate(u.created)} · Last seen {fmtDate(u.lastSignIn)} · {u.appliedCount} application{u.appliedCount === 1 ? "" : "s"} · ID {u.id}</div>
 
       <PlanControl u={u} onChanged={onChanged} />
+      <AdminActions u={u} onChanged={onChanged} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
         <Field label="Target Role" value={u.role} />

@@ -31,12 +31,18 @@ export default async function handler(req, res) {
 
     // 2) Profiles (the JSONB `data` holds every profile field).
     const { data: profs } = await supabaseAdmin
-      .from("profiles").select("id,data,is_premium,plan,created_at").limit(100000);
+      .from("profiles").select("id,data,is_premium,plan,created_at,deletion_requested_at").limit(100000);
 
     // 3) Applied counts per user.
     const appliedBy = {};
     const { data: apps } = await supabaseAdmin.from("applications").select("user_id").limit(200000);
     for (const a of apps || []) if (a.user_id) appliedBy[a.user_id] = (appliedBy[a.user_id] || 0) + 1;
+
+    // 3b) Banned set + this month's shared AI usage, for the admin support actions.
+    const bannedSet = new Set();
+    try { const { data: bans } = await supabaseAdmin.from("banned_users").select("user_id").limit(100000); for (const r of bans || []) if (r.user_id) bannedSet.add(r.user_id); } catch (e) {}
+    const usedBy = {};
+    try { const month = new Date().toISOString().slice(0, 7); const { data: usage } = await supabaseAdmin.from("ai_usage").select("user_id,count").eq("month", month).limit(100000); for (const r of usage || []) if (r.user_id) usedBy[r.user_id] = r.count || 0; } catch (e) {}
 
     const users = (profs || []).map((p) => {
       const d = (p.data && typeof p.data === "object") ? p.data : {};
@@ -68,6 +74,10 @@ export default async function handler(req, res) {
         appliedCount: appliedBy[p.id] || 0,
         student: !!(d.studentTrialRedeemed && d.premiumUntil && Number(d.premiumUntil) > Date.now()),
         premiumUntil: d.premiumUntil || null,
+        freeCredits: Number(d.freeAiCredits) || 0,
+        banned: bannedSet.has(p.id),
+        deletionRequestedAt: p.deletion_requested_at || null,
+        aiUsed: usedBy[p.id] || 0,
       };
     });
 
