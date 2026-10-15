@@ -11,6 +11,7 @@ import dynamic from "next/dynamic";
 import { normalizeATSJob } from "../lib/normalize";
 import { COMPANIES_DATA } from "../lib/companiesData";
 import { onboardingComplete } from "../lib/entitlements";
+import { getConsent, setConsent as setMqConsent } from "../lib/consent";
 
 // Fire an account/security email (welcome, password-changed, device-check) for the current user.
 // Slug for /companies/[slug] links — must match slugify() in lib/snapshot.js.
@@ -3213,6 +3214,8 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialT
             })}
           </div>
 
+          <AnalyticsToggle/>
+
           {/* Security */}
           <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
             <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Security</div>
@@ -4409,6 +4412,19 @@ function BetaDisclaimer(){
 // Plan tiers: basic(0) < plus(1) < premium(2). Admins are treated as premium.
 const PLAN_RANK={basic:0,plus:1,premium:2};
 function planRank(p){ return PLAN_RANK[p]!=null?PLAN_RANK[p]:0; }
+function AnalyticsToggle(){
+  const [on,setOn]=useState(false);
+  useEffect(()=>{ try{ setOn(getConsent()==="accepted"); }catch(e){} },[]);
+  const flip=()=>{ const v=on?"declined":"accepted"; try{ setMqConsent(v); }catch(e){} setOn(!on); };
+  return <div style={{marginTop:14,borderTop:"1px solid rgba(201,168,76,.1)",paddingTop:14}}>
+    <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:8}}>Privacy</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"8px 0"}}>
+      <div><div style={{fontSize:12.5,fontWeight:500,color:"#f4edd8"}}>Product analytics</div><div style={{fontSize:10.5,color:"rgba(244,237,216,.4)",marginTop:2,lineHeight:1.35}}>Optional, privacy-friendly usage analytics that help us improve Main Quest. Off by default — core features work either way.</div></div>
+      <button onClick={flip} style={{width:42,height:24,background:on?"#c9a84c":"rgba(244,237,216,.08)",border:"none",borderRadius:12,cursor:"pointer",position:"relative",flexShrink:0}}><div style={{position:"absolute",width:18,height:18,background:"#f4edd8",borderRadius:"50%",top:3,left:3,transition:"transform .2s",transform:on?"translateX(18px)":"none"}}/></button>
+    </div>
+    <div style={{fontSize:10,color:"rgba(244,237,216,.3)",marginTop:2}}>Details in our <a href="/privacy" style={{color:"rgba(201,168,76,.6)"}}>Privacy Policy</a>.</div>
+  </div>;
+}
 function AiUsageBar(){
   const [data,setData]=useState(null);
   const [open,setOpen]=useState(false);

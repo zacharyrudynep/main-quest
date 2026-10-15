@@ -9,14 +9,14 @@ const GOVERNING_STATE = "New York";
 
 export default function Terms() {
   const G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-  const today = "August 2026";
+  const today = "October 2026";
   const h2 = { fontFamily: "'Cinzel',serif", fontSize: 18, color: "#f0d080", marginTop: 32, marginBottom: 10 };
   const p = { fontSize: 14, lineHeight: 1.75, color: "rgba(244,237,216,.72)", marginBottom: 12 };
   const li = { fontSize: 14, lineHeight: 1.7, color: "rgba(244,237,216,.72)", marginBottom: 8 };
 
   return <>
     <Head><title>Terms of Service — Main Quest</title><meta name="robots" content="index,follow" /></Head>
-    <div style={{ minHeight: "100vh", overflowX: "hidden", maxWidth: "100%", backgroundColor: "#080608", backgroundImage: "linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px)", backgroundSize: "56px 56px", color: "#f4edd8", fontFamily: "system-ui,sans-serif", padding: "40px 20px" }}>
+    <div style={{ minHeight: "100vh", background: "#080608", color: "#f4edd8", fontFamily: "system-ui,sans-serif", padding: "40px 20px" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <Link href="/" style={{ color: "#c9a84c", fontSize: 13, textDecoration: "none" }}>&larr; Back to Main Quest</Link>
         <h1 style={{ fontSize: 28, margin: "16px 0 4px", fontFamily: "'Cinzel Decorative',serif", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Terms of Service</h1>
@@ -44,6 +44,7 @@ export default function Terms() {
         <h2 style={h2}>5. AI-Generated Content</h2>
         <p style={p}>Some features use AI to generate text such as cover letters, emails, and resume suggestions. AI output may contain errors or inaccuracies. You are solely responsible for reviewing, editing, and verifying any AI-generated content before using or submitting it. We make no warranties about its quality, accuracy, or suitability.</p>
         <p style={p}>The AI features are provided for job-application assistance only. They are not a substitute for professional, legal, financial, or medical advice, and are not a crisis or mental-health resource. If you are experiencing a personal crisis, please contact a qualified professional or an appropriate local support service.</p>
+        <p style={p}>AI-generated materials (such as tailored resumes and interview-prep guides) are saved to your account for your convenience, and you can view, download, or delete them at any time.</p>
 
         <h2 style={h2}>6. Subscriptions, Billing &amp; Auto-Renewal</h2>
         <p style={p}>Parts of the Service are offered free of charge, and certain features are available through paid plans. Paid plans currently include a monthly subscription, an annual subscription, and a one-time lifetime purchase. Prices are shown at the point of purchase and may change from time to time; any price change will apply only to future billing periods.</p>
@@ -52,6 +53,7 @@ export default function Terms() {
           <li style={li}><strong>Auto-renewal:</strong> Subscription plans (monthly and annual) automatically renew at the end of each billing period at the then-current price, using your payment method on file, <strong>until you cancel</strong>. The monthly plan renews every month and the annual plan renews every year.</li>
           <li style={li}><strong>Cancellation:</strong> You may cancel a subscription at any time from your account's billing settings. When you cancel, your plan remains active until the end of the current paid period and does not renew after that. Cancelling is designed to take no more steps than signing up.</li>
           <li style={li}><strong>Lifetime purchase:</strong> The one-time lifetime purchase grants access to the included features for as long as the Service is offered. It is a one-time charge and does not auto-renew.</li>
+          <li style={li}><strong>Student trials:</strong> We may offer free student trials that unlock paid features for a limited time. Eligibility requires a valid school email address and a valid trial code. Each account and each school email may redeem a student trial only once. Student trials are personal, non-transferable, time-limited, and may be modified, suspended, or revoked at our discretion (including if eligibility cannot be verified or the offer is abused). When a student trial ends, the account reverts to the free Basic plan at no charge unless you choose to subscribe.</li>
           <li style={li}><strong>Refunds:</strong> Except where required by applicable law, payments are non-refundable, and cancelling stops future charges rather than refunding the current period. If you believe you were charged in error, contact us and we will review your request in good faith.</li>
           <li style={li}><strong>Failed payments:</strong> If a renewal payment fails, we may retry the charge and/or suspend access to paid features until payment is resolved.</li>
         </ul>
