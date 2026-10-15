@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { effectiveTier } from "../../../lib/entitlements";
 import { fetchAllJobs } from "../../../lib/atsLite";
 import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib/matchAlert";
 import { sendJobAlertEmail } from "../../../lib/resend";
@@ -21,12 +22,12 @@ export default async function handler(req, res){
   try{
     // 1) Users who have followed companies (any tier) OR a premium alert wizard.
     const { data: profiles, error } = await supabaseAdmin
-      .from("profiles").select("id,name,data,is_premium");
+      .from("profiles").select("id,name,data,is_premium,plan");
     if(error) throw error;
     const candidates = (profiles || []).filter(p => {
       const d = p.data || {};
       const hasFollows = Array.isArray(d.notifyCompanies) && d.notifyCompanies.length > 0;
-      const hasWizard = p.is_premium && alertHasCriteria(d.jobAlerts);
+      const hasWizard = effectiveTier(p).isPremium && alertHasCriteria(d.jobAlerts);
       return hasFollows;
     });
     if(candidates.length === 0){
@@ -45,7 +46,7 @@ export default async function handler(req, res){
       if(!emailOn && !inAppOn) continue;             // both channels off — nothing to deliver
 
       const alerts = asAlertArray(d.jobAlerts);
-      const wizardOn = p.is_premium && alertHasCriteria(alerts);
+      const wizardOn = effectiveTier(p).isPremium && alertHasCriteria(alerts);
       const followed = (d.notifyCompanies || []).map(c => String(c).toLowerCase());
       const emailedKeys = new Set(d.emailedKeys || []);
       const inbox = d.inbox || [];

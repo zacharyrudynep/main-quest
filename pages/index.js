@@ -3158,6 +3158,7 @@ function AccountPanel({user,onClose,onUpdate,onLogout,onUpgrade,onPatch,initialT
             </div>
           :
             <div style={{padding:16,background:"linear-gradient(135deg,rgba(201,168,76,.1),rgba(232,97,58,.06))",border:"1px solid rgba(201,168,76,.3)",borderRadius:12,marginBottom:18}}>
+              {premium&&premium.plan==="plus"&&<div style={{display:"inline-flex",alignItems:"center",gap:5,marginBottom:8,background:"rgba(126,207,179,.14)",border:"1px solid rgba(126,207,179,.45)",color:"#7ecfb3",borderRadius:20,fontSize:10,fontWeight:800,padding:"2px 10px",fontFamily:"'Cinzel',serif",letterSpacing:.6,textTransform:"uppercase"}}>✦ Plus Member</div>}
               <div style={{fontFamily:"'Cinzel',serif",fontWeight:800,fontSize:15,background:G,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:.5,marginBottom:4}}>Upgrade to Premium</div>
               <div style={{fontSize:11.5,color:"rgba(244,237,216,.55)",marginBottom:12,lineHeight:1.5}}>You’re on the <strong style={{color:"#f0d080",textTransform:"capitalize"}}>{(premium&&premium.plan)||"basic"}</strong> plan. Upgrade to unlock more features.</div>
               <button onClick={()=>{onClose&&onClose();onUpgrade&&onUpgrade();}} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>View Plans &amp; Upgrade</button>
@@ -3580,6 +3581,16 @@ async function _ungzB64(b64){
 }
 
 // Opens the full-page upgrade modal from anywhere (top bar, premium locks) without prop-drilling.
+async function banGate(){
+  try{
+    const { data }=await supabase.auth.getSession();
+    const tk=data&&data.session&&data.session.access_token; if(!tk) return false;
+    const r=await fetch("/api/auth/ban-status",{headers:{Authorization:`Bearer ${tk}`}});
+    const j=await r.json().catch(()=>({}));
+    if(j&&j.banned){ try{await supabase.auth.signOut();}catch(e){} if(typeof window!=="undefined") window.location.href="/banned"+(j.reason?("?reason="+encodeURIComponent(j.reason)):""); return true; }
+  }catch(e){}
+  return false;
+}
 function openUpgrade(){ if(typeof window!=="undefined") window.dispatchEvent(new Event("mq-open-upgrade")); }
 
 // Glowy gold "Upgrade" link — shown in the top bar and under every premium lock (free tier only).
@@ -3597,11 +3608,11 @@ function UpgradeLink({label,size,mt}){
 }
 
 // Full-page upgrade modal — plans, feature showcase, and Stripe checkout buttons.
-function UpgradeModal({user,onClose}){
+function UpgradeModal({user,onClose,plan}){
   const [busy,setBusy]=useState("");
   const [plusCycle,setPlusCycle]=useState("monthly");
   const [premCycle,setPremCycle]=useState("monthly");
-  const currentPlan=(user&&user.plan)||"basic";
+  const currentPlan=plan||(user&&user.plan)||"basic";
   const rank={basic:0,plus:1,premium:2};
   const go=async(plan,cyc)=>{
     if(!user||!user.id){onClose&&onClose();return;}
@@ -3862,7 +3873,7 @@ const JobCard = memo(function JobCard({job,user,guest,onRequestLogin,onApplied,o
     if(job.isEmailApply&&job.applyEmail){
       const subj=job.company==="Break Away Games"?"BreakAway Online Job Posting":`Application: ${job.title} at ${job.company}`;
       const prof=user?.profile||{};
-      const tmpl=prof.emailTemplate;
+      const tmpl=isPlus?prof.emailTemplate:""; // Plus feature — paused (not deleted) on downgrade
       const map=prof.emailTemplateMap||[];
       const provider=prof.emailProvider||"default";
       // Fill the template; aiBlurb fills any [x] slots mapped to "ai_company".
@@ -4442,6 +4453,7 @@ function AiUsageBar(){
   const pct=unlimited?100:Math.round((remaining/limit)*100);
   const barColor=unlimited?"linear-gradient(90deg,#7ecfb3,#c9a84c)":pct>50?"linear-gradient(90deg,#c9a84c,#f0d080)":pct>20?"#e8a070":"#c0703a";
   const cd=()=>{ const d=new Date(); const next=new Date(d.getFullYear(),d.getMonth()+1,1,0,0,0,0); let ms=next-d; const days=Math.floor(ms/86400000); ms-=days*86400000; const hrs=Math.floor(ms/3600000); ms-=hrs*3600000; const mins=Math.floor(ms/60000); ms-=mins*60000; const secs=Math.floor(ms/1000); return `${days}d ${hrs}h ${mins}m ${secs}s`; };
+  const cdTrial=()=>{ let ms=Number(data.premiumUntil||0)-Date.now(); if(ms<=0)return "0d 0h 0m"; const days=Math.floor(ms/86400000); ms-=days*86400000; const hrs=Math.floor(ms/3600000); ms-=hrs*3600000; const mins=Math.floor(ms/60000); return `${days}d ${hrs}h ${mins}m`; };
   return <div style={{position:"relative",flexShrink:0}} onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
     <button onClick={()=>setOpen(o=>!o)} title="AI uses this month" style={{display:"flex",alignItems:"center",gap:8,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",borderRadius:20,padding:"6px 12px",cursor:"pointer"}}>
       <I.Lightning s={13} c="#c9a84c"/>
@@ -4450,8 +4462,8 @@ function AiUsageBar(){
     </button>
     {open&&<div style={{position:"absolute",top:44,right:0,width:216,background:"#100a16",border:"1px solid rgba(201,168,76,.25)",borderRadius:10,padding:12,zIndex:300,boxShadow:"0 8px 30px rgba(0,0,0,.5)"}}>
       <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:800,color:"#f0d080",marginBottom:6,letterSpacing:.5}}>AI Uses</div>
-      <div style={{fontSize:12,color:"rgba(244,237,216,.72)",marginBottom:7}}>{unlimited?"Unlimited":`${remaining} of ${limit} left this month`}</div>
-      <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>Resets in <span style={{color:"#c9a84c",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{cd()}</span></div>
+      <div style={{fontSize:12,color:"rgba(244,237,216,.72)",marginBottom:7}}>{unlimited?(data.isStudent?"Unlimited (student plan)":"Unlimited"):`${remaining} of ${limit} left this month`}</div>
+      <div style={{fontSize:11,color:"rgba(244,237,216,.5)"}}>{data.isStudent&&data.premiumUntil?<>Trial ends in <span style={{color:"#c9a84c",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{cdTrial()}</span></>:<>Resets in <span style={{color:"#c9a84c",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{cd()}</span></>}</div>
       <div style={{fontSize:10,color:"rgba(244,237,216,.35)",marginTop:6,lineHeight:1.4}}>Shared across resume tailoring, company info, interview prep &amp; templates.</div>
     </div>}
   </div>;
@@ -4857,7 +4869,7 @@ export default function App() {
 
   useEffect(()=>{refreshTimer.current=setInterval(()=>setLastRefresh(new Date()),300000);return()=>clearInterval(refreshTimer.current);},[]);
 
-  const login=u=>setUser(u);
+  const login=async u=>{ if(await banGate())return; setUser(u); };
   useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("device-check"); },[user&&user.id,guest]);
   useEffect(()=>{ setAuthed(!!(user&&user.id&&!guest)); },[user&&user.id,guest]);
   const pageFiredRef=useRef(new Set());
@@ -5008,6 +5020,7 @@ export default function App() {
         if(session?.user&&!stay){ try{await supabase.auth.signOut();}catch{} if(active)setAuthChecked(true); return; }
         if(session?.user&&active){
           const uid=session.user.id, em=session.user.email;
+          if(await banGate()){ if(active)setAuthChecked(true); return; }
           let profile=null, applied={}, saved={};
           try{ const { data }=await supabase.from("profiles").select("*").eq("id",uid).single(); profile=data; }catch{}
           try{
@@ -5576,7 +5589,7 @@ export default function App() {
       {/* RIGHT: Inbox + Profile */}
       <div style={{display:"flex",alignItems:"center",gap:8,flex:mobile?"0 0 auto":"1 1 0",justifyContent:"flex-end"}}>
       {user&&user.profile&&user.profile.onbDismissed&&!onbStatus.complete&&<OnboardingReopenButton onClick={()=>patchProfile({onbDismissed:false})}/>}
-      {user&&(appPremium||appAdmin)?<AiUsageBar/>:user?(appFreeCredits>0?<FreeCreditPill credits={appFreeCredits}/>:<UpgradeLink label="Upgrade now"/>):null}
+      {user&&(appPremium||appAdmin)?<AiUsageBar/>:user&&appIsPlus?<UpgradeLink label="Plus"/>:user?(appFreeCredits>0?<FreeCreditPill credits={appFreeCredits}/>:<UpgradeLink label="Upgrade now"/>):null}
       {user&&<button onClick={()=>setShowInbox(true)} title="Inbox" style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.18)",cursor:"pointer",borderRadius:"50%",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(201,168,76,.06)"}>
         <I.Bell s={16} c="#c9a84c"/>
         {inboxUnread>0&&<span style={{position:"absolute",top:-3,right:-3,background:"#e8613a",color:"#fff",borderRadius:20,fontSize:9,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,padding:"0 4px",border:"2px solid #080608",boxSizing:"border-box"}}>{inboxUnread>9?"9+":inboxUnread}</span>}
@@ -5590,7 +5603,7 @@ export default function App() {
     {showAcct&&user&&<AccountPanel key={acctInitTab||"profile"} initialTab={acctInitTab} user={user} onClose={()=>{setShowAcct(false);setAcctInitTab(null);}} onUpdate={updateUser} onPatch={patchProfile} onLogout={logout} onUpgrade={()=>{setShowAcct(false);setShowUpgrade(true);}}/>}
     {showInbox&&<InboxPanel items={inbox} onClose={()=>setShowInbox(false)} onMarkRead={markInboxRead} onMarkAllRead={markAllInboxRead} onClear={clearInbox} onDismiss={dismissInboxItem} onOpenJob={openJobFromInbox} profile={user&&user.profile} onPatch={patchProfile} isPremium={appIsPlus} isAdmin={appAdmin} companyOptions={companyOptions} locationOptions={locationOptions}/>}
     {breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved")&&<ScoreBreakdownPanel job={breakdownJob} profile={user&&user.profile} isPlus={appIsPlus} isPremium={appPremium} onClose={()=>setBreakdownJob(null)}/>}
-    {showUpgrade&&!appPremium&&<UpgradeModal user={user} onClose={()=>setShowUpgrade(false)}/>}
+    {showUpgrade&&!appPremium&&<UpgradeModal user={user} plan={appPlan} onClose={()=>setShowUpgrade(false)}/>}
     {toast&&<div style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:400,background:"rgba(18,10,12,.97)",border:"1px solid rgba(201,168,76,.4)",borderRadius:10,padding:"11px 18px",fontSize:12.5,color:"#f0d080",fontFamily:"'Cinzel',serif",boxShadow:"0 12px 40px rgba(0,0,0,.6)",maxWidth:"calc(100vw - 32px)",textAlign:"center"}}>{toast}</div>}
     {showTop&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="Back to top" style={{position:"fixed",bottom:24,right:24,zIndex:200,width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,.5)",border:"1px solid rgba(201,168,76,.6)",color:"#0a0608",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,.4)",backdropFilter:"blur(4px)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0608" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>}
     {showAcct&&!user&&<GuestPanel onClose={()=>setShowAcct(false)} onSignIn={()=>{setShowAcct(false);setShowLoginPopup(true);}}/>}

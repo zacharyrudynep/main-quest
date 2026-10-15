@@ -509,6 +509,12 @@ function tierBadge(tier) {
   const [c, bg, bd] = map[t] || ["rgba(244,237,216,.6)", "rgba(244,237,216,.06)", "rgba(244,237,216,.18)"];
   return <span style={{ color: c, background: bg, border: `1px solid ${bd}`, borderRadius: 20, fontSize: 9, fontWeight: 800, padding: "2px 8px", textTransform: "uppercase", letterSpacing: .6, fontFamily: "'Cinzel',serif" }}>{t}</span>;
 }
+// Students get their own badge so they can be told apart from paid Premium members.
+function studentBadge() {
+  return <span style={{ color: "#f0d080", background: "rgba(201,168,76,.16)", border: "1px solid rgba(201,168,76,.5)", borderRadius: 20, fontSize: 9, fontWeight: 800, padding: "2px 8px", textTransform: "uppercase", letterSpacing: .6, fontFamily: "'Cinzel',serif" }}>🎓 Student</span>;
+}
+// Student badge when on an active trial, otherwise the plan badge.
+function planBadge(u) { return u && u.student ? studentBadge() : tierBadge(u ? u.tier : "basic"); }
 function fmtDate(d) { if (!d) return "—"; try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return "—"; } }
 
 function Field({ label, value }) {
@@ -661,7 +667,7 @@ function UserDetail({ u, onBack, onChanged }) {
       <button onClick={onBack} style={{ background: "rgba(201,168,76,.08)", border: "1px solid rgba(201,168,76,.22)", color: "#f0d080", cursor: "pointer", borderRadius: 8, padding: "5px 12px", fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, marginBottom: 14 }}>← All users</button>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
         <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#f4edd8" }}>{u.name || "(no name)"}</span>
-        {tierBadge(u.tier)}
+        {planBadge(u)}
         {u.emailVerified ? <span style={{ color: "#7ecfb3", fontSize: 10, fontWeight: 700 }}>✓ Verified</span> : <span style={{ color: "#e07060", fontSize: 10, fontWeight: 700 }}>✗ Unverified</span>}
       </div>
       <div style={{ fontSize: 12.5, color: "rgba(244,237,216,.65)", marginBottom: 2 }}>{u.email || "—"}</div>
@@ -748,7 +754,7 @@ function UserDirectory({ data, status, q, setQ, sel, setSel, onChanged }) {
                 <div style={{ fontSize: 11, color: "rgba(244,237,216,.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}{u.role ? ` · ${u.role}` : ""}</div>
               </div>
               <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", whiteSpace: "nowrap" }}>{u.appliedCount > 0 ? `${u.appliedCount} app${u.appliedCount === 1 ? "" : "s"}` : ""}</span>
-              {tierBadge(u.tier)}
+              {planBadge(u)}
               <span style={{ fontSize: 10.5, color: "rgba(244,237,216,.35)", whiteSpace: "nowrap", minWidth: 62, textAlign: "right" }}>{fmtDate(u.created)}</span>
             </div>
           ))}

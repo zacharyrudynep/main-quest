@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { effectiveTier } from "../../../lib/entitlements";
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 
@@ -47,13 +48,14 @@ export default async function handler(req, res) {
     const users = (profs || []).map((p) => {
       const d = (p.data && typeof p.data === "object") ? p.data : {};
       const a = authById[p.id] || {};
-      const plan = d.plan || p.plan || (p.is_premium ? "premium" : "basic");
+      const t = effectiveTier(p); // correct, trial-aware tier
+      const plan = t.plan;
       return {
         id: p.id,
         email: a.email || d.emailAddress || "",
         name: d.name || "",
         tier: plan,
-        isPremium: !!p.is_premium || plan === "premium" || plan === "plus",
+        isPremium: t.isPremium,
         created: a.created || p.created_at || null,
         lastSignIn: a.lastSignIn || null,
         emailVerified: a.emailVerified != null ? a.emailVerified : !!d.email_verified,
@@ -72,7 +74,7 @@ export default async function handler(req, res) {
         notifyCompanies: Array.isArray(d.notifyCompanies) ? d.notifyCompanies : [],
         jobAlerts: d.jobAlerts || null,
         appliedCount: appliedBy[p.id] || 0,
-        student: !!(d.studentTrialRedeemed && d.premiumUntil && Number(d.premiumUntil) > Date.now()),
+        student: t.isStudent,
         premiumUntil: d.premiumUntil || null,
         freeCredits: Number(d.freeAiCredits) || 0,
         banned: bannedSet.has(p.id),

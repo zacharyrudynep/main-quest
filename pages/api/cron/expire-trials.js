@@ -27,6 +27,12 @@ export default async function handler(req, res) {
       const hasActiveSub = ACTIVE.has(String(p.subscription_status || "").toLowerCase());
       if (trialLapsed && !hasActiveSub) {
         const nextData = { ...d, premiumUntil: null, studentTrialExpired: true };
+        // Reverting to Basic: trim followed-company bells to the Basic cap (5). Everything
+        // else (notifications, email template, saved AI materials) is kept — a downgrade
+        // locks features, it never deletes the user's data.
+        if (Array.isArray(nextData.notifyCompanies) && nextData.notifyCompanies.length > 5) {
+          nextData.notifyCompanies = nextData.notifyCompanies.slice(0, 5);
+        }
         await supabaseAdmin.from("profiles").upsert(
           { id: p.id, name: p.name, is_premium: false, data: nextData }, { onConflict: "id" }
         );

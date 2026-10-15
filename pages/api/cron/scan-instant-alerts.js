@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { effectiveTier } from "../../../lib/entitlements";
 import { fetchAllJobs } from "../../../lib/atsLite";
 import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib/matchAlert";
 import { sendJobAlertEmail } from "../../../lib/resend";
@@ -24,7 +25,7 @@ export default async function handler(req, res){
       .from("profiles").select("id,name,data,is_premium,plan");
     if(error) throw error;
     const candidates = (profiles || []).filter(p =>
-      (p.plan === "plus" || p.plan === "premium") && alertHasCriteria((p.data || {}).jobAlerts)
+      effectiveTier(p).isPlus && alertHasCriteria((p.data || {}).jobAlerts)
     );
     if(candidates.length === 0){
       await heartbeat("scan-instant-alerts", true, "no premium users with alerts");

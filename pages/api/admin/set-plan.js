@@ -33,15 +33,23 @@ export default async function handler(req, res) {
     const d = (prof && prof.data && typeof prof.data === "object") ? prof.data : {};
     // Start from the existing profile data minus any premium/trial markers.
     const base = { ...d };
-    delete base.premiumUntil; delete base.studentTrialRedeemed; delete base.studentCode; delete base.studentVerifiedAt;
+    delete base.premiumUntil; delete base.studentTrialRedeemed; delete base.studentCode; delete base.studentVerifiedAt; delete base.studentTrialExpired;
 
     let patch;
     if (plan === "basic") patch = { is_premium: false, plan: "basic", data: base };
     else if (plan === "plus") patch = { is_premium: false, plan: "plus", data: base };
     else if (plan === "premium") patch = { is_premium: true, plan: "premium", data: base };
-    else { // student
+    else { // student — a time-boxed trial. plan stays "basic" so that when premiumUntil
+      // passes the account reverts to basic cleanly (premium is driven by the trial window).
       const premiumUntil = Date.now() + days * 86400000;
-      patch = { is_premium: true, plan: "premium", data: { ...base, premiumUntil, studentTrialRedeemed: true, studentCode: "ADMIN_GRANT", studentVerifiedAt: Date.now() } };
+      patch = { is_premium: true, plan: "basic", data: { ...base, premiumUntil, studentTrialRedeemed: true, studentCode: "ADMIN_GRANT", studentVerifiedAt: Date.now() } };
+    }
+
+    // On a downgrade, trim followed-company bells to the new tier's cap (don't delete the
+    // profile's data — just enforce the limit). premium=∞, plus=15, basic=5.
+    const cap = plan === "premium" || plan === "student" ? Infinity : plan === "plus" ? 15 : 5;
+    if (cap !== Infinity && Array.isArray(patch.data.notifyCompanies) && patch.data.notifyCompanies.length > cap) {
+      patch.data.notifyCompanies = patch.data.notifyCompanies.slice(0, cap);
     }
 
     const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", userId);
