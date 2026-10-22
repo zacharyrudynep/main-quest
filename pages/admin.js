@@ -116,7 +116,10 @@ export default function Admin() {
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
             <div style={{ fontFamily: "'Cinzel Decorative',serif", fontSize: 22, fontWeight: 700, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Main Quest — Admin</div>
-            <a href="/" style={{ textDecoration: "none", color: "rgba(244,237,216,.55)", fontSize: 12, fontFamily: "'Cinzel',serif" }}>← Back to board</a>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <a href="/admin/companies" style={{ textDecoration: "none", color: GOLD, fontSize: 12, fontFamily: "'Cinzel',serif", fontWeight: 700 }}>Company Editor →</a>
+              <a href="/" style={{ textDecoration: "none", color: "rgba(244,237,216,.55)", fontSize: 12, fontFamily: "'Cinzel',serif" }}>← Back to board</a>
+            </div>
           </div>
 
           {status === "loading" && <Note>Loading…</Note>}

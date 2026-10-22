@@ -211,21 +211,17 @@ function genJobs(company, stateKey) {
 // Industry tier / classification map, from the tier list document. A company
 // can appear in more than one list (e.g. a big studio that also publishes);
 // companyTier() resolves to a single primary tag by the priority order below.
-const COMPANY_TIERS = {
-  AAA: {"2k Games":1,"Activision":1,"Amazon Games":1,"Bethesda Game Studios":1,"Blizzard Entertainment":1,"CD Projekt Red":1,"Digital Extremes":1,"EA":1,"Epic Games":1,"Firaxis":1,"Ghost Story Games":1,"Infinity Ward":1,"Insomniac Games":1,"Konami":1,"Maxis Studios":1,"Naughty Dog":1,"NetEase Games":1,"Obsidian Entertainment":1,"Psyonix":1,"Respawn Entertainment":1,"Riot Games":1,"Rockstar Games":1,"Sega":1,"Sledgehammer Games":1,"Square Enix":1,"Take-Two Interactive":1,"Tencent":1,"Treyarch":1,"Turtle Rock Studios":1,"Ubisoft":1,"Undead Labs":1,"Visual Concepts":1,"Warner Bros.":1,"ZeniMax":1},
-  AA: {"31st Union":1,"Avalanche Studios":1,"Behaviour Interactive":1,"Big Huge Games":1,"Bit Reactor":1,"Blue Isle Studios":1,"Brass Lion Entertainment":1,"Break Away Games":1,"Certain Affinity":1,"Compulsion Games":1,"Deck Nine Games":1,"Dire Wolf Digital":1,"Eastside Games":1,"Endnight Games":1,"Finish Line Games":1,"Fire Fly Studios":1,"Gameloft":1,"Giant Squid":1,"HB Studios":1,"Heavy Iron Studios":1,"Hi-Rez Studios":1,"Hidden Variable Studios":1,"High Voltage":1,"IllFonic":1,"InXile Entertainment":1,"Jackbox Games":1,"Jam City":1,"Kabam":1,"Klei Entertainment":1,"Linden Lab":1,"Ludia":1,"Manticore Games":1,"Midsummer Studios":1,"Mob Entertainment":1,"Monomi Park":1,"Moonshot Games":1,"Motorsport Games":1,"N3twork Studios":1,"Netherrealm Studios":1,"Next Level Games":1,"Other Ocean Interactive":1,"Oxide Games":1,"People Can Fly":1,"Piranha Games":1,"Pixelberry Studios":1,"PlayQ":1,"Playable Worlds":1,"Red Barrels":1,"Relic":1,"Saber Interactive":1,"Scopely":1,"Second Dinner":1,"Secret Door":1,"Serenity Forge":1,"Shiver Entertainment":1,"Singularity 6":1,"Skybox Labs":1,"Snail Games":1,"Snowed In Studios":1,"Steel Wool Studios":1,"Studio Wildcard":1,"Super Evil Megacorp":1,"Supercell":1,"Survios":1,"Telltale Games":1,"Theorycraft Games":1,"Torn Banner Studios":1,"Tripwire Interactive":1,"Unknown Worlds":1,"Vertigo Games":1,"Wildlife Studios":1,"Yellow Brick Games":1,"thatgamecompany":1},
-  Indie: {"Brace Yourself Games":1,"Camlann Games":1,"Chromatic Games":1,"Clockwork Labs":1,"Crate Entertainment":1,"Cryptyd Games":1,"Curious Media":1,"Darkwind Media":1,"Decoy Games":1,"Deep End Games":1,"Drattzy Games":1,"Experiment 7":1,"Finish Line Games":1,"Firehose Games":1,"Free Range Games":1,"Good Dog Studios":1,"Greatsword Game Studio":1,"Half Mermaid":1,"Heavy Pepper":1,"Indie Asylum":1,"Komi Games":1,"Made on Earth Games":1,"Magic Find Studios":1,"Massive Damage":1,"Mighty Coconut":1,"Mohawk Games":1,"Monster Theater Games":1,"Muse Games":1,"Napnok Games":1,"Operative Games":1,"Otherside Entertainment":1,"Outact":1,"Pavonis Interactive":1,"Perfect Garbage Studios":1,"Pixel Dash Studios":1,"Prophecy Games":1,"Pure Bang":1,"Run Games":1,"Seeker Entertainment":1,"Shoreline Games":1,"Six Foot":1,"Sky Lantern Studios":1,"Snowman":1,"Starcaster Games":1,"Stardock":1,"Storm Flag Games":1,"Super Free Games":1,"SuperDuperSecret":1,"Sword and Wand":1,"TapBlaze":1,"Tempo Games":1,"Terrible Posture Games":1,"Theory Studios":1,"Thunder Lotus":1,"Tic Toc Games":1,"Trebuchet":1,"Tribute Games":1,"Underwater Fire Games":1,"Unfold Games":1,"Unico Studio":1,"Virtual Basement":1,"White Lotus Interactive":1,"WhiteMoon Dreams":1,"Wicked Interactive":1,"Wildflower Games":1,"Wonderstorm":1,"You Pass Universe":1,"Zapdot":1,"Zephyr Workshop":1},
-  Publishers: {"App Lovin":1,"Arc Games":1,"Design Works Gaming":1,"Everi":1,"First Break Labs":1,"G5 Entertainment":1,"Kalypso Media":1,"King":1,"Marvel Games":1,"Play Studios":1,"Product Madness":1,"SciPlay":1,"Stardock":1,"Storm 8":1,"Take-Two Interactive":1,"Tiny Build":1,"Versus Evil":1,"Warner Bros.":1,"Zynga":1},
-  Outsourcing: {"BKOM Studios":1,"Blind Squirrel Games":1,"Certain Affinity":1,"Exis Interactive":1,"Game Artists":1,"Game Sim":1,"HiDef":1,"Iron Galaxy Studios":1,"Kevuru Games":1,"Mass Media Games":1,"Room 8 Studio":1,"Secret 6":1,"Shapeshifter Games":1,"Skybox Labs":1,"Snowed In Studios":1,"Sperasoft":1,"The Third Floor":1,"Turn Me Up Games":1},
-};
-function companyTier(name){
-  if(COMPANY_TIERS.AAA[name]) return "AAA";
-  if(COMPANY_TIERS.AA[name]) return "AA";
-  if(COMPANY_TIERS.Indie[name]) return "Indie";
-  if(COMPANY_TIERS.Publishers[name]) return "Publishers";
-  if(COMPANY_TIERS.Outsourcing[name]) return "Outsourcing";
-  return null;
-}
+// Industry tier now lives per-company in lib/companiesData.js (co.tier), editable
+// in the admin company editor at /admin/companies. Build a name→tier lookup once,
+// canonicalizing casing so "indie"/"Indie" etc. all resolve to the board's labels.
+const _TIER_CANON = { aaa:"AAA", aa:"AA", indie:"Indie", publisher:"Publishers", publishers:"Publishers", outsourcing:"Outsourcing" };
+const companyTierData = {};
+for (const _states of Object.values(COMPANIES_DATA))
+  for (const _cos of Object.values(_states))
+    for (const _co of _cos)
+      if (_co && _co.tier && !companyTierData[_co.name])
+        companyTierData[_co.name] = _TIER_CANON[String(_co.tier).toLowerCase()] || _co.tier;
+function companyTier(name){ return companyTierData[name] || null; }
 
 // Build all job data once at module level
 // Map of company name -> its registered "home" state (where it lives in
