@@ -158,8 +158,9 @@ export default function CompaniesAdmin() {
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return companies;
-    return companies.filter((c) => c.name.toLowerCase().includes(s));
+    const list = s ? companies.filter((c) => c.name.toLowerCase().includes(s)) : companies.slice();
+    // Always show the list alphabetically (case-insensitive), one card per company.
+    return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   }, [companies, q]);
 
   const update = (id, patch) => setCompanies((cs) => cs.map((c) => (c._id === id ? { ...c, ...patch } : c)));
