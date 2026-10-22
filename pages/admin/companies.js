@@ -13,7 +13,7 @@ const ATS_PLATFORMS = ["", "greenhouse", "lever", "ashby", "workable", "smartrec
 const RI_MODES = [["none", "None"], ["link", "External link"], ["email", "Register by email"], ["contact", "Contact page"]];
 const INTERN = [["unknown", "Unknown"], ["yes", "Offers internships"], ["no", "No internships"]];
 
-const KNOWN_KEYS = new Set(["name", "url", "email", "contact", "tier", "emailApply", "emailSpecifics", "internship", "internshipLink", "internshipNote", "registerInterest", "registerInterestLink", "registerInterestSameAs"]);
+const KNOWN_KEYS = new Set(["name", "url", "email", "contact", "tier", "emailApply", "emailSpecifics", "volunteer", "internship", "internshipLink", "internshipNote", "registerInterest", "registerInterestLink", "registerInterestSameAs"]);
 
 let _uid = 0;
 const nextId = () => `c${++_uid}`;
@@ -47,7 +47,7 @@ function parse(tree) {
             _id: nextId(), origName: co.name, name: co.name,
             url: co.url || "", email: co.email || "", contact: co.contact || "",
             tier: co.tier || "",
-            emailApply: !!co.emailApply, emailSpecifics: co.emailSpecifics || "",
+            emailApply: !!co.emailApply, emailSpecifics: co.emailSpecifics || "", volunteer: !!co.volunteer,
             ri,
             internship: { status: co.internship === "yes" ? "yes" : co.internship === "no" ? "no" : "unknown", link: co.internshipLink || "", note: co.internshipNote || "" },
             ats: { platform: "", slug: "" },
@@ -71,6 +71,7 @@ function toObj(L) {
   else if (L.ri.mode === "email") { o.registerInterest = "email"; const v = L.ri.sameAs ? (o.email || "") : rv; if (v) o.registerInterestLink = v; }
   else if (L.ri.mode === "contact") { o.registerInterest = true; const v = L.ri.sameAs ? (o.contact || "") : rv; if (v) o.registerInterestLink = v; }
   if (L.emailApply) o.emailApply = true;
+  if (L.volunteer) o.volunteer = true;
   if ((L.emailSpecifics || "").trim()) o.emailSpecifics = L.emailSpecifics.trim();
   if (L.internship.status === "yes") o.internship = "yes";
   else if (L.internship.status === "no") o.internship = "no";
@@ -166,7 +167,7 @@ export default function CompaniesAdmin() {
   const update = (id, patch) => setCompanies((cs) => cs.map((c) => (c._id === id ? { ...c, ...patch } : c)));
 
   const addCompany = () => {
-    const L = { _id: nextId(), origName: null, name: "New Company", url: "", email: "", contact: "", tier: "", emailApply: false, emailSpecifics: "", ri: { mode: "none", value: "", sameAs: false }, internship: { status: "unknown", link: "", note: "" }, ats: { platform: "", slug: "" }, locations: [], extra: {} };
+    const L = { _id: nextId(), origName: null, name: "New Company", url: "", email: "", contact: "", tier: "", emailApply: false, emailSpecifics: "", volunteer: false, ri: { mode: "none", value: "", sameAs: false }, internship: { status: "unknown", link: "", note: "" }, ats: { platform: "", slug: "" }, locations: [], extra: {} };
     setCompanies((cs) => [L, ...cs]);
     setOpenId(L._id);
     setMsg(null);
@@ -286,6 +287,13 @@ function CompanyCard({ c, open, onToggle, onChange, onRemove, countriesList, reg
               </label>
             </Field>
           </Row>
+
+          <Field label="Volunteer">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 0" }}>
+              <input type="checkbox" checked={c.volunteer} onChange={(e) => set({ volunteer: e.target.checked })} />
+              <span style={{ fontSize: 12.5, color: "rgba(244,237,216,.7)" }}>Volunteer opportunities (shown with a Volunteer badge on the board)</span>
+            </label>
+          </Field>
 
           {/* Register interest */}
           <div style={box}>

@@ -116,8 +116,8 @@ export default function Admin() {
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
             <div style={{ fontFamily: "'Cinzel Decorative',serif", fontSize: 22, fontWeight: 700, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Main Quest — Admin</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <a href="/admin/companies" style={{ textDecoration: "none", color: GOLD, fontSize: 12, fontFamily: "'Cinzel',serif", fontWeight: 700 }}>Company Editor →</a>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <a href="/admin/companies" style={{ textDecoration: "none", background: G, color: "#0a0608", fontSize: 12.5, fontFamily: "'Cinzel',serif", fontWeight: 800, letterSpacing: .4, padding: "9px 16px", borderRadius: 9, boxShadow: "0 4px 16px rgba(201,168,76,.3)", whiteSpace: "nowrap" }}>Company Editor →</a>
               <a href="/" style={{ textDecoration: "none", color: "rgba(244,237,216,.55)", fontSize: 12, fontFamily: "'Cinzel',serif" }}>← Back to board</a>
             </div>
           </div>
