@@ -1499,6 +1499,14 @@ function JobAlertManager({alerts,onSave,isPremium,isAdmin,companyOptions,locatio
 }
 
 // ── INBOX PANEL (slide-over) ──────────────────────────────────────────────────
+// Stable notification identity: company|title (lowercased, whitespace-collapsed),
+// deliberately INDEPENDENT of the job's location string. Location text drifts between
+// ATS feeds and scans (empty vs "Remote" vs "Remote, US"), which changed the old
+// company|title|location key and made cleared jobs reappear as "new". _inboxKeyFrom
+// normalizes any legacy key (old 3-part form included) so the seen-set still matches.
+const _inboxKey = (c, t) => `${String(c || "").trim().toLowerCase().replace(/\s+/g, " ")}|${String(t || "").trim().toLowerCase().replace(/\s+/g, " ")}`;
+const _inboxKeyFrom = (k) => { const a = String(k || "").split("|"); return _inboxKey(a[0], a[1]); };
+
 // Inbox row with ✕ to clear and mobile swipe-left-to-delete.
 function InboxItem({ n, onOpen, onDismiss, timeAgo }){
   const [dx,setDx]=useState(0);
@@ -4917,7 +4925,7 @@ export default function App() {
       // seenInboxKeys only GROWS: union server + patch + every current inbox key,
       // so a surfaced/read/cleared job is never re-added as new.
       const inboxKeys=((merged.inbox)||[]).map(n=>n&&n.jobKey).filter(Boolean);
-      merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys])].slice(-2000);
+      merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys].map(_inboxKeyFrom))].slice(-2000);
       const { error }=await supabase.from("profiles").upsert({id:uid,name:uname,data:merged},{onConflict:"id"});
       if(error) return {ok:false,error};
       return {ok:true};
@@ -4925,8 +4933,8 @@ export default function App() {
   };
   const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
   const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
-  const clearInbox=()=>{ const seen=(user&&user.profile&&user.profile.seenInboxKeys)||[]; const keys=inbox.map(n=>n.jobKey).filter(Boolean); const merged=[...new Set([...seen,...keys])].slice(-1500); patchProfile({inbox:[],seenInboxKeys:merged}); };
-  const dismissInboxItem=(id)=>{ const it=inbox.find(n=>n.id===id); const k=it&&it.jobKey; const seen=(user&&user.profile&&user.profile.seenInboxKeys)||[]; patchProfile({inbox:inbox.filter(n=>n.id!==id),...(k&&!seen.includes(k)?{seenInboxKeys:[...seen,k].slice(-1500)}:{})}); };
+  const clearInbox=()=>{ const seen=((user&&user.profile&&user.profile.seenInboxKeys)||[]).map(_inboxKeyFrom); const keys=inbox.map(n=>_inboxKeyFrom(n.jobKey)).filter(Boolean); const merged=[...new Set([...seen,...keys])].slice(-1500); patchProfile({inbox:[],seenInboxKeys:merged}); };
+  const dismissInboxItem=(id)=>{ const it=inbox.find(n=>n.id===id); const k=it&&_inboxKeyFrom(it.jobKey); const seen=((user&&user.profile&&user.profile.seenInboxKeys)||[]).map(_inboxKeyFrom); patchProfile({inbox:inbox.filter(n=>n.id!==id),...(k&&!seen.includes(k)?{seenInboxKeys:[...seen,k].slice(-1500)}:{})}); };
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);
@@ -5259,7 +5267,9 @@ export default function App() {
     const last=prof.lastAlertScan||0;
     if(Date.now()-last < 24*3600*1000) return;      // once a day
     const existing=prof.inbox||[];
-    const keys=new Set([...(prof.seenInboxKeys||[]),...existing.map(n=>n.jobKey)]);  // include the persistent seen-set so cleared/read jobs are never re-added
+    // Build the seen-set with the STABLE normalized key, and normalize any legacy keys
+    // already stored so cleared/read jobs are reliably excluded.
+    const keys=new Set([...(prof.seenInboxKeys||[]),...existing.map(n=>n.jobKey)].map(_inboxKeyFrom));
     const matched=allJobs.filter(j=>{
       const followHit=followed.length&&followed.includes((j.company||"").toLowerCase())&&j.isNew; // new postings from followed companies
       const wizardHit=wizardOn&&jobMatchesAnyAlert(j,alerts);
@@ -5267,7 +5277,7 @@ export default function App() {
     }).sort((a,b)=>(b.updated||0)-(a.updated||0));
     const fresh=[];
     for(const j of matched){
-      const jobKey=`${j.company}|${j.title}|${j.location||""}`;
+      const jobKey=_inboxKey(j.company,j.title);
       if(keys.has(jobKey)) continue;
       keys.add(jobKey);
       fresh.push({id:jobKey,jobKey,title:j.title,company:j.company,location:j.location||"",ts:Date.now(),read:false});

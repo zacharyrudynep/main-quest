@@ -5,6 +5,12 @@ import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib
 import { sendJobAlertEmail } from "../../../lib/resend";
 import { heartbeat } from "../../../lib/heartbeat";
 
+// Stable notification identity: company|title, independent of the location string
+// (which drifts between feeds and used to make cleared jobs reappear). _nkFrom
+// normalizes any legacy company|title|location key so the seen-set still matches.
+const _nk = (c, t) => `${String(c || "").trim().toLowerCase().replace(/\s+/g, " ")}|${String(t || "").trim().toLowerCase().replace(/\s+/g, " ")}`;
+const _nkFrom = (k) => { const a = String(k || "").split("|"); return _nk(a[0], a[1]); };
+
 // Frequent scan (every ~15 min via crontab) for personalized (Plus+) job alerts.
 //
 // EGRESS NOTE: this runs very often, so it reads ONLY the few JSON keys it needs from
@@ -43,15 +49,18 @@ export default async function handler(req, res){
       if(!emailOn && !inAppOn) continue;
 
       const alerts = asAlertArray(p.jobAlerts);
-      const emailedKeys = new Set(p.emailedKeys || []);
+      const emailedKeys = new Set((p.emailedKeys || []).map(_nkFrom));
       const inbox = p.inbox || [];
-      const seenKeys = new Set(p.seenInboxKeys || []);
-      inbox.forEach(n => n.jobKey && seenKeys.add(n.jobKey));
+      const seenKeys = new Set((p.seenInboxKeys || []).map(_nkFrom));
+      inbox.forEach(n => n.jobKey && seenKeys.add(_nkFrom(n.jobKey)));
 
       const allMatches = [];
+      const seenMatch = new Set();
       for(const j of jobs){
         if(!jobMatchesAnyAlert(j, alerts)) continue;
-        const jobKey = `${j.company}|${j.title}|${j.location || ""}`;
+        const jobKey = _nk(j.company, j.title);
+        if(seenMatch.has(jobKey)) continue; // collapse same role across locations
+        seenMatch.add(jobKey);
         allMatches.push({ jobKey, title: j.title, company: j.company, location: j.location || "", url: j.url || base });
       }
       if(allMatches.length === 0) continue;
@@ -70,27 +79,34 @@ export default async function handler(req, res){
         }
       }
 
-      const newInboxItems = inAppOn
+      let candidateInbox = inAppOn
         ? allMatches.filter(m => !seenKeys.has(m.jobKey))
             .map(m => ({ id: m.jobKey, jobKey: m.jobKey, title: m.title, company: m.company, location: m.location, ts: Date.now(), read: false }))
         : [];
-      newInboxItems.forEach(m => seenKeys.add(m.jobKey));
       totalNew += allMatches.length;
 
-      const changedEmail = emailOn && [...emailedKeys].length !== (p.emailedKeys || []).length;
-      const changedSeen = seenKeys.size !== (p.seenInboxKeys || []).length;
-      if(changedEmail || newInboxItems.length || changedSeen){
-        // Re-read this ONE user's full data so the write preserves everything else.
+      if(emailOn || candidateInbox.length){
+        // Re-read this ONE user's full data so the write preserves everything else AND
+        // so a clear/dismiss that happened mid-scan isn't clobbered: rebuild the seen-set
+        // from the FRESH data and drop anything already seen/cleared before writing.
         const { data: fr } = await supabaseAdmin.from("profiles").select("data").eq("id", p.id).single();
         const fd = (fr && fr.data && typeof fr.data === "object") ? fr.data : {};
-        const nextData = {
-          ...fd,
-          emailedKeys: [...emailedKeys].slice(-800),
-          seenInboxKeys: [...seenKeys].slice(-1500),
-          inbox: [...newInboxItems, ...(fd.inbox || inbox)].slice(0, 100),
-          lastInstantScan: Date.now(),
-        };
-        await supabaseAdmin.from("profiles").update({ data: nextData }).eq("id", p.id);
+        const fdSeen = new Set([...(fd.seenInboxKeys || []), ...((fd.inbox || []).map(n => n && n.jobKey))].filter(Boolean).map(_nkFrom));
+        const addItems = candidateInbox.filter(m => !fdSeen.has(m.jobKey));
+        const nextEmailed = [...new Set([...(fd.emailedKeys || []).map(_nkFrom), ...emailedKeys])].slice(-800);
+        const nextSeen = [...new Set([...fdSeen, ...addItems.map(m => m.jobKey)])].slice(-1500);
+        const changedEmail = emailOn && nextEmailed.length !== (fd.emailedKeys || []).length;
+        const changedSeen = nextSeen.length !== (fd.seenInboxKeys || []).length;
+        if(changedEmail || addItems.length || changedSeen){
+          const nextData = {
+            ...fd,
+            emailedKeys: nextEmailed,
+            seenInboxKeys: nextSeen,
+            inbox: [...addItems, ...(fd.inbox || [])].slice(0, 100),
+            lastInstantScan: Date.now(),
+          };
+          await supabaseAdmin.from("profiles").update({ data: nextData }).eq("id", p.id);
+        }
       }
     }
 
