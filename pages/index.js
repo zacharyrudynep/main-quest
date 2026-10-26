@@ -4926,15 +4926,34 @@ export default function App() {
       // so a surfaced/read/cleared job is never re-added as new.
       const inboxKeys=((merged.inbox)||[]).map(n=>n&&n.jobKey).filter(Boolean);
       merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys].map(_inboxKeyFrom))].slice(-2000);
-      const { error }=await supabase.from("profiles").upsert({id:uid,name:uname,data:merged},{onConflict:"id"});
+      // Use UPDATE (not upsert): the row always exists after signup, and upsert's INSERT
+      // path needs an INSERT RLS policy that typically isn't granted to authenticated —
+      // which made these client writes silently fail. UPDATE needs only the UPDATE policy.
+      const _upd={data:merged}; if(uname!=null)_upd.name=uname;
+      const { error }=await supabase.from("profiles").update(_upd).eq("id",uid);
       if(error) return {ok:false,error};
       return {ok:true};
     }catch(e){ return {ok:false,error:e}; }
   };
-  const markInboxRead=(id)=>patchProfile({inbox:inbox.map(n=>n.id===id?{...n,read:true}:n)});
-  const markAllInboxRead=()=>patchProfile({inbox:inbox.map(n=>({...n,read:true}))});
-  const clearInbox=()=>{ const seen=((user&&user.profile&&user.profile.seenInboxKeys)||[]).map(_inboxKeyFrom); const keys=inbox.map(n=>_inboxKeyFrom(n.jobKey)).filter(Boolean); const merged=[...new Set([...seen,...keys])].slice(-1500); patchProfile({inbox:[],seenInboxKeys:merged}); };
-  const dismissInboxItem=(id)=>{ const it=inbox.find(n=>n.id===id); const k=it&&_inboxKeyFrom(it.jobKey); const seen=((user&&user.profile&&user.profile.seenInboxKeys)||[]).map(_inboxKeyFrom); patchProfile({inbox:inbox.filter(n=>n.id!==id),...(k&&!seen.includes(k)?{seenInboxKeys:[...seen,k].slice(-1500)}:{})}); };
+  // Inbox mutations run through the service-role server endpoint so they ALWAYS persist.
+  // The client cannot reliably write `profiles` from the browser (authenticated upsert
+  // needs an INSERT RLS policy that typically isn't granted), which is why clearing the
+  // inbox never stuck. We update the UI optimistically, then reconcile with the server's
+  // authoritative inbox.
+  const inboxMutate=async(body)=>{
+    try{
+      const { data }=await supabase.auth.getSession();
+      const tk=data&&data.session&&data.session.access_token;
+      if(!tk) return;
+      const r=await fetch("/api/inbox/mutate",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify(body)});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.ok&&Array.isArray(j.inbox)) setUser(u=>u?{...u,profile:{...(u.profile||{}),inbox:j.inbox}}:u);
+    }catch(e){}
+  };
+  const markInboxRead=(id)=>{ setUser(u=>u?{...u,profile:{...(u.profile||{}),inbox:((u.profile&&u.profile.inbox)||[]).map(n=>n.id===id?{...n,read:true}:n)}}:u); inboxMutate({action:"read",id}); };
+  const markAllInboxRead=()=>{ setUser(u=>u?{...u,profile:{...(u.profile||{}),inbox:((u.profile&&u.profile.inbox)||[]).map(n=>({...n,read:true}))}}:u); inboxMutate({action:"readAll"}); };
+  const clearInbox=()=>{ setUser(u=>u?{...u,profile:{...(u.profile||{}),inbox:[]}}:u); inboxMutate({action:"clear"}); };
+  const dismissInboxItem=(id)=>{ setUser(u=>u?{...u,profile:{...(u.profile||{}),inbox:((u.profile&&u.profile.inbox)||[]).filter(n=>n.id!==id)}}:u); inboxMutate({action:"dismiss",id}); };
   // Premium status at the app level (the inbox needs it to gate job alerts, and the
   // scan below only runs for premium users). AccountPanel fetches its own copy too.
   const [appPremium,setAppPremium]=useState(false);

@@ -58,7 +58,9 @@ function FollowBell({ company }) {
       const list = Array.isArray(cur.notifyCompanies) ? cur.notifyCompanies : [];
       const has = list.some(c => String(c).toLowerCase() === company.toLowerCase());
       const next = has ? list.filter(c => String(c).toLowerCase() !== company.toLowerCase()) : [...list, company];
-      await supabase.from("profiles").upsert({ id: session.user.id, data: { ...cur, notifyCompanies: next } }, { onConflict: "id" });
+      // UPDATE, not upsert — the row exists, and upsert needs an INSERT RLS policy that
+      // authenticated users typically don't have, which made this follow silently fail.
+      await supabase.from("profiles").update({ data: { ...cur, notifyCompanies: next } }).eq("id", session.user.id);
       setState(has ? "off" : "on");
     } catch (e) { setState(prev); }
   };
