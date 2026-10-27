@@ -42,6 +42,7 @@ const MEM_TTL = 60 * 1000;
 const SEEN_ID = "job_seen";
 const PRUNE_MS = 45 * 24 * 60 * 60 * 1000; // drop keys unseen this long (tolerates transient feed gaps)
 const GRACE_MS = 24 * 60 * 60 * 1000;      // baseline capture window after first run
+let LAST_POST_DIAG = null;                  // diagnostics from the most recent POST (see ?seen=1)
 // Bump to force a clean re-baseline on deploy, discarding any registry a prior/buggy
 // version wrote (e.g. one that wrongly stamped existing jobs "today").
 const REG_VERSION = 3;
@@ -151,6 +152,7 @@ export default async function handler(req, res) {
             graceMsLeft: d.baselineAt ? Math.max(0, GRACE_MS - (Date.now() - d.baselineAt)) : null,
             totalKeys: Object.keys(keys).length, stamped, baseline,
             registryUpdatedAt: data && data.updated_at,
+            lastPost: LAST_POST_DIAG,                   // what the most recent rebuild saw/did
           });
         } catch (e) { return res.status(200).json({ error: String((e && e.message) || e) }); }
       }
@@ -192,15 +194,30 @@ export default async function handler(req, res) {
       // This write is the authoritative ~15-min "scan". Stamp first-seen dates on
       // undated jobs here, then store the stamped snapshot. Anything going wrong
       // (decompress, parse, registry I/O) falls back to the client's original gz
-      // so the board is never broken by this feature.
+      // so the board is never broken by this feature. Each step is recorded in a
+      // diagnostic that ?seen=1 surfaces, so we can see what the browser sent and
+      // exactly where/why stamping failed.
       let outGz = gz, stamped = false;
+      const diag = { ts: new Date().toISOString(), phase: "start", gzLen: gz.length };
       try {
         const raw = Buffer.from(gz, "base64");
+        diag.phase = "gunzip";
         const map = JSON.parse(zlib.gunzipSync(raw, { maxOutputLength: 80 * 1024 * 1024 }).toString("utf8"));
+        diag.companies = Object.keys(map).length;
+        const _all = Object.values(map).flat().filter(Boolean);
+        const _today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        diag.jobsIn = _all.length;
+        diag.undatedIn = _all.filter(j => !j.postedStr).length;   // what the BROWSER sent as undated
+        diag.todayIn = _all.filter(j => j.postedStr === _today).length; // ...and as today
+        diag.phase = "applyFirstSeen";
         await applyFirstSeen(map);                        // mutates map; throws on Supabase failure
+        diag.undatedOut = Object.values(map).flat().filter(j => j && !j.postedStr).length;
+        diag.phase = "regzip";
         const reGz = zlib.gzipSync(Buffer.from(JSON.stringify(map))).toString("base64");
         if (reGz.length <= 4000000) { outGz = reGz; stamped = true; } // keep original if re-gzip overflows the cap
-      } catch (e) { outGz = gz; stamped = false; }
+        diag.phase = "done"; diag.stamped = stamped;
+      } catch (e) { outGz = gz; stamped = false; diag.error = String((e && (e.stack || e.message)) || e).slice(0, 600); }
+      LAST_POST_DIAG = diag;
 
       const { error: upErr } = await supabaseAdmin.from("job_cache").upsert({ id: "live", data: { gz: outGz }, updated_at: new Date().toISOString() }, { onConflict: "id" });
       if (upErr) return res.status(500).json({ error: "save failed: " + upErr.message });
