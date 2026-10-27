@@ -28,15 +28,23 @@ const MEM_TTL = 60 * 1000;
 // that appear for the FIRST time after that baseline get the pull-date stamp.
 //
 // Storage: a second row in the existing job_cache table (id="job_seen"), plain
-// JSON — no schema migration. Shape: { baselined:bool, keys:{ "<key>": [stampMs, lastSeenMs] } }
-//   stampMs 0  → known at baseline (or had a real date) → leave undated
-//   stampMs >0 → the pull-date to display for this undated job
+// JSON — no schema migration. Shape: { ver, baselineAt, keys:{ "<key>": [stampMs, lastSeenMs] } }
+//   stampMs 0  → pre-existing at baseline → leave undated
+//   stampMs >0 → the pull-date to display for this (genuinely new) undated job
 // Only undated jobs are ever tracked; dated jobs never consult the registry.
+//
+// BASELINE BY GRACE WINDOW (not a one-shot flag): we anchor baselineAt the first time
+// this version runs, and ANY undated job first seen within GRACE_MS of that anchor is
+// recorded as pre-existing (no date). This absorbs feed hiccups and any scan that ran
+// before the new normalizer was live — the whole current board gets captured over the
+// window rather than from a single snapshot that might be incomplete or mis-normalized.
+// Only undated jobs that FIRST appear AFTER the window are genuinely new → pull-dated.
 const SEEN_ID = "job_seen";
 const PRUNE_MS = 45 * 24 * 60 * 60 * 1000; // drop keys unseen this long (tolerates transient feed gaps)
+const GRACE_MS = 24 * 60 * 60 * 1000;      // baseline capture window after first run
 // Bump to force a clean re-baseline on deploy, discarding any registry a prior/buggy
 // version wrote (e.g. one that wrongly stamped existing jobs "today").
-const REG_VERSION = 2;
+const REG_VERSION = 3;
 
 // Stable job identity: company|title, matching the inbox/alerts key.
 const _nk = (c, t) => `${String(c || "").trim().toLowerCase().replace(/\s+/g, " ")}|${String(t || "").trim().toLowerCase().replace(/\s+/g, " ")}`;
@@ -53,19 +61,11 @@ async function applyFirstSeen(map) {
   // A registry from an older version (or none) is discarded so this version baselines
   // cleanly from scratch — wiping any bad "today" stamps a prior version may have saved.
   const verOk = !!prev && prev.ver === REG_VERSION;
-  const baselined = verOk ? !!prev.baselined : false;
   const keys = (verOk && prev.keys && typeof prev.keys === "object") ? { ...prev.keys } : {};
   const now = Date.now();
-
-  // Baseline mode records every CURRENT undated job as pre-existing (no stamp) so we
-  // never back-date the board. We enter it on the first run, AND we self-heal a bad
-  // baseline that locked onto an empty set: if a prior scan ran under the old
-  // normalizer (every job carried a fabricated date, so nothing looked undated), it
-  // would have saved baselined:true with zero keys — and then stamped every real
-  // undated job "today" once the new normalizer went live. An empty key set with
-  // baselined:true is exactly that signature, so re-baseline instead.
-  const firstRun = !baselined || Object.keys(keys).length === 0;
-  let undatedSeen = 0;
+  // Anchor the baseline the first time THIS version runs; keep it thereafter.
+  const baselineAt = (verOk && typeof prev.baselineAt === "number") ? prev.baselineAt : now;
+  const inGrace = (now - baselineAt) < GRACE_MS;         // still capturing the pre-existing board?
 
   for (const name of Object.keys(map)) {
     const arr = map[name];
@@ -75,11 +75,11 @@ async function applyFirstSeen(map) {
       if (job.postedStr || job.posted) continue;         // has a real date → show as-is, never track
       const key = _nk(job.company || name, job.title);
       if (!key || key === "|") continue;
-      undatedSeen++;
       let ent = keys[key];
       if (!ent) {
-        // first time we've recorded this undated key
-        keys[key] = ent = firstRun ? [0, now] : [now, now]; // baseline → no date; otherwise → posted today
+        // First time we've seen this undated key: pre-existing if we're still inside
+        // the baseline window, otherwise genuinely new → stamp today's pull-date.
+        keys[key] = ent = [inGrace ? 0 : now, now];
       } else {
         ent[1] = now;                                    // refresh last-seen
       }
@@ -101,13 +101,8 @@ async function applyFirstSeen(map) {
     if (!Array.isArray(e) || e[1] < now - PRUNE_MS) delete keys[k];
   }
 
-  // Only LOCK the baseline once we've actually captured undated jobs (i.e. the new
-  // normalizer is live and producing posted:null). A scan that saw none leaves the
-  // baseline open so a later scan under the new normalizer can baseline correctly —
-  // this prevents the empty-baseline latch described above.
-  const nextBaselined = (baselined && Object.keys(keys).length > 0) || undatedSeen > 0;
   const { error: wErr } = await supabaseAdmin.from("job_cache")
-    .upsert({ id: SEEN_ID, data: { ver: REG_VERSION, baselined: nextBaselined, keys }, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    .upsert({ id: SEEN_ID, data: { ver: REG_VERSION, baselineAt, keys }, updated_at: new Date().toISOString() }, { onConflict: "id" });
   if (wErr) throw wErr;                                   // persist failed → caller keeps original snapshot
 }
 
