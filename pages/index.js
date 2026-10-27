@@ -4858,7 +4858,7 @@ export default function App() {
   };
   const [appliedSort,setAppliedSort]=useState("date-desc");
   const [appStage,setAppStage]=useState("applied");
-  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,showOpenApp:false,minMatch:0,dateFrom:""});
+  const [filters,setFilters]=useState({countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,minMatch:0,dateFrom:""});
   // Search updates go through the isolated SearchBox (which debounces locally),
   // so typing never re-renders the whole board — only the committed value lands here.
   const onSearch=useCallback((v)=>{ setFilters(f=>f.search===v?f:{...f,search:v}); },[]);
@@ -5146,7 +5146,7 @@ export default function App() {
   const matches=job=>{
     const f=filters;
     if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false; // talent-community / general-application signups aren't real roles
-    if(_isOpenAppJob(job)&&!f.showOpenApp&&!f.openAppOnly)return false; // open-application cards hidden unless the viewer opts in
+    if(_isOpenAppJob(job)&&(hideLocationTabs||jobSort!=="default")&&!f.openAppOnly)return false; // open-app cards show in the grouped location-tab view; hidden in the flat/sorted list
     if(compiledTitleFilters.length>0){const jt=_mqStrip(_mqNorm(job.title||""));if(!compiledTitleFilters.some(alts=>_titleMatchesCompiled(jt,alts)))return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
@@ -5169,7 +5169,7 @@ export default function App() {
   const matchesExceptSearch=job=>{
     const f=filters;
     if(_isEvergreen(job)&&!_OPENAPP_RE.test(job.title||""))return false;
-    if(_isOpenAppJob(job)&&!f.showOpenApp&&!f.openAppOnly)return false; // open-application cards hidden unless the viewer opts in
+    if(_isOpenAppJob(job)&&(hideLocationTabs||jobSort!=="default")&&!f.openAppOnly)return false; // open-app cards show in the grouped location-tab view; hidden in the flat/sorted list
     if(compiledTitleFilters.length>0){const jt=_mqStrip(_mqNorm(job.title||""));if(!compiledTitleFilters.some(alts=>_titleMatchesCompiled(jt,alts)))return false;}
     if(f.experience?.length>0&&!f.experience.includes(job.experience))return false;
     if(f.remote.length>0){ // OR across work-type categories: match jobs fitting ANY selected option
@@ -5222,7 +5222,7 @@ export default function App() {
   const allTitles=JOB_CATS.slice().sort();
   const hasAnyFilter=filters.titles.length>0||(filters.experience?.length||0)>0||(filters.tiers?.length||0)>0||filters.remote.length>0||filters.types.length>0||filters.dateFrom||filters.newOnly||filters.activeOnly||filters.emailApplyOnly||filters.openAppOnly||filters.minMatch>0||!!filters.search;
   const activeCount=filters.countries.length+filters.states.length+filters.titles.length+(filters.experience?.length||0)+(filters.tiers?.length||0)+filters.remote.length+filters.types.length+(filters.dateFrom?1:0)+(filters.newOnly?1:0)+(filters.activeOnly?1:0)+(filters.emailApplyOnly?1:0)+(filters.openAppOnly?1:0)+(filters.minMatch>0?1:0);
-  const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,showOpenApp:false,minMatch:0,dateFrom:""};
+  const CLEAR={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,minMatch:0,dateFrom:""};
 
   // One-time onboarding: apply a new user's personalization (from /personalize) to
   // their profile AND seed a starter board filter for their very first visit only.
@@ -5238,7 +5238,7 @@ export default function App() {
     if(pers.country) patch.country=pers.country;
     if(Object.keys(patch).length) patchProfile(patch);
     // Build the starter filter from their picks.
-    const sf={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,showOpenApp:false,minMatch:0,dateFrom:""};
+    const sf={countries:[],states:[],titles:[],experience:[],tiers:[],remote:[],types:[],search:"",newOnly:false,activeOnly:true,emailApplyOnly:false,openAppOnly:false,minMatch:0,dateFrom:""};
     if(pers.country){
       if(pers.country==="United States"||pers.country==="Canada") sf.countries=[pers.country];
       else { const cont=COUNTRY_CONTINENT[pers.country]; if(cont) sf.countries=[cont]; }
@@ -5721,10 +5721,6 @@ export default function App() {
               <label onClick={()=>setFilters(f=>({...f,openAppOnly:!f.openAppOnly}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginTop:8}}>
                 <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.openAppOnly?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.openAppOnly?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.openAppOnly&&<I.Check s={9} c="#0a0608"/>}</div>
                 <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Open Application Only</span>
-              </label>
-              <label onClick={()=>setFilters(f=>({...f,showOpenApp:!f.showOpenApp}))} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginTop:8}}>
-                <div style={{width:15,height:15,borderRadius:4,border:`1.5px solid ${filters.showOpenApp?"#c9a84c":"rgba(201,168,76,.25)"}`,background:filters.showOpenApp?"#c9a84c":"rgba(201,168,76,.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>{filters.showOpenApp&&<I.Check s={9} c="#0a0608"/>}</div>
-                <span style={{fontSize:11,color:"rgba(244,237,216,.65)"}}>Include Open Application Cards</span>
               </label>
             </FSection>
             <FSection title="Minimum Match Score" count={filters.minMatch>0?1:0}>

@@ -1,15 +1,18 @@
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
+// Analytics days are bucketed in Eastern time (midnight-to-midnight ET).
+const TZ = "America/New_York";
+const etDay = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ }); // YYYY-MM-DD in ET
 const addDays = (dayStr, n) => { const d = new Date(dayStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const etMonthKeys = (n) => { const [Y, M] = etDay(Date.now()).split("-").map(Number); const out = []; for (let i = n - 1; i >= 0; i--) { const d = new Date(Date.UTC(Y, M - 1 - i, 1)); out.push(d.toISOString().slice(0, 7)); } return out; };
 const pct = (n, d) => d ? Math.round((n / d) * 1000) / 10 : 0;
 function dauRanges(dayVisitors) {
-  const dayStr = (d) => d.toISOString().slice(0, 10);
-  const daily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dayStr(new Date(Date.now() - i * 86400000)); out.push({ date: k, count: (dayVisitors[k] && dayVisitors[k].size) || 0 }); } return out; };
-  const now = new Date();
-  const monthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); const set = new Set(); for (const day in dayVisitors) if (day.slice(0, 7) === key) for (const v of dayVisitors[day]) set.add(v); out.push({ date: key, count: set.size }); } return out; };
+  const today = etDay(Date.now());
+  const daily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = addDays(today, -i); out.push({ date: k, count: (dayVisitors[k] && dayVisitors[k].size) || 0 }); } return out; };
+  const monthly = (months) => etMonthKeys(months).map((key) => { const set = new Set(); for (const day in dayVisitors) if (day.slice(0, 7) === key) for (const v of dayVisitors[day]) set.add(v); return { date: key, count: set.size }; });
   const keys = Object.keys(dayVisitors).sort(); let lifeMonths = 12;
-  if (keys.length) { const f = new Date(keys[0] + "T00:00:00Z"); lifeMonths = Math.max(1, (now.getUTCFullYear() - f.getUTCFullYear()) * 12 + (now.getUTCMonth() - f.getUTCMonth()) + 1); }
+  if (keys.length) { const [fy, fm] = keys[0].split("-").map(Number); const [ny, nm] = today.split("-").map(Number); lifeMonths = Math.max(1, (ny - fy) * 12 + (nm - fm) + 1); }
   return { weekly: daily(7), monthly: daily(30), annually: monthly(12), lifetime: monthly(Math.min(lifeMonths, 120)) };
 }
 
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
     const countryVisitors = {};  // country -> Set(visitor)
     for (const e of evs || []) {
       const v = e.visitor; if (!v || !e.created_at) continue;
-      const day = e.created_at.slice(0, 10);
+      const day = etDay(e.created_at);
       const ts = new Date(e.created_at).getTime();
       (visitorDays[v] = visitorDays[v] || new Set()).add(day);
       (dayVisitors[day] = dayVisitors[day] || new Set()).add(v);
@@ -48,7 +51,7 @@ export default async function handler(req, res) {
       if (ts < s.min) s.min = ts; if (ts > s.max) s.max = ts;
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = etDay(Date.now());
     const dataMaxDay = Object.keys(dayVisitors).sort().pop() || today;
     const days30 = []; for (let i = 29; i >= 0; i--) days30.push(addDays(today, -i));
 
@@ -75,16 +78,15 @@ export default async function handler(req, res) {
     const wau = distinctIn(7), mau = distinctIn(30);
     const avgDau = Math.round(dauSeries.reduce((a, b) => a + b.count, 0) / 30 * 10) / 10;
     // Signed-in vs guest visitor split (a visitor is "signed in" on a day if any of their events that day were authed).
-    const dS = (d) => d.toISOString().slice(0, 10); const nowD = new Date();
-    const splitDaily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dS(new Date(Date.now() - i * 86400000)); const a = (dayAuthed[k] && dayAuthed[k].size) || 0; const tot = (dayVisitors[k] && dayVisitors[k].size) || 0; out.push({ date: k, authed: a, guest: Math.max(0, tot - a) }); } return out; };
-    const splitMonthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); const aSet = new Set(), tSet = new Set(); for (const day in dayVisitors) { if (day.slice(0, 7) !== key) continue; for (const v of dayVisitors[day]) tSet.add(v); if (dayAuthed[day]) for (const v of dayAuthed[day]) aSet.add(v); } out.push({ date: key, authed: aSet.size, guest: Math.max(0, tSet.size - aSet.size) }); } return out; };
-    const sKeys = Object.keys(dayVisitors).sort(); let sLM = 12; if (sKeys.length) { const f = new Date(sKeys[0] + "T00:00:00Z"); sLM = Math.max(1, (nowD.getUTCFullYear() - f.getUTCFullYear()) * 12 + (nowD.getUTCMonth() - f.getUTCMonth()) + 1); }
+    const splitDaily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = addDays(today, -i); const a = (dayAuthed[k] && dayAuthed[k].size) || 0; const tot = (dayVisitors[k] && dayVisitors[k].size) || 0; out.push({ date: k, authed: a, guest: Math.max(0, tot - a) }); } return out; };
+    const splitMonthly = (months) => etMonthKeys(months).map((key) => { const aSet = new Set(), tSet = new Set(); for (const day in dayVisitors) { if (day.slice(0, 7) !== key) continue; for (const v of dayVisitors[day]) tSet.add(v); if (dayAuthed[day]) for (const v of dayAuthed[day]) aSet.add(v); } return { date: key, authed: aSet.size, guest: Math.max(0, tSet.size - aSet.size) }; });
+    const sKeys = Object.keys(dayVisitors).sort(); let sLM = 12; if (sKeys.length) { const [fy, fm] = sKeys[0].split("-").map(Number); const [ny, nm] = today.split("-").map(Number); sLM = Math.max(1, (ny - fy) * 12 + (nm - fm) + 1); }
     const visitorSplit = { weekly: splitDaily(7), monthly: splitDaily(30), annually: splitMonthly(12), lifetime: splitMonthly(Math.min(sLM, 120)) };
     const from30 = addDays(today, -29); const authed30 = new Set(); for (const d in dayAuthed) if (d >= from30 && d <= today) for (const v of dayAuthed[d]) authed30.add(v);
     const signedInVisitors = authed30.size; const guestVisitors = Math.max(0, mau - signedInVisitors);
     // Landing vs job-board page views (distinct visitors per page per day).
-    const pgDaily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dS(new Date(Date.now() - i * 86400000)); out.push({ date: k, landing: (dayLanding[k] && dayLanding[k].size) || 0, board: (dayBoard[k] && dayBoard[k].size) || 0 }); } return out; };
-    const pgMonthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); const lSet = new Set(), bSet = new Set(); for (const day in dayLanding) if (day.slice(0, 7) === key) for (const v of dayLanding[day]) lSet.add(v); for (const day in dayBoard) if (day.slice(0, 7) === key) for (const v of dayBoard[day]) bSet.add(v); out.push({ date: key, landing: lSet.size, board: bSet.size }); } return out; };
+    const pgDaily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = addDays(today, -i); out.push({ date: k, landing: (dayLanding[k] && dayLanding[k].size) || 0, board: (dayBoard[k] && dayBoard[k].size) || 0 }); } return out; };
+    const pgMonthly = (months) => etMonthKeys(months).map((key) => { const lSet = new Set(), bSet = new Set(); for (const day in dayLanding) if (day.slice(0, 7) === key) for (const v of dayLanding[day]) lSet.add(v); for (const day in dayBoard) if (day.slice(0, 7) === key) for (const v of dayBoard[day]) bSet.add(v); return { date: key, landing: lSet.size, board: bSet.size }; });
     const pageSplit = { weekly: pgDaily(7), monthly: pgDaily(30), annually: pgMonthly(12), lifetime: pgMonthly(Math.min(sLM, 120)) };
     const lSet30 = new Set(), bSet30 = new Set();
     for (const d in dayLanding) if (d >= from30 && d <= today) for (const v of dayLanding[d]) lSet30.add(v);

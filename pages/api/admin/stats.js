@@ -3,13 +3,19 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 const top = (o, n = 10) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n).map(([label, count]) => ({ label, count }));
 const rate = (num, den) => den ? Math.round((num / den) * 1000) / 10 : 0;
+
+// Analytics days are bucketed in Eastern time, so a "day" runs midnight-to-midnight ET.
+const TZ = "America/New_York";
+const etDay = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ }); // YYYY-MM-DD in ET
+const addDays = (dayStr, n) => { const d = new Date(dayStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }; // step a date string (DST-safe)
+const etMonthKeys = (n) => { const [Y, M] = etDay(Date.now()).split("-").map(Number); const out = []; for (let i = n - 1; i >= 0; i--) { const d = new Date(Date.UTC(Y, M - 1 - i, 1)); out.push(d.toISOString().slice(0, 7)); } return out; };
+
 function buildRanges(byDay) {
-  const dayStr = (d) => d.toISOString().slice(0, 10);
-  const daily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dayStr(new Date(Date.now() - i * 86400000)); out.push({ date: k, count: byDay[k] || 0 }); } return out; };
-  const now = new Date();
-  const monthly = (months) => { const out = []; for (let i = months - 1; i >= 0; i--) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); const key = d.toISOString().slice(0, 7); let c = 0; for (const day in byDay) if (day.slice(0, 7) === key) c += byDay[day]; out.push({ date: key, count: c }); } return out; };
+  const today = etDay(Date.now());
+  const daily = (n) => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = addDays(today, -i); out.push({ date: k, count: byDay[k] || 0 }); } return out; };
+  const monthly = (months) => etMonthKeys(months).map((key) => { let c = 0; for (const day in byDay) if (day.slice(0, 7) === key) c += byDay[day]; return { date: key, count: c }; });
   const keys = Object.keys(byDay).sort(); let lifeMonths = 12;
-  if (keys.length) { const f = new Date(keys[0] + "T00:00:00Z"); lifeMonths = Math.max(1, (now.getUTCFullYear() - f.getUTCFullYear()) * 12 + (now.getUTCMonth() - f.getUTCMonth()) + 1); }
+  if (keys.length) { const [fy, fm] = keys[0].split("-").map(Number); const [ny, nm] = today.split("-").map(Number); lifeMonths = Math.max(1, (ny - fy) * 12 + (nm - fm) + 1); }
   return { weekly: daily(7), monthly: daily(30), annually: monthly(12), lifetime: monthly(Math.min(lifeMonths, 120)) };
 }
 
@@ -33,7 +39,7 @@ export default async function handler(req, res) {
         const { data } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
         const users = (data && data.users) || [];
         totalUsers += users.length;
-        for (const usr of users) { const d = (usr.created_at || "").slice(0, 10); if (d) signupsByDay[d] = (signupsByDay[d] || 0) + 1; }
+        for (const usr of users) { const d = usr.created_at ? etDay(usr.created_at) : ""; if (d) signupsByDay[d] = (signupsByDay[d] || 0) + 1; }
         if (users.length < 1000) break;
         page++;
       }
@@ -66,7 +72,7 @@ export default async function handler(req, res) {
       const { data: apps } = await supabaseAdmin.from("applications").select("applied_at,company,status,user_id").limit(100000);
       totalApplications = (apps || []).length;
       for (const a of apps || []) {
-        const d = (a.applied_at || "").slice(0, 10); if (d) appsByDay[d] = (appsByDay[d] || 0) + 1;
+        const d = a.applied_at ? etDay(a.applied_at) : ""; if (d) appsByDay[d] = (appsByDay[d] || 0) + 1;
         if (a.company) appsByCompany[a.company] = (appsByCompany[a.company] || 0) + 1;
         const st = a.status || "applied";
         statusCounts[st] = (statusCounts[st] || 0) + 1;
@@ -113,7 +119,7 @@ export default async function handler(req, res) {
 
     // ── 30-day series ──
     const days = [];
-    for (let i = 29; i >= 0; i--) days.push(new Date(Date.now() - i * 86400000).toISOString().slice(0, 10));
+    { const today = etDay(Date.now()); for (let i = 29; i >= 0; i--) days.push(addDays(today, -i)); }
 
     res.status(200).json({
       generatedAt: new Date().toISOString(),

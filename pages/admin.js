@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const GOLD = "#c9a84c", G = "linear-gradient(135deg,#c9a84c,#e8613a)";
-const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"], ["aitx", "AI Transactions"], ["tools", "Tools"]];
+const TABS = [["overview", "Overview"], ["jobs", "Jobs & Search"], ["newjobs", "New Jobs"], ["applications", "Applications"], ["users", "Users"], ["engagement", "Engagement"], ["revenue", "Premium & Revenue"], ["aitx", "AI Transactions"], ["tools", "Tools"]];
 const COUNTRY_NAMES = { US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", NL:"Netherlands", SE:"Sweden", FI:"Finland", NO:"Norway", DK:"Denmark", PL:"Poland", ES:"Spain", IT:"Italy", IE:"Ireland", PT:"Portugal", BE:"Belgium", CH:"Switzerland", AT:"Austria", CZ:"Czechia", RO:"Romania", UA:"Ukraine", RU:"Russia", TR:"Turkey", JP:"Japan", KR:"South Korea", CN:"China", IN:"India", SG:"Singapore", PH:"Philippines", ID:"Indonesia", MY:"Malaysia", TH:"Thailand", VN:"Vietnam", AU:"Australia", NZ:"New Zealand", BR:"Brazil", MX:"Mexico", AR:"Argentina", CL:"Chile", CO:"Colombia", ZA:"South Africa", NG:"Nigeria", EG:"Egypt", KE:"Kenya", IL:"Israel", AE:"UAE", SA:"Saudi Arabia", PK:"Pakistan", BD:"Bangladesh", HK:"Hong Kong", TW:"Taiwan", GR:"Greece", HU:"Hungary", BG:"Bulgaria", HR:"Croatia", RS:"Serbia", SK:"Slovakia", SI:"Slovenia", LT:"Lithuania", LV:"Latvia", EE:"Estonia", IS:"Iceland", LU:"Luxembourg" };
 const SEGMENT_LABELS = { student: "Student", grad: "Post Grad", veteran: "Industry Veteran" };
 const HEARD_LABELS = { linkedin: "LinkedIn", google: "Google / Search", word_of_mouth: "Word of mouth", school: "School / University", other: "Other" };
@@ -28,6 +28,8 @@ export default function Admin() {
   const [usersStatus, setUsersStatus] = useState("idle");
   const [uq, setUq] = useState("");
   const [selUser, setSelUser] = useState(null);
+  const [njobs, setNjobs] = useState(null);
+  const [njStatus, setNjStatus] = useState("idle");
 
   useEffect(() => {
     if (tab !== "engagement" || engStatus !== "idle") return;
@@ -43,6 +45,21 @@ export default function Admin() {
       } catch (e) { setEngStatus("error"); }
     })();
   }, [tab, engStatus]); // idle | loading | ready | error
+
+  useEffect(() => {
+    if (tab !== "newjobs" || njStatus !== "idle") return;
+    setNjStatus("loading");
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/new-jobs", { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { setNjStatus("error"); return; }
+        setNjobs(await r.json());
+        setNjStatus("ready");
+      } catch (e) { setNjStatus("error"); }
+    })();
+  }, [tab, njStatus]);
 
   useEffect(() => {
     if (tab !== "aitx" || aitxStatus !== "idle") return;
@@ -171,6 +188,28 @@ export default function Admin() {
                     <Panel title="Most-saved jobs"><BarList rows={s.topSaved} empty="No saved jobs yet." /></Panel>
                     <Panel title="Most-shared jobs"><BarList rows={s.topShared} empty="No shares yet." /></Panel>
                   </TwoCol>
+                </>
+              )}
+
+              {tab === "newjobs" && (
+                <>
+                  {njStatus === "loading" && <Note>Loading new jobs…</Note>}
+                  {njStatus === "error" && <Note>Couldn't load new jobs.</Note>}
+                  {njStatus === "ready" && njobs && (
+                    <>
+                      <Kpis items={[
+                        ["Posted today", (njobs.counts && njobs.counts.today) || 0, null, "#7ecfb3", "Jobs whose posted date is today — either a real ATS date or the day our first-seen tracker first pulled the job."],
+                        ["Last 7 days", (njobs.counts && njobs.counts.week) || 0, null, "#c9a84c", "Jobs posted in the last 7 days."],
+                        [`Last ${njobs.windowDays || 30} days`, (njobs.counts && njobs.counts.dated) || 0, null, null, "All dated jobs currently on the board within the window, newest first."],
+                      ]} />
+                      <Panel title={`New & recent postings — newest first${njobs.total > 500 ? ` (showing 500 of ${njobs.total})` : ""}`}>
+                        <NewJobsList rows={njobs.jobs} />
+                      </Panel>
+                      <p style={{ fontSize: 11, color: "rgba(244,237,216,.4)", marginTop: 8, fontStyle: "italic", lineHeight: 1.5 }}>
+                        A “New find” tag means our first-seen tracker dated the job by when we first pulled it (its ATS gave no real post date). The rest show the real date from the company’s feed. Jobs with no date at all don’t appear until first-seen dates them — which begins after the tracker’s 24-hour baseline window.
+                      </p>
+                    </>
+                  )}
                 </>
               )}
 
@@ -431,6 +470,22 @@ function Panel({ title, children, accent }) {
     <div style={{ background: "rgba(16,10,22,.5)", border: `1px solid ${accent ? "rgba(232,97,58,.3)" : "rgba(201,168,76,.14)"}`, borderRadius: 14, padding: "16px 18px", marginBottom: accent ? 16 : 0 }}>
       <div style={{ fontSize: 12, color: accent ? "#e8a070" : "#f0d080", fontFamily: "'Cinzel',serif", fontWeight: 700, letterSpacing: .4, marginBottom: 14 }}>{title}</div>
       {children}
+    </div>
+  );
+}
+function NewJobsList({ rows }) {
+  if (!rows || !rows.length) return <Note>No dated jobs in this window yet. Once the first-seen tracker starts dating newly-pulled jobs (after its 24-hour baseline), they’ll appear here, newest first.</Note>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {rows.map((j, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "9px 12px", background: "rgba(201,168,76,.04)", border: "1px solid rgba(201,168,76,.12)", borderRadius: 9 }}>
+          <span style={{ fontSize: 11, color: "rgba(244,237,216,.45)", minWidth: 92 }}>{j.postedStr || "—"}</span>
+          {j.firstSeen && <span style={{ fontSize: 9, color: "#7ecfb3", background: "rgba(126,207,179,.12)", border: "1px solid rgba(126,207,179,.3)", padding: "1px 7px", borderRadius: 20, fontFamily: "'Cinzel',serif", fontWeight: 700 }}>New find</span>}
+          <span style={{ flex: 1, minWidth: 180, fontSize: 13, color: "#f4edd8", fontWeight: 600 }}>{j.url ? <a href={j.url} target="_blank" rel="noreferrer" style={{ color: "#f4edd8", textDecoration: "none" }}>{j.title}</a> : j.title}</span>
+          <span style={{ fontSize: 12, color: "rgba(244,237,216,.6)", minWidth: 120 }}>{j.company}</span>
+          {j.location && <span style={{ fontSize: 10, color: "rgba(244,237,216,.4)" }}>{j.location}</span>}
+        </div>
+      ))}
     </div>
   );
 }

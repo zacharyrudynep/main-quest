@@ -4,6 +4,10 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const money = (n) => Math.round(n * 100) / 100;
+// Revenue days are bucketed in Eastern time (midnight-to-midnight ET), matching the rest of the dashboard.
+const TZ = "America/New_York";
+const etDay = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ }); // YYYY-MM-DD in ET
+const addDays = (dayStr, n) => { const d = new Date(dayStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 // Owner-only revenue metrics pulled live from the Stripe API.
 export default async function handler(req, res) {
@@ -45,7 +49,7 @@ export default async function handler(req, res) {
         totalRevenue += amt;
         if (ch.created >= cutoff) {
           revenue30 += amt;
-          const d = new Date(ch.created * 1000).toISOString().slice(0, 10);
+          const d = etDay(ch.created * 1000);
           revByDay[d] = (revByDay[d] || 0) + amt;
         }
         if (!ch.invoice) lifetimeCount++; // no invoice → one-time (lifetime) purchase
@@ -59,7 +63,7 @@ export default async function handler(req, res) {
     for await (const sub of stripe.subscriptions.list({ status: "canceled", limit: 100 })) { if (sub.canceled_at && sub.canceled_at >= cutoff) canceledSubs30++; if (++k >= 5000) break; }
 
     const days = [];
-    for (let j = 29; j >= 0; j--) days.push(new Date(Date.now() - j * 86400000).toISOString().slice(0, 10));
+    { const today = etDay(Date.now()); for (let j = 29; j >= 0; j--) days.push(addDays(today, -j)); }
 
     res.status(200).json({
       configured: true,
