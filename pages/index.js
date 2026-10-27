@@ -5194,9 +5194,13 @@ export default function App() {
       return arr.sort((a,b)=>sc.get(b)-sc.get(a));
     }
     if(jobSort==="newest"){
+      // Newest = real dated postings only. The evergreen "Open Application" / register-
+      // interest cards have no post date and aren't actual openings, so they're excluded
+      // from the recency view instead of filling the top of it.
+      const real=arr.filter(j=>!_isOpenAppJob(j));
       const tm=new Map();
-      for(const j of arr){ const t=j.posted?new Date(j.posted).getTime():NaN; tm.set(j,Number.isFinite(t)?t:null); }
-      return arr.sort((a,b)=>{
+      for(const j of real){ const t=j.posted?new Date(j.posted).getTime():NaN; tm.set(j,Number.isFinite(t)?t:null); }
+      return real.sort((a,b)=>{
         const va=tm.get(a),vb=tm.get(b);
         if(va===null&&vb===null)return 0;
         if(va===null)return 1;  // undated jobs always sort to the end
@@ -5421,7 +5425,10 @@ export default function App() {
   // Flat job list for "hide location tabs" mode: flatten the tree, honoring the
   // region/state filters + search + all other filters + the active sort.
   const flatJobs=useMemo(()=>{
-    if(!hideLocationTabs) return [];
+    // Compute the flat global list when the flat toggle is on OR any global sort is
+    // active — a ranked sort (newest/match/experience) only makes sense as one list,
+    // not re-ranked inside each location-grouped company tab.
+    if(!hideLocationTabs && jobSort==="default") return [];
     const out=[]; const seen=new Set();
     for(const [country,states] of Object.entries(displayTree)){
       if(filters.countries.length>0 && !filters.countries.includes(country)) continue;
@@ -5732,7 +5739,7 @@ export default function App() {
         </div>
         {/* Job tree */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {hideLocationTabs?(
+          {(hideLocationTabs||jobSort!=="default")?(
             flatJobs.length===0?
               <div style={{textAlign:"center",padding:"48px 20px",color:"rgba(244,237,216,.4)",fontSize:13}}>No jobs match your current filters.</div>
             :<>
