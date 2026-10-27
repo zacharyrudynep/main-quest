@@ -134,6 +134,26 @@ function looksLikeSnapshot(gz) {
 export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
+      // Diagnostic: /api/jobs/cache?seen=1 reports the first-seen registry state so we
+      // can confirm which version of this file is actually live and what it's doing.
+      if (req.query && req.query.seen) {
+        res.setHeader("Cache-Control", "no-store");
+        try {
+          const { data } = await supabaseAdmin.from("job_cache").select("data,updated_at").eq("id", SEEN_ID).single();
+          const d = (data && data.data && typeof data.data === "object") ? data.data : {};
+          const keys = (d.keys && typeof d.keys === "object") ? d.keys : {};
+          let stamped = 0, baseline = 0;
+          for (const k in keys) { const e = keys[k]; if (Array.isArray(e) && e[0] > 0) stamped++; else baseline++; }
+          return res.status(200).json({
+            fileVersion: REG_VERSION,                 // what the DEPLOYED code expects
+            registryVersion: d.ver || null,           // what's actually stored
+            baselineAt: d.baselineAt || null,
+            graceMsLeft: d.baselineAt ? Math.max(0, GRACE_MS - (Date.now() - d.baselineAt)) : null,
+            totalKeys: Object.keys(keys).length, stamped, baseline,
+            registryUpdatedAt: data && data.updated_at,
+          });
+        } catch (e) { return res.status(200).json({ error: String((e && e.message) || e) }); }
+      }
       // Let browsers (and any CDN in front) cache briefly too.
       res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
       const now = Date.now();
