@@ -5,6 +5,7 @@
 import zlib from "zlib";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { buildJobMap } from "../../../lib/board";
+import { applyFirstSeen } from "../../../lib/firstSeen";
 import { heartbeat } from "../../../lib/heartbeat";
 
 export const config = { maxDuration: 120 };
@@ -39,14 +40,22 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, skipped: true, note: `only ${companies} companies — not caching`, ms: Date.now() - started });
     }
 
+    // Stamp first-seen pull-dates on undated jobs BEFORE caching. This cron is the
+    // authoritative scan that writes the live snapshot, so the stamping must happen
+    // here (the client POST path rarely runs — the cron keeps the cache fresh). If it
+    // fails we still cache the unstamped map so the board never breaks.
+    let stamped = false;
+    try { await applyFirstSeen(map, "cron"); stamped = true; }
+    catch (e) { await heartbeat("first-seen", false, String((e && e.message) || e).slice(0, 120)); }
+
     const gz = zlib.gzipSync(Buffer.from(JSON.stringify(map), "utf8")).toString("base64");
     const { error } = await supabaseAdmin
       .from("job_cache")
       .upsert({ id: "live", data: { gz }, updated_at: new Date().toISOString() }, { onConflict: "id" });
     if (error) return res.status(500).json({ ok: false, error: error.message });
 
-    await heartbeat("build-snapshot", true, `${companies} companies`);
-    return res.status(200).json({ ok: true, companies, bytes: gz.length, ms: Date.now() - started });
+    await heartbeat("build-snapshot", true, `${companies} companies${stamped ? "" : " (unstamped)"}`);
+    return res.status(200).json({ ok: true, companies, stamped, bytes: gz.length, ms: Date.now() - started });
   } catch (e) {
     await heartbeat("build-snapshot", false, e.message);
     return res.status(500).json({ ok: false, error: e.message });

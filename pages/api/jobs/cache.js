@@ -1,6 +1,9 @@
 import zlib from "zlib";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { rateLimit, getClientIp } from "../../../lib/rateLimit";
+// First-seen posted-date stamping lives in a shared module so the build-snapshot cron
+// (the authoritative writer) and this client-POST fallback use the exact same logic.
+import { applyFirstSeen, getFirstSeenDiag, SEEN_ID, REG_VERSION, GRACE_MS } from "../../../lib/firstSeen";
 
 // Raise Next.js's default 1MB API body limit — the compressed snapshot can be a few MB.
 // (Stays under Vercel's hard 4.5MB request cap.)
@@ -17,95 +20,6 @@ const TTL_MS = 15 * 60 * 1000;
 // cut, since otherwise each board load re-downloaded the whole snapshot from the database.
 let MEM = { gz: null, updatedAt: 0, fetchedAt: 0 };
 const MEM_TTL = 60 * 1000;
-
-// ─── First-seen posted dates ────────────────────────────────────────────────
-// Policy: a job shows a "Posted" date ONLY if the company's ATS feed provides a
-// real one (handled in lib/normalize.js — undated jobs arrive with posted:null).
-// For jobs with NO real date, we stamp the day WE first pulled them: a job that's
-// new to our board was, in practice, posted that day. We never back-date the jobs
-// already on the board — the first scan after this ships is a BASELINE: every
-// currently-undated job is recorded as pre-existing and stays dateless. Only keys
-// that appear for the FIRST time after that baseline get the pull-date stamp.
-//
-// Storage: a second row in the existing job_cache table (id="job_seen"), plain
-// JSON — no schema migration. Shape: { ver, baselineAt, keys:{ "<key>": [stampMs, lastSeenMs] } }
-//   stampMs 0  → pre-existing at baseline → leave undated
-//   stampMs >0 → the pull-date to display for this (genuinely new) undated job
-// Only undated jobs are ever tracked; dated jobs never consult the registry.
-//
-// BASELINE BY GRACE WINDOW (not a one-shot flag): we anchor baselineAt the first time
-// this version runs, and ANY undated job first seen within GRACE_MS of that anchor is
-// recorded as pre-existing (no date). This absorbs feed hiccups and any scan that ran
-// before the new normalizer was live — the whole current board gets captured over the
-// window rather than from a single snapshot that might be incomplete or mis-normalized.
-// Only undated jobs that FIRST appear AFTER the window are genuinely new → pull-dated.
-const SEEN_ID = "job_seen";
-const PRUNE_MS = 45 * 24 * 60 * 60 * 1000; // drop keys unseen this long (tolerates transient feed gaps)
-const GRACE_MS = 24 * 60 * 60 * 1000;      // baseline capture window after first run
-let LAST_POST_DIAG = null;                  // diagnostics from the most recent POST (see ?seen=1)
-// Bump to force a clean re-baseline on deploy, discarding any registry a prior/buggy
-// version wrote (e.g. one that wrongly stamped existing jobs "today").
-const REG_VERSION = 3;
-
-// Stable job identity: company|title, matching the inbox/alerts key.
-const _nk = (c, t) => `${String(c || "").trim().toLowerCase().replace(/\s+/g, " ")}|${String(t || "").trim().toLowerCase().replace(/\s+/g, " ")}`;
-const _fmtDate = (ms) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-// Walk the company→jobs snapshot, stamp first-seen dates on undated jobs per the
-// policy above, and persist the registry. Mutates `map` in place. THROWS on any
-// Supabase read/write failure so the caller keeps the client's original snapshot
-// rather than showing a date we didn't actually persist (keeps the two in sync).
-async function applyFirstSeen(map) {
-  const { data, error } = await supabaseAdmin.from("job_cache").select("data").eq("id", SEEN_ID).single();
-  if (error && error.code !== "PGRST116") throw error;   // real read failure → abort, don't risk a false re-baseline
-  const prev = (data && data.data && typeof data.data === "object") ? data.data : null;
-  // A registry from an older version (or none) is discarded so this version baselines
-  // cleanly from scratch — wiping any bad "today" stamps a prior version may have saved.
-  const verOk = !!prev && prev.ver === REG_VERSION;
-  const keys = (verOk && prev.keys && typeof prev.keys === "object") ? { ...prev.keys } : {};
-  const now = Date.now();
-  // Anchor the baseline the first time THIS version runs; keep it thereafter.
-  const baselineAt = (verOk && typeof prev.baselineAt === "number") ? prev.baselineAt : now;
-  const inGrace = (now - baselineAt) < GRACE_MS;         // still capturing the pre-existing board?
-
-  for (const name of Object.keys(map)) {
-    const arr = map[name];
-    if (!Array.isArray(arr)) continue;
-    for (const job of arr) {
-      if (!job || typeof job !== "object") continue;
-      if (job.postedStr || job.posted) continue;         // has a real date → show as-is, never track
-      const key = _nk(job.company || name, job.title);
-      if (!key || key === "|") continue;
-      let ent = keys[key];
-      if (!ent) {
-        // First time we've seen this undated key: pre-existing if we're still inside
-        // the baseline window, otherwise genuinely new → stamp today's pull-date.
-        keys[key] = ent = [inGrace ? 0 : now, now];
-      } else {
-        ent[1] = now;                                    // refresh last-seen
-      }
-      const stamp = ent[0];
-      if (stamp > 0) {
-        job.posted = new Date(stamp).toISOString();
-        job.postedStr = _fmtDate(stamp);
-        const d = Math.floor((now - stamp) / 86400000);
-        job.daysAgo = d;
-        job.isNew = d < 3;
-      }
-      // stamp === 0 → leave undated (no "Posted" badge).
-    }
-  }
-
-  // Prune keys not seen recently so the registry stays bounded.
-  for (const k of Object.keys(keys)) {
-    const e = keys[k];
-    if (!Array.isArray(e) || e[1] < now - PRUNE_MS) delete keys[k];
-  }
-
-  const { error: wErr } = await supabaseAdmin.from("job_cache")
-    .upsert({ id: SEEN_ID, data: { ver: REG_VERSION, baselineAt, keys }, updated_at: new Date().toISOString() }, { onConflict: "id" });
-  if (wErr) throw wErr;                                   // persist failed → caller keeps original snapshot
-}
 
 // Validate an incoming compressed snapshot before we store it, so a bad actor can't
 // poison the shared cache. Layered + safe:
@@ -152,7 +66,7 @@ export default async function handler(req, res) {
             graceMsLeft: d.baselineAt ? Math.max(0, GRACE_MS - (Date.now() - d.baselineAt)) : null,
             totalKeys: Object.keys(keys).length, stamped, baseline,
             registryUpdatedAt: data && data.updated_at,
-            lastPost: LAST_POST_DIAG,                   // what the most recent rebuild saw/did
+            lastRun: getFirstSeenDiag(),                 // what the most recent stamping run (cron or POST) saw/did
           });
         } catch (e) { return res.status(200).json({ error: String((e && e.message) || e) }); }
       }
@@ -195,29 +109,17 @@ export default async function handler(req, res) {
       // undated jobs here, then store the stamped snapshot. Anything going wrong
       // (decompress, parse, registry I/O) falls back to the client's original gz
       // so the board is never broken by this feature. Each step is recorded in a
-      // diagnostic that ?seen=1 surfaces, so we can see what the browser sent and
-      // exactly where/why stamping failed.
+      // diagnostic that ?seen=1 surfaces (via the shared module's getFirstSeenDiag).
+      // In practice the build-snapshot cron keeps the cache fresh, so this fallback
+      // rarely fires — but when it does it uses the same stamping as the cron.
       let outGz = gz, stamped = false;
-      const diag = { ts: new Date().toISOString(), phase: "start", gzLen: gz.length };
       try {
         const raw = Buffer.from(gz, "base64");
-        diag.phase = "gunzip";
         const map = JSON.parse(zlib.gunzipSync(raw, { maxOutputLength: 80 * 1024 * 1024 }).toString("utf8"));
-        diag.companies = Object.keys(map).length;
-        const _all = Object.values(map).flat().filter(Boolean);
-        const _today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        diag.jobsIn = _all.length;
-        diag.undatedIn = _all.filter(j => !j.postedStr).length;   // what the BROWSER sent as undated
-        diag.todayIn = _all.filter(j => j.postedStr === _today).length; // ...and as today
-        diag.phase = "applyFirstSeen";
-        await applyFirstSeen(map);                        // mutates map; throws on Supabase failure
-        diag.undatedOut = Object.values(map).flat().filter(j => j && !j.postedStr).length;
-        diag.phase = "regzip";
+        await applyFirstSeen(map, "post");                // mutates map; throws on Supabase failure
         const reGz = zlib.gzipSync(Buffer.from(JSON.stringify(map))).toString("base64");
         if (reGz.length <= 4000000) { outGz = reGz; stamped = true; } // keep original if re-gzip overflows the cap
-        diag.phase = "done"; diag.stamped = stamped;
-      } catch (e) { outGz = gz; stamped = false; diag.error = String((e && (e.stack || e.message)) || e).slice(0, 600); }
-      LAST_POST_DIAG = diag;
+      } catch (e) { outGz = gz; stamped = false; }
 
       const { error: upErr } = await supabaseAdmin.from("job_cache").upsert({ id: "live", data: { gz: outGz }, updated_at: new Date().toISOString() }, { onConflict: "id" });
       if (upErr) return res.status(500).json({ error: "save failed: " + upErr.message });
