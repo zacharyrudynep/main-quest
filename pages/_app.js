@@ -1,5 +1,4 @@
 import "@/styles/globals.css";
-import { Analytics } from "@vercel/analytics/next";
 import { useEffect, useState } from "react";
 import { trackVisitOncePerDay } from "../lib/track";
 import { getConsent } from "../lib/consent";
@@ -49,7 +48,6 @@ export default function App({ Component, pageProps }) {
   return (
     <>
       <Component {...pageProps} />
-      {consent === "accepted" && <Analytics />}
       <ConsentBanner onChange={setConsent} />
     </>
   );

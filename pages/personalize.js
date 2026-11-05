@@ -207,9 +207,6 @@ export default function Personalize() {
     <>
       <Head>
         <title>Main Quest — Set Up Your Account</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
       </Head>
       <style>{`
         @keyframes qfade{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}

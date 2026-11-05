@@ -38,9 +38,6 @@ export default function SharedJob({ job, base, shareUrl }) {
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={desc} />
         <meta name="twitter:image" content={ogImage} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
       </Head>
 
       <div style={{ minHeight: "100vh", overflowX: "hidden", maxWidth: "100%", background: "radial-gradient(1100px 620px at 50% -12%, rgba(139,32,32,.16), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif" }}>

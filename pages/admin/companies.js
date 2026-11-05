@@ -200,8 +200,6 @@ export default function CompaniesAdmin() {
       <Head>
         <title>Main Quest — Company Editor</title>
         <meta name="robots" content="noindex" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
       </Head>
       <div style={{ minHeight: "100vh", background: "radial-gradient(1100px 620px at 50% -12%, rgba(139,32,32,.14), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "28px 18px 120px" }}>
         <div style={{ maxWidth: 920, margin: "0 auto" }}>

@@ -1740,37 +1740,37 @@ function FeatureShowcase(){
   const SECTIONS=[
     {slug:"job-board",title:"Job Hub",
      tagline:"Every game-industry opening, gathered into one living board that never goes stale.",
-     shots:["/shots/JobBoard_IMG01.png","/shots/Filter_IMG.png","/shots/LiveFeed_IMG.png","/shots/SavedJobs_IMG.png"],
+     shots:["/shots/JobBoard_IMG01.webp","/shots/Filter_IMG.webp","/shots/LiveFeed_IMG.webp","/shots/SavedJobs_IMG.webp"],
      subs:[
        {label:"Filters & Sorting",shot:1,desc:"Dial in exactly what you’re after — filter by region, state or country, role category, seniority, studio tier, and work type, then sort by best match, newest, or experience level. Go as broad as “all remote gameplay roles” or as precise as “senior AAA technical artists in California.”"},
        {label:"Live Feeds",shot:2,desc:"The jobs are as new as you are active. Every time you open the board, Main Quest re-scans the source feeds for brand-new postings — so what you see is always live, never a stale, days-old cache."},
        {label:"Save & Share Jobs",shot:3,desc:"Bookmark any posting to your saved list to revisit later, and share a role with a single link — perfect for sending an opening to a friend or building out your own shortlist."},
      ]},
     {slug:"company-alerts",title:"Live Company Alerts",tagline:"Never miss the moment your dream studio starts hiring.",
-     shots:["/shots/Notifications_IMG.png","/shots/CompanyBell_IMG.png","/shots/EmailDigest_IMG.png"],
+     shots:["/shots/Notifications_IMG.webp","/shots/CompanyBell_IMG.webp","/shots/EmailDigest_IMG.webp"],
      subs:[
       {label:"Job-Specific Notifications",tier:"plus",shot:0,desc:"Set your criteria once and get pinged the moment a brand-new posting matches — by role, location, seniority, and more — so you’re among the first to apply."},
       {label:"Company Bell",shot:1,desc:"Follow any studio with a tap of the bell and get notified whenever it posts new openings, no matter what they are."},
       {label:"Email Digest",shot:2,desc:"Prefer it in your inbox? Get a periodic email rounding up the newest matching roles so you never have to check manually."},
     ]},
     {slug:"email-templates",title:"Email-Apply Templates",tagline:"Write one great application email, then send it everywhere in a click.",
-     shots:["/shots/EmailTemplate_IMG.png"],
+     shots:["/shots/EmailTemplate_IMG.webp"],
      subs:[
       {label:"Customizable One-Click Generation",tier:"plus",desc:"Let AI draft a polished, professional application email from scratch that you can reuse across every email-apply role.\n\nCompany name, position, and your links drop into the draft automatically for each job — no copy-pasting, no typos.\n\nEdit, tweak, and save your own template exactly how you want it, with placeholders you control."},
     ]},
     {slug:"job-match-score-breakdown",title:"Match Score Breakdown",tagline:"Know exactly how well you fit a role — and precisely why, factor by factor.",
-     shots:["/shots/Breakdown_IMG.png"],
+     shots:["/shots/Breakdown_IMG.webp"],
      subs:[
       {label:"Factor Breakdown & Potential Improvements",tier:"plus",desc:"See your 0–10 match split by factor — skills, experience level, seniority, location, and keyword overlap — so the score is never a black box.\n\nGet concrete, specific suggestions on what to add or adjust in your profile to raise your match on a given role."},
     ]},
     {slug:"ai-resume-tailor",title:"Resume Tailoring",tagline:"Reshape your resume for any role in seconds — without losing what makes it yours.",
-     shots:["/shots/KeywordMatch_IMG.png","/shots/TailorResume_IMG.png"],
+     shots:["/shots/KeywordMatch_IMG.webp","/shots/TailorResume_IMG.webp"],
      subs:[
       {label:"Keyword Matching",tier:"premium",shot:0,desc:"Surfaces the exact skills and terms a posting is looking for, so you can speak the role’s language."},
       {label:"Surgical Editing & Updated Match Score",tier:"premium",shot:1,desc:"Rewrites and sharpens your bullet points to fit the role while preserving your real experience, voice, and original formatting.\n\nShows your match score before and after tailoring, so you can see exactly how much stronger a fit you’ve become."},
     ]},
     {slug:"application-tracking",title:"Job-Specific Interview Prep",tagline:"Every application, organized from first click to final answer — and prepped to win.",
-     shots:["/shots/InterviewPrep_IMG.png","/shots/Applications_IMG.png"],
+     shots:["/shots/InterviewPrep_IMG.webp","/shots/Applications_IMG.webp"],
      subs:[
       {label:"Interview Prep",tier:"premium",shot:0,desc:"Generate interview prep tuned to the exact studio and role you’re applying to — likely questions, what the company values, and talking points pulled from the posting and the studio itself."},
       {label:"Application Tracking",shot:1,desc:"Track every application through its stages — Applied, Interview, Offer, and Denied — so you always know where each one stands at a glance."},
@@ -1866,9 +1866,6 @@ function Auth({onLogin,onGuest}) {
       <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"/>
       <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
-      <link rel="preconnect" href="https://fonts.googleapis.com"/>
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",display:"flex",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflow:"hidden",alignItems:"stretch"}}>
     <style>{`html,body{overflow-x:hidden;max-width:100vw}.ai{color:#f4edd8}select{color-scheme:dark!important;background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23c9a84c%22%20d%3D%22M2%204l4%204%204-4z%22%2F%3E%3C%2Fsvg%3E")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;padding-right:28px!important;cursor:pointer}select option{background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important}select optgroup{background-color:#140e0a!important;color:#f4edd8!important}select option:hover,select option:checked,select option:focus,select option:active{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important;box-shadow:0 0 10px 100px #2a1d12 inset!important}select:focus{outline:none;border-color:rgba(201,168,76,.5)!important}.ai-in{animation:ain .6s both}@keyframes ain{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}input.mq-in{width:100%;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);color:#f4edd8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;font-family:'Space Grotesk',sans-serif;box-sizing:border-box;transition:all .2s}input.mq-in:focus{outline:none;border-color:#c9a84c;background:rgba(201,168,76,.1);box-shadow:0 0 0 3px rgba(201,168,76,.15)}input.mq-in::placeholder{color:rgba(244,237,216,.3)}`}</style>
@@ -5569,9 +5566,6 @@ export default function App() {
       <title>Main Quest Jobs - Game Industry Job Hub</title>
       <meta name="description" content="Find your next game industry job. 300+ studios, AI-powered applications."/>
       <meta name="viewport" content="width=device-width, initial-scale=1"/>
-      <link rel="preconnect" href="https://fonts.googleapis.com"/>
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
     </Head>
     <div style={{minHeight:"100vh",background:"#080608",color:"#f4edd8",fontFamily:"'Space Grotesk',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
     {/* Desktop background globe — large, bottom-left, behind everything */}
