@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { supabase } from "../lib/supabase";
 import { ATS_STUDIOS } from "../lib/studios";
 import { encodeJob } from "../lib/shareJob.js";
-import { track, setAuthed } from "../lib/track";
+import { track, setAuthed, setUid } from "../lib/track";
 import { downloadResumeDocx } from "../lib/resumeDocx";
 import dynamic from "next/dynamic";
 import { normalizeATSJob } from "../lib/normalize";
@@ -4941,7 +4941,7 @@ export default function App() {
 
   const login=async u=>{ if(await banGate())return; setUser(u); };
   useEffect(()=>{ if(!user||!user.id||guest)return; notifyEmail("device-check"); },[user&&user.id,guest]);
-  useEffect(()=>{ setAuthed(!!(user&&user.id&&!guest)); },[user&&user.id,guest]);
+  useEffect(()=>{ const on=!!(user&&user.id&&!guest); setAuthed(on); setUid(on?user.id:null); },[user&&user.id,guest]);
   const pageFiredRef=useRef(new Set());
   useEffect(()=>{
     if(user||guest){ if(!pageFiredRef.current.has("board")){ pageFiredRef.current.add("board"); track("pageview",{meta:{page:"board"}}); } return; }

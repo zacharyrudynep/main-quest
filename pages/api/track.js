@@ -14,12 +14,18 @@ export default async function handler(req, res) {
     const country = String(req.headers["cf-ipcountry"] || "").toUpperCase();
     const ipRaw = (req.headers["cf-connecting-ip"] || String(req.headers["x-forwarded-for"] || "").split(",")[0] || "").trim();
     const iph = ipRaw ? crypto.createHash("sha256").update(ipRaw + "|" + (process.env.CRON_SECRET || "mq")).digest("hex").slice(0, 16) : null;
+    // Flag obvious bots/crawlers by user-agent so the dashboard can separate them from real
+    // users and guests. (Most bots never run JS and don't reach here, but headless crawlers
+    // and link-preview fetchers do.)
+    const ua = String(req.headers["user-agent"] || "");
+    const isBot = !ua || /bot|crawl|spider|slurp|mediapartners|bingpreview|facebookexternalhit|embedly|whatsapp|telegrambot|discordbot|slackbot|headless|phantom|puppeteer|playwright|python-requests|python-urllib|go-http|java\/|okhttp|curl|wget|axios|scrapy|ahrefs|semrush|mj12|dotbot|petalbot|dataprovider|censys|zgrab/i.test(ua);
     await supabaseAdmin.from("events").insert({
       type,
       job_key: b.jobKey ? String(b.jobKey).slice(0, 300) : null,
       company: b.company ? String(b.company).slice(0, 160) : null,
       visitor: b.visitor ? String(b.visitor).slice(0, 64) : null,
-      meta: { ...(b.meta && typeof b.meta === "object" ? b.meta : {}), authed: !!b.authed, ...(country && country !== "XX" && country !== "T1" ? { country } : {}), ...(iph ? { iph } : {}) },
+      // meta.uid: signed-in user's id (for "which user visited"); meta.bot: user-agent looked automated.
+      meta: { ...(b.meta && typeof b.meta === "object" ? b.meta : {}), authed: !!b.authed, ...(b.uid ? { uid: String(b.uid).slice(0, 64) } : {}), ...(isBot ? { bot: true } : {}), ...(country && country !== "XX" && country !== "T1" ? { country } : {}), ...(iph ? { iph } : {}) },
     });
     res.status(200).json({ ok: true });
   } catch (e) {

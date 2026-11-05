@@ -22,6 +22,7 @@ export default function Admin() {
   const [revStatus, setRevStatus] = useState("idle");
   const [eng, setEng] = useState(null);
   const [engStatus, setEngStatus] = useState("idle");
+  const [live, setLive] = useState(null);
   const [aitx, setAitx] = useState(null);
   const [aitxStatus, setAitxStatus] = useState("idle");
   const [usersData, setUsersData] = useState(null);
@@ -45,6 +46,25 @@ export default function Admin() {
       } catch (e) { setEngStatus("error"); }
     })();
   }, [tab, engStatus]); // idle | loading | ready | error
+
+  // Live & Visits — refreshes every 20s while the Engagement tab is open.
+  useEffect(() => {
+    if (tab !== "engagement") return;
+    let alive = true;
+    const pull = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data && data.session && data.session.access_token;
+        const r = await fetch("/api/admin/live", { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return;
+        const j = await r.json();
+        if (alive) setLive(j);
+      } catch (e) {}
+    };
+    pull();
+    const id = setInterval(pull, 20000);
+    return () => { alive = false; clearInterval(id); };
+  }, [tab]);
 
   useEffect(() => {
     if (tab !== "newjobs" || njStatus !== "idle") return;
@@ -126,6 +146,8 @@ export default function Admin() {
       <Head>
         <title>Main Quest — Admin</title>
         <meta name="robots" content="noindex" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
       </Head>
       <div style={{ minHeight: "100vh", overflowX: "hidden", maxWidth: "100%", background: "radial-gradient(1100px 620px at 50% -12%, rgba(139,32,32,.14), transparent), #080608", color: "#f4edd8", fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,sans-serif", padding: "28px 20px 60px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
@@ -245,6 +267,7 @@ export default function Admin() {
 
               {tab === "engagement" && (
                 <>
+                  {live && <LivePanel live={live} />}
                   {engStatus === "loading" && <Note>Computing engagement…</Note>}
                   {engStatus === "error" && <Note>Couldn't load engagement data.</Note>}
                   {engStatus === "ready" && eng && (
@@ -468,6 +491,83 @@ function Panel({ title, children, accent }) {
     <div style={{ background: "rgba(16,10,22,.5)", border: `1px solid ${accent ? "rgba(232,97,58,.3)" : "rgba(201,168,76,.14)"}`, borderRadius: 14, padding: "16px 18px", marginBottom: accent ? 16 : 0 }}>
       <div style={{ fontSize: 12, color: accent ? "#e8a070" : "#f0d080", fontFamily: "'Cinzel',serif", fontWeight: 700, letterSpacing: .4, marginBottom: 14 }}>{title}</div>
       {children}
+    </div>
+  );
+}
+function Stat({ label, value, sub, color }) {
+  return (
+    <div style={{ background: "rgba(16,10,22,.5)", border: "1px solid rgba(201,168,76,.14)", borderRadius: 14, padding: "14px 16px" }}>
+      <div style={{ fontSize: 10, color: "rgba(244,237,216,.5)", textTransform: "uppercase", letterSpacing: .8, fontFamily: "'Cinzel',serif", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: color || "#f4edd8", fontFamily: "'Cinzel',serif", lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", marginTop: 5 }}>{sub}</div>}
+    </div>
+  );
+}
+function LivePanel({ live }) {
+  const L = live.live || {}, V = live.visits || {};
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 14 }}>
+        <div style={{ background: "rgba(16,10,22,.5)", border: "1px solid rgba(126,207,179,.35)", borderRadius: 14, padding: "14px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 8px #4ade80", animation: "pnew 1.3s ease-in-out infinite" }} />
+            <span style={{ fontSize: 10, color: "rgba(244,237,216,.55)", textTransform: "uppercase", letterSpacing: .8, fontFamily: "'Cinzel',serif" }}>On the site now</span>
+          </div>
+          <div style={{ fontSize: 38, fontWeight: 800, color: "#f4edd8", fontFamily: "'Cinzel',serif", lineHeight: 1 }}>{L.now || 0}</div>
+          <div style={{ fontSize: 11, color: "rgba(244,237,216,.5)", marginTop: 6 }}>{L.signedIn || 0} signed-in · {L.guest || 0} guest{L.bots ? ` · ${L.bots} bot` : ""}</div>
+        </div>
+        <Stat label="Visits today" value={V.today || 0} sub="incl. repeat visits" color="#c9a84c" />
+        <Stat label="Visits this month" value={V.month || 0} sub="incl. repeat visits" color="#7ecfb3" />
+        <Stat label="Bot visits today" value={V.botsToday || 0} sub="crawlers/monitors" color="#7f8fa0" />
+      </div>
+      <Panel title="Visits by identity — last 14 days">
+        <IdentityBars rows={live.timeline || []} />
+      </Panel>
+      <div style={{ marginTop: 16 }}>
+        <Panel title="Most active signed-in users — last 35 days">
+          <BarList rows={live.topUsers || []} empty="No signed-in visits recorded yet (this fills in as signed-in users return)." plain />
+        </Panel>
+      </div>
+      <p style={{ fontSize: 10.5, color: "rgba(244,237,216,.4)", marginTop: 8, fontStyle: "italic", lineHeight: 1.5 }}>
+        “On the site now” counts real people active in the last ~3 minutes (bots excluded). A “visit” is a session — a burst of a visitor’s activity with gaps under 30 minutes — so repeat visits by the same person each count. Bot and per-user attribution fill in from here forward, as the new tracking records it.
+      </p>
+    </div>
+  );
+}
+// Stacked 14-day "visits by identity" graph. rows: [{ date, signedIn, guest, bot }].
+function IdentityBars({ rows }) {
+  const data = Array.isArray(rows) ? rows : [];
+  if (!data.length) return <div style={{ color: "rgba(244,237,216,.4)", fontSize: 12, fontStyle: "italic" }}>No visits recorded in this window yet.</div>;
+  const COLORS = { signedIn: "#7ecfb3", guest: "#c9a84c", bot: "#7f8fa0" };
+  const LABELS = { signedIn: "Signed-in", guest: "Guest", bot: "Bot / other" };
+  const max = Math.max(1, ...data.map((d) => (d.signedIn || 0) + (d.guest || 0) + (d.bot || 0)));
+  const H = 120;
+  const dayLabel = (s) => { try { return new Date(s + "T00:00:00").toLocaleDateString("en-US", { month: "numeric", day: "numeric" }); } catch { return s; } };
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+        {["signedIn", "guest", "bot"].map((k) => (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "rgba(244,237,216,.65)" }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: COLORS[k] }} />{LABELS[k]}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: "2.2%", height: H + 24 }}>
+        {data.map((d, i) => {
+          const total = (d.signedIn || 0) + (d.guest || 0) + (d.bot || 0);
+          const seg = (v) => (max ? (v / max) * H : 0);
+          return (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }} title={`${dayLabel(d.date)} — ${total} visit${total === 1 ? "" : "s"}\nSigned-in ${d.signedIn || 0} · Guest ${d.guest || 0} · Bot/other ${d.bot || 0}`}>
+              <div style={{ width: "100%", maxWidth: 34, height: H, display: "flex", flexDirection: "column", justifyContent: "flex-end", borderRadius: 5, overflow: "hidden", background: "rgba(244,237,216,.05)" }}>
+                <div style={{ height: seg(d.bot || 0), background: COLORS.bot }} />
+                <div style={{ height: seg(d.guest || 0), background: COLORS.guest }} />
+                <div style={{ height: seg(d.signedIn || 0), background: COLORS.signedIn }} />
+              </div>
+              <span style={{ fontSize: 9, color: "rgba(244,237,216,.4)", whiteSpace: "nowrap" }}>{dayLabel(d.date)}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
