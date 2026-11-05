@@ -4554,18 +4554,31 @@ function PrepMarkdown({ text }){
 }
 function InterviewPrepPanel({ job, onClose }){
   const mobile=useIsMobile();
-  const [st,setSt]=useState("loading"); const [text,setText]=useState(""); const [err,setErr]=useState("");
+  const [st,setSt]=useState("loading"); const [text,setText]=useState(""); const [shown,setShown]=useState(""); const [err,setErr]=useState("");
   const jobKey=`${job.company}|${job.title}|${job.location||""}`;
   const tokenOf=async()=>{ const {data}=await supabase.auth.getSession(); return data&&data.session&&data.session.access_token; };
-  // Abort any in-flight stream if the panel unmounts.
-  const abortRef=useRef(null);
+  const abortRef=useRef(null); const doneRef=useRef(false);
   useEffect(()=>()=>{ if(abortRef.current)try{abortRef.current.abort();}catch(e){} },[]);
-  // On open: load the cached prep if one already exists.
-  useEffect(()=>{ let alive=true; (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(!alive)return; if(j.prep){ setText(j.prep); setSt("ready"); } else setSt("empty"); }catch(e){ if(alive)setSt("empty"); } })(); return ()=>{alive=false;}; },[]);
+  // Typewriter reveal: the DISPLAYED text catches up to the RECEIVED text over time, so the
+  // guide "writes itself" on screen even when the proxy delivers it in one buffered burst.
+  // When the display has caught up AND generation is finished, flip to the ready state.
+  useEffect(()=>{
+    if(st!=="writing") return;
+    const id=setInterval(()=>{
+      setShown(prev=>{
+        if(prev.length>=text.length){ if(doneRef.current){ clearInterval(id); setSt("ready"); } return prev; }
+        const step=Math.max(2,Math.round((text.length-prev.length)/22)); // reveal faster when further behind
+        return text.slice(0,prev.length+step);
+      });
+    },28);
+    return ()=>clearInterval(id);
+  },[st,text]);
+  // On open: load the cached prep if one already exists (shown instantly, no reveal).
+  useEffect(()=>{ let alive=true; (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(!alive)return; if(j.prep){ doneRef.current=true; setText(j.prep); setShown(j.prep); setSt("ready"); } else setSt("empty"); }catch(e){ if(alive)setSt("empty"); } })(); return ()=>{alive=false;}; },[]);
   // Generate by STREAMING the result over SSE, rendering tokens as they arrive. The
   // checks (access/limit/cached) still return normal JSON, so we branch on content-type.
   const gen=async()=>{
-    setErr(""); setText(""); setSt("generating");
+    setErr(""); setText(""); setShown(""); doneRef.current=false; setSt("generating");
     const ctrl=new AbortController(); abortRef.current=ctrl;
     const tk=await tokenOf();
     let acc="", gotError="", gotDone=false;
@@ -4573,7 +4586,7 @@ function InterviewPrepPanel({ job, onClose }){
       const r=await fetch("/api/ai/interview-prep-stream",{method:"POST",headers:{"Content-Type":"application/json",Accept:"text/event-stream",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]}),signal:ctrl.signal});
       const ct=r.headers.get("content-type")||"";
       // Non-stream responses (cached result, or an access/limit error) come back as JSON.
-      if(!r.ok||ct.includes("application/json")){ const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ setText(j.prep); setSt("ready"); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } return; }
+      if(!r.ok||ct.includes("application/json")){ const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ doneRef.current=true; setText(j.prep); setSt("writing"); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } return; }
       // SSE stream: render tokens live as they arrive.
       const reader=r.body.getReader(); const dec=new TextDecoder(); let buf="";
       for(;;){
@@ -4585,24 +4598,24 @@ function InterviewPrepPanel({ job, onClose }){
           let ev="message", dat="";
           for(const ln of block.split("\n")){ if(ln.startsWith("event:"))ev=ln.slice(6).trim(); else if(ln.startsWith("data:"))dat+=ln.slice(5).trim(); }
           if(!dat)continue; let obj={}; try{obj=JSON.parse(dat);}catch(e){continue;}
-          if(ev==="delta"){ acc+=obj.t||""; setText(acc); setSt("streaming"); }
+          if(ev==="delta"){ acc+=obj.t||""; setText(acc); setSt("writing"); }
           else if(ev==="done"){ gotDone=true; }
           else if(ev==="error"){ gotError=obj.error||"Could not generate. Please try again."; }
         }
       }
     }catch(e){ if(e&&e.name==="AbortError")return; gotError=gotError||""; }
     finally{ abortRef.current=null; }
-    // Finalize. A clean "done" with text means the full guide streamed through — use it.
-    if(gotDone && acc){ setSt("ready"); return; }
+    // Finalize. A clean "done" with text means the full guide came through — reveal it.
+    if(gotDone && acc){ doneRef.current=true; setText(acc); setSt("writing"); return; }
     // Otherwise the stream was cut short (proxy hiccup / connection drop) or nothing rendered.
     // The server saves the COMPLETE prep when generation finishes regardless of the client
-    // connection, so poll the saved copy briefly and show that authoritative full version.
+    // connection, so poll the saved copy briefly and reveal that authoritative full version.
     for(let i=0;i<40;i++){
-      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ setText(pj.prep); setSt("ready"); return; } }catch(e){}
-      setSt(acc?"streaming":"generating");   // keep showing partial text (or Preparing…) while the server finishes
+      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ doneRef.current=true; setText(pj.prep); setSt("writing"); return; } }catch(e){}
+      setSt(acc?"writing":"generating");     // keep revealing partial text (or the skeleton) while the server finishes
       await new Promise(r=>setTimeout(r,2000));
     }
-    if(acc){ setSt("ready"); }               // gave up waiting — show whatever streamed
+    if(acc){ doneRef.current=true; setText(acc); setSt("writing"); }  // gave up waiting — reveal whatever streamed
     else { setErr(gotError||"Could not generate. Please try again."); setSt("empty"); }
   };
   const dl=()=>{ const clean=String(text||"").replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1"); const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(clean,`${safe(job.company)}_${safe(job.title)}_interview_prep.docx`.slice(0,90)); };
@@ -4617,11 +4630,19 @@ function InterviewPrepPanel({ job, onClose }){
       {err&&<div style={{fontSize:12,color:"#e07060",marginBottom:10}}>{err}</div>}
       <button onClick={gen} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>✦ Generate Interview Prep</button>
     </div>}
-    {st==="generating"&&!text&&<div style={{padding:"44px 0",textAlign:"center"}}><div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:14,marginBottom:8}}>Preparing…</div><div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Reviewing the company and tailoring questions to this role.</div></div>}
-    {/* Show the prep whenever there's text — never gate the content on an exact state. */}
-    {!!text&&(st==="streaming"||st==="ready"||st==="generating")&&<>
-      <PrepMarkdown text={text}/>
-      {st==="streaming"&&<div style={{fontSize:11,color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginTop:6,display:"flex",alignItems:"center",gap:7}}><span style={{width:7,height:7,borderRadius:"50%",background:"#c9a84c",animation:"pnew 1.2s ease-in-out infinite"}}/>Writing…</div>}
+    {st==="generating"&&<div style={{padding:"8px 0"}}>
+      <div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:13.5,marginBottom:3,display:"flex",alignItems:"center",gap:8}}><span style={{width:8,height:8,borderRadius:"50%",background:"#c9a84c",animation:"pnew 1.1s ease-in-out infinite"}}/>Preparing your interview prep…</div>
+      <div style={{fontSize:11.5,color:"rgba(244,237,216,.45)",marginBottom:16}}>Reviewing the company and tailoring questions to this role.</div>
+      {/* Skeleton pulse: a couple of section headers + lines, so it reads as "loading content". */}
+      {[0,1,2].map(s=><div key={s} style={{marginBottom:18}}>
+        <div style={{height:13,width:s%2?"45%":"58%",borderRadius:6,background:"rgba(201,168,76,.16)",animation:"mqskel 1.3s ease-in-out infinite",marginBottom:10}}/>
+        {[0,1,2,3].map(l=><div key={l} style={{height:9,width:["96%","90%","93%","70%"][l],borderRadius:5,background:"rgba(244,237,216,.07)",animation:"mqskel 1.3s ease-in-out infinite",animationDelay:`${(l+1)*0.12}s`,marginBottom:7}}/>)}
+      </div>)}
+    </div>}
+    {/* Reveal the progressively-shown text; never gate the content on an exact state. */}
+    {!!shown&&(st==="writing"||st==="ready")&&<>
+      <PrepMarkdown text={shown}/>
+      {st==="writing"&&<div style={{fontSize:11,color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginTop:6,display:"flex",alignItems:"center",gap:7}}><span style={{width:7,height:7,borderRadius:"50%",background:"#c9a84c",animation:"pnew 1.2s ease-in-out infinite"}}/>Writing…</div>}
       {st==="ready"&&<button onClick={dl} style={{width:"100%",marginTop:14,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>⤓ Download (.docx)</button>}
     </>}
   </div>;
@@ -5605,7 +5626,7 @@ export default function App() {
     {/* Desktop background globe — large, bottom-left, behind everything */}
     {!filterInline&&tab==="jobs"&&<div style={{position:"fixed",left:-190,bottom:-190,zIndex:0,pointerEvents:"none",opacity:.6}}><GlobeHeatmap size={720} showStates={true} counts={heatCounts}/></div>}
     {/* Styles */}
-    <style>{`@keyframes mqglow{0%,100%{text-shadow:0 0 7px rgba(240,208,128,.45)}50%{text-shadow:0 0 15px rgba(240,208,128,.9)}}@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}select{color-scheme:dark;}select option,select optgroup{background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important;}select option:hover,select option:checked,select option:focus,select option:active{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important;}*{-webkit-tap-highlight-color:transparent;}button,a,[role="button"],input,select,textarea,label,summary{touch-action:manipulation;}button,a{-webkit-user-select:none;user-select:none;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
+    <style>{`@keyframes mqglow{0%,100%{text-shadow:0 0 7px rgba(240,208,128,.45)}50%{text-shadow:0 0 15px rgba(240,208,128,.9)}}@keyframes mqspin{to{transform:rotate(360deg)}}@keyframes journeyGlow{0%,100%{box-shadow:0 0 10px rgba(240,208,128,.25);}50%{box-shadow:0 0 18px rgba(240,208,128,.5);}}*{box-sizing:border-box;margin:0;padding:0;}:root{color-scheme:dark;}html{color-scheme:dark;}body{background:#080608!important;color-scheme:dark;-webkit-text-size-adjust:100%;}@keyframes ob1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-30px)}}@keyframes ob2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,30px)}}@keyframes ob3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-50px)}}@keyframes pnew{0%,100%{box-shadow:0 0 0 0 rgba(192,50,26,.5)}50%{box-shadow:0 0 0 5px rgba(192,50,26,0)}}@keyframes mqskel{0%,100%{opacity:.45}50%{opacity:.95}}@keyframes mqpulse{0%{box-shadow:0 0 0 2px rgba(240,208,128,.9),0 0 20px rgba(240,208,128,.55)}100%{box-shadow:0 0 0 2px rgba(240,208,128,0),0 0 6px rgba(240,208,128,0)}}.mq-pulse{animation:mqpulse 1.2s ease-out 2;border-radius:10px;}input,select,textarea{font-size:16px!important;}select{color-scheme:dark;}select option,select optgroup{background-color:#140e0a!important;background:#140e0a!important;color:#f4edd8!important;}select option:hover,select option:checked,select option:focus,select option:active{background-color:#2a1d12!important;background:#2a1d12!important;color:#f0d080!important;}*{-webkit-tap-highlight-color:transparent;}button,a,[role="button"],input,select,textarea,label,summary{touch-action:manipulation;}button,a{-webkit-user-select:none;user-select:none;}input:focus,select:focus,textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15);}::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px;}button{-webkit-tap-highlight-color:transparent;}button,a{transition:filter .15s ease,transform .15s ease,box-shadow .18s ease;}button:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px);}a:hover{filter:brightness(1.15);}button:active{transform:translateY(0);}@media(max-width:640px){.hide-mobile{display:none!important;}}`}</style>
     {/* BG orbs */}
     <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
       <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",filter:"blur(120px)",opacity:.16,background:"radial-gradient(circle,#c9a84c,transparent)",top:-200,left:-100,animation:"ob1 20s ease-in-out infinite"}}/>
