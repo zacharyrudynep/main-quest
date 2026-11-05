@@ -77,10 +77,13 @@ export default async function handler(req, res) {
     send("open", { ok: true });                    // flush headers immediately so the client knows the stream is live
 
     const siteText = await fetchSiteText(url);
-    const sys = "You are an expert game-industry career coach preparing a candidate for a specific interview. Produce a focused, practical interview prep guide in clean markdown with clear section headers. Include: (1) a short profile of the company and what they are known for; (2) 6-10 likely interview questions for THIS role, each with a concise suggested angle/approach tailored to a game-industry candidate; (3) role-specific technical or portfolio topics to review; (4) smart questions the candidate should ask the interviewer; (5) general game-industry interview tips. If the provided company website text mentions their hiring or interview process, incorporate it explicitly and call it out. Be specific and useful, but never invent facts about the company you cannot support.";
+    const sys = "You are an expert game-industry career coach preparing a candidate for a specific interview. Produce a focused, practical interview prep guide in clean markdown with clear section headers. Include: (1) a short profile of the company and what they are known for; (2) 6-10 likely interview questions for THIS role, each with a concise suggested angle/approach tailored to a game-industry candidate; (3) role-specific technical or portfolio topics to review; (4) smart questions the candidate should ask the interviewer; (5) general game-industry interview tips. If the provided company website text mentions their hiring or interview process, incorporate it explicitly and call it out. Be specific and useful, but never invent facts about the company you cannot support. Write everything in your own words — paraphrase; do not quote or reproduce external text verbatim.";
     const prompt = `Role: ${title}\nCompany: ${company}\nLocation: ${location || "n/a"}\nKey requirements: ${requirements || "n/a"}\n\nCompany website text (may be empty or irrelevant):\n"""${siteText || "(none available)"}"""\n\nWrite the interview prep guide now.`;
 
-    const g = await streamText({ system: sys, user: prompt, temperature: 0.6, maxOutputTokens: 2600, timeoutMs: 55000, onChunk: (d) => send("delta", { t: d }) });
+    // thinkingBudget:0 keeps the model from spending the output budget on internal "thinking"
+    // (which was leaving too few tokens for the actual guide and truncating it mid-section).
+    // The higher ceiling gives the full guide room.
+    const g = await streamText({ system: sys, user: prompt, temperature: 0.6, maxOutputTokens: 4096, timeoutMs: 60000, generationExtras: { thinkingConfig: { thinkingBudget: 0 } }, onChunk: (d) => send("delta", { t: d }) });
     try { await logAiTxn(supabaseAdmin, { userId: uid, kind: "interview", g }); } catch (e) {}
     if (!g.ok) { send("error", { error: aiErrText(g) }); return res.end(); }
 
