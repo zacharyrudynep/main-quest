@@ -70,6 +70,10 @@ export default async function handler(req, res) {
       "X-Accel-Buffering": "no",                   // nginx/traefik: don't buffer
     });
     const send = (event, data) => { try { res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); if (res.flush) res.flush(); } catch (e) {} };
+    // ~2KB SSE comment padding up front: many proxies (and Next's own buffer) hold the
+    // first small chunks until a threshold is reached, which defeats live streaming. This
+    // fills that threshold so subsequent token writes flush through immediately.
+    try { res.write(":" + " ".repeat(2048) + "\n\n"); if (res.flush) res.flush(); } catch (e) {}
     send("open", { ok: true });                    // flush headers immediately so the client knows the stream is live
 
     const siteText = await fetchSiteText(url);

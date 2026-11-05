@@ -4567,15 +4567,18 @@ function InterviewPrepPanel({ job, onClose }){
   const gen=async()=>{
     setErr(""); setText(""); setSt("generating");
     const ctrl=new AbortController(); abortRef.current=ctrl;
+    const tk=await tokenOf();
+    let acc="", gotError="";
     try{
-      const tk=await tokenOf();
       const r=await fetch("/api/ai/interview-prep-stream",{method:"POST",headers:{"Content-Type":"application/json",Accept:"text/event-stream",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]}),signal:ctrl.signal});
       const ct=r.headers.get("content-type")||"";
+      // Non-stream responses (cached result, or an access/limit error) come back as JSON.
       if(!r.ok||ct.includes("application/json")){ const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ setText(j.prep); setSt("ready"); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } return; }
-      const reader=r.body.getReader(); const dec=new TextDecoder(); let buf="", acc="";
+      // SSE stream: render tokens live as they arrive.
+      const reader=r.body.getReader(); const dec=new TextDecoder(); let buf="";
       for(;;){
         const {value,done}=await reader.read(); if(done)break;
-        buf+=dec.decode(value,{stream:true});
+        buf=(buf+dec.decode(value,{stream:true})).replace(/\r\n/g,"\n");  // normalize line endings
         let sep;
         while((sep=buf.indexOf("\n\n"))>=0){
           const block=buf.slice(0,sep); buf=buf.slice(sep+2);
@@ -4583,13 +4586,19 @@ function InterviewPrepPanel({ job, onClose }){
           for(const ln of block.split("\n")){ if(ln.startsWith("event:"))ev=ln.slice(6).trim(); else if(ln.startsWith("data:"))dat+=ln.slice(5).trim(); }
           if(!dat)continue; let obj={}; try{obj=JSON.parse(dat);}catch(e){continue;}
           if(ev==="delta"){ acc+=obj.t||""; setText(acc); setSt("streaming"); }
-          else if(ev==="done"){ setSt("ready"); }
-          else if(ev==="error"){ setErr(obj.error||"Could not generate. Please try again."); setSt(acc?"ready":"empty"); }
+          else if(ev==="error"){ gotError=obj.error||"Could not generate. Please try again."; }
         }
       }
-      setSt(prev=>(prev==="streaming"||prev==="generating")?(acc?"ready":"empty"):prev);
-    }catch(e){ if(e&&e.name==="AbortError")return; setErr("Something went wrong."); setSt("empty"); }
+    }catch(e){ if(e&&e.name==="AbortError")return; gotError=gotError||""; }
     finally{ abortRef.current=null; }
+    // Reconcile: the server SAVES the finished prep before signaling done, so if the live
+    // stream didn't render anything (buffered/parsed-away), pull the saved copy. This makes
+    // the text ALWAYS appear on screen regardless of whether streaming got through.
+    if(!acc){
+      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ acc=pj.prep; setText(acc); } }catch(e){}
+    }
+    if(acc){ setSt("ready"); }
+    else { setErr(gotError||"Could not generate. Please try again."); setSt("empty"); }
   };
   const dl=()=>{ const clean=String(text||"").replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1"); const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(clean,`${safe(job.company)}_${safe(job.title)}_interview_prep.docx`.slice(0,90)); };
   return <div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:"calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 90px)",overflowY:"auto",WebkitOverflowScrolling:"touch"}:{position:"fixed",top:96,right:16,width:"50vw",maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
@@ -4603,8 +4612,9 @@ function InterviewPrepPanel({ job, onClose }){
       {err&&<div style={{fontSize:12,color:"#e07060",marginBottom:10}}>{err}</div>}
       <button onClick={gen} style={{width:"100%",background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"12px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3}}>✦ Generate Interview Prep</button>
     </div>}
-    {st==="generating"&&<div style={{padding:"44px 0",textAlign:"center"}}><div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:14,marginBottom:8}}>Preparing…</div><div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Reviewing the company and tailoring questions to this role.</div></div>}
-    {(st==="streaming"||st==="ready")&&<>
+    {st==="generating"&&!text&&<div style={{padding:"44px 0",textAlign:"center"}}><div style={{fontFamily:"'Cinzel',serif",color:"#f0d080",fontSize:14,marginBottom:8}}>Preparing…</div><div style={{fontSize:12,color:"rgba(244,237,216,.5)"}}>Reviewing the company and tailoring questions to this role.</div></div>}
+    {/* Show the prep whenever there's text — never gate the content on an exact state. */}
+    {!!text&&(st==="streaming"||st==="ready"||st==="generating")&&<>
       <PrepMarkdown text={text}/>
       {st==="streaming"&&<div style={{fontSize:11,color:"rgba(201,168,76,.7)",fontFamily:"'Cinzel',serif",letterSpacing:.4,marginTop:6,display:"flex",alignItems:"center",gap:7}}><span style={{width:7,height:7,borderRadius:"50%",background:"#c9a84c",animation:"pnew 1.2s ease-in-out infinite"}}/>Writing…</div>}
       {st==="ready"&&<button onClick={dl} style={{width:"100%",marginTop:14,background:"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:"#0a0608",borderRadius:10,padding:"11px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Cinzel',serif"}}>⤓ Download (.docx)</button>}
