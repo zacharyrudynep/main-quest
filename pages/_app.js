@@ -1,4 +1,19 @@
 import "@/styles/globals.css";
+// Self-hosted fonts (Fontsource) — replaces the render-blocking Google Fonts <link> tags.
+// These declare @font-face for the literal family names ('Cinzel', 'Space Grotesk',
+// 'Cinzel Decorative') so every existing fontFamily reference keeps working, and the
+// woff2 files are served from our own domain. Latin subset only; the browser downloads
+// a given weight's file lazily, only when text actually uses it.
+import "@fontsource/space-grotesk/latin-400.css";
+import "@fontsource/space-grotesk/latin-500.css";
+import "@fontsource/space-grotesk/latin-600.css";
+import "@fontsource/space-grotesk/latin-700.css";
+import "@fontsource/cinzel/latin-400.css";
+import "@fontsource/cinzel/latin-600.css";
+import "@fontsource/cinzel/latin-700.css";
+import "@fontsource/cinzel/latin-800.css";
+import "@fontsource/cinzel/latin-900.css";
+import "@fontsource/cinzel-decorative/latin-700.css";
 import { useEffect, useState } from "react";
 import { trackVisitOncePerDay } from "../lib/track";
 import { getConsent } from "../lib/consent";
