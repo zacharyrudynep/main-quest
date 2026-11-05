@@ -89,8 +89,8 @@ export default async function handler(req, res){
         const fd = (fr && fr.data && typeof fr.data === "object") ? fr.data : {};
         const fdSeen = new Set([...(fd.seenInboxKeys || []), ...((fd.inbox || []).map(n => n && n.jobKey))].filter(Boolean).map(_nkFrom));
         const addItems = candidateInbox.filter(m => !fdSeen.has(m.jobKey));
-        const nextEmailed = [...new Set([...(fd.emailedKeys || []).map(_nkFrom), ...emailedKeys])].slice(-800);
-        const nextSeen = [...new Set([...fdSeen, ...addItems.map(m => m.jobKey)])].slice(-1500);
+        const nextEmailed = [...new Set([...(fd.emailedKeys || []).map(_nkFrom), ...emailedKeys])].slice(-5000);
+        const nextSeen = [...new Set([...fdSeen, ...addItems.map(m => m.jobKey)])].slice(-5000);
         const changedEmail = emailOn && nextEmailed.length !== (fd.emailedKeys || []).length;
         const changedSeen = nextSeen.length !== (fd.seenInboxKeys || []).length;
         if(changedEmail || addItems.length || changedSeen){

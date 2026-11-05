@@ -4927,7 +4927,7 @@ export default function App() {
       // seenInboxKeys only GROWS: union server + patch + every current inbox key,
       // so a surfaced/read/cleared job is never re-added as new.
       const inboxKeys=((merged.inbox)||[]).map(n=>n&&n.jobKey).filter(Boolean);
-      merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys].map(_inboxKeyFrom))].slice(-2000);
+      merged.seenInboxKeys=[...new Set([...(server.seenInboxKeys||[]),...(patch.seenInboxKeys||[]),...inboxKeys].map(_inboxKeyFrom))].slice(-5000);
       // Use UPDATE (not upsert): the row always exists after signup, and upsert's INSERT
       // path needs an INSERT RLS policy that typically isn't granted to authenticated —
       // which made these client writes silently fail. UPDATE needs only the UPDATE policy.
@@ -5279,42 +5279,14 @@ export default function App() {
   // the live feed adds or removes jobs (drives the globe's brightness).
   const heatCounts=useMemo(()=>{ const c={}; for(const j of allJobs){ const pl=jobPlace(j); if(pl&&typeof pl==="object"&&pl.sub) c[pl.sub]=(c[pl.sub]||0)+1; } return c; },[allJobs]);
   const totalJobs=useMemo(()=>allJobs.filter(matches).length,[allJobs,filters,user]);
-  // Once-a-day job-alert scan (in-website badges only for now). When a premium
-  // user has alert criteria set, compare live jobs against them and drop new
-  // matches into the inbox. Throttled to once per 24h via lastAlertScan. Email
-  // delivery (Resend) will hook in here later.
-  useEffect(()=>{
-    if(!user||!user.id||!introDone) return;
-    const prof=user.profile||{};
-    if(prof.notifications===false) return;          // in-app inbox notifications turned off
-    const alerts=prof.jobAlerts;
-    const followed=(prof.notifyCompanies||[]).map(c=>String(c).toLowerCase());
-    const wizardOn=appIsPlus&&alertHasCriteria(alerts); // personalized alerts (Plus+)
-    if(!wizardOn&&followed.length===0) return;      // nothing set up to notify on
-    const last=prof.lastAlertScan||0;
-    if(Date.now()-last < 24*3600*1000) return;      // once a day
-    const existing=prof.inbox||[];
-    // Build the seen-set with the STABLE normalized key, and normalize any legacy keys
-    // already stored so cleared/read jobs are reliably excluded.
-    const keys=new Set([...(prof.seenInboxKeys||[]),...existing.map(n=>n.jobKey)].map(_inboxKeyFrom));
-    const matched=allJobs.filter(j=>{
-      const followHit=followed.length&&followed.includes((j.company||"").toLowerCase())&&j.isNew; // new postings from followed companies
-      const wizardHit=wizardOn&&jobMatchesAnyAlert(j,alerts);
-      return followHit||wizardHit;
-    }).sort((a,b)=>(b.updated||0)-(a.updated||0));
-    const fresh=[];
-    for(const j of matched){
-      const jobKey=_inboxKey(j.company,j.title);
-      if(keys.has(jobKey)) continue;
-      keys.add(jobKey);
-      fresh.push({id:jobKey,jobKey,title:j.title,company:j.company,location:j.location||"",ts:Date.now(),read:false});
-      if(fresh.length>=25) break;                   // cap per scan
-    }
-    // Always stamp the scan time so we respect the once-a-day limit even if nothing new.
-    if(fresh.length>0) patchProfile({inbox:[...fresh,...existing].slice(0,100),lastAlertScan:Date.now()});
-    else patchProfile({lastAlertScan:Date.now()});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[user&&user.id,introDone,appIsPlus,allJobs.length,user&&user.profile&&(user.profile.notifyCompanies||[]).length,user&&user.profile&&user.profile.notifications]);
+  // NOTE: the inbox is populated ENTIRELY server-side now, by the alert crons
+  // (scan-instant-alerts every ~15 min for Plus alerts, scan-alerts daily for company
+  // follows). They re-read each user's FRESH seen-set before writing, so a cleared job
+  // never reappears. The old client-side scan that used to live here wrote the inbox
+  // from the browser's in-memory seen-set, which went stale the moment the user cleared
+  // the inbox (clearing only refreshed `inbox` in state, not `seenInboxKeys`) — so it
+  // kept re-adding cleared jobs. Removed; the client only READS the inbox and mutates it
+  // through /api/inbox/mutate.
   const newJobs=useMemo(()=>allJobs.filter(j=>j.isNew&&matches(j)).length,[allJobs,filters,user]);
   const totalCos=useMemo(()=>{const seen=new Set();for(const s of Object.values(ALL_JOBS_DATA))for(const c of Object.values(s))for(const nm of Object.keys(c))seen.add(nm);return seen.size;},[]);
   // Company dots for Journey Mode: one dot per company, scattered deterministically

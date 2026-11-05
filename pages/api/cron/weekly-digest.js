@@ -8,6 +8,13 @@ import { asAlertArray, alertHasCriteria, jobMatchesAnyAlert } from "../../../lib
 import { sendWeeklyDigest } from "../../../lib/resend";
 import { heartbeat } from "../../../lib/heartbeat";
 
+// Stable notification identity: company|title, independent of the location string
+// (which drifts between feeds and made the same role re-send week after week). This
+// matches the key the scan crons use. _nkFrom normalizes any legacy
+// company|title|location key already stored so dedup still matches.
+const _nk = (c, t) => `${String(c || "").trim().toLowerCase().replace(/\s+/g, " ")}|${String(t || "").trim().toLowerCase().replace(/\s+/g, " ")}`;
+const _nkFrom = (k) => { const a = String(k || "").split("|"); return _nk(a[0], a[1]); };
+
 export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
@@ -41,11 +48,11 @@ export default async function handler(req, res) {
       const followed = (d.notifyCompanies || []).map(c => String(c).toLowerCase());
       if (!hasAlerts && followed.length === 0) continue; // nothing to match against
 
-      const digestedKeys = new Set(d.digestedKeys || []);
+      const digestedKeys = new Set((d.digestedKeys || []).map(_nkFrom));
       const seenThis = new Set();
       const matches = [];
       for (const j of jobs) {
-        const key = `${j.company}|${j.title}|${j.location || ""}`;
+        const key = _nk(j.company, j.title);
         if (seenThis.has(key) || digestedKeys.has(key)) continue;
         const hit = (hasAlerts && jobMatchesAnyAlert(j, alerts)) ||
                     (followed.length && followed.includes((j.company || "").toLowerCase()));
@@ -75,7 +82,7 @@ export default async function handler(req, res) {
       // Re-read this one user's full data so the write preserves everything else.
       const { data: fr } = await supabaseAdmin.from("profiles").select("data").eq("id", p.id).single();
       const fd = (fr && fr.data && typeof fr.data === "object") ? fr.data : {};
-      const nextData = { ...fd, digestedKeys: [...digestedKeys].slice(-1500), lastDigestAt: Date.now() };
+      const nextData = { ...fd, digestedKeys: [...new Set([...(fd.digestedKeys || []).map(_nkFrom), ...digestedKeys])].slice(-5000), lastDigestAt: Date.now() };
       await supabaseAdmin.from("profiles").update({ data: nextData }).eq("id", p.id);
     }
 

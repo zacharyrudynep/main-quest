@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Unknown action" });
     }
 
-    const nextData = { ...data, inbox: nextInbox, seenInboxKeys: [...seen].slice(-2000) };
+    const nextData = { ...data, inbox: nextInbox, seenInboxKeys: [...seen].slice(-5000) };
     const { error } = await supabaseAdmin.from("profiles").update({ data: nextData }).eq("id", uid);
     if (error) return res.status(500).json({ error: error.message || "write failed" });
 
