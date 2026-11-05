@@ -4568,7 +4568,7 @@ function InterviewPrepPanel({ job, onClose }){
     setErr(""); setText(""); setSt("generating");
     const ctrl=new AbortController(); abortRef.current=ctrl;
     const tk=await tokenOf();
-    let acc="", gotError="";
+    let acc="", gotError="", gotDone=false;
     try{
       const r=await fetch("/api/ai/interview-prep-stream",{method:"POST",headers:{"Content-Type":"application/json",Accept:"text/event-stream",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]}),signal:ctrl.signal});
       const ct=r.headers.get("content-type")||"";
@@ -4586,18 +4586,23 @@ function InterviewPrepPanel({ job, onClose }){
           for(const ln of block.split("\n")){ if(ln.startsWith("event:"))ev=ln.slice(6).trim(); else if(ln.startsWith("data:"))dat+=ln.slice(5).trim(); }
           if(!dat)continue; let obj={}; try{obj=JSON.parse(dat);}catch(e){continue;}
           if(ev==="delta"){ acc+=obj.t||""; setText(acc); setSt("streaming"); }
+          else if(ev==="done"){ gotDone=true; }
           else if(ev==="error"){ gotError=obj.error||"Could not generate. Please try again."; }
         }
       }
     }catch(e){ if(e&&e.name==="AbortError")return; gotError=gotError||""; }
     finally{ abortRef.current=null; }
-    // Reconcile: the server SAVES the finished prep before signaling done, so if the live
-    // stream didn't render anything (buffered/parsed-away), pull the saved copy. This makes
-    // the text ALWAYS appear on screen regardless of whether streaming got through.
-    if(!acc){
-      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ acc=pj.prep; setText(acc); } }catch(e){}
+    // Finalize. A clean "done" with text means the full guide streamed through — use it.
+    if(gotDone && acc){ setSt("ready"); return; }
+    // Otherwise the stream was cut short (proxy hiccup / connection drop) or nothing rendered.
+    // The server saves the COMPLETE prep when generation finishes regardless of the client
+    // connection, so poll the saved copy briefly and show that authoritative full version.
+    for(let i=0;i<40;i++){
+      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ setText(pj.prep); setSt("ready"); return; } }catch(e){}
+      setSt(acc?"streaming":"generating");   // keep showing partial text (or Preparing…) while the server finishes
+      await new Promise(r=>setTimeout(r,2000));
     }
-    if(acc){ setSt("ready"); }
+    if(acc){ setSt("ready"); }               // gave up waiting — show whatever streamed
     else { setErr(gotError||"Could not generate. Please try again."); setSt("empty"); }
   };
   const dl=()=>{ const clean=String(text||"").replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1"); const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(clean,`${safe(job.company)}_${safe(job.title)}_interview_prep.docx`.slice(0,90)); };
