@@ -13,7 +13,11 @@ export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 // stays well under Vercel's 4.5MB request/response limit. The client compresses before POST
 // and decompresses after GET; this route just stores/returns the compressed blob. Cache
 // errors never break the board — the client falls back to a normal live fetch.
-const TTL_MS = 15 * 60 * 1000;
+// 30 min so the board still treats the snapshot as fresh with the build-snapshot cron
+// running every ~25 min (instead of every ~10). Job feeds barely change faster than
+// that, so the only cost is new postings showing up a few minutes later — in exchange
+// for ~2.5x fewer full board rebuilds (less server work + outbound ATS fetching).
+const TTL_MS = 30 * 60 * 1000;
 
 // In-memory snapshot cache. On a persistent Node server this serves the (multi-MB) blob
 // to every visitor from RAM and reads Supabase at most once per MEM_TTL — a major egress
