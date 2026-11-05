@@ -2608,7 +2608,10 @@ function EmailTemplateTab({profile,upd,canAI}){
     <p style={{fontSize:12,color:"rgba(244,237,216,.5)",fontStyle:"italic",marginBottom:14,lineHeight:1.5}}>Write/paste your email template below. Type <strong style={{color:"#c9a84c"}}>[x]</strong> anywhere you want auto-filled info. A dropdown appears for each [x] so you can assign it to a value like Company Name, Position Title, or one of your links. When you Apply by Email, the [x]'s are filled in from that job.</p>
     <div style={{marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}><label style={{...lbl,marginBottom:0}}>Email Template</label><button onClick={generateTemplate} disabled={gen||!canAI} title={canAI?"":"Premium feature"} style={{display:"inline-flex",alignItems:"center",gap:6,background:(gen||!canAI)?"rgba(201,168,76,.08)":"linear-gradient(135deg,#c9a84c,#e8613a)",border:"none",color:(gen||!canAI)?"#c9a84c":"#0a0608",borderRadius:8,padding:"6px 13px",fontSize:11,fontWeight:800,cursor:(gen||!canAI)?"default":"pointer",fontFamily:"'Cinzel',serif",letterSpacing:.3,opacity:(gen||!canAI)?.6:1}}>{gen?"Generating…":canAI?"✦ Generate with AI":"✦ Generate (Premium)"}</button></div>
-      <textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>
+      {gen?<div style={{...inp,minHeight:160,lineHeight:1.5,display:"flex",flexDirection:"column",justifyContent:"center",gap:9}}>
+        <div style={{fontSize:11.5,color:"#f0d080",fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:8,marginBottom:4}}><span style={{width:8,height:8,borderRadius:"50%",background:"#c9a84c",animation:"pnew 1.1s ease-in-out infinite"}}/>Writing your template…</div>
+        {["92%","85%","60%","78%","40%"].map((w,i)=><div key={i} style={{height:9,width:w,borderRadius:5,background:"rgba(244,237,216,.08)",animation:"mqskel 1.3s ease-in-out infinite",animationDelay:`${i*0.12}s`}}/>)}
+      </div>:<textarea style={{...inp,minHeight:160,resize:"vertical",lineHeight:1.5}} value={text} onChange={e=>upd("emailTemplate",e.target.value)} placeholder={"Dear [x] Hiring Team,\n\nI'm excited to apply for the [x] role at [x]. ..."}/>}
     </div>
     {placeholderCount>0&&<div style={{marginBottom:14}}>
       <label style={lbl}>Assign each [x] ({placeholderCount} found)</label>
@@ -3773,6 +3776,12 @@ function TailorResume({job,profile,missingSkills,wide}){
       {remaining===0&&<div style={{fontSize:10,color:"#e0705a",lineHeight:1.4,marginBottom:6}}>You've used all your monthly AI credits — resets on the 1st.</div>}
       <button onClick={run} disabled={busy||sel.size===0||remaining===0} style={{...primaryBtn,position:"relative",opacity:(busy||sel.size===0||remaining===0)?.5:1,cursor:(busy||sel.size===0||remaining===0)?"default":"pointer"}}>{busy?<span style={{display:"inline-flex",alignItems:"center",gap:8,justifyContent:"center"}}><span style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(10,6,8,.35)",borderTopColor:"#0a0608",animation:"mqspin .7s linear infinite",display:"inline-block"}}/>Tailoring your resume…</span>:<>{`Tailor with AI${sel.size?` (${sel.size})`:""}`}{remaining!==null&&remaining>0&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"inline-flex",alignItems:"center",gap:1,fontSize:9.5,fontWeight:800,opacity:.85}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#0a0608"><path d="M13 2L4 14h6l-1 8 10-12h-6l0-8z"/></svg>-1</span>}</>}</button>
       {busy&&<div style={{fontSize:11,color:"rgba(244,237,216,.55)",textAlign:"center",marginTop:8,lineHeight:1.5,fontStyle:"italic"}}>You can keep browsing while this runs — your tailored resume saves to Generated Resumes automatically, and the Saved tab pulses when it’s ready.</div>}
+      {busy&&<div style={{marginTop:12,background:"rgba(0,0,0,.22)",border:"1px solid rgba(201,168,76,.12)",borderRadius:8,padding:"11px 12px"}}>
+        {[0,1,2].map(s=><div key={s} style={{marginBottom:s<2?14:0}}>
+          <div style={{height:10,width:s%2?"42%":"55%",borderRadius:5,background:"rgba(201,168,76,.16)",animation:"mqskel 1.3s ease-in-out infinite",marginBottom:8}}/>
+          {["94%","88%","70%"].map((w,l)=><div key={l} style={{height:8,width:w,borderRadius:4,background:"rgba(244,237,216,.07)",animation:"mqskel 1.3s ease-in-out infinite",animationDelay:`${(l+1)*0.12}s`,marginBottom:6}}/>)}
+        </div>)}
+      </div>}
       {!busy&&<button onClick={()=>{setOpen(false);setSel(new Set());setErr("");}} style={{width:"100%",background:"none",border:"none",color:"rgba(244,237,216,.4)",fontSize:10,cursor:"pointer",marginTop:7,fontFamily:"inherit"}}>Cancel</button>}
     </div>}
     {md&&<div>
@@ -4552,10 +4561,11 @@ function PrepMarkdown({ text }){
   });
   flush(); return <div>{out}</div>;
 }
-function InterviewPrepPanel({ job, onClose }){
+function InterviewPrepPanel({ job, onClose, onGenerated }){
   const mobile=useIsMobile();
   const [st,setSt]=useState("loading"); const [text,setText]=useState(""); const [shown,setShown]=useState(""); const [err,setErr]=useState("");
   const jobKey=`${job.company}|${job.title}|${job.location||""}`;
+  const markHasPrep=()=>{ try{ onGenerated&&onGenerated(jobKey); }catch(e){} };
   const tokenOf=async()=>{ const {data}=await supabase.auth.getSession(); return data&&data.session&&data.session.access_token; };
   const abortRef=useRef(null); const doneRef=useRef(false);
   useEffect(()=>()=>{ if(abortRef.current)try{abortRef.current.abort();}catch(e){} },[]);
@@ -4574,7 +4584,7 @@ function InterviewPrepPanel({ job, onClose }){
     return ()=>clearInterval(id);
   },[st,text]);
   // On open: load the cached prep if one already exists (shown instantly, no reveal).
-  useEffect(()=>{ let alive=true; (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(!alive)return; if(j.prep){ doneRef.current=true; setText(j.prep); setShown(j.prep); setSt("ready"); } else setSt("empty"); }catch(e){ if(alive)setSt("empty"); } })(); return ()=>{alive=false;}; },[]);
+  useEffect(()=>{ let alive=true; (async()=>{ try{ const tk=await tokenOf(); const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(!alive)return; if(j.prep){ doneRef.current=true; setText(j.prep); setShown(j.prep); setSt("ready"); markHasPrep(); } else setSt("empty"); }catch(e){ if(alive)setSt("empty"); } })(); return ()=>{alive=false;}; },[]);
   // Generate by STREAMING the result over SSE, rendering tokens as they arrive. The
   // checks (access/limit/cached) still return normal JSON, so we branch on content-type.
   const gen=async()=>{
@@ -4586,7 +4596,7 @@ function InterviewPrepPanel({ job, onClose }){
       const r=await fetch("/api/ai/interview-prep-stream",{method:"POST",headers:{"Content-Type":"application/json",Accept:"text/event-stream",Authorization:`Bearer ${tk}`},body:JSON.stringify({jobKey,company:job.company,title:job.title,location:job.location||"",url:job.url||job.applyUrl||"",requirements:job.requirements||[]}),signal:ctrl.signal});
       const ct=r.headers.get("content-type")||"";
       // Non-stream responses (cached result, or an access/limit error) come back as JSON.
-      if(!r.ok||ct.includes("application/json")){ const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ doneRef.current=true; setText(j.prep); setSt("writing"); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } return; }
+      if(!r.ok||ct.includes("application/json")){ const j=await r.json().catch(()=>({})); if(r.ok&&j.prep){ doneRef.current=true; setText(j.prep); setSt("writing"); markHasPrep(); } else { setErr(j.error||"Could not generate. Please try again."); setSt("empty"); } return; }
       // SSE stream: render tokens live as they arrive.
       const reader=r.body.getReader(); const dec=new TextDecoder(); let buf="";
       for(;;){
@@ -4606,12 +4616,12 @@ function InterviewPrepPanel({ job, onClose }){
     }catch(e){ if(e&&e.name==="AbortError")return; gotError=gotError||""; }
     finally{ abortRef.current=null; }
     // Finalize. A clean "done" with text means the full guide came through — reveal it.
-    if(gotDone && acc){ doneRef.current=true; setText(acc); setSt("writing"); return; }
+    if(gotDone && acc){ doneRef.current=true; setText(acc); setSt("writing"); markHasPrep(); return; }
     // Otherwise the stream was cut short (proxy hiccup / connection drop) or nothing rendered.
     // The server saves the COMPLETE prep when generation finishes regardless of the client
     // connection, so poll the saved copy briefly and reveal that authoritative full version.
     for(let i=0;i<40;i++){
-      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ doneRef.current=true; setText(pj.prep); setSt("writing"); return; } }catch(e){}
+      try{ const pr=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jobKey),{headers:{Authorization:`Bearer ${tk}`}}); const pj=await pr.json().catch(()=>({})); if(pj.prep){ doneRef.current=true; setText(pj.prep); setSt("writing"); markHasPrep(); return; } }catch(e){}
       setSt(acc?"writing":"generating");     // keep revealing partial text (or the skeleton) while the server finishes
       await new Promise(r=>setTimeout(r,2000));
     }
@@ -4619,7 +4629,7 @@ function InterviewPrepPanel({ job, onClose }){
     else { setErr(gotError||"Could not generate. Please try again."); setSt("empty"); }
   };
   const dl=()=>{ const clean=String(text||"").replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1"); const safe=(s)=>String(s||"").replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,""); downloadResumeDocx(clean,`${safe(job.company)}_${safe(job.title)}_interview_prep.docx`.slice(0,90)); };
-  return <div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:"calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 90px)",overflowY:"auto",WebkitOverflowScrolling:"touch"}:{position:"fixed",top:96,right:16,width:"50vw",maxHeight:"calc(100vh - 112px)",overflowY:"auto",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
+  return <div style={mobile?{position:"fixed",inset:0,zIndex:400,background:"rgba(10,7,10,.98)",padding:"calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 90px)",overflowY:"auto",overscrollBehavior:"contain",WebkitOverflowScrolling:"touch"}:{position:"fixed",top:96,right:16,width:"50vw",maxHeight:"calc(100vh - 112px)",overflowY:"auto",overscrollBehavior:"contain",zIndex:60,background:"rgba(16,10,22,.97)",backdropFilter:"blur(24px)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:18,boxShadow:"0 24px 70px rgba(0,0,0,.7)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:12,borderBottom:"1px solid rgba(201,168,76,.15)",paddingBottom:10,position:mobile?"sticky":"static",top:0,zIndex:5,background:mobile?"rgba(10,7,10,.98)":"transparent",marginLeft:mobile?-16:0,marginRight:mobile?-16:0,paddingLeft:mobile?16:0,paddingRight:mobile?16:0}}>
       <div><div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"#c9a84c",fontWeight:700,textTransform:"uppercase",letterSpacing:.3}}>{job.company} · Interview Prep</div><div style={{fontSize:15,color:"#f0d080",fontWeight:700}}>{job.title}</div></div>
       <button onClick={onClose} title="Close" style={{flexShrink:0,width:30,height:30,borderRadius:"50%",background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",cursor:"pointer",fontSize:14}}>✕</button>
@@ -4647,9 +4657,13 @@ function InterviewPrepPanel({ job, onClose }){
     </>}
   </div>;
 }
-function InterviewPrepButton({ job, onOpen }){
-  const [has,setHas]=useState(false);
-  useEffect(()=>{ let alive=true; (async()=>{ try{ const {data}=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk)return; const jk=`${job.company}|${job.title}|${job.location||""}`; const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jk),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(alive&&j.prep) setHas(true); }catch(e){} })(); return ()=>{alive=false;}; },[]);
+function InterviewPrepButton({ job, onOpen, prepKeys, markPrep }){
+  const jk=`${job.company}|${job.title}|${job.location||""}`;
+  // "has a prep" is derived from App-level shared state, so when the panel generates one
+  // the button flips to "View" immediately (the old local-only state never saw the update).
+  const has=!!(prepKeys&&prepKeys[jk]);
+  // Seed the shared state on mount: if a prep already exists for this job, record it.
+  useEffect(()=>{ let alive=true; (async()=>{ try{ const {data}=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk)return; const r=await fetch("/api/ai/interview-prep?jobKey="+encodeURIComponent(jk),{headers:{Authorization:`Bearer ${tk}`}}); const j=await r.json().catch(()=>({})); if(alive&&j.prep&&markPrep) markPrep(jk); }catch(e){} })(); return ()=>{alive=false;}; },[jk]);
   return <button onClick={()=>onOpen(job)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.3)",color:"#c9a84c",borderRadius:8,padding:"6px 14px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3,cursor:"pointer"}}>{has?"✦ View Interview Prep":"✦ Generate Interview Prep"}</button>;
 }
 
@@ -4661,6 +4675,10 @@ export default function App() {
   const [savedTab,setSavedTab]=useState("jobs");
   const [resumePanel,setResumePanel]=useState(false);
   const [prepJob,setPrepJob]=useState(null);
+  // jobKey -> true for every applied job that has a saved interview prep. Shared so the
+  // "Generate/View" buttons and card highlighting stay in sync when a prep is created.
+  const [prepKeys,setPrepKeys]=useState({});
+  const markPrep=useCallback((jk)=>{ if(!jk)return; setPrepKeys(p=>p[jk]?p:{...p,[jk]:true}); },[]);
   const [user,setUser]=useState(()=>(__mqAuthCache&&__mqAuthCache.user)||null);
   const [tab,setTab]=useState("jobs");
   const [showTop,setShowTop]=useState(false);
@@ -5975,13 +5993,14 @@ export default function App() {
             const entry=user.applied[job.id];
             const appliedDate=entry?.date?new Date(entry.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"Unknown";
             const st=entry?.status||"applied"; const si=APP_STATUS_MAP[st]||{label:"Applied",color:"#c9a84c"};
-            return <div key={job.id} style={{background:"rgba(16,10,22,.6)",border:"1px solid rgba(201,168,76,.14)",borderRadius:12,padding:"14px 16px",display:"flex",flexDirection:"column",gap:12,position:"relative"}}><button onClick={()=>removeApplied(job.id)} title="Remove" style={{position:"absolute",top:12,right:12,zIndex:2,background:"rgba(192,50,26,.08)",border:"1px solid rgba(192,50,26,.2)",color:"rgba(232,120,90,.7)",cursor:"pointer",width:26,height:26,borderRadius:8,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(192,50,26,.2)";e.currentTarget.style.color="#e87060";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(192,50,26,.08)";e.currentTarget.style.color="rgba(232,120,90,.7)";}}><I.X s={11} c="currentColor"/></button><div style={{paddingRight:34}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}><span style={{background:`${si.color}22`,border:`1px solid ${si.color}66`,color:si.color,borderRadius:20,fontSize:10,padding:"2px 10px",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{si.label}</span><span style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",fontFamily:"'Cinzel',serif"}}>{job.company}</span><span style={{fontSize:10,color:"rgba(244,237,216,.4)",background:"rgba(201,168,76,.06)",padding:"2px 9px",borderRadius:20}}>{job.state}</span></div><div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:"#f4edd8",marginBottom:6,letterSpacing:.5}}>{job.title}</div><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{[job.type,job.isRemote&&"Remote OK",(job.salary&&job.salary!=="Salary not listed")&&job.salary,job.postedStr&&`Posted ${job.postedStr}`].filter(Boolean).map((c,i)=><span key={i} style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.6)"}}>{c}</span>)}</div></div><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap"}}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><a href={job.applyUrl||job.url} target="_blank" rel="noreferrer" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",borderRadius:8,padding:"6px 14px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3}}>View Posting <I.Arrow s={11} c="#f0d080"/></a><InterviewPrepButton job={job} onOpen={setPrepJob}/></div><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>{STAGE_ACTIONS[STAGE_OF(st)].length>0?<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{STAGE_ACTIONS[STAGE_OF(st)].map(([v,l,c])=><button key={v} onClick={()=>setAppStatus(job.id,v)} style={{background:`${c}18`,border:`1px solid ${c}55`,color:c,borderRadius:8,padding:"6px 12px",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{l}</button>)}</div>:<button onClick={()=>setAppStatus(job.id,"applied")} title="Reset to Applied" style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.45)",borderRadius:8,padding:"6px 11px",fontSize:10,fontFamily:"'Cinzel',serif",cursor:"pointer",whiteSpace:"nowrap"}}>↺ Reset</button>}<div style={{background:"rgba(126,207,179,.07)",border:"1px solid rgba(126,207,179,.2)",borderRadius:10,padding:"6px 12px",textAlign:"center"}}><div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:2}}>Applied</div><div style={{fontSize:11,color:"#f4edd8",fontWeight:600,whiteSpace:"nowrap"}}>{appliedDate}</div></div></div></div></div>;
+            const isPrep=prepJob&&prepJob.id===job.id;
+            return <div key={job.id} style={{background:isPrep?"rgba(201,168,76,.10)":"rgba(16,10,22,.6)",border:isPrep?"1px solid rgba(201,168,76,.55)":"1px solid rgba(201,168,76,.14)",boxShadow:isPrep?"0 0 0 1px rgba(201,168,76,.35), 0 10px 34px rgba(201,168,76,.14)":"none",borderRadius:12,padding:"14px 16px",display:"flex",flexDirection:"column",gap:12,position:"relative",transition:"border-color .2s ease, box-shadow .2s ease, background .2s ease"}}><button onClick={()=>removeApplied(job.id)} title="Remove" style={{position:"absolute",top:12,right:12,zIndex:2,background:"rgba(192,50,26,.08)",border:"1px solid rgba(192,50,26,.2)",color:"rgba(232,120,90,.7)",cursor:"pointer",width:26,height:26,borderRadius:8,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(192,50,26,.2)";e.currentTarget.style.color="#e87060";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(192,50,26,.08)";e.currentTarget.style.color="rgba(232,120,90,.7)";}}><I.X s={11} c="currentColor"/></button><div style={{paddingRight:34}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}><span style={{background:`${si.color}22`,border:`1px solid ${si.color}66`,color:si.color,borderRadius:20,fontSize:10,padding:"2px 10px",fontWeight:700,fontFamily:"'Cinzel',serif"}}>{si.label}</span><span style={{fontSize:12,fontWeight:600,color:"rgba(244,237,216,.6)",fontFamily:"'Cinzel',serif"}}>{job.company}</span><span style={{fontSize:10,color:"rgba(244,237,216,.4)",background:"rgba(201,168,76,.06)",padding:"2px 9px",borderRadius:20}}>{job.state}</span></div><div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:"#f4edd8",marginBottom:6,letterSpacing:.5}}>{job.title}</div><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{[job.type,job.isRemote&&"Remote OK",(job.salary&&job.salary!=="Salary not listed")&&job.salary,job.postedStr&&`Posted ${job.postedStr}`].filter(Boolean).map((c,i)=><span key={i} style={{background:"rgba(201,168,76,.07)",border:"1px solid rgba(201,168,76,.15)",borderRadius:20,fontSize:10,padding:"2px 9px",color:"rgba(244,237,216,.6)"}}>{c}</span>)}</div></div><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",gap:12,flexWrap:"wrap"}}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><a href={job.applyUrl||job.url} target="_blank" rel="noreferrer" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5,background:"rgba(201,168,76,.12)",border:"1px solid rgba(201,168,76,.25)",color:"#f0d080",borderRadius:8,padding:"6px 14px",fontSize:11,fontFamily:"'Cinzel',serif",fontWeight:700,letterSpacing:.3}}>View Posting <I.Arrow s={11} c="#f0d080"/></a><InterviewPrepButton job={job} onOpen={setPrepJob} prepKeys={prepKeys} markPrep={markPrep}/></div><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>{STAGE_ACTIONS[STAGE_OF(st)].length>0?<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{STAGE_ACTIONS[STAGE_OF(st)].map(([v,l,c])=><button key={v} onClick={()=>setAppStatus(job.id,v)} style={{background:`${c}18`,border:`1px solid ${c}55`,color:c,borderRadius:8,padding:"6px 12px",fontSize:10.5,fontFamily:"'Cinzel',serif",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{l}</button>)}</div>:<button onClick={()=>setAppStatus(job.id,"applied")} title="Reset to Applied" style={{background:"rgba(201,168,76,.06)",border:"1px solid rgba(201,168,76,.2)",color:"rgba(244,237,216,.45)",borderRadius:8,padding:"6px 11px",fontSize:10,fontFamily:"'Cinzel',serif",cursor:"pointer",whiteSpace:"nowrap"}}>↺ Reset</button>}<div style={{background:"rgba(126,207,179,.07)",border:"1px solid rgba(126,207,179,.2)",borderRadius:10,padding:"6px 12px",textAlign:"center"}}><div style={{fontSize:9,color:"#7ecfb3",textTransform:"uppercase",letterSpacing:.8,fontFamily:"'Cinzel',serif",marginBottom:2}}>Applied</div><div style={{fontSize:11,color:"#f4edd8",fontWeight:600,whiteSpace:"nowrap"}}>{appliedDate}</div></div></div></div></div>;
           })}
         </div>}
       </div>}
 
     </main>
-    {prepJob&&<InterviewPrepPanel job={prepJob} onClose={()=>setPrepJob(null)}/>}
+    {prepJob&&<InterviewPrepPanel job={prepJob} onClose={()=>setPrepJob(null)} onGenerated={markPrep}/>}
     {/* Legal footer */}
     <footer style={{borderTop:"1px solid rgba(201,168,76,.12)",padding:"20px 24px",marginTop:0,marginRight:(!mobile&&((prepJob&&tab==="applied")||(resumePanel&&tab==="saved")))?"50vw":(breakdownJob&&!mobile&&(tab==="jobs"||tab==="saved"))?"min(46vw,720px)":0,transition:"margin .35s ease",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12,background:"rgba(8,6,8,.6)",position:"relative",zIndex:1,flexShrink:0}}>
       <div style={{fontSize:11,color:"rgba(244,237,216,.35)",lineHeight:1.5,maxWidth:560}}>
