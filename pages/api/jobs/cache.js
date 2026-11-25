@@ -79,13 +79,32 @@ export default async function handler(req, res) {
       const now = Date.now();
       if (!MEM.gz || (now - MEM.fetchedAt) > MEM_TTL) {
         try {
-          const { data, error } = await supabaseAdmin.from("job_cache").select("data,updated_at").eq("id", "live").single();
-          if (!error || error.code === "PGRST116") {
-            MEM = {
-              gz: (data && data.data && data.data.gz) || null,
-              updatedAt: (data && data.updated_at) ? new Date(data.updated_at).getTime() : 0,
-              fetchedAt: now,
-            };
+          // EGRESS SAVER: the `data` column is the whole multi-MB gzipped board. The
+          // build-snapshot cron only rewrites this row every ~10-25 min, so re-reading the
+          // full payload on every cache miss (~once/min) was pulling tens of GB/month out of
+          // the database for no reason. Instead, do a cheap freshness check first — select
+          // ONLY `updated_at` (a few bytes) — and download the heavy `data` blob ONLY when
+          // the row actually changed (or we have nothing cached yet).
+          const { data: meta, error: metaErr } = await supabaseAdmin.from("job_cache").select("updated_at").eq("id", "live").single();
+          if (!metaErr || metaErr.code === "PGRST116") {
+            const rowUpdated = (meta && meta.updated_at) ? new Date(meta.updated_at).getTime() : 0;
+            if (!MEM.gz || rowUpdated > MEM.updatedAt) {
+              // New snapshot (or cold cache) → fetch the big payload exactly once per change.
+              const { data, error } = await supabaseAdmin.from("job_cache").select("data,updated_at").eq("id", "live").single();
+              if (!error || error.code === "PGRST116") {
+                MEM = {
+                  gz: (data && data.data && data.data.gz) || MEM.gz,
+                  updatedAt: (data && data.updated_at) ? new Date(data.updated_at).getTime() : rowUpdated,
+                  fetchedAt: now,
+                };
+              } else {
+                MEM.fetchedAt = now; // read failed — keep the blob we have, just reset the clock
+              }
+            } else {
+              // Unchanged → keep serving the in-RAM blob; no heavy read needed.
+              MEM.fetchedAt = now;
+              if (rowUpdated) MEM.updatedAt = rowUpdated;
+            }
           }
         } catch (e) { /* keep whatever we had in memory */ }
       }
