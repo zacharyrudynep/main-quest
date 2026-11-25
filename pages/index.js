@@ -2428,6 +2428,10 @@ function ResumeSection({profile,updateField}) {
   const fileRef=useRef(null);
 
   const toB64=(file)=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
+  // Persist (or clear) the resume .docx SERVER-side instead of stuffing it into profile.data.
+  // Keeping the (large) base64 out of the profile blob means it no longer rides along on every
+  // profile read / write / alert-cron scan. The tailor endpoint loads it on demand.
+  const saveResumeDocx=async(b64)=>{ try{ const {data}=await supabase.auth.getSession(); const tk=data&&data.session&&data.session.access_token; if(!tk)return; await fetch("/api/profile/resume-docx",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${tk}`},body:JSON.stringify({docxB64:b64||""})}); }catch(e){} };
 
 const upload=async(e)=>{
     const file=e.target.files?.[0]; if(!file)return;
@@ -2437,7 +2441,6 @@ const upload=async(e)=>{
     setPs("reading");setMsg("Reading file…");
     try{
       let text="";
-      updateField("resumeDocxB64",""); // keep only the current upload
       if(ext===".pdf"){
         setMsg("Extracting PDF text…");
         // Load PDF.js dynamically (no AI, runs entirely in the browser)
@@ -2463,7 +2466,6 @@ const upload=async(e)=>{
         const buf=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsArrayBuffer(file);});
         const result=await window.mammoth.extractRawText({arrayBuffer:buf});
         text=result.value||"";
-        if(ext===".docx"){try{updateField("resumeDocxB64",await toB64(file));}catch(e){}}
       }
       if(!text||text.trim().length<20){throw new Error("Could not read text from this file. Try a different file or fill fields manually.");}
       setPs("parsing");setMsg("Parsing resume…");
@@ -2475,6 +2477,9 @@ const upload=async(e)=>{
       // Always store the full text so the user has it
       updateField("resumeText",text.replace(/\s+/g," ").trim().slice(0,8000));
       updateField("resumeFileName",file.name);
+      // Store the .docx server-side for formatting-preserving tailoring; clear any stale one
+      // when the new upload isn't a .docx.
+      try{ await saveResumeDocx(ext===".docx" ? await toB64(file) : ""); }catch(e){}
       track("resume_upload",{});
       setPs("done");setMsg("Resume text extracted! Review and edit the fields below.");
     }catch(err){setPs("error");setMsg(err.message||"Could not parse. Try a different file or paste text manually.");}
@@ -2501,7 +2506,7 @@ const upload=async(e)=>{
             <div style={{fontSize:12,color:"rgba(244,237,216,.7)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{profile.resumeFileName||"Resume on file"}</div>
           </div>
         </div>
-        <button title="Remove resume" onClick={()=>{if(window.confirm("Remove the uploaded resume? Your other profile fields will stay.")){updateField("resumeText","");updateField("resumeFileName","");setPs("idle");setMsg("");}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",borderRadius:8,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:15,fontWeight:700,lineHeight:1}}>✕</button>
+        <button title="Remove resume" onClick={()=>{if(window.confirm("Remove the uploaded resume? Your other profile fields will stay.")){updateField("resumeText","");updateField("resumeFileName","");saveResumeDocx("");setPs("idle");setMsg("");}}} style={{background:"rgba(192,50,26,.1)",border:"1px solid rgba(192,50,26,.3)",color:"#e07060",cursor:"pointer",borderRadius:8,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:15,fontWeight:700,lineHeight:1}}>✕</button>
       </div>
     ):(
     <div onClick={()=>ps!=="parsing"&&ps!=="reading"&&fileRef.current?.click()} onDragOver={e=>{e.preventDefault();}} onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f){const dt=new DataTransfer();dt.items.add(f);fileRef.current.files=dt.files;upload({target:fileRef.current});}}} style={{border:`1.5px dashed ${zoneColor}`,borderRadius:12,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:8,cursor:ps==="parsing"||ps==="reading"?"default":"pointer",transition:"all .2s",background:zoneBg,marginBottom:16,textAlign:"center"}}>
@@ -3750,7 +3755,7 @@ function TailorResume({job,profile,missingSkills,wide}){
       const {data}=await supabase.auth.getSession();
       const token=data&&data.session&&data.session.access_token;
       if(!token){setErr("Please sign in.");setBusy(false);return;}
-      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,resumeDocxB64:profile.resumeDocxB64||"",keywords:[...sel],job:{title:job.title,company:job.company,location:job.location||"",url:job.url||"",requirements:job.requirements,responsibilities:job.responsibilities}})});
+      const r=await fetch("/api/ai/tailor-resume",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({resumeText:profile.resumeText,keywords:[...sel],job:{title:job.title,company:job.company,location:job.location||"",url:job.url||"",requirements:job.requirements,responsibilities:job.responsibilities}})});
       const j=await r.json().catch(()=>({}));
       if(r.status===202&&j.jobId){ if(typeof j.remaining==="number")setRemaining(j.remaining); pollJob(j.jobId); return; }
       if(!r.ok){setErr(j.error||"Something went wrong. Try again.");setBusy(false);return;}
